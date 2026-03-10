@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://member.app/schemas/universal_record_envelope.schema.json",
+  "title": "universal_record_envelope",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "record_id",
+    "record_type",
+    "source_system",
+    "source_snapshot_ref",
+    "effective_from",
+    "authority_tier",
+    "binding_level",
+    "status",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128
+    },
+    "record_type": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128
+    },
+    "source_system": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 128
+    },
+    "source_snapshot_ref": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 256
+    },
+    "effective_from": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "effective_to": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "authority_tier": {
+      "type": "string",
+      "enum": [
+        "T0_LAW_FORM",
+        "T1_OFFICIAL_OPERATION",
+        "T2_PUBLIC_DATA",
+        "T3_VENDOR",
+        "T4_COMMUNITY",
+        "UNKNOWN"
+      ]
+    },
+    "binding_level": {
+      "type": "string",
+      "enum": [
+        "MANDATORY",
+        "POLICY",
+        "RECOMMENDED",
+        "REFERENCE",
+        "UNKNOWN"
+      ]
+    },
+    "jurisdiction": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 64
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "superseded",
+        "deprecated",
+        "deleted"
+      ]
+    },
+    "retention_tag": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 64
+    },
+    "pii_class": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 64
+    },
+    "access_scope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 64
+      },
+      "maxItems": 16
+    },
+    "masking_policy": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 64
+    },
+    "deletion_policy": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 64
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

@@ -21,3 +21,6 @@
 ## Cutover
 - legacy routes stay API-compatible.
 - V1 behavior is controlled by `ENABLE_V1_*` flags.
+- `ENABLE_V1_OPENAI_RESPONSES` is pinned `true` in deploy workflows (Responses API runtime path).
+- channel edge uses durable dedupe/order state (`src/v1/channel_edge/line/firestoreEdgeStateStore.js`) with in-memory fallback.
+- Contract freeze gate (`llm:spec-contract:freeze:check`) is mandatory before quality/replay gates.

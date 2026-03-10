@@ -1,8 +1,8 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-09T03:57:33.548Z
-- gitCommit: a8a5baac2b45cd7f5a46127201f8106b4cb991e9
-- branch: main
+- generatedAt: 2026-03-10T12:14:56.048Z
+- gitCommit: ed8f00e8a3154b861bfa177794bd8615975d47b7
+- branch: codex/spec-v2-contract-freeze-foundation
 - flagCount: 85
 - source: src/**/*.js
 - check: `npm run feature-flags:check`

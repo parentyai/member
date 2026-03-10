@@ -800,7 +800,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 60,
+      "tests_count": 61,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -822,7 +822,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 48,
+      "tests_count": 49,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -1557,7 +1557,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 59,
+      "tests_count": 60,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2548,7 +2548,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 39,
+      "tests_count": 40,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2569,7 +2569,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 40,
+      "tests_count": 41,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2594,7 +2594,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 58,
+      "tests_count": 59,
       "ssot_refs": [],
       "completion": "legacy"
     },

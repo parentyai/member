@@ -101,6 +101,16 @@ async function handleFaqAnswer(req, res, body) {
       fallbackType: qualitySignals.fallbackType,
       contextCarryScore: qualitySignals.contextCarryScore,
       repeatRiskScore: qualitySignals.repeatRiskScore,
+      intentRiskTier: result && result.intentRiskTier ? result.intentRiskTier : null,
+      readinessDecision: result && result.readinessDecision ? result.readinessDecision : null,
+      readinessReasonCodes: result && Array.isArray(result.readinessReasonCodes)
+        ? result.readinessReasonCodes
+        : [],
+      readinessSafeResponseMode: result && result.readinessSafeResponseMode ? result.readinessSafeResponseMode : null,
+      unsupportedClaimCount: result && Number.isFinite(Number(result.unsupportedClaimCount))
+        ? Number(result.unsupportedClaimCount)
+        : 0,
+      contradictionDetected: result ? result.contradictionDetected === true : false,
       entryType: 'compat',
       gatesApplied: ['kill_switch', 'injection', 'url_guard']
     }).catch(() => null);

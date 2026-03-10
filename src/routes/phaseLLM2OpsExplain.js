@@ -2,6 +2,7 @@
 
 const { getOpsExplanation } = require('../usecases/phaseLLM2/getOpsExplanation');
 const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
+const { resolveSharedAnswerReadiness } = require('../domain/llm/quality/resolveSharedAnswerReadiness');
 const { enforceLlmGenerationKillSwitch } = require('./admin/osContext');
 
 const COMPAT_ROUTE_ID = 'compat_phaseLLM2_ops_explain';
@@ -54,6 +55,26 @@ async function handleOpsExplain(req, res) {
     if (!allowed) return;
     const result = await getOpsExplanation({ lineUserId, traceId, actor });
     const qualitySignals = buildCompatQualitySignals(result);
+    const opsExplanationText = result && result.explanation && typeof result.explanation.opsExplanation === 'string'
+      ? result.explanation.opsExplanation
+      : '';
+    const sharedReadiness = resolveSharedAnswerReadiness({
+      domainIntent: 'general',
+      llmUsed: result && result.llmUsed === true,
+      fallbackType: qualitySignals.fallbackType,
+      replyText: opsExplanationText,
+      lawfulBasis: 'consent',
+      consentVerified: true,
+      legalDecision: 'allow',
+      sourceReadinessDecision: result && result.llmUsed === true ? 'allow' : 'clarify'
+    });
+    if (result && result.explanation && typeof result.explanation === 'object' && opsExplanationText) {
+      result.explanation.opsExplanation = sharedReadiness.replyText;
+    }
+    result.readinessDecision = sharedReadiness.readiness.decision;
+    result.readinessReasonCodes = sharedReadiness.readiness.reasonCodes;
+    result.readinessSafeResponseMode = sharedReadiness.readiness.safeResponseMode;
+    result.intentRiskTier = sharedReadiness.intentRiskTier;
     await appendLlmGateDecision({
       actor,
       traceId,
@@ -76,6 +97,10 @@ async function handleOpsExplain(req, res) {
       fallbackType: qualitySignals.fallbackType,
       contextCarryScore: qualitySignals.contextCarryScore,
       repeatRiskScore: qualitySignals.repeatRiskScore,
+      readinessDecision: sharedReadiness.readiness.decision,
+      readinessReasonCodes: sharedReadiness.readiness.reasonCodes,
+      readinessSafeResponseMode: sharedReadiness.readiness.safeResponseMode,
+      intentRiskTier: sharedReadiness.intentRiskTier,
       entryType: 'compat',
       gatesApplied: ['kill_switch']
     }).catch(() => null);

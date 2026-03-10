@@ -1,0 +1,184 @@
+{
+  "registryVersion": "v2.0.0",
+  "registryHash": "sha256:llm-spec-contract-v2-20260310",
+  "generatedAt": "2026-03-10T00:00:00.000Z",
+  "authorityOrder": [
+    "Member_LLM_Unified_Master_Spec_v2",
+    "Data_Integration_Spec",
+    "Parent_Contract_YAML",
+    "Existing_Diff_Report",
+    "Repository_Runtime"
+  ],
+  "specHierarchy": [
+    {
+      "id": "master_spec_v2",
+      "path": "/Volumes/Arumamihs/資料/Member_LLM_Unified_Master_Spec_v2.md",
+      "required": true
+    },
+    {
+      "id": "data_integration_spec",
+      "path": "/Volumes/Arumamihs/資料/海外赴任_データ統合仕様.md",
+      "required": true
+    },
+    {
+      "id": "parent_contract_yaml",
+      "path": "/Volumes/Arumamihs/資料/member_us_assignment_llm_contract_pack.yaml",
+      "required": true
+    }
+  ],
+  "allowedStatuses": [
+    "aligned",
+    "partial",
+    "conflict",
+    "missing",
+    "repo-leads-spec",
+    "spec-leads-repo"
+  ],
+  "requirements": [
+    {
+      "requirementId": "V2-C-01",
+      "sourceSpec": "master_spec_v2",
+      "summary": "LINE channel edge full guard (signature/dedupe/redelivery/order/fast-slow/LIFF synthetic)",
+      "status": "partial",
+      "severity": "high",
+      "blastRadius": "webhook_reliability",
+      "recommendedAction": "durable dedupe and ordering guard",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/src/v1/channel_edge/line/dedupeStore.js:1",
+        "/Volumes/Arumamihs/Member/src/v1/channel_edge/line/orderingGuard.js:1"
+      ]
+    },
+    {
+      "requirementId": "V2-C-03",
+      "sourceSpec": "master_spec_v2",
+      "summary": "OpenAI Responses API only",
+      "status": "conflict",
+      "severity": "critical",
+      "blastRadius": "llm_runtime",
+      "recommendedAction": "remove runtime chat-completions path",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/src/infra/llmClient.js:46",
+        "/Volumes/Arumamihs/Member/src/v1/openai_adapter/responsesClient.js:1"
+      ]
+    },
+    {
+      "requirementId": "V2-C-04",
+      "sourceSpec": "master_spec_v2",
+      "summary": "Semantic Response Object is the single generation contract",
+      "status": "partial",
+      "severity": "critical",
+      "blastRadius": "response_quality",
+      "recommendedAction": "semantic adapter on all runtime output paths",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/schemas/semantic_response_object.schema.json:1",
+        "/Volumes/Arumamihs/Member/src/routes/webhookLine.js:2055"
+      ]
+    },
+    {
+      "requirementId": "V2-C-06",
+      "sourceSpec": "master_spec_v2",
+      "summary": "Memory Fabric split (task/session/profile/compliance)",
+      "status": "partial",
+      "severity": "high",
+      "blastRadius": "privacy_personalization",
+      "recommendedAction": "deprecate legacy snapshot dependency",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/src/v1/memory_fabric/taskMemoryRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/repos/firestore/userContextSnapshotsRepo.js:1"
+      ]
+    },
+    {
+      "requirementId": "DATA-C-01",
+      "sourceSpec": "data_integration_spec",
+      "summary": "Canonical Core object model on PostgreSQL",
+      "status": "missing",
+      "severity": "critical",
+      "blastRadius": "data_governance",
+      "recommendedAction": "introduce canonical core bridge with dual-write migration",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/src/repos/firestore/sourceRefsRepo.js:1"
+      ]
+    },
+    {
+      "requirementId": "DATA-C-02",
+      "sourceSpec": "data_integration_spec",
+      "summary": "Universal Record Envelope for all persisted records",
+      "status": "missing",
+      "severity": "critical",
+      "blastRadius": "audit_traceability",
+      "recommendedAction": "add envelope schema and writer policy",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/src/repos/firestore/llmActionLogsRepo.js:1"
+      ]
+    },
+    {
+      "requirementId": "DATA-C-03",
+      "sourceSpec": "data_integration_spec",
+      "summary": "approved_knowledge and candidate_knowledge lifecycle split",
+      "status": "partial",
+      "severity": "high",
+      "blastRadius": "knowledge_freshness",
+      "recommendedAction": "explicit lifecycle state machine",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/src/repos/firestore/sourceRefsRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/usecases/faq/answerFaqFromKb.js:1"
+      ]
+    },
+    {
+      "requirementId": "YAML-C-01",
+      "sourceSpec": "parent_contract_yaml",
+      "summary": "enum/routing invariants",
+      "status": "partial",
+      "severity": "high",
+      "blastRadius": "compatibility",
+      "recommendedAction": "add contract tests and enum adapters",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/src/domain/llm/router/detectIntent.js:1"
+      ]
+    },
+    {
+      "requirementId": "YAML-C-02",
+      "sourceSpec": "parent_contract_yaml",
+      "summary": "required_core_facts completeness gate",
+      "status": "partial",
+      "severity": "high",
+      "blastRadius": "factuality",
+      "recommendedAction": "required_core_facts gate before final response",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/src/routes/webhookLine.js:2055"
+      ]
+    },
+    {
+      "requirementId": "YAML-C-03",
+      "sourceSpec": "parent_contract_yaml",
+      "summary": "response_contract required fields",
+      "status": "partial",
+      "severity": "high",
+      "blastRadius": "api_contract",
+      "recommendedAction": "response contract conformance checker",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/src/v1/semantic/semanticResponseObject.js:1"
+      ]
+    }
+  ],
+  "conflicts": [
+    {
+      "conflictId": "CF-01",
+      "severity": "critical",
+      "blocking": true,
+      "summary": "Responses-only vs chat-completions dual path"
+    },
+    {
+      "conflictId": "CF-02",
+      "severity": "critical",
+      "blocking": true,
+      "summary": "Canonical Core RDB required by spec vs Firestore-centric runtime"
+    },
+    {
+      "conflictId": "CF-08",
+      "severity": "high",
+      "blocking": true,
+      "summary": "Runtime-first quality requirement vs fixture-primary fallback"
+    }
+  ]
+}
