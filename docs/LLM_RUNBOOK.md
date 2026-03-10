@@ -624,6 +624,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 ### Runtime defaults
 - `llmClient` は Responses API のみを使用し、legacy chat/completions は runtime で使用しない。
 - `ENABLE_V1_OPENAI_RESPONSES` は deploy/webhook deploy で `true` を固定する（visibility marker。値が `false` でも runtime transport は Responses-only）。
+- `ENABLE_V1_CHANNEL_EDGE` は既定 `true`（未設定時も有効）。緊急ロールバック時のみ `false` を明示設定する。
 
 ### Channel edge durability
 - webhook event filter は `filterWebhookEventsAsync` を使用し、dedupe/order state を `webhook_edge_state` に保存する。

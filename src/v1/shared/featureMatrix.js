@@ -6,7 +6,7 @@ function resolveV1FeatureMatrix(env) {
   const source = env && typeof env === 'object' ? env : process.env;
   const responsesRequested = resolveBooleanEnvFlag('ENABLE_V1_OPENAI_RESPONSES', true, source);
   return {
-    channelEdge: resolveBooleanEnvFlag('ENABLE_V1_CHANNEL_EDGE', false, source),
+    channelEdge: resolveBooleanEnvFlag('ENABLE_V1_CHANNEL_EDGE', true, source),
     fastSlowDispatch: resolveBooleanEnvFlag('ENABLE_V1_FAST_SLOW_DISPATCH', false, source),
     liffSyntheticEvents: resolveBooleanEnvFlag('ENABLE_V1_LIFF_SYNTHETIC_EVENTS', false, source),
     // Responses API is runtime-mandatory; requested flag is kept only for audit visibility.

@@ -200,12 +200,17 @@ function loadWebhookWithStubs(options) {
   };
 }
 
-function webhookPayload() {
+function webhookPayload(seed) {
+  const suffix = typeof seed === 'string' && seed.trim() ? seed.trim() : '1';
+  const numericSeed = Number.parseInt(suffix, 10);
+  const timestamp = Number.isFinite(numericSeed) ? (1_700_000_000_000 + numericSeed) : 1_700_000_000_000;
   return {
     events: [
       {
         type: 'message',
-        replyToken: 'rt_phase656',
+        replyToken: `rt_phase656_${suffix}`,
+        webhookEventId: `phase656_evt_${suffix}`,
+        timestamp,
         source: { userId: 'U_PHASE656' },
         message: { type: 'text', text: '状況を整理して次の行動を知りたいです' }
       }
@@ -228,7 +233,7 @@ test('phase656: webhook pro path switches between paid FAQ and paid assistant by
     restoreEnv();
   });
 
-  const payload1 = webhookPayload();
+  const payload1 = webhookPayload('1');
   const body1 = JSON.stringify(payload1);
   const replies1 = [];
   const res1 = await loaded.handleLineWebhook({
@@ -251,7 +256,7 @@ test('phase656: webhook pro path switches between paid FAQ and paid assistant by
   assert.equal(loaded.counters.assistant, 0);
 
   process.env.ENABLE_PAID_FAQ_QUALITY_V2 = '0';
-  const payload2 = webhookPayload();
+  const payload2 = webhookPayload('2');
   const body2 = JSON.stringify(payload2);
   const replies2 = [];
   const res2 = await loaded.handleLineWebhook({

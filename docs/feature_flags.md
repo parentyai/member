@@ -2,7 +2,7 @@
 
 | Flag | Default | Canary | Rollback |
 | --- | --- | --- | --- |
-| ENABLE_V1_CHANNEL_EDGE | false | true | false |
+| ENABLE_V1_CHANNEL_EDGE | true | true | false |
 | ENABLE_V1_FAST_SLOW_DISPATCH | false | true | false |
 | ENABLE_V1_LIFF_SYNTHETIC_EVENTS | false | true | false |
 | ENABLE_V1_OPENAI_RESPONSES | true | true | true |

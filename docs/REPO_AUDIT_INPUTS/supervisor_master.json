@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T09:35:41-04:00",
-  "gitCommit": "39c2ccb71180a3f86ddac02c330076410721b9d1",
-  "branch": "codex/spec-v2-pr8-responses-only-runtime",
-  "sourceDigest": "a3983b86dea967f542594f7f1e5dcdaf70b891d2065638aa2f5fd95f5f66692f",
+  "generatedAt": "2026-03-10T09:45:08-04:00",
+  "gitCommit": "c95f6aaac68a07389b87cce4531f0623d6cbf3c6",
+  "branch": "codex/spec-v2-pr9-channel-edge-default",
+  "sourceDigest": "40b2d2b977532bc5da2f5a261203b2ce1a0dd8fe4d46cc13154e35633375758f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
