@@ -17,7 +17,8 @@ test('phase767: materiality filter drops zero-value japanese/line failure rows',
     top_10_japanese_service_failures: [
       { signal: 'legacyTemplateHitRate', value: 0 },
       { signal: 'defaultCasualRate', value: 0.009 },
-      { signal: 'conciseModeAppliedRate', value: 0.05 }
+      { signal: 'conciseModeAppliedRate', value: 0.05 },
+      { signal: 'followupQuestionIncludedRate', value: 0.9, available: false }
     ],
     top_10_line_fit_failures: [
       { signal: 'retrieveNeededRate', value: 0 },
@@ -30,6 +31,7 @@ test('phase767: materiality filter drops zero-value japanese/line failure rows',
   assert.equal(entries.some((row) => row.signal === 'defaultCasualRate' && row.metric === 'japanese_service'), false);
   assert.equal(entries.some((row) => row.signal === 'retrieveNeededRate'), false);
   assert.equal(entries.some((row) => row.signal === 'avgActionCountOverBudget'), false);
+  assert.equal(entries.some((row) => row.signal === 'followupQuestionIncludedRate'), false);
   assert.equal(entries.some((row) => row.signal === 'conciseModeAppliedRate' && row.metric === 'japanese_service'), true);
   assert.equal(entries.some((row) => row.signal === 'defaultCasualRate' && row.metric === 'line_fit'), true);
 });

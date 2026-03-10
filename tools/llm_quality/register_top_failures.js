@@ -34,6 +34,9 @@ function isMaterialFailureEntry(entry) {
     return Math.max(0, Math.floor(toNumber(row.count, 0))) > 0;
   }
   if (category === 'jp_service_failure' || category === 'line_fit_failure') {
+    if (row.available === false) {
+      return false;
+    }
     const threshold = toNumber(VALUE_FAILURE_THRESHOLDS[category], 0);
     return toNumber(row.value, 0) > threshold;
   }
@@ -70,6 +73,7 @@ function normalizeEntries(report, limit) {
     signal: row && row.signal ? String(row.signal) : 'unknown',
     metric: 'japanese_service',
     value: Number(toNumber(row && row.value, 0).toFixed(4)),
+    available: !(row && row.available === false),
     severity: index < 3 ? 'high' : 'medium'
   }));
   const lineFit = toRecordList('line_fit_failure', payload.top_10_line_fit_failures, (row, index) => ({
@@ -77,6 +81,7 @@ function normalizeEntries(report, limit) {
     signal: row && row.signal ? String(row.signal) : 'unknown',
     metric: 'line_fit',
     value: Number(toNumber(row && row.value, 0).toFixed(4)),
+    available: !(row && row.available === false),
     severity: index < 3 ? 'high' : 'medium'
   }));
 

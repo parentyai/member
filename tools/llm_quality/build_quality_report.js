@@ -100,12 +100,28 @@ function buildJapaneseServiceFailures(summary) {
   const conversation = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
     ? summary.conversationQuality
     : {};
+  const toValue = (signal, compute) => {
+    if (!Object.prototype.hasOwnProperty.call(conversation, signal)) {
+      return null;
+    }
+    const raw = Number(conversation[signal]);
+    if (!Number.isFinite(raw)) {
+      return null;
+    }
+    const value = Number.isFinite(Number(compute(raw))) ? Number(compute(raw)) : 0;
+    return {
+      signal,
+      value: Number(value.toFixed(4)),
+      available: true
+    };
+  };
   return [
-    { signal: 'legacyTemplateHitRate', value: Number(conversation.legacyTemplateHitRate || 0) },
-    { signal: 'defaultCasualRate', value: Number(conversation.defaultCasualRate || 0) },
-    { signal: 'followupQuestionIncludedRate', value: 1 - Number(conversation.followupQuestionIncludedRate || 0) },
-    { signal: 'conciseModeAppliedRate', value: 1 - Number(conversation.conciseModeAppliedRate || 0) }
+    toValue('legacyTemplateHitRate', (v) => v),
+    toValue('defaultCasualRate', (v) => v),
+    toValue('followupQuestionIncludedRate', (v) => 1 - v),
+    toValue('conciseModeAppliedRate', (v) => 1 - v)
   ]
+    .filter(Boolean)
     .sort((a, b) => b.value - a.value || a.signal.localeCompare(b.signal, 'ja'))
     .slice(0, 10);
 }
@@ -114,13 +130,61 @@ function buildLineFitFailures(summary) {
   const conversation = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
     ? summary.conversationQuality
     : {};
+  const toValue = (signal, compute) => {
+    if (!Object.prototype.hasOwnProperty.call(conversation, signal)) {
+      return null;
+    }
+    const raw = Number(conversation[signal]);
+    if (!Number.isFinite(raw)) {
+      return null;
+    }
+    const value = Number.isFinite(Number(compute(raw))) ? Number(compute(raw)) : 0;
+    return {
+      signal,
+      value: Number(value.toFixed(4)),
+      available: true
+    };
+  };
   return [
-    { signal: 'retrieveNeededRate', value: Number(conversation.retrieveNeededRate || 0) },
-    { signal: 'defaultCasualRate', value: Number(conversation.defaultCasualRate || 0) },
-    { signal: 'avgActionCountOverBudget', value: Math.max(0, Number(conversation.avgActionCount || 0) - 3) }
+    toValue('retrieveNeededRate', (v) => v),
+    toValue('defaultCasualRate', (v) => v),
+    toValue('avgActionCount', (v) => Math.max(0, v - 3))
   ]
+    .filter(Boolean)
+    .map((row) => ({
+      signal: row.signal === 'avgActionCount' ? 'avgActionCountOverBudget' : row.signal,
+      value: row.value,
+      available: row.available
+    }))
     .sort((a, b) => b.value - a.value || a.signal.localeCompare(b.signal, 'ja'))
     .slice(0, 10);
+}
+
+function buildSignalCoverage(summary) {
+  const conversation = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
+    ? summary.conversationQuality
+    : {};
+  const requiredSignals = [
+    'legacyTemplateHitRate',
+    'defaultCasualRate',
+    'followupQuestionIncludedRate',
+    'conciseModeAppliedRate',
+    'retrieveNeededRate',
+    'avgActionCount'
+  ];
+  const missingSignals = requiredSignals.filter((key) => {
+    if (!Object.prototype.hasOwnProperty.call(conversation, key)) {
+      return true;
+    }
+    return !Number.isFinite(Number(conversation[key]));
+  });
+  return {
+    conversationQualityPresent: Object.keys(conversation).length > 0,
+    requiredSignalCount: requiredSignals.length,
+    availableSignalCount: requiredSignals.length - missingSignals.length,
+    missingSignalCount: missingSignals.length,
+    missingSignals
+  };
 }
 
 function main(argv) {
@@ -172,6 +236,7 @@ function main(argv) {
     top_10_context_loss_cases: buildContextLossCases(summary),
     top_10_japanese_service_failures: buildJapaneseServiceFailures(summary),
     top_10_line_fit_failures: buildLineFitFailures(summary),
+    signal_coverage: buildSignalCoverage(summary),
     current_quality_risk_map: {
       high: dimensionScores.filter((row) => row.status === 'fail').slice(0, 10),
       medium: dimensionScores.filter((row) => row.status === 'warning').slice(0, 10),
