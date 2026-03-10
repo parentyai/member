@@ -622,8 +622,8 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 ## Phase778 Addendum（Responses-only + Durable Channel Edge + Shared Readiness）
 
 ### Runtime defaults
-- `ENABLE_V1_OPENAI_RESPONSES` は deploy/webhook deploy で `true` を固定する。
 - `llmClient` は Responses API のみを使用し、legacy chat/completions は runtime で使用しない。
+- `ENABLE_V1_OPENAI_RESPONSES` は deploy/webhook deploy で `true` を固定する（visibility marker。値が `false` でも runtime transport は Responses-only）。
 
 ### Channel edge durability
 - webhook event filter は `filterWebhookEventsAsync` を使用し、dedupe/order state を `webhook_edge_state` に保存する。

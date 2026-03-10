@@ -52,12 +52,12 @@
       "requirementId": "V2-C-03",
       "sourceSpec": "master_spec_v2",
       "summary": "OpenAI Responses API only",
-      "status": "conflict",
-      "severity": "critical",
+      "status": "aligned",
+      "severity": "medium",
       "blastRadius": "llm_runtime",
-      "recommendedAction": "remove runtime chat-completions path",
+      "recommendedAction": "keep Responses-only runtime and monitor regressions via quality/runtime gates",
       "evidence": [
-        "/Volumes/Arumamihs/Member/src/infra/llmClient.js:46",
+        "/Volumes/Arumamihs/Member/src/infra/llmClient.js:1",
         "/Volumes/Arumamihs/Member/src/v1/openai_adapter/responsesClient.js:1"
       ]
     },
@@ -166,12 +166,6 @@
     }
   ],
   "conflicts": [
-    {
-      "conflictId": "CF-01",
-      "severity": "critical",
-      "blocking": true,
-      "summary": "Responses-only vs chat-completions dual path"
-    },
     {
       "conflictId": "CF-02",
       "severity": "critical",

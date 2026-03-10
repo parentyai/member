@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T09:15:44-04:00",
-  "gitCommit": "3477b1bac4ed3f847952e4f089c93af612b66025",
-  "branch": "codex/spec-v2-pr7-envelope-adoption",
-  "sourceDigest": "709f4d70618851b127c1c3cafe8c63edc847be30dc8a5ad04fdb9a1230c2599c",
+  "generatedAt": "2026-03-10T09:35:41-04:00",
+  "gitCommit": "39c2ccb71180a3f86ddac02c330076410721b9d1",
+  "branch": "codex/spec-v2-pr8-responses-only-runtime",
+  "sourceDigest": "a3983b86dea967f542594f7f1e5dcdaf70b891d2065638aa2f5fd95f5f66692f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

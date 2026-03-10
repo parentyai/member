@@ -21,10 +21,6 @@ function resolveRequestModel(payload, env) {
 
 async function callOpenAi(payload, env) {
   const source = env && typeof env === 'object' ? env : process.env;
-  const useResponsesApi = resolveBooleanEnvFlag('ENABLE_V1_OPENAI_RESPONSES', true, source);
-  if (!useResponsesApi) {
-    throw new Error('llm_api_error');
-  }
   try {
     const adapterResult = await callResponsesApi({
       system: payload && payload.system,

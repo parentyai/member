@@ -2,8 +2,8 @@
 
 ## Step order
 1. Run `npm run llm:spec-contract:freeze:check` and keep registry hash immutable for the release window.
-2. Deploy with all `ENABLE_V1_*` flags = `false` except `ENABLE_V1_OPENAI_RESPONSES=true`.
-3. Verify `ENABLE_V1_OPENAI_RESPONSES` remains pinned to `true` in stg/prod deploy workflows.
+2. Deploy with all `ENABLE_V1_*` flags = `false` and keep `ENABLE_V1_OPENAI_RESPONSES=true` as visibility marker.
+3. Verify `ENABLE_V1_OPENAI_RESPONSES=true` remains pinned in stg/prod deploy workflows (runtime is Responses-only either way).
 4. Enable `ENABLE_V1_LINE_RENDERER` in stg and verify 5-object/UTF-16 behavior.
 5. Enable `ENABLE_V1_CHANNEL_EDGE` and verify dedupe/redelivery/order filters.
 6. Enable `ENABLE_V1_LIFF_SYNTHETIC_EVENTS` and verify synthetic event writes.
