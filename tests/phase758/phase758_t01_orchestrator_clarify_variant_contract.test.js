@@ -77,7 +77,7 @@ test('phase758: domain follow-up clarify remains domain-specific when domain can
   assert.equal(result.packet.normalizedConversationIntent, 'ssn');
   assert.equal(result.packet.followupIntent, 'appointment_needed');
   assert.match(result.replyText, /SSN|窓口/);
-  assert.equal(result.telemetry.directAnswerApplied, false);
+  assert.equal(result.telemetry.directAnswerApplied, true);
   assert.equal(result.telemetry.followupIntent, 'appointment_needed');
 });
 
@@ -115,6 +115,8 @@ test('phase758: recovery signal keeps domain-aware clarify wording instead of ge
   assert.equal(result.ok, true);
   assert.equal(result.packet.recoverySignal, true);
   assert.equal(result.packet.normalizedConversationIntent, 'ssn');
+  assert.equal(result.packet.followupIntent, 'docs_required');
+  assert.equal(result.telemetry.directAnswerApplied, true);
   assert.match(result.replyText, /SSN|書類/);
   assert.equal(result.replyText.includes('対象を絞って案内したいので'), false);
 });

@@ -56,3 +56,26 @@ test('phase752: context resume cue without ultra-short message still resumes pri
   assert.equal(packet.followupIntent, 'next_step');
   assert.equal(packet.routerReason, 'contextual_domain_resume');
 });
+
+test('phase752: recovery correction prefers docs_required followup intent on contextual resume', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_RECOVERY',
+    messageText: '違う、予約じゃなくて書類',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'ssn',
+        followupIntent: 'appointment_needed',
+        replyText: 'SSN窓口の予約要否を先に確認しましょう。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.recoverySignal, true);
+  assert.equal(packet.contextResume, true);
+  assert.equal(packet.normalizedConversationIntent, 'ssn');
+  assert.equal(packet.recoveryFollowupIntent, 'docs_required');
+  assert.equal(packet.followupIntent, 'docs_required');
+});

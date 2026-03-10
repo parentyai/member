@@ -75,6 +75,27 @@ function normalizeText(value) {
   return value.trim();
 }
 
+function normalizeForSimilarity(value) {
+  return normalizeText(value).toLowerCase().replace(/\s+/g, ' ');
+}
+
+function similarityScore(left, right) {
+  const a = normalizeForSimilarity(left);
+  const b = normalizeForSimilarity(right);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (a.includes(b) || b.includes(a)) return 0.92;
+  const aTokens = new Set(a.split(/[^\p{L}\p{N}]+/u).filter(Boolean));
+  const bTokens = new Set(b.split(/[^\p{L}\p{N}]+/u).filter(Boolean));
+  if (!aTokens.size || !bTokens.size) return 0;
+  let overlap = 0;
+  aTokens.forEach((token) => {
+    if (bTokens.has(token)) overlap += 1;
+  });
+  const denominator = Math.max(aTokens.size, bTokens.size);
+  return denominator > 0 ? overlap / denominator : 0;
+}
+
 function trimForLineMessage(value) {
   const text = normalizeText(value);
   if (!text) return '';
@@ -169,17 +190,33 @@ function buildActionLine(action) {
   return ensureSentence(`次は${normalized}`);
 }
 
-function detectRepeatedFollowupIntent(params) {
+function pickLeastRepeatedLine(lines, hints) {
+  const variants = Array.isArray(lines) ? lines.filter(Boolean) : [];
+  if (!variants.length) return '';
+  const normalizedHints = Array.isArray(hints)
+    ? hints.filter((item) => typeof item === 'string' && item.trim()).slice(0, 4)
+    : [];
+  if (!normalizedHints.length) return variants[0];
+  const scored = variants.map((line, index) => ({
+    index,
+    line,
+    similarity: normalizedHints.reduce((max, hint) => Math.max(max, similarityScore(line, hint)), 0)
+  }));
+  scored.sort((left, right) => left.similarity - right.similarity || left.index - right.index);
+  return scored[0].line;
+}
+
+function countFollowupIntentStreak(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const followupIntent = normalizeText(payload.followupIntent).toLowerCase();
   const rows = Array.isArray(payload.recentFollowupIntents) ? payload.recentFollowupIntents : [];
-  if (!followupIntent) return false;
+  if (!followupIntent) return 0;
   let streak = 0;
   rows.slice(0, 3).forEach((item) => {
     const normalized = normalizeText(item).toLowerCase();
     if (normalized && normalized === followupIntent) streak += 1;
   });
-  return streak >= 1;
+  return streak;
 }
 
 function resolveFollowupIntentForDomain(params) {
@@ -199,21 +236,48 @@ function buildConciseReply(parts) {
   const payload = parts && typeof parts === 'object' ? parts : {};
   const spec = DOMAIN_SPECS[payload.domainIntent] || DOMAIN_SPECS.general;
   const followupIntent = payload.followupIntent || null;
-  const repeatedFollowupIntent = payload.repeatedFollowupIntent === true;
+  const repeatedFollowupStreak = Number.isFinite(Number(payload.repeatedFollowupStreak))
+    ? Math.max(0, Math.floor(Number(payload.repeatedFollowupStreak)))
+    : 0;
+  const repeatedFollowupIntent = repeatedFollowupStreak >= 1;
+  const recentResponseHints = Array.isArray(payload.recentResponseHints) ? payload.recentResponseHints : [];
   const directAnswers = spec.directAnswers && typeof spec.directAnswers === 'object' ? spec.directAnswers : {};
   const repeatedAnswerByIntent = {
-    docs_required: '同じ書類確認なら、次は不足しやすい書類を1つずつ潰すのが最短です。',
-    appointment_needed: '予約の確認を続けるなら、最寄り窓口を1つ決めて予約可否を確定しましょう。',
-    next_step: '同じ話題を進めるなら、期限が近い手続きを1つに固定すると進みます。'
+    docs_required: [
+      '同じ書類確認なら、次は不足しやすい書類を1つずつ潰すのが最短です。',
+      '書類確認を続けるなら、最優先手続きの提出物だけ先に確定するのが早いです。'
+    ],
+    appointment_needed: [
+      '予約の確認を続けるなら、最寄り窓口を1つ決めて予約可否を確定しましょう。',
+      '予約要否の確認は、対象窓口を1つ固定して可否を先に確認するのが確実です。'
+    ],
+    next_step: [
+      '同じ話題を進めるなら、期限が近い手続きを1つに固定すると進みます。',
+      '次の一手を進めるなら、まず期限の近い手続きを1つだけ確定しましょう。'
+    ]
   };
+  const recoveryLeadLine = payload.recoverySignal === true ? '了解です。前提を修正して続けます。' : '';
   const resolvedPrimaryLine = (
     followupIntent
       ? (repeatedFollowupIntent
-        ? repeatedAnswerByIntent[followupIntent] || directAnswers[followupIntent]
+        ? (() => {
+          const variants = repeatedAnswerByIntent[followupIntent];
+          if (!Array.isArray(variants) || !variants.length) return directAnswers[followupIntent];
+          const index = Math.min(variants.length - 1, repeatedFollowupStreak - 1);
+          return variants[index] || variants[0];
+        })()
         : directAnswers[followupIntent])
       : (payload.situationLine || spec.situationLine)
   );
-  const primaryLine = ensureSentence(resolvedPrimaryLine);
+  const primaryLineCandidate = recoveryLeadLine
+    ? `${recoveryLeadLine} ${resolvedPrimaryLine || payload.situationLine || spec.situationLine}`
+    : resolvedPrimaryLine;
+  const primaryLine = ensureSentence(
+    pickLeastRepeatedLine([primaryLineCandidate, payload.situationLine, spec.situationLine], recentResponseHints)
+      || resolvedPrimaryLine
+      || payload.situationLine
+      || spec.situationLine
+  );
   const actions = normalizeActions(payload.nextActions, 3);
   const actionLine = buildActionLine(actions[0] || spec.defaultAction);
   const pitfall = ensureSentence(`詰まりやすいのは ${sanitizeReplyLine(payload.pitfall) || spec.pitfall}`);
@@ -287,7 +351,7 @@ function generatePaidDomainConciergeReply(params) {
     messageText: payload.messageText,
     domainIntent
   });
-  const repeatedFollowupIntent = detectRepeatedFollowupIntent({
+  const repeatedFollowupStreak = countFollowupIntentStreak({
     followupIntent,
     recentFollowupIntents: payload.recentFollowupIntents
   });
@@ -311,7 +375,9 @@ function generatePaidDomainConciergeReply(params) {
     pitfall: suggestedAtoms.pitfall || spec.pitfall,
     followupQuestion: suggestedAtoms.question || buildFollowupQuestion(domainIntent, conciergeContext),
     followupIntent,
-    repeatedFollowupIntent
+    repeatedFollowupStreak,
+    recentResponseHints: payload.recentResponseHints,
+    recoverySignal: payload.recoverySignal === true
   });
 
   return {

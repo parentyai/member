@@ -137,6 +137,21 @@ function detectRecoverySignal(text) {
   return /(違う|ちがう|違います|いや|そうじゃない|それじゃない|誤解|訂正|修正|じゃなくて)/i.test(normalized);
 }
 
+function resolveRecoveryFollowupIntent(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return null;
+  const docsPattern = /(書類|必要書類|持ち物|証明書|提出物|何が必要|何を用意)/i;
+  const appointmentPattern = /(予約|アポ|面談|窓口|来店)/i;
+  const nextStepPattern = /(後は何|あとは何|次は|つぎは|何から|どう進め|それで)/i;
+
+  if (docsPattern.test(normalized) && /(じゃなくて|ではなく|じゃない|違う)/.test(normalized)) return 'docs_required';
+  if (appointmentPattern.test(normalized) && /(じゃなくて|ではなく|じゃない|違う)/.test(normalized)) return 'appointment_needed';
+  if (docsPattern.test(normalized)) return 'docs_required';
+  if (appointmentPattern.test(normalized)) return 'appointment_needed';
+  if (nextStepPattern.test(normalized)) return 'next_step';
+  return null;
+}
+
 function countUnresolvedTasks(snapshot) {
   const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
   let count = 0;
@@ -156,6 +171,7 @@ function computeContextCarryScore(params) {
   if (payload.recoverySignal === true) score += 0.1;
   if (typeof payload.contextResumeDomain === 'string' && payload.contextResumeDomain.trim()) score += 0.2;
   if (typeof payload.followupIntent === 'string' && payload.followupIntent.trim()) score += 0.1;
+  if (typeof payload.recoveryFollowupIntent === 'string' && payload.recoveryFollowupIntent.trim()) score += 0.05;
   if (Number.isFinite(Number(payload.unresolvedTaskCount)) && Number(payload.unresolvedTaskCount) > 0) score += 0.05;
   if (Number.isFinite(Number(payload.recentAssistantCommitmentCount)) && Number(payload.recentAssistantCommitmentCount) > 0) {
     score += 0.05;
@@ -207,7 +223,9 @@ function buildConversationPacket(params) {
   const detectedFollowupIntent = followupIntentDecision && typeof followupIntentDecision.followupIntent === 'string'
     ? followupIntentDecision.followupIntent
     : null;
+  const recoveryFollowupIntent = recoverySignal ? resolveRecoveryFollowupIntent(messageText) : null;
   const followupIntent = detectedFollowupIntent
+    || recoveryFollowupIntent
     || ((contextResume && normalizedConversationIntent !== 'general') ? 'next_step' : null);
   const contextCarryScore = computeContextCarryScore({
     contextResume,
@@ -216,6 +234,7 @@ function buildConversationPacket(params) {
     recoverySignal,
     contextResumeDomain: contextResume ? recentDomain : null,
     followupIntent,
+    recoveryFollowupIntent,
     unresolvedTaskCount,
     recentAssistantCommitmentCount: recentHistory.assistantCommitments.length,
     recentFollowupIntentCount: recentHistory.recentFollowupIntents.length
@@ -240,6 +259,7 @@ function buildConversationPacket(params) {
     recoverySignal,
     contextResumeDomain: contextResume ? recentDomain : null,
     followupIntent,
+    recoveryFollowupIntent,
     lowInformationMessage,
     unresolvedTaskCount,
     contextCarryScore,
