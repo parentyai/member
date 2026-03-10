@@ -404,7 +404,7 @@ function resolvePaidOrchestratorEnabled() {
 }
 
 function resolveV1ChannelEdgeEnabled() {
-  return resolveBooleanEnvFlag('ENABLE_V1_CHANNEL_EDGE', false);
+  return resolveBooleanEnvFlag('ENABLE_V1_CHANNEL_EDGE', true);
 }
 
 function resolveV1FastSlowDispatchEnabled() {

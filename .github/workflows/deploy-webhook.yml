@@ -40,6 +40,7 @@ env:
   LLM_FEATURE_FLAG: ${{ vars.LLM_FEATURE_FLAG }}
   OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
   ENABLE_PAID_ORCHESTRATOR_V2: ${{ vars.ENABLE_PAID_ORCHESTRATOR_V2 }}
+  ENABLE_V1_CHANNEL_EDGE: ${{ vars.ENABLE_V1_CHANNEL_EDGE }}
 
 jobs:
   deploy-webhook:
@@ -63,6 +64,7 @@ jobs:
       LLM_FEATURE_FLAG: ${{ vars.LLM_FEATURE_FLAG }}
       OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
       ENABLE_PAID_ORCHESTRATOR_V2: ${{ vars.ENABLE_PAID_ORCHESTRATOR_V2 }}
+      ENABLE_V1_CHANNEL_EDGE: ${{ vars.ENABLE_V1_CHANNEL_EDGE }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -258,7 +260,19 @@ jobs:
 
           WEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"
           IMAGE="us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/cloud-run-source-deploy/${WEBHOOK_SERVICE_NAME}:${GITHUB_SHA}"
-          SET_ENV_VARS="ENV_NAME=$ENV_NAME,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,SERVICE_MODE=webhook,LLM_FEATURE_FLAG=$LLM_FEATURE_FLAG,OPENAI_MODEL=$OPENAI_MODEL,ENABLE_V1_OPENAI_RESPONSES=true,ENABLE_PAID_ORCHESTRATOR_V2=$ENABLE_PAID_ORCHESTRATOR_V2"
+          CHANNEL_EDGE_FLAG="${ENABLE_V1_CHANNEL_EDGE:-true}"
+          if ! normalize_bool "$CHANNEL_EDGE_FLAG"; then
+            echo "::error title=Invalid channel edge flag::ENABLE_V1_CHANNEL_EDGE must be true/false"
+            exit 1
+          fi
+          CHANNEL_EDGE_FLAG="$(printf '%s' "$CHANNEL_EDGE_FLAG" | tr '[:upper:]' '[:lower:]' | xargs)"
+          if [ "$CHANNEL_EDGE_FLAG" = "1" ] || [ "$CHANNEL_EDGE_FLAG" = "yes" ] || [ "$CHANNEL_EDGE_FLAG" = "on" ]; then
+            CHANNEL_EDGE_FLAG="true"
+          fi
+          if [ "$CHANNEL_EDGE_FLAG" != "true" ]; then
+            CHANNEL_EDGE_FLAG="false"
+          fi
+          SET_ENV_VARS="ENV_NAME=$ENV_NAME,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,SERVICE_MODE=webhook,LLM_FEATURE_FLAG=$LLM_FEATURE_FLAG,OPENAI_MODEL=$OPENAI_MODEL,ENABLE_V1_OPENAI_RESPONSES=true,ENABLE_V1_CHANNEL_EDGE=$CHANNEL_EDGE_FLAG,ENABLE_PAID_ORCHESTRATOR_V2=$ENABLE_PAID_ORCHESTRATOR_V2"
           SET_SECRETS="LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest,REDAC_MEMBERSHIP_ID_HMAC_SECRET=REDAC_MEMBERSHIP_ID_HMAC_SECRET:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest"
 
           if normalize_bool "${ENABLE_STRIPE_WEBHOOK:-0}"; then
@@ -286,7 +300,7 @@ jobs:
             --service-name "$WEBHOOK_SERVICE_NAME" \
             --project-id "$GCP_PROJECT_ID" \
             --region "$GCP_REGION" \
-            --required-env "SERVICE_MODE,LLM_FEATURE_FLAG,OPENAI_MODEL,ENABLE_V1_OPENAI_RESPONSES,ENABLE_PAID_ORCHESTRATOR_V2" \
+            --required-env "SERVICE_MODE,LLM_FEATURE_FLAG,OPENAI_MODEL,ENABLE_V1_OPENAI_RESPONSES,ENABLE_V1_CHANNEL_EDGE,ENABLE_PAID_ORCHESTRATOR_V2" \
             --required-secret-env "OPENAI_API_KEY,LINE_CHANNEL_SECRET,LINE_CHANNEL_ACCESS_TOKEN,REDAC_MEMBERSHIP_ID_HMAC_SECRET"
 
       - name: Verify webhook single-region uniqueness (post-deploy)

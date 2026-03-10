@@ -39,13 +39,15 @@
       "requirementId": "V2-C-01",
       "sourceSpec": "master_spec_v2",
       "summary": "LINE channel edge full guard (signature/dedupe/redelivery/order/fast-slow/LIFF synthetic)",
-      "status": "partial",
-      "severity": "high",
+      "status": "aligned",
+      "severity": "medium",
       "blastRadius": "webhook_reliability",
-      "recommendedAction": "durable dedupe and ordering guard",
+      "recommendedAction": "keep channel-edge defaults enabled and monitor filter/drop telemetry",
       "evidence": [
         "/Volumes/Arumamihs/Member/src/v1/channel_edge/line/dedupeStore.js:1",
-        "/Volumes/Arumamihs/Member/src/v1/channel_edge/line/orderingGuard.js:1"
+        "/Volumes/Arumamihs/Member/src/v1/channel_edge/line/firestoreEdgeStateStore.js:1",
+        "/Volumes/Arumamihs/Member/src/routes/webhookLine.js:406",
+        "/Volumes/Arumamihs/Member/.github/workflows/deploy-webhook.yml:1"
       ]
     },
     {
