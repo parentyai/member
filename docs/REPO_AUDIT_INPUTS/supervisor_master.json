@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T22:07:44-04:00",
-  "gitCommit": "4e611ca3490305de17fb147658dc6c728168e9d1",
-  "branch": "codex/phase761-domain-followup-naturalness-fix",
-  "sourceDigest": "deb4722dcec2ba6115c1b84af5aad628b8bf36c6afd248790532ff27b6d29653",
+  "generatedAt": "2026-03-09T22:28:35-04:00",
+  "gitCommit": "414a5d7da07e3952a471407442b8b50ad631a35e",
+  "branch": "codex/phase762-batch-casual-followup-directanswer",
+  "sourceDigest": "f985c220f3fd1f262f81e694fd2e9f024143eb486c45864c59b4590a68fd83ec",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

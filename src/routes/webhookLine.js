@@ -2219,6 +2219,8 @@ async function handleAssistantMessage(params) {
     const casual = generatePaidCasualReply({
       messageText: text,
       contextHint: normalizedConversationIntent !== 'general' ? normalizedConversationIntent : '',
+      followupIntent: null,
+      recentResponseHints: [],
       suggestedAtoms: { nextActions: [], pitfall: null, question: null }
     });
     const guardedReply = guardPaidMainReplyText(casual && casual.replyText ? casual.replyText : 'こんにちは。', {
@@ -2699,6 +2701,8 @@ async function handleAssistantMessage(params) {
     const casual = generatePaidCasualReply({
       messageText: text,
       contextHint: normalizedConversationIntent !== 'general' ? normalizedConversationIntent : '',
+      followupIntent: null,
+      recentResponseHints: [],
       suggestedAtoms: opportunityDecision.suggestedAtoms
     });
     const guardedReply = guardPaidMainReplyText(casual && casual.replyText ? casual.replyText : 'こんにちは。', {

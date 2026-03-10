@@ -325,6 +325,8 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
     const casualReply = await deps.generatePaidCasualReply({
       messageText: packet.messageText,
       contextHint: packet.contextResumeDomain || packet.normalizedConversationIntent,
+      followupIntent: packet.followupIntent,
+      recentResponseHints: packet.recentResponseHints,
       suggestedAtoms: { nextActions: [], pitfall: null, question: null }
     });
     candidates.push(buildCasualCandidate(casualReply, packet));
@@ -378,6 +380,8 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
     const casualReply = await deps.generatePaidCasualReply({
       messageText: packet.messageText,
       contextHint: packet.contextResumeDomain || packet.normalizedConversationIntent,
+      followupIntent: packet.followupIntent,
+      recentResponseHints: packet.recentResponseHints,
       suggestedAtoms: { nextActions: [], pitfall: null, question: null }
     });
     candidates.push(buildCasualCandidate(casualReply, packet));
