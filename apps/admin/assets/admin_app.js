@@ -17016,6 +17016,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
     renderLlmResult('llm-quality-replay', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-frontier', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-top-failures', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-counterexamples', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-top-patterns', { ok: false, error: 'no_quality_framework' });
     return;
   }
@@ -17028,6 +17029,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
   const replay = quality.replay && typeof quality.replay === 'object' ? quality.replay : {};
   const frontier = quality.frontier && typeof quality.frontier === 'object' ? quality.frontier : {};
   const topQualityFailures = Array.isArray(quality.top_10_quality_failures) ? quality.top_10_quality_failures : [];
+  const counterexampleQueue = Array.isArray(quality.counterexampleQueue) ? quality.counterexampleQueue : [];
   const topLoopCases = Array.isArray(quality.top_10_loop_cases) ? quality.top_10_loop_cases : [];
   const topContextLossCases = Array.isArray(quality.top_10_context_loss_cases) ? quality.top_10_context_loss_cases : [];
   const topJapaneseServiceFailures = Array.isArray(quality.top_10_japanese_service_failures) ? quality.top_10_japanese_service_failures : [];
@@ -17088,6 +17090,13 @@ function renderLlmQualityFrameworkDashboard(summary) {
   renderLlmResult('llm-quality-top-failures', {
     ok: true,
     top_10_quality_failures: topQualityFailures
+  });
+  renderLlmResult('llm-quality-counterexamples', {
+    ok: true,
+    openCount: Number.isFinite(Number(quality.counterexampleQueueOpenCount))
+      ? Number(quality.counterexampleQueueOpenCount)
+      : counterexampleQueue.length,
+    queue: counterexampleQueue.slice(0, 10)
   });
   renderLlmResult('llm-quality-top-patterns', {
     ok: true,

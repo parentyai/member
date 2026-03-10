@@ -646,6 +646,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
   - `Benchmark Registry`
   - `Replay / Perturbation`
   - `Quality-Latency-Cost Frontier`
+  - `Counterexample Queue`
 
 ### ロールバック
 1. `catchup:gate:pr` から `llm:quality:gate` を外す（緊急時）。

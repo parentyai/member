@@ -105,6 +105,7 @@
   - Benchmark Registry
   - Replay / Perturbation
   - Quality-Latency-Cost Frontier
+  - Counterexample Queue
 
 ## Merge Gate
 - required artifacts:
