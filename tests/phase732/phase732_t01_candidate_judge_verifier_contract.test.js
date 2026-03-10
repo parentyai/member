@@ -65,3 +65,24 @@ test('phase732: verifier converts weak evidence answers into clarify/hedged outp
   assert.ok(hedged.selected.replyText.includes('最終確認'));
   assert.ok(hedged.contradictionFlags.includes('weak_evidence'));
 });
+
+test('phase732: verifier clarify reply stays domain-aware for follow-up intents and avoids repeated generic line', () => {
+  const genericLine = '対象を絞って案内したいので、いま一番気になっている手続きを1つ教えてください。';
+  const clarify = verifyCandidate({
+    packet: {
+      normalizedConversationIntent: 'ssn',
+      followupIntent: 'docs_required',
+      recentResponseHints: [genericLine],
+      recentAssistantCommitments: [genericLine]
+    },
+    selected: {
+      id: 'grounded_candidate',
+      kind: 'grounded_candidate',
+      replyText: '書類を用意してください。'
+    },
+    evidenceSufficiency: 'clarify'
+  });
+  assert.equal(clarify.verificationOutcome, 'clarify');
+  assert.ok(/SSN|在留/.test(clarify.selected.replyText));
+  assert.equal(clarify.selected.replyText.includes(genericLine), false);
+});
