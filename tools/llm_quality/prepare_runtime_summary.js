@@ -25,6 +25,19 @@ function writeJson(filePath, value) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function parseNumber(value, fallback) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return num;
+}
+
+function toMillis(value) {
+  if (!value) return 0;
+  const date = new Date(value);
+  const ms = date.getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
 function hasQualityFramework(payload) {
   return Boolean(
     payload
@@ -44,21 +57,32 @@ function main(argv) {
   const seedPath = args.seed
     ? path.resolve(process.cwd(), String(args.seed))
     : path.resolve(process.cwd(), 'tools', 'llm_quality', 'fixtures', 'usage_summary_candidate.v1.json');
+  const refreshRequested = String(args.refresh || '').toLowerCase() === 'true' || args.refresh === true;
+  const maxAgeMinutes = Math.max(0, parseNumber(args['max-age-minutes'], 30));
+  const now = Date.now();
 
   let mode = 'seeded_from_fixture';
   if (fs.existsSync(outPath)) {
     try {
       const existing = readJson(outPath);
       if (hasQualityFramework(existing)) {
-        mode = 'existing_runtime_summary_kept';
-        const result = {
-          ok: true,
-          mode,
-          outputPath: outPath,
-          seedPath
-        };
-        process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-        return 0;
+        const preparedAtMs = toMillis(existing.preparedAt);
+        const ageMinutes = preparedAtMs > 0 ? ((now - preparedAtMs) / 60000) : Number.POSITIVE_INFINITY;
+        const stale = ageMinutes > maxAgeMinutes;
+        if (!refreshRequested && !stale) {
+          mode = 'existing_runtime_summary_kept';
+          const result = {
+            ok: true,
+            mode,
+            outputPath: outPath,
+            seedPath,
+            maxAgeMinutes,
+            ageMinutes: Math.round(ageMinutes * 100) / 100
+          };
+          process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+          return 0;
+        }
+        mode = refreshRequested ? 'forced_refresh_from_seed' : 'existing_stale_reseeded';
       }
     } catch (_) {
       mode = 'existing_invalid_reseeded';
@@ -85,7 +109,8 @@ function main(argv) {
     ok: true,
     mode,
     outputPath: outPath,
-    seedPath
+    seedPath,
+    maxAgeMinutes
   }, null, 2)}\n`);
   return 0;
 }

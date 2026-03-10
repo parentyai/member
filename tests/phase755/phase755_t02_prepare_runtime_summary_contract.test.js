@@ -32,7 +32,8 @@ test('phase755: runtime summary prepare keeps existing valid summary', () => {
   const outPath = path.join(ROOT, 'tmp', 'phase755_existing_runtime_summary.json');
   const seed = JSON.parse(fs.readFileSync(SEED_PATH, 'utf8'));
   const existing = Object.assign({}, seed, {
-    runtimeSummarySource: 'existing_runtime_summary_kept'
+    runtimeSummarySource: 'existing_runtime_summary_kept',
+    preparedAt: new Date().toISOString()
   });
   fs.writeFileSync(outPath, `${JSON.stringify(existing, null, 2)}\n`);
 
@@ -50,4 +51,56 @@ test('phase755: runtime summary prepare keeps existing valid summary', () => {
   assert.equal(output.mode, 'existing_runtime_summary_kept');
   const after = JSON.parse(fs.readFileSync(outPath, 'utf8'));
   assert.equal(after.runtimeSummarySource, 'existing_runtime_summary_kept');
+});
+
+test('phase755: runtime summary prepare reseeds stale summary by default', () => {
+  const outPath = path.join(ROOT, 'tmp', 'phase755_stale_runtime_summary.json');
+  const seed = JSON.parse(fs.readFileSync(SEED_PATH, 'utf8'));
+  const stale = Object.assign({}, seed, {
+    runtimeSummarySource: 'existing_runtime_summary_kept',
+    preparedAt: '2020-01-01T00:00:00.000Z'
+  });
+  fs.writeFileSync(outPath, `${JSON.stringify(stale, null, 2)}\n`);
+
+  const run = spawnSync('node', [
+    'tools/llm_quality/prepare_runtime_summary.js',
+    '--output', 'tmp/phase755_stale_runtime_summary.json',
+    '--seed', 'tools/llm_quality/fixtures/usage_summary_candidate.v1.json',
+    '--max-age-minutes', '30'
+  ], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  });
+
+  assert.equal(run.status, 0, run.stderr || run.stdout);
+  const output = JSON.parse(String(run.stdout || '{}'));
+  assert.equal(output.mode, 'existing_stale_reseeded');
+  const after = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+  assert.equal(after.runtimeSummarySource, 'existing_stale_reseeded');
+});
+
+test('phase755: runtime summary prepare supports forced refresh', () => {
+  const outPath = path.join(ROOT, 'tmp', 'phase755_forced_refresh_runtime_summary.json');
+  const seed = JSON.parse(fs.readFileSync(SEED_PATH, 'utf8'));
+  const existing = Object.assign({}, seed, {
+    runtimeSummarySource: 'existing_runtime_summary_kept',
+    preparedAt: new Date().toISOString()
+  });
+  fs.writeFileSync(outPath, `${JSON.stringify(existing, null, 2)}\n`);
+
+  const run = spawnSync('node', [
+    'tools/llm_quality/prepare_runtime_summary.js',
+    '--output', 'tmp/phase755_forced_refresh_runtime_summary.json',
+    '--seed', 'tools/llm_quality/fixtures/usage_summary_candidate.v1.json',
+    '--refresh', 'true'
+  ], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  });
+
+  assert.equal(run.status, 0, run.stderr || run.stdout);
+  const output = JSON.parse(String(run.stdout || '{}'));
+  assert.equal(output.mode, 'forced_refresh_from_seed');
+  const after = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+  assert.equal(after.runtimeSummarySource, 'forced_refresh_from_seed');
 });
