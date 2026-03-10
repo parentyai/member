@@ -7,22 +7,39 @@ function evaluateRisk(manifest) {
   const payload = manifest && typeof manifest === 'object' ? manifest : {};
   const fixtures = Array.isArray(payload.fixtures) ? payload.fixtures : [];
   const counts = { low: 0, medium: 0, high: 0, unknown: 0 };
+  const hardGateCounts = { low: 0, medium: 0, high: 0, unknown: 0 };
+  const eligibleFixtures = [];
+  const excludedFixtures = [];
   fixtures.forEach((fixture) => {
     const risk = fixture && typeof fixture.contaminationRisk === 'string'
       ? fixture.contaminationRisk.trim().toLowerCase()
       : 'unknown';
     if (Object.prototype.hasOwnProperty.call(counts, risk)) counts[risk] += 1;
     else counts.unknown += 1;
+    const id = fixture && typeof fixture.id === 'string' ? fixture.id : null;
+    const isHighRisk = risk === 'high';
+    if (isHighRisk) {
+      excludedFixtures.push({ id, risk });
+      return;
+    }
+    eligibleFixtures.push({ id, risk });
+    if (Object.prototype.hasOwnProperty.call(hardGateCounts, risk)) hardGateCounts[risk] += 1;
+    else hardGateCounts.unknown += 1;
   });
   const overall = counts.high > 0 ? 'high' : (counts.medium > 0 ? 'medium' : 'low');
+  const hardGateOverall = hardGateCounts.high > 0
+    ? 'high'
+    : (hardGateCounts.medium > 0 ? 'medium' : 'low');
   return {
     overall,
     counts,
-    hardGateEligibleFixtureIds: fixtures
-      .filter((fixture) => fixture && typeof fixture.id === 'string' && String(fixture.contaminationRisk || '').toLowerCase() !== 'high')
+    hardGateOverall,
+    hardGateCounts,
+    hardGateEligibleFixtureIds: eligibleFixtures
+      .filter((fixture) => typeof fixture.id === 'string')
       .map((fixture) => fixture.id),
-    excludedFixtureIds: fixtures
-      .filter((fixture) => fixture && typeof fixture.id === 'string' && String(fixture.contaminationRisk || '').toLowerCase() === 'high')
+    excludedFixtureIds: excludedFixtures
+      .filter((fixture) => typeof fixture.id === 'string')
       .map((fixture) => fixture.id)
   };
 }

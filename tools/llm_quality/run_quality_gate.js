@@ -167,7 +167,8 @@ function main(argv) {
   candidateMetrics.benchmark = Object.assign({}, candidateMetrics.benchmark || {}, {
     version: manifest.version,
     frozen: manifest.frozen === true,
-    contaminationRisk: contamination.overall,
+    contaminationRisk: contamination.hardGateOverall || contamination.overall,
+    contaminationRegistryRisk: contamination.overall,
     artifactHash: manifest.artifactHash || null
   });
 
@@ -189,7 +190,9 @@ function main(argv) {
   const highRiskMixedIntoHardGate = Array.isArray(contamination.excludedFixtureIds)
     && contamination.excludedFixtureIds.some((id) => (contamination.hardGateEligibleFixtureIds || []).includes(id));
   if (highRiskMixedIntoHardGate) failures.push('contamination_high_risk_mixed_into_hard_gate');
-  if (contamination.overall === 'high') warnings.push('contamination_risk_high_registry');
+  if ((contamination.hardGateOverall || contamination.overall) === 'high') {
+    warnings.push('contamination_risk_high_hard_gate');
+  }
   if (sliceGate.pass !== true) failures.push('slice_gate_failed');
   if (frontier.pass !== true) failures.push('frontier_gate_failed');
   if (candidateScorecard.hardGate.pass !== true) failures.push('quality_hard_gate_failed');
