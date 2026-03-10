@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T16:29:41.178Z",
-  "gitCommit": "6bf27124de39748292d860d9cb41492b1ac1c09d",
+  "generatedAt": "2026-03-10T16:37:33.237Z",
+  "gitCommit": "f91d5f52862091bd0164007d1098b7f337594f90",
   "branch": "codex/yaml-core-facts-gate-r791",
-  "sourceDigest": "0e72248cc674e25db91277fa8e05d15a44228a6f591c6a7a8dab80c4380bb277",
+  "sourceDigest": "f32af8c75a6be4307308f6e770c28637d62e28add651882bf40d58afb7738a46",
   "counts": {
     "endpoints": 290,
     "routes": 129,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "7c01947d2ef3a03560098d4b5de21f93983dcad7f5265a27316c8f2c2dd87a6e",
+      "sha256": "9b8b280dad505e429621f582d746f502e41aa1a258ddd254e776218358471e43",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "2f67a4c2edd6d97f4551ee4604ed17b50f54d95dd88475ed9be241b740d8d457",
+      "sha256": "c37f238554436ebe68b72f4df0bdbeb05e551ebbe88fc90beef17a96fde8a9b5",
       "bytes": 487
     },
     {
@@ -151,7 +151,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "51dc068ace5d67fe1bb31a52a11671436ae3126edc41d41ac183a1d60488e0e9",
+      "sha256": "e92122fdb02aff165d7f605da00164767a9d43ac9e0c25f7c1f52fae2101389b",
       "bytes": 740
     },
     {
@@ -166,12 +166,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "7072c007c8265108842070bc7274ad593e4296d457fc9ef05e4aa2869a5cbc31",
+      "sha256": "100ef7e85e0f27d39e1c70d833cd7de0f8aadd4c45aecdc58767b0db828c01bc",
       "bytes": 3548
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "fa7e941714ea84d2702702722252f7f543dee66fd38146bfd99de592b3a6465e",
+      "sha256": "1fea9e79ccca922894f897e4e04417adb2953d0bc4b975b6057e1cad1f81d0f7",
       "bytes": 2417
     },
     {

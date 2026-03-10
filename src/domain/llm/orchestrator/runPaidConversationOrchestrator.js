@@ -134,6 +134,14 @@ function applyCoreFactsGateToReadiness(readiness, gate) {
   });
 }
 
+function resolveReadinessClarifyText(selected, requiredCoreFacts) {
+  const coreFactsClarify = normalizeText(requiredCoreFacts && requiredCoreFacts.clarifyText);
+  if (coreFactsClarify) return coreFactsClarify;
+  const selectedReply = normalizeText(selected && selected.replyText);
+  if (selectedReply) return selectedReply;
+  return 'まず対象手続きと期限を1つずつ教えてください。そこから次の一手を絞ります。';
+}
+
 const DOMAIN_CLARIFY_VARIANTS = Object.freeze({
   school: [
     '学校手続きを進めるため、学年か希望エリアを1つ教えてください。',
@@ -705,12 +713,16 @@ async function runPaidConversationOrchestrator(params) {
   });
   const withCoreFactsGate = applyCoreFactsGateToReadiness(readinessResult, requiredCoreFacts);
   const effectiveReadiness = applyActionGatewayToReadiness(withCoreFactsGate, actionGatewayDecision, actionGatewayEnabled);
+  const readinessClarifyText = effectiveReadiness.decision === 'clarify'
+    ? resolveReadinessClarifyText(verified.selected, requiredCoreFacts)
+    : '';
   const finalized = finalizeCandidate({
     selected: verified.selected,
     verificationOutcome: verified.verificationOutcome,
     contradictionFlags: verified.contradictionFlags,
     readinessDecision: effectiveReadiness.decision,
     readinessSafeResponseMode: effectiveReadiness.safeResponseMode,
+    readinessClarifyText,
     fallbackText: '状況を整理しながら進めます。優先する手続きを1つ決めましょう。'
   });
 

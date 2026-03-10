@@ -10,6 +10,14 @@ const DOMAIN_CRITICAL_FACTS = Object.freeze({
   general: ['assignment_type', 'destination_state', 'destination_city']
 });
 
+const DOMAIN_CLARIFY_TEXT = Object.freeze({
+  ssn: 'SSNを正確に案内するため、在留ステータスか最寄り窓口の地域を教えてください。',
+  banking: '口座手続きを正確に案内するため、利用予定の銀行か来店地域を教えてください。',
+  school: '学校手続きを正確に案内するため、対象学年か希望エリアを教えてください。',
+  housing: '住まい探しを具体化するため、希望エリアか入居時期を教えてください。',
+  general: 'まず対象手続きと期限を1つずつ教えてください。そこから次の一手を絞ります。'
+});
+
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
@@ -188,6 +196,7 @@ function evaluateRequiredCoreFactsGate(params) {
   let decision = 'allow';
   const reasonCodes = [];
   let logOnly = false;
+  let clarifyText = '';
 
   if (!shouldEvaluate) {
     logOnly = true;
@@ -199,9 +208,11 @@ function evaluateRequiredCoreFactsGate(params) {
     if (shouldEnforce && criticalMissingFacts.length >= 2) {
       decision = 'clarify';
       reasonCodes.push('missing_required_core_facts');
+      clarifyText = DOMAIN_CLARIFY_TEXT[domainIntent] || DOMAIN_CLARIFY_TEXT.general;
     } else if (shouldEnforce && missingFacts.length >= 7) {
       decision = 'clarify';
       reasonCodes.push('missing_required_core_facts');
+      clarifyText = DOMAIN_CLARIFY_TEXT[domainIntent] || DOMAIN_CLARIFY_TEXT.general;
     } else {
       logOnly = true;
       reasonCodes.push('core_facts_log_only');
@@ -220,6 +231,7 @@ function evaluateRequiredCoreFactsGate(params) {
     completeness,
     missingCount: missingFacts.length,
     criticalMissingCount: criticalMissingFacts.length,
+    clarifyText,
     reasonCodes: reasonCodes.slice(0, 12)
   };
 }

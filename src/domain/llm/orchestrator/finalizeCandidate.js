@@ -39,6 +39,7 @@ function finalizeCandidate(params) {
   const contradictionFlags = Array.isArray(payload.contradictionFlags) ? payload.contradictionFlags : [];
   const fallbackText = normalizeText(payload.fallbackText)
     || '状況を整理しながら進めます。優先手続きを1つ決めて進めましょう。';
+  const readinessClarifyText = normalizeText(payload.readinessClarifyText);
   const atoms = selected.atoms && typeof selected.atoms === 'object' ? selected.atoms : {};
 
   const guardResult = sanitizePaidMainReply(selected.replyText, {
@@ -56,7 +57,7 @@ function finalizeCandidate(params) {
   const readinessApplied = applyAnswerReadinessDecision({
     decision: readinessDecision,
     replyText: guardedReplyText,
-    clarifyText: 'まず対象手続きと期限を1つずつ教えてください。そこから次の一手を絞ります。',
+    clarifyText: readinessClarifyText || 'まず対象手続きと期限を1つずつ教えてください。そこから次の一手を絞ります。',
     refuseText: 'この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを整理します。'
   });
   const replyText = trimForPaidLineMessage(readinessApplied.replyText) || fallbackText;
