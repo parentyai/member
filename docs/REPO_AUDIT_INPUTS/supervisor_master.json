@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T23:54:09-04:00",
-  "gitCommit": "1ddb49c70556ccf537f24f108a1c161971f2d22d",
-  "branch": "codex/phase771-seed-runtime-signal-coverage",
-  "sourceDigest": "8b5f68176f83030ceb85fdefe1f1d73e71d997f8ad20397fdd0d622c6dc1d39d",
+  "generatedAt": "2026-03-10T00:01:08-04:00",
+  "gitCommit": "c1f50c5d3c695be879913ee8ee6908dcff4da62b",
+  "branch": "codex/phase772-strict-runtime-gate-default",
+  "sourceDigest": "10420228c7f3fbe3c9457ba4a3392e535559a379a9833953a618fb4e79a59803",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
