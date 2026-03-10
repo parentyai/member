@@ -552,6 +552,12 @@ function buildConversationQualitySummary(actionRows) {
   let repeatRiskScoreCount = 0;
   let followupQuestionIncludedSeenCount = 0;
   let pitfallIncludedSeenCount = 0;
+  let followupIntentSeenCount = 0;
+  let followupResolvedCount = 0;
+  let contextResumeSeenCount = 0;
+  let contextResumeHandledCount = 0;
+  let recoveryRiskSeenCount = 0;
+  let recoveryHandledCount = 0;
 
   rows.forEach((row) => {
     const naturalnessVersion = normalizeReason(row && row.conversationNaturalnessVersion ? row.conversationNaturalnessVersion : 'v1');
@@ -578,6 +584,8 @@ function buildConversationQualitySummary(actionRows) {
     const repetitionPrevented = row && row.repetitionPrevented === true;
     const directAnswerApplied = row && row.directAnswerApplied === true;
     const clarifySuppressed = row && row.clarifySuppressed === true;
+    const contextCarryScore = Number.isFinite(Number(row && row.contextCarryScore)) ? Number(row.contextCarryScore) : null;
+    const repeatRiskScore = Number.isFinite(Number(row && row.repeatRiskScore)) ? Number(row.repeatRiskScore) : null;
 
     naturalnessVersions.set(naturalnessVersion, (naturalnessVersions.get(naturalnessVersion) || 0) + 1);
     domainCounts.set(domainIntent, (domainCounts.get(domainIntent) || 0) + 1);
@@ -626,6 +634,28 @@ function buildConversationQualitySummary(actionRows) {
       defaultCasualSeenCount += 1;
       if (routerReason === 'default_casual') defaultCasualCount += 1;
     }
+    if (followupIntent && followupIntent !== 'none') {
+      followupIntentSeenCount += 1;
+      const followupResolved = directAnswerApplied
+        || clarifySuppressed
+        || repetitionPrevented
+        || (contextCarryScore !== null && contextCarryScore >= 0.55);
+      if (followupResolved) followupResolvedCount += 1;
+    }
+    if (typeof row.contextResumeDomain === 'string' && row.contextResumeDomain.trim()) {
+      contextResumeSeenCount += 1;
+      const contextResumeHandled = conversationMode === 'concierge'
+        || routerReason === 'contextual_domain_resume'
+        || directAnswerApplied
+        || (contextCarryScore !== null && contextCarryScore >= 0.6);
+      if (contextResumeHandled) contextResumeHandledCount += 1;
+    }
+    if (repeatRiskScore !== null && repeatRiskScore >= 0.55) {
+      recoveryRiskSeenCount += 1;
+      if (repetitionPrevented || directAnswerApplied || clarifySuppressed) {
+        recoveryHandledCount += 1;
+      }
+    }
     if (row && row.officialOnlySatisfied === true) officialOnlySatisfiedCount += 1;
     if (Number.isFinite(Number(row && row.unsupportedClaimCount))) {
       unsupportedClaimCountTotal += Math.max(0, Number(row.unsupportedClaimCount));
@@ -639,12 +669,12 @@ function buildConversationQualitySummary(actionRows) {
       sourceFreshnessScoreTotal += Number(row.sourceFreshnessScore);
       sourceFreshnessScoreCount += 1;
     }
-    if (Number.isFinite(Number(row && row.contextCarryScore))) {
-      contextCarryScoreTotal += Number(row.contextCarryScore);
+    if (contextCarryScore !== null) {
+      contextCarryScoreTotal += contextCarryScore;
       contextCarryScoreCount += 1;
     }
-    if (Number.isFinite(Number(row && row.repeatRiskScore))) {
-      repeatRiskScoreTotal += Number(row.repeatRiskScore);
+    if (repeatRiskScore !== null) {
+      repeatRiskScoreTotal += repeatRiskScore;
       repeatRiskScoreCount += 1;
     }
     if (rowContradictionFlags.length > 0) contradictionRowCount += 1;
@@ -717,6 +747,15 @@ function buildConversationQualitySummary(actionRows) {
       : 0,
     avgRepeatRiskScore: repeatRiskScoreCount > 0
       ? Math.round((repeatRiskScoreTotal / repeatRiskScoreCount) * 10000) / 10000
+      : 0,
+    followupResolutionRate: followupIntentSeenCount > 0
+      ? Math.round((followupResolvedCount / followupIntentSeenCount) * 10000) / 10000
+      : 0,
+    contextualResumeHandledRate: contextResumeSeenCount > 0
+      ? Math.round((contextResumeHandledCount / contextResumeSeenCount) * 10000) / 10000
+      : 0,
+    recoveryHandledRate: recoveryRiskSeenCount > 0
+      ? Math.round((recoveryHandledCount / recoveryRiskSeenCount) * 10000) / 10000
       : 0,
     defaultCasualRate: defaultCasualSeenCount > 0
       ? Math.round((defaultCasualCount / defaultCasualSeenCount) * 10000) / 10000
@@ -960,6 +999,9 @@ function buildQualityFrameworkSummary(payload) {
   const contextCarryScore = clamp01(conversation.avgContextCarryScore);
   const repeatRiskScore = clamp01(conversation.avgRepeatRiskScore);
   const followupRate = clamp01(conversation.followupQuestionIncludedRate);
+  const followupResolutionRate = clamp01(conversation.followupResolutionRate);
+  const contextualResumeHandledRate = clamp01(conversation.contextualResumeHandledRate);
+  const recoveryHandledRate = clamp01(conversation.recoveryHandledRate);
   const domainConciergeRate = clamp01(conversation.domainIntentConciergeRate);
   const unsupportedClaims = clamp01(1 - Math.min(1, Number(conversation.avgUnsupportedClaimCount || 0)));
   const officialOnlyRate = clamp01(conversation.officialOnlySatisfiedRate);
@@ -975,15 +1017,34 @@ function buildQualityFrameworkSummary(payload) {
     source_authority_freshness: clamp01((sourceAuthority + sourceFreshness) / 2),
     procedural_utility: clamp01((domainConciergeRate + conciseRate + directAnswerRate) / 3),
     next_step_clarity: clamp01((conciseRate + followupRate + repetitionPreventedRate + directAnswerRate) / 4),
-    conversation_continuity: clamp01((1 - defaultCasualRate + domainConciergeRate + contextCarryScore + directAnswerRate + clarifySuppressedRate) / 5),
+    conversation_continuity: clamp01(
+      (
+        1 - defaultCasualRate
+        + domainConciergeRate
+        + contextCarryScore
+        + directAnswerRate
+        + clarifySuppressedRate
+        + followupResolutionRate
+        + contextualResumeHandledRate
+      ) / 7
+    ),
     short_followup_understanding: clamp01((1 - defaultCasualRate + followupRate + contextCarryScore + directAnswerRate) / 4),
-    clarification_quality: clamp01((1 - Math.max(0, verifyClarifyRate - 0.3) + clarifySuppressedRate + directAnswerRate + contextCarryScore) / 4),
+    clarification_quality: clamp01(
+      (
+        1 - Math.max(0, verifyClarifyRate - 0.3)
+        + clarifySuppressedRate
+        + directAnswerRate
+        + contextCarryScore
+        + followupResolutionRate
+        + contextualResumeHandledRate
+      ) / 6
+    ),
     repetition_loop_avoidance: clamp01((1 - legacyTemplateHitRate + repetitionPreventedRate) / 2),
     direct_answer_first: clamp01((directAnswerRate + conciseRate) / 2),
     japanese_naturalness: clamp01(conciseRate),
     japanese_service_quality: clamp01((conciseRate + followupRate + (1 - legacyTemplateHitRate)) / 3),
     keigo_distance: clamp01(conciseRate),
-    empathy: clamp01((followupRate + conciseRate + directAnswerRate + contextCarryScore) / 4),
+    empathy: clamp01((followupRate + conciseRate + directAnswerRate + contextCarryScore + followupResolutionRate) / 5),
     cultural_habit_fit: clamp01((followupRate + domainConciergeRate) / 2),
     line_native_fit: clamp01((conciseRate + directAnswerRate + (1 - retrieveNeededRate)) / 3),
     action_policy_compliance: clamp01(acceptedRate),
@@ -991,10 +1052,27 @@ function buildQualityFrameworkSummary(payload) {
     memory_integrity: clamp01((domainConciergeRate + (1 - defaultCasualRate)) / 2),
     group_chat_privacy: clamp01(1 - directUrlRate),
     minority_persona_robustness: clamp01((followupRate + unsupportedClaims) / 2),
-    misunderstanding_recovery: clamp01((repetitionPreventedRate + directAnswerRate + (1 - repeatRiskScore) + contextCarryScore) / 4),
+    misunderstanding_recovery: clamp01(
+      (
+        repetitionPreventedRate
+        + directAnswerRate
+        + (1 - repeatRiskScore)
+        + contextCarryScore
+        + recoveryHandledRate
+        + followupResolutionRate
+      ) / 6
+    ),
     escalation_appropriateness: clamp01((officialOnlyRate + sourceAuthority) / 2),
     operational_reliability: clamp01(acceptedRate),
-    latency_surface_efficiency: clamp01((conciseRate + (1 - retrieveNeededRate) + (1 - repeatRiskScore) + directAnswerRate) / 4)
+    latency_surface_efficiency: clamp01(
+      (
+        conciseRate
+        + (1 - retrieveNeededRate)
+        + (1 - repeatRiskScore)
+        + directAnswerRate
+        + contextualResumeHandledRate
+      ) / 5
+    )
   };
 
   const dimensions = QUALITY_DIMENSIONS.map((dim) => {
