@@ -83,9 +83,13 @@
       "status": "partial",
       "severity": "high",
       "blastRadius": "privacy_personalization",
-      "recommendedAction": "deprecate legacy snapshot dependency",
+      "recommendedAction": "promote memory_fabric read path and deprecate legacy snapshot dependency",
       "evidence": [
         "/Volumes/Arumamihs/Member/src/v1/memory_fabric/taskMemoryRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/v1/memory_fabric/sessionMemoryRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/v1/memory_fabric/profileMemoryRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/v1/memory_fabric/complianceMemoryRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/usecases/context/buildUserContextSnapshot.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/userContextSnapshotsRepo.js:1"
       ]
     },
@@ -108,13 +112,16 @@
       "status": "partial",
       "severity": "high",
       "blastRadius": "audit_traceability",
-      "recommendedAction": "expand envelope from shadow-write to all required data classes and enforce mode",
+      "recommendedAction": "promote shadow_write data classes to enforced mode and add compliance gate",
       "evidence": [
         "/Volumes/Arumamihs/Member/src/domain/data/universalRecordEnvelope.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/llmActionLogsRepo.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/llmQualityLogsRepo.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/faqAnswerLogsRepo.js:1",
-        "/Volumes/Arumamihs/Member/src/repos/firestore/sourceRefsRepo.js:1"
+        "/Volumes/Arumamihs/Member/src/repos/firestore/sourceRefsRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/v1/memory_fabric/taskMemoryRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/v1/evidence_ledger/deliveryRecordsRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/repos/firestore/liffSyntheticEventsRepo.js:1"
       ]
     },
     {

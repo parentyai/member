@@ -3,6 +3,7 @@
 const { normalizeLiffSilentPayload } = require('../v1/channel_edge/line/liffSilentNormalizer');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
 const { createEvent } = require('../repos/firestore/eventsRepo');
+const { appendLiffSyntheticEventRecord } = require('../repos/firestore/liffSyntheticEventsRepo');
 
 async function defaultProcessSyntheticEvent(options) {
   const payload = options && typeof options === 'object' ? options : {};
@@ -34,6 +35,9 @@ async function handleLiffSyntheticEvent(req, res, body, deps) {
   const overrides = deps && typeof deps === 'object' ? deps : {};
   const createEventFn = typeof overrides.createEvent === 'function' ? overrides.createEvent : createEvent;
   const appendAuditLogFn = typeof overrides.appendAuditLog === 'function' ? overrides.appendAuditLog : appendAuditLog;
+  const appendLiffSyntheticEventRecordFn = typeof overrides.appendLiffSyntheticEventRecord === 'function'
+    ? overrides.appendLiffSyntheticEventRecord
+    : appendLiffSyntheticEventRecord;
   const processSyntheticEventFn = typeof overrides.processSyntheticEvent === 'function'
     ? overrides.processSyntheticEvent
     : defaultProcessSyntheticEvent;
@@ -71,6 +75,19 @@ async function handleLiffSyntheticEvent(req, res, body, deps) {
     },
     createdAt: new Date().toISOString()
   });
+  try {
+    await appendLiffSyntheticEventRecordFn({
+      webhookEventId: normalized.syntheticEvent.webhookEventId,
+      traceId: normalized.traceId,
+      lineUserId: normalized.syntheticEvent.source.userId,
+      sourceType: normalized.syntheticEvent.source.type,
+      processStatus: 202,
+      processReason: 'accepted',
+      createdAt: new Date().toISOString()
+    });
+  } catch (_err) {
+    // best effort only
+  }
 
   await appendAuditLogFn({
     actor: normalized.syntheticEvent.source.userId,
@@ -83,7 +100,6 @@ async function handleLiffSyntheticEvent(req, res, body, deps) {
       origin: 'liff_silent_path'
     }
   });
-
   let processResult = null;
   let processError = null;
   try {
@@ -99,6 +115,19 @@ async function handleLiffSyntheticEvent(req, res, body, deps) {
     ? Number(processResult.status)
     : 500;
   const processOk = processError === null && processStatus >= 200 && processStatus < 300;
+  try {
+    await appendLiffSyntheticEventRecordFn({
+      webhookEventId: normalized.syntheticEvent.webhookEventId,
+      traceId: normalized.traceId,
+      lineUserId: normalized.syntheticEvent.source.userId,
+      sourceType: normalized.syntheticEvent.source.type,
+      processStatus,
+      processReason: processError && processError.message ? String(processError.message).slice(0, 160) : (processOk ? 'processed' : 'synthetic_processing_failed'),
+      updatedAt: new Date().toISOString()
+    });
+  } catch (_err) {
+    // best effort only
+  }
   await appendAuditLogFn({
     actor: normalized.syntheticEvent.source.userId,
     action: processOk

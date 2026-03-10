@@ -16,9 +16,9 @@
 | llm_quality_logs | shadow_write | `src/repos/firestore/llmQualityLogsRepo.js` |
 | faq_answer_logs | shadow_write | `src/repos/firestore/faqAnswerLogsRepo.js` |
 | source_refs | shadow_write | `src/repos/firestore/sourceRefsRepo.js` |
-| memory_* | planned | `src/v1/memory_fabric/*` |
-| delivery_records | planned | `src/v1/evidence_ledger/deliveryRecordsRepo.js` |
-| liff_synthetic_events | planned | `src/routes/liffSyntheticEvent.js` |
+| memory_* | shadow_write | `src/v1/memory_fabric/*` |
+| delivery_records | shadow_write | `src/v1/evidence_ledger/deliveryRecordsRepo.js` |
+| liff_synthetic_events | shadow_write | `src/routes/liffSyntheticEvent.js`, `src/repos/firestore/liffSyntheticEventsRepo.js` |
 
 ## Retention / deletion / masking / access / audit matrix template
 | data_class | retention_tag | deletion_policy | masking_policy | access_scope | audit_required |

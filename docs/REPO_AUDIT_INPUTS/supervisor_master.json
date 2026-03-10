@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T09:45:08-04:00",
-  "gitCommit": "c95f6aaac68a07389b87cce4531f0623d6cbf3c6",
-  "branch": "codex/spec-v2-pr9-channel-edge-default",
-  "sourceDigest": "40b2d2b977532bc5da2f5a261203b2ce1a0dd8fe4d46cc13154e35633375758f",
+  "generatedAt": "2026-03-10T10:02:22-04:00",
+  "gitCommit": "76fd138816c03d13da9c0e7205fc381cd81d03fd",
+  "branch": "codex/spec-v2-pr10-envelope-memory-shadow",
+  "sourceDigest": "6c068748c4a1f02f2cb0666c417ee491d87888b5622e78777ce3203007f42dc5",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
