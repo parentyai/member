@@ -5,6 +5,7 @@
     "automationConfigRepo",
     "automationRunsRepo",
     "billingLifecycleAutomationLogsRepo",
+    "canonicalCoreOutboxRepo",
     "cityPackBulletinsRepo",
     "cityPackFeedbackRepo",
     "cityPackMetricsDailyRepo",

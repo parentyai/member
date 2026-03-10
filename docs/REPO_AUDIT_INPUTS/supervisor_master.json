@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T15:28:40-04:00",
-  "gitCommit": "5c8839be82387406dc5022fd5527c791c2c235eb",
-  "branch": "codex/data-c03-knowledge-lifecycle-r795",
-  "sourceDigest": "8403320982199e950648ae47ffd3b664543666d474a5e93eabeb6114ed612c37",
+  "generatedAt": "2026-03-10T15:56:51-04:00",
+  "gitCommit": "2e0921ea6276e2253a93d1aa6295abe637c7392f",
+  "branch": "codex/data-c01-canonical-core-bridge-r793",
+  "sourceDigest": "744b6da8e391f849c8c3d296bab486ce50c53f427b314fa0d0fe4a6a74a6e964",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

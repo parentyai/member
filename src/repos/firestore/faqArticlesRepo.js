@@ -1,6 +1,9 @@
 'use strict';
 
 const { getDb } = require('../../infra/firestore');
+const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
+const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
+const { appendCanonicalCoreOutboxEvent } = require('./canonicalCoreOutboxRepo');
 const {
   deriveKnowledgeLifecycleState,
   resolveKnowledgeLifecycleBucket,
@@ -13,6 +16,50 @@ const COLLECTION = 'faq_articles';
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 const ALLOWED_STATUSES = new Set(['active', 'draft', 'disabled']);
 const ALLOWED_RISK_LEVELS = new Set(['low', 'medium', 'high']);
+
+function resolveFaqArticleAuthorityTier(article) {
+  const payload = article && typeof article === 'object' ? article : {};
+  const risk = normalizeRiskLevel(payload.riskLevel);
+  if (risk === 'high') return 'T1_OFFICIAL_OPERATION';
+  if (risk === 'medium') return 'T2_PUBLIC_DATA';
+  return 'T3_VENDOR';
+}
+
+function resolveFaqArticleBindingLevel(article) {
+  const payload = article && typeof article === 'object' ? article : {};
+  const risk = normalizeRiskLevel(payload.riskLevel);
+  if (risk === 'high') return 'POLICY';
+  return 'REFERENCE';
+}
+
+function buildFaqArticleEnvelope(articleId, article, existingEnvelope) {
+  const payload = article && typeof article === 'object' ? article : {};
+  const existing = existingEnvelope && typeof existingEnvelope === 'object' ? existingEnvelope : {};
+  const sourceSnapshotRef = typeof payload.versionSemver === 'string' && payload.versionSemver.trim()
+    ? `faq_article:${payload.versionSemver.trim()}`
+    : (typeof payload.version === 'string' && payload.version.trim()
+      ? `faq_article:${payload.version.trim()}`
+      : 'faq_article:unknown');
+  return buildUniversalRecordEnvelope({
+    recordId: articleId,
+    recordType: 'knowledge_object',
+    sourceSystem: 'member_firestore',
+    sourceSnapshotRef,
+    effectiveFrom: payload.createdAt || new Date().toISOString(),
+    effectiveTo: payload.validUntil || null,
+    authorityTier: resolveFaqArticleAuthorityTier(payload),
+    bindingLevel: resolveFaqArticleBindingLevel(payload),
+    jurisdiction: typeof payload.locale === 'string' && payload.locale.trim() ? payload.locale.trim() : null,
+    status: payload.status || 'draft',
+    retentionTag: 'faq_articles_365d',
+    piiClass: 'none',
+    accessScope: ['operator', 'retrieval'],
+    maskingPolicy: 'none',
+    deletionPolicy: 'retention_policy_v1',
+    createdAt: existing.created_at || payload.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+}
 
 function normalizeTokens(value) {
   if (typeof value !== 'string') return [];
@@ -329,14 +376,30 @@ async function createArticle(data) {
   const db = getDb();
   const now = new Date().toISOString();
   const lifecycle = normalizeKnowledgeLifecycleFields(data, 'candidate', { strict: true });
-  const record = Object.assign({}, data, {
+  const baseRecord = Object.assign({}, data, {
     knowledgeLifecycleState: lifecycle.knowledgeLifecycleState,
     knowledgeLifecycleBucket: lifecycle.knowledgeLifecycleBucket,
     createdAt: now,
     updatedAt: now
   });
   const docRef = db.collection(COLLECTION).doc();
+  const recordEnvelope = buildFaqArticleEnvelope(docRef.id, baseRecord, null);
+  assertRecordEnvelopeCompliance({ dataClass: 'faq_articles', recordEnvelope });
+  const record = Object.assign({}, baseRecord, { recordEnvelope });
   await docRef.set(record);
+  await appendCanonicalCoreOutboxEvent({
+    objectType: 'knowledge_object',
+    objectId: docRef.id,
+    eventType: 'upsert',
+    recordEnvelope,
+    payloadSummary: {
+      lifecycleState: lifecycle.knowledgeLifecycleState,
+      lifecycleBucket: lifecycle.knowledgeLifecycleBucket,
+      status: record.status,
+      locale: record.locale,
+      riskLevel: record.riskLevel
+    }
+  });
   return { id: docRef.id };
 }
 
@@ -370,14 +433,35 @@ async function updateArticle(id, patch) {
     fromState,
     toState: lifecycle.knowledgeLifecycleState
   });
+  const merged = Object.assign({}, current || {}, patch || {}, {
+    knowledgeLifecycleState: lifecycle.knowledgeLifecycleState,
+    knowledgeLifecycleBucket: lifecycle.knowledgeLifecycleBucket,
+    updatedAt: now
+  });
+  const recordEnvelope = buildFaqArticleEnvelope(id, merged, current && current.recordEnvelope);
+  assertRecordEnvelopeCompliance({ dataClass: 'faq_articles', recordEnvelope });
   await db.collection(COLLECTION).doc(id).set(
     Object.assign({}, patch, {
       knowledgeLifecycleState: lifecycle.knowledgeLifecycleState,
       knowledgeLifecycleBucket: lifecycle.knowledgeLifecycleBucket,
+      recordEnvelope,
       updatedAt: now
     }),
     { merge: true }
   );
+  await appendCanonicalCoreOutboxEvent({
+    objectType: 'knowledge_object',
+    objectId: id,
+    eventType: 'upsert',
+    recordEnvelope,
+    payloadSummary: {
+      lifecycleState: lifecycle.knowledgeLifecycleState,
+      lifecycleBucket: lifecycle.knowledgeLifecycleBucket,
+      status: merged.status,
+      locale: merged.locale,
+      riskLevel: merged.riskLevel
+    }
+  });
   return { id };
 }
 
@@ -385,17 +469,41 @@ async function deleteArticle(id) {
   if (!id) throw new Error('article id required');
   const db = getDb();
   const now = new Date().toISOString();
+  const current = await getArticle(id);
   const lifecycle = normalizeKnowledgeLifecycleFields({ status: 'disabled' }, 'deprecated', { strict: false });
+  const merged = Object.assign({}, current || {}, {
+    status: 'disabled',
+    knowledgeLifecycleState: lifecycle.knowledgeLifecycleState,
+    knowledgeLifecycleBucket: lifecycle.knowledgeLifecycleBucket,
+    deletedAt: now,
+    updatedAt: now
+  });
+  const recordEnvelope = buildFaqArticleEnvelope(id, merged, current && current.recordEnvelope);
+  assertRecordEnvelopeCompliance({ dataClass: 'faq_articles', recordEnvelope });
   await db.collection(COLLECTION).doc(id).set(
     {
       status: 'disabled',
       knowledgeLifecycleState: lifecycle.knowledgeLifecycleState,
       knowledgeLifecycleBucket: lifecycle.knowledgeLifecycleBucket,
+      recordEnvelope,
       deletedAt: now,
       updatedAt: now
     },
     { merge: true }
   );
+  await appendCanonicalCoreOutboxEvent({
+    objectType: 'knowledge_object',
+    objectId: id,
+    eventType: 'delete',
+    recordEnvelope,
+    payloadSummary: {
+      lifecycleState: lifecycle.knowledgeLifecycleState,
+      lifecycleBucket: lifecycle.knowledgeLifecycleBucket,
+      status: 'disabled',
+      locale: merged.locale,
+      riskLevel: merged.riskLevel
+    }
+  });
   return { id };
 }
 
