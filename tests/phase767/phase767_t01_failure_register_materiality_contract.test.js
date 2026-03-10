@@ -17,23 +17,26 @@ test('phase767: materiality filter drops zero-value japanese/line failure rows',
     top_10_japanese_service_failures: [
       { signal: 'legacyTemplateHitRate', value: 0 },
       { signal: 'defaultCasualRate', value: 0.009 },
-      { signal: 'conciseModeAppliedRate', value: 0.05 },
+      { signal: 'conciseModeAppliedRate', value: 0.12 },
+      { signal: 'followupQuestionIncludedRate', value: 0.19 },
       { signal: 'followupQuestionIncludedRate', value: 0.9, available: false }
     ],
     top_10_line_fit_failures: [
-      { signal: 'retrieveNeededRate', value: 0 },
-      { signal: 'avgActionCountOverBudget', value: 0.004 },
-      { signal: 'defaultCasualRate', value: 0.02 }
+      { signal: 'retrieveNeededRate', value: 0.24 },
+      { signal: 'avgActionCountOverBudget', value: 0.09 },
+      { signal: 'defaultCasualRate', value: 0.02 },
+      { signal: 'retrieveNeededRate', value: 0.27 }
     ]
   }, 10);
 
   assert.equal(entries.some((row) => row.signal === 'legacyTemplateHitRate'), false);
   assert.equal(entries.some((row) => row.signal === 'defaultCasualRate' && row.metric === 'japanese_service'), false);
-  assert.equal(entries.some((row) => row.signal === 'retrieveNeededRate'), false);
+  assert.equal(entries.some((row) => row.signal === 'followupQuestionIncludedRate' && row.available === true), false);
   assert.equal(entries.some((row) => row.signal === 'avgActionCountOverBudget'), false);
   assert.equal(entries.some((row) => row.signal === 'followupQuestionIncludedRate'), false);
-  assert.equal(entries.some((row) => row.signal === 'conciseModeAppliedRate' && row.metric === 'japanese_service'), true);
-  assert.equal(entries.some((row) => row.signal === 'defaultCasualRate' && row.metric === 'line_fit'), true);
+  assert.equal(entries.some((row) => row.signal === 'conciseModeAppliedRate' && row.metric === 'japanese_service'), false);
+  assert.equal(entries.some((row) => row.signal === 'defaultCasualRate' && row.metric === 'line_fit'), false);
+  assert.equal(entries.some((row) => row.signal === 'retrieveNeededRate' && row.value === 0.27), true);
 });
 
 test('phase767: buildSnapshot keeps zero-entry snapshot when no material failures exist', () => {
@@ -76,5 +79,29 @@ test('phase767: quality_failure and loop/context rows are always material when n
     category: 'runtime_signal_gap',
     signal: 'runtime_signal_missing:defaultCasualRate',
     count: 1
+  }), true);
+  assert.equal(isMaterialFailureEntry({
+    category: 'jp_service_failure',
+    signal: 'defaultCasualRate',
+    value: 0.019,
+    available: true
+  }), false);
+  assert.equal(isMaterialFailureEntry({
+    category: 'jp_service_failure',
+    signal: 'defaultCasualRate',
+    value: 0.021,
+    available: true
+  }), true);
+  assert.equal(isMaterialFailureEntry({
+    category: 'line_fit_failure',
+    signal: 'retrieveNeededRate',
+    value: 0.24,
+    available: true
+  }), false);
+  assert.equal(isMaterialFailureEntry({
+    category: 'line_fit_failure',
+    signal: 'retrieveNeededRate',
+    value: 0.27,
+    available: true
   }), true);
 });
