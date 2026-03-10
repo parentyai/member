@@ -125,7 +125,7 @@
   - contamination high used for hard gate
   - replay critical failure
   - release-policy fail
-  - strict runtime signals で `defaultCasualRate/directAnswerAppliedRate/avgRepeatRiskScore` 欠損（`runtime_signal_missing:*`）
+- strict runtime signals で `legacyTemplateHitRate/defaultCasualRate/followupQuestionIncludedRate/conciseModeAppliedRate/retrieveNeededRate/avgActionCount/directAnswerAppliedRate/avgRepeatRiskScore` 欠損（`runtime_signal_missing:*`）
 
 ## Required Audit Outputs
 - `current_quality_risk_map`
