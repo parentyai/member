@@ -11,6 +11,19 @@ const VALUE_FAILURE_THRESHOLDS = Object.freeze({
   jp_service_failure: 0.01,
   line_fit_failure: 0.01
 });
+const SIGNAL_FAILURE_THRESHOLDS = Object.freeze({
+  jp_service_failure: Object.freeze({
+    legacytemplatehitrate: 0.005,
+    defaultcasualrate: 0.02,
+    followupquestionincludedrate: 0.2,
+    concisemodeappliedrate: 0.12
+  }),
+  line_fit_failure: Object.freeze({
+    retrieveneededrate: 0.25,
+    defaultcasualrate: 0.02,
+    avgactioncountoverbudget: 0.1
+  })
+});
 
 function toNumber(value, fallback) {
   const n = Number(value);
@@ -22,6 +35,16 @@ function toRecordList(category, rows, mapper) {
   return list.map((row, index) => mapper(row, index))
     .filter((row) => row && typeof row === 'object')
     .map((row) => Object.assign({ category }, row));
+}
+
+function resolveValueThreshold(category, signal) {
+  const normalizedCategory = String(category || '').trim().toLowerCase();
+  const normalizedSignal = String(signal || '').trim().toLowerCase();
+  const bySignal = SIGNAL_FAILURE_THRESHOLDS[normalizedCategory];
+  if (bySignal && Object.prototype.hasOwnProperty.call(bySignal, normalizedSignal)) {
+    return toNumber(bySignal[normalizedSignal], 0);
+  }
+  return toNumber(VALUE_FAILURE_THRESHOLDS[normalizedCategory], 0);
 }
 
 function isMaterialFailureEntry(entry) {
@@ -40,7 +63,7 @@ function isMaterialFailureEntry(entry) {
     if (row.available === false) {
       return false;
     }
-    const threshold = toNumber(VALUE_FAILURE_THRESHOLDS[category], 0);
+    const threshold = resolveValueThreshold(category, row.signal);
     return toNumber(row.value, 0) > threshold;
   }
   return false;

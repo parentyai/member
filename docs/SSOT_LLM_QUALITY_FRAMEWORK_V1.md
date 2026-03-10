@@ -143,7 +143,7 @@
 - `top_10_context_loss_cases`
 - `top_10_japanese_service_failures`
 - `top_10_line_fit_failures`
-- register は materiality filter を適用（`jp_service_failure` / `line_fit_failure` は `value > 0.01` のみ記録）
+- register は signal別 materiality filter を適用（`defaultCasualRate > 0.02`、`retrieveNeededRate > 0.25`、`legacyTemplateHitRate > 0.005` など）
 - `signal_coverage` を同時出力し、`conversationQuality` 欠損シグナルは failure 集計対象外にする（missing は coverage で追跡）
 - `signal_coverage.missingSignalCount > 0` の場合は register に `runtime_signal_gap` を記録し、counterexample queue で運用追跡する
 
