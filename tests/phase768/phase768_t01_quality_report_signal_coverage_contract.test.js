@@ -37,9 +37,9 @@ test('phase768: empty conversationQuality does not emit synthetic japanese/line 
   assert.equal(report.top_10_japanese_service_failures.length, 0);
   assert.equal(report.top_10_line_fit_failures.length, 0);
   assert.equal(report.signal_coverage.conversationQualityPresent, false);
-  assert.equal(report.signal_coverage.requiredSignalCount, 6);
+  assert.equal(report.signal_coverage.requiredSignalCount, 8);
   assert.equal(report.signal_coverage.availableSignalCount, 0);
-  assert.equal(report.signal_coverage.missingSignalCount, 6);
+  assert.equal(report.signal_coverage.missingSignalCount, 8);
 });
 
 test('phase768: partial conversationQuality emits only available failure signals', () => {
@@ -57,8 +57,7 @@ test('phase768: partial conversationQuality emits only available failure signals
 
   assert.deepEqual(jpSignals, ['defaultCasualRate']);
   assert.deepEqual(lineSignals, ['avgActionCountOverBudget', 'defaultCasualRate']);
-  assert.equal(report.signal_coverage.requiredSignalCount, 6);
+  assert.equal(report.signal_coverage.requiredSignalCount, 8);
   assert.equal(report.signal_coverage.availableSignalCount, 2);
-  assert.equal(report.signal_coverage.missingSignalCount, 4);
+  assert.equal(report.signal_coverage.missingSignalCount, 6);
 });
-

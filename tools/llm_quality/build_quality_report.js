@@ -170,7 +170,9 @@ function buildSignalCoverage(summary) {
     'followupQuestionIncludedRate',
     'conciseModeAppliedRate',
     'retrieveNeededRate',
-    'avgActionCount'
+    'avgActionCount',
+    'directAnswerAppliedRate',
+    'avgRepeatRiskScore'
   ];
   const missingSignals = requiredSignals.filter((key) => {
     if (!Object.prototype.hasOwnProperty.call(conversation, key)) {
