@@ -616,7 +616,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
     - `signal_coverage.missingSignalCount > 0` は `runtime_signal_gap` として register/queue に記録される
 
 ### Merge Block 条件
-- `llm:quality:gate` が non-zero
+- `llm:quality:gate:strict` が non-zero
 - critical slice regression:
   - `short_followup`
   - `domain_continuation`
@@ -653,7 +653,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
   - `Counterexample Queue`
 
 ### ロールバック
-1. `catchup:gate:pr` から `llm:quality:gate` を外す（緊急時）。
+1. `catchup:gate:pr` から `llm:quality:gate:strict` / `llm:quality:release-policy:strict` を外す（緊急時）。
 2. quality section UIを非表示化（必要時）。
 3. telemetry は add-only のため保持し、既存クエリ互換は維持する。
 
