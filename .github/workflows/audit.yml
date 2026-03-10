@@ -157,9 +157,9 @@ jobs:
           npm run llm:quality:baseline
           npm run llm:quality:candidate
           npm run llm:quality:diff
-          npm run llm:quality:gate
+          npm run llm:quality:gate:strict
           npm run llm:quality:must-pass
-          npm run llm:quality:release-policy
+          npm run llm:quality:release-policy:strict
           npm run llm:quality:report
 
       - name: Build LLM replay arena artifact

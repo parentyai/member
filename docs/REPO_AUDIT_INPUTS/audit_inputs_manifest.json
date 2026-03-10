@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T04:48:36.709Z",
-  "gitCommit": "bd264cad6025f2382e786484723547a0556e3da7",
-  "branch": "codex/phase777-soft-floor-uplift",
-  "sourceDigest": "bef2e0bd345d36c997b43b7ded948ba27352a30912e69b3d1c2fe7a1f3db1fc4",
+  "generatedAt": "2026-03-10T04:58:25.820Z",
+  "gitCommit": "80717eac510bcc093c894ed253df35d4df2603df",
+  "branch": "codex/phase778-soft-floor-strict-default",
+  "sourceDigest": "3f474fcdb796a6ec845459bd6fa70b8ecd27af60dd47c70ca1bb900352f4d079",
   "counts": {
     "endpoints": 290,
     "routes": 129,
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "06dbd1194e9e4d97becf08cda96188334aa6035a73d7c048a2b00c7659c56a1c",
+      "sha256": "0d7a4db69a588cf3c2fe7c9b7718c31e0865ba1dc9c2adf62026660a49e2a4dd",
       "bytes": 447389
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "a28c8cd59c4243e853c9396ca26db9d3afc459b25ea64cc2866f58cc5b83e623",
-      "bytes": 2432
+      "sha256": "c3c0c10effa60f7a1ecc2c6f648bdbadcbd5abf8985234cc787da842fd041d94",
+      "bytes": 2426
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",

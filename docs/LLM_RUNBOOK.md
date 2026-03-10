@@ -609,7 +609,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 7. `npm run llm:quality:arena`
 8. `npm run llm:quality:must-pass`
 9. `npm run llm:quality:release-policy`（all slices pass を既定で必須）
-10. `npm run llm:quality:release-policy:strict`（strict runtime signals を必須化）
+10. `npm run llm:quality:release-policy:strict`（strict runtime signals + soft floor 0.80 を必須化）
 11. `npm run llm:quality:report`（`tmp/llm_usage_summary.json` がある場合。`tmp/llm_quality_failure_register.json` と `tmp/llm_quality_counterexample_queue.json` を同時生成）
     - failure register は signal別 materiality filter を適用（例: `defaultCasualRate > 0.02`, `retrieveNeededRate > 0.25`, `legacyTemplateHitRate > 0.005`）
     - `conversationQuality` 欠損シグナルは failure に含めず `signal_coverage.missingSignals` で運用監視する
@@ -640,6 +640,8 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
     - `directAnswerMissRate > 0.08`
     - `avgRepeatRiskScore > 0.5`
     - `legacyTemplateHitRate/defaultCasualRate/followupQuestionIncludedRate/conciseModeAppliedRate/retrieveNeededRate/avgActionCount/directAnswerAppliedRate/avgRepeatRiskScore` の欠損は fail（`runtime_signal_missing:*`）
+  - soft floor:
+    - hard-gate 以外の dimension で `score < 0.80` は fail（`soft_floor_unmet:*`）
 
 ### Warning 条件
 - quality delta < +2 かつ latency p95 regression > 25%
