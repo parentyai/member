@@ -410,7 +410,7 @@
       ],
       "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
       "required_fields": "UNRESOLVED_STATIC_ONLY",
-      "index_dependency": "NOT_DETECTED",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
       "fullscan_risk": "LOW"
     },
     {
