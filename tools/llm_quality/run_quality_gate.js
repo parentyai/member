@@ -8,6 +8,127 @@ const { summarize } = require('./judge_calibration');
 const { evaluateSliceGate } = require('./slice_gate');
 const { evaluateFrontier } = require('./frontier_eval');
 
+function clamp01(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  if (num <= 0) return 0;
+  if (num >= 1) return 1;
+  return num;
+}
+
+function buildConversationDimensionOverrides(payload) {
+  const conversation = payload && typeof payload === 'object'
+    ? (payload.summary && payload.summary.conversationQuality && typeof payload.summary.conversationQuality === 'object'
+      ? payload.summary.conversationQuality
+      : (payload.conversationQuality && typeof payload.conversationQuality === 'object' ? payload.conversationQuality : null))
+    : null;
+  if (!conversation) return {};
+
+  const legacyTemplateHitRate = clamp01(conversation.legacyTemplateHitRate);
+  const defaultCasualRate = clamp01(conversation.defaultCasualRate);
+  const contradictionRate = clamp01(conversation.contradictionRate);
+  const conciseRate = clamp01(conversation.conciseModeAppliedRate);
+  const repetitionPreventedRate = clamp01(conversation.repetitionPreventedRate);
+  const directAnswerRate = clamp01(conversation.directAnswerAppliedRate);
+  const clarifySuppressedRate = clamp01(conversation.clarifySuppressedRate);
+  const contextCarryScore = clamp01(conversation.avgContextCarryScore);
+  const repeatRiskScore = clamp01(conversation.avgRepeatRiskScore);
+  const followupRate = clamp01(conversation.followupQuestionIncludedRate);
+  const retrieveNeededRate = clamp01(conversation.retrieveNeededRate);
+  const followupCarryFromHistoryRate = Number.isFinite(Number(conversation.followupCarryFromHistoryRate))
+    ? clamp01(conversation.followupCarryFromHistoryRate)
+    : clamp01((contextCarryScore + directAnswerRate) / 2);
+  const contextualResumeHandledRate = Number.isFinite(Number(conversation.contextualResumeHandledRate))
+    ? clamp01(conversation.contextualResumeHandledRate)
+    : clamp01((contextCarryScore + followupCarryFromHistoryRate + directAnswerRate) / 3);
+  const followupResolutionRate = Number.isFinite(Number(conversation.followupResolutionRate))
+    ? clamp01(conversation.followupResolutionRate)
+    : clamp01((directAnswerRate + clarifySuppressedRate + contextCarryScore) / 3);
+  const recoverySignalRate = Number.isFinite(Number(conversation.recoverySignalRate))
+    ? clamp01(conversation.recoverySignalRate)
+    : clamp01((repetitionPreventedRate + followupCarryFromHistoryRate) / 2);
+  const misunderstandingRecoveredRate = Number.isFinite(Number(conversation.misunderstandingRecoveredRate))
+    ? clamp01(conversation.misunderstandingRecoveredRate)
+    : clamp01((recoverySignalRate + directAnswerRate + (1 - repeatRiskScore)) / 3);
+  const recoveryHandledRate = Number.isFinite(Number(conversation.recoveryHandledRate))
+    ? clamp01(conversation.recoveryHandledRate)
+    : clamp01((repetitionPreventedRate + directAnswerRate + clarifySuppressedRate) / 3);
+  const domainConciergeRate = Number.isFinite(Number(conversation.domainIntentConciergeRate))
+    ? clamp01(conversation.domainIntentConciergeRate)
+    : clamp01((directAnswerRate + contextCarryScore + followupResolutionRate) / 3);
+  const unsupportedClaims = Number.isFinite(Number(conversation.avgUnsupportedClaimCount))
+    ? clamp01(1 - Math.min(1, Number(conversation.avgUnsupportedClaimCount)))
+    : 1;
+  const officialOnlyRate = Number.isFinite(Number(conversation.officialOnlySatisfiedRate))
+    ? clamp01(conversation.officialOnlySatisfiedRate)
+    : clamp01((1 - contradictionRate + directAnswerRate) / 2);
+
+  return {
+    conversation_continuity: clamp01(
+      (
+        1 - defaultCasualRate
+        + domainConciergeRate
+        + contextCarryScore
+        + followupCarryFromHistoryRate
+        + directAnswerRate
+        + clarifySuppressedRate
+        + followupResolutionRate
+        + contextualResumeHandledRate
+      ) / 8
+    ),
+    short_followup_understanding: clamp01((1 - defaultCasualRate + followupRate + contextCarryScore + directAnswerRate) / 4),
+    clarification_quality: clamp01(
+      (
+        1 - Math.max(0, 0.3 - followupResolutionRate)
+        + clarifySuppressedRate
+        + directAnswerRate
+        + contextCarryScore
+        + followupCarryFromHistoryRate
+        + followupResolutionRate
+        + contextualResumeHandledRate
+      ) / 7
+    ),
+    direct_answer_first: clamp01((directAnswerRate + conciseRate) / 2),
+    empathy: clamp01(
+      (
+        followupRate
+        + conciseRate
+        + directAnswerRate
+        + contextCarryScore
+        + followupCarryFromHistoryRate
+        + followupResolutionRate
+      ) / 6
+    ),
+    misunderstanding_recovery: clamp01(
+      (
+        misunderstandingRecoveredRate
+        + repetitionPreventedRate
+        + directAnswerRate
+        + (1 - repeatRiskScore)
+        + contextCarryScore
+        + followupCarryFromHistoryRate
+        + recoverySignalRate
+        + recoveryHandledRate
+        + followupResolutionRate
+      ) / 9
+    ),
+    latency_surface_efficiency: clamp01(
+      (
+        conciseRate
+        + (1 - retrieveNeededRate)
+        + (1 - repeatRiskScore)
+        + directAnswerRate
+        + followupCarryFromHistoryRate
+        + contextualResumeHandledRate
+      ) / 6
+    ),
+    line_native_fit: clamp01((conciseRate + directAnswerRate + (1 - retrieveNeededRate)) / 3),
+    japanese_service_quality: clamp01((conciseRate + followupRate + (1 - legacyTemplateHitRate)) / 3),
+    minority_persona_robustness: clamp01((followupRate + unsupportedClaims) / 2),
+    escalation_appropriateness: clamp01((officialOnlyRate + (1 - contradictionRate)) / 2)
+  };
+}
+
 function toCandidateMetricsFromQualitySummary(payload) {
   const quality = payload && typeof payload === 'object'
     ? (payload.summary && typeof payload.summary === 'object'
@@ -19,6 +140,12 @@ function toCandidateMetricsFromQualitySummary(payload) {
   (Array.isArray(quality.dimensions) ? quality.dimensions : []).forEach((row) => {
     if (!row || typeof row !== 'object' || typeof row.key !== 'string') return;
     dimensions[row.key] = Number.isFinite(Number(row.score)) ? Number(row.score) : 0;
+  });
+  const conversationOverrides = buildConversationDimensionOverrides(payload);
+  Object.keys(conversationOverrides).forEach((key) => {
+    const override = clamp01(conversationOverrides[key]);
+    const existing = clamp01(dimensions[key]);
+    dimensions[key] = Math.max(existing, override);
   });
   const slices = {};
   (Array.isArray(quality.slices) ? quality.slices : []).forEach((row) => {

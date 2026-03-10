@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T00:01:08-04:00",
-  "gitCommit": "c1f50c5d3c695be879913ee8ee6908dcff4da62b",
-  "branch": "codex/phase772-strict-runtime-gate-default",
-  "sourceDigest": "10420228c7f3fbe3c9457ba4a3392e535559a379a9833953a618fb4e79a59803",
+  "generatedAt": "2026-03-10T00:29:41-04:00",
+  "gitCommit": "c6654dcd57448da891a7d6bc3467a17e6b7777bd",
+  "branch": "codex/phase776-runtime-conversation-enrichment",
+  "sourceDigest": "96dc73980210a8f5b2fe009ab46adbd60c092a47a90e0084a4ff8a7a46e42a2a",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
