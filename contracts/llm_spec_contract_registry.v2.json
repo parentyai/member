@@ -1,6 +1,6 @@
 {
   "registryVersion": "v2.0.0",
-  "registryHash": "sha256:llm-spec-contract-v2-20260310-data-c01-bridge-r793",
+  "registryHash": "sha256:llm-spec-contract-v2-20260310-data-c01-postgres-sink-r794",
   "generatedAt": "2026-03-10T00:00:00.000Z",
   "authorityOrder": [
     "Member_LLM_Unified_Master_Spec_v2",
@@ -102,15 +102,21 @@
       "status": "partial",
       "severity": "critical",
       "blastRadius": "data_governance",
-      "recommendedAction": "enable canonical_core_outbox dual-write bridge and complete PostgreSQL canonical sink cutover",
+      "recommendedAction": "run canonical core outbox sync job in staged canary with dual-write enabled and expand postgres sink coverage from bridge table to full Canonical Core object set",
       "evidence": [
         "/Volumes/Arumamihs/Member/src/domain/data/canonicalCoreBridge.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/canonicalCoreOutboxRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/domain/data/canonicalCorePostgresSink.js:1",
+        "/Volumes/Arumamihs/Member/src/usecases/data/runCanonicalCoreOutboxSyncJob.js:1",
+        "/Volumes/Arumamihs/Member/src/routes/internal/canonicalCoreOutboxSyncJob.js:1",
+        "/Volumes/Arumamihs/Member/src/index.js:1848",
         "/Volumes/Arumamihs/Member/src/repos/firestore/sourceRefsRepo.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/faqArticlesRepo.js:1",
         "/Volumes/Arumamihs/Member/tests/phase793/phase793_t01_canonical_core_outbox_repo_contract.test.js:1",
         "/Volumes/Arumamihs/Member/tests/phase793/phase793_t02_source_refs_canonical_core_dual_write_contract.test.js:1",
-        "/Volumes/Arumamihs/Member/tests/phase793/phase793_t03_faq_articles_canonical_core_dual_write_contract.test.js:1"
+        "/Volumes/Arumamihs/Member/tests/phase793/phase793_t03_faq_articles_canonical_core_dual_write_contract.test.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase794/phase794_t03_canonical_core_outbox_sync_usecase_contract.test.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase794/phase794_t04_canonical_core_outbox_sync_route_contract.test.js:1"
       ]
     },
     {
@@ -232,7 +238,7 @@
       "conflictId": "CF-02",
       "severity": "critical",
       "blocking": true,
-      "summary": "Canonical Core outbox bridge is active but PostgreSQL canonical sink is still not implemented"
+      "summary": "Canonical Core PostgreSQL sink exists behind flags, but full data-integration-spec Canonical Core model cutover is incomplete"
     }
   ]
 }

@@ -107,7 +107,8 @@ test('phase250: extended city-pack auth contracts keep admin/internal token boun
     '/internal/jobs/user-context-snapshot-build',
     '/internal/jobs/user-context-snapshot-recompress',
     '/internal/jobs/journey-kpi-build',
-    '/internal/jobs/llm-action-reward-finalize'
+    '/internal/jobs/llm-action-reward-finalize',
+    '/internal/jobs/canonical-core-outbox-sync'
   ];
 
   for (const path of internalRoutes) {

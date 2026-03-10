@@ -1,6 +1,26 @@
 {
   "features": [
     {
+      "feature": "canonicalCoreOutboxSyncJob",
+      "entrypoints": [],
+      "usecases": [
+        "runCanonicalCoreOutboxSyncJob"
+      ],
+      "repos": [
+        "canonicalCoreOutboxRepo"
+      ],
+      "collections": [
+        "canonical_core_outbox"
+      ],
+      "auth": "internal",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 4,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
       "feature": "cityPackBulletins",
       "entrypoints": [],
       "usecases": [
@@ -161,6 +181,7 @@
       "repos": [
         "analyticsReadRepo",
         "auditLogsRepo",
+        "canonicalCoreOutboxRepo",
         "cityPackBulletinsRepo",
         "cityPackMetricsDailyRepo",
         "cityPacksRepo",
@@ -188,6 +209,7 @@
       ],
       "collections": [
         "audit_logs",
+        "canonical_core_outbox",
         "checklists",
         "city_pack_bulletins",
         "city_pack_metrics_daily",
@@ -218,7 +240,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 223,
+      "tests_count": 224,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -1285,6 +1307,7 @@
       "repos": [
         "analyticsReadRepo",
         "auditLogsRepo",
+        "canonicalCoreOutboxRepo",
         "cityPackMetricsDailyRepo",
         "cityPacksRepo",
         "decisionLogsRepo",
@@ -1313,6 +1336,7 @@
       ],
       "collections": [
         "audit_logs",
+        "canonical_core_outbox",
         "checklists",
         "city_pack_metrics_daily",
         "city_packs",
@@ -1344,7 +1368,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 244,
+      "tests_count": 246,
       "ssot_refs": [],
       "completion": "completed"
     },

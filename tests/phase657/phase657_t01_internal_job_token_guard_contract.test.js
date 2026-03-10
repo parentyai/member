@@ -19,6 +19,7 @@ const INTERNAL_JOB_PATHS = [
   '/internal/jobs/user-context-snapshot-build',
   '/internal/jobs/user-context-snapshot-recompress',
   '/internal/jobs/journey-kpi-build',
+  '/internal/jobs/canonical-core-outbox-sync',
   '/internal/jobs/emergency-sync',
   '/internal/jobs/emergency-provider-fetch',
   '/internal/jobs/emergency-provider-normalize',
@@ -37,6 +38,7 @@ const CITY_PACK_TOKEN_FILES = [
   'src/routes/internal/userContextSnapshotJob.js',
   'src/routes/internal/userContextSnapshotRecompressJob.js',
   'src/routes/internal/journeyKpiBuildJob.js',
+  'src/routes/internal/canonicalCoreOutboxSyncJob.js',
   'src/routes/internal/emergencyJobs.js'
 ];
 

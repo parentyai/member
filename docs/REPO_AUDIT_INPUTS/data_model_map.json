@@ -65,6 +65,22 @@
       "fullscan_risk": "LOW"
     },
     {
+      "collection": "canonical_core_outbox",
+      "repos": [
+        "canonicalCoreOutboxRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/canonicalCoreOutboxRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/canonicalCoreOutboxRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
       "collection": "checklists",
       "repos": [
         "analyticsReadRepo"

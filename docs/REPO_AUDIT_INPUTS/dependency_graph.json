@@ -420,6 +420,7 @@
     ],
     "normalizeLimit": [
       "analyticsReadRepo",
+      "canonicalCoreOutboxRepo",
       "cityPackMetricsDailyRepo",
       "cityPacksRepo",
       "deliveriesRepo",
@@ -564,6 +565,9 @@
       "journeyParamVersionsRepo",
       "journeyPolicyRepo",
       "opsConfigRepo"
+    ],
+    "runCanonicalCoreOutboxSyncJob": [
+      "canonicalCoreOutboxRepo"
     ],
     "runCityPackDraftJob": [
       "cityPackRequestsRepo",
@@ -714,6 +718,9 @@
     ],
     "automationRunsRepo": [
       "automation_runs"
+    ],
+    "canonicalCoreOutboxRepo": [
+      "canonical_core_outbox"
     ],
     "cityPackBulletinsRepo": [
       "city_pack_bulletins"
@@ -1235,6 +1242,9 @@
       "appendAuditLog",
       "checkLinkHealth",
       "updateLink"
+    ],
+    "src/routes/internal/canonicalCoreOutboxSyncJob.js": [
+      "runCanonicalCoreOutboxSyncJob"
     ],
     "src/routes/internal/cityPackDraftGeneratorJob.js": [
       "runCityPackDraftJob"
