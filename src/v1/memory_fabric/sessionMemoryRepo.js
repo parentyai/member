@@ -2,6 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
+const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
 const COLLECTION = 'memory_session';
 
 function normalizeLineUserId(value) {
@@ -15,27 +16,29 @@ async function putSessionMemory(lineUserId, payload) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(String(normalizedLineUserId));
   const nowIso = new Date().toISOString();
+  const recordEnvelope = buildUniversalRecordEnvelope({
+    recordId: docRef.id,
+    recordType: 'memory_session',
+    sourceSystem: 'member_firestore',
+    sourceSnapshotRef: 'snapshot:memory_session',
+    effectiveFrom: nowIso,
+    authorityTier: 'T2_PUBLIC_DATA',
+    bindingLevel: 'REFERENCE',
+    status: 'active',
+    retentionTag: 'memory_session_90d',
+    piiClass: 'indirect_identifier',
+    accessScope: ['system', 'operator_limited'],
+    maskingPolicy: 'memory_payload_masked',
+    deletionPolicy: 'retention_policy_v1',
+    createdAt: nowIso,
+    updatedAt: nowIso
+  });
+  assertRecordEnvelopeCompliance({ dataClass: 'memory_session', recordEnvelope });
   await docRef.set({
     lineUserId: String(normalizedLineUserId),
     lane: 'session',
     data: payload && typeof payload === 'object' ? payload : {},
-    recordEnvelope: buildUniversalRecordEnvelope({
-      recordId: docRef.id,
-      recordType: 'memory_session',
-      sourceSystem: 'member_firestore',
-      sourceSnapshotRef: 'snapshot:memory_session',
-      effectiveFrom: nowIso,
-      authorityTier: 'T2_PUBLIC_DATA',
-      bindingLevel: 'REFERENCE',
-      status: 'active',
-      retentionTag: 'memory_session_90d',
-      piiClass: 'indirect_identifier',
-      accessScope: ['system', 'operator_limited'],
-      maskingPolicy: 'memory_payload_masked',
-      deletionPolicy: 'retention_policy_v1',
-      createdAt: nowIso,
-      updatedAt: nowIso
-    }),
+    recordEnvelope,
     updatedAt: serverTimestamp()
   }, { merge: true });
   return { id: docRef.id };

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T18:23:00.975Z",
-  "gitCommit": "959ac60fdaa84209e03290628feda4623e639a9c",
-  "branch": "codex/v2-c04-semantic-envelope-r793",
-  "sourceDigest": "3832111c3cdfa41228a35e50607d416c65c3e5734b83e4a0423b58f12a16ad41",
+  "generatedAt": "2026-03-10T18:51:39.757Z",
+  "gitCommit": "b8d0a2db04e0040176dc508a0607fcc392a9890b",
+  "branch": "codex/data-c02-envelope-enforce-r794",
+  "sourceDigest": "23945ba3a53b32c7fb9872b3d77ff6431918acbc79766e807b75fe04152306f7",
   "counts": {
     "endpoints": 290,
     "routes": 129,
@@ -76,7 +76,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "df48c480a4bac1a65a65f2e0bbbbe2087f11e7db908c8979def74f6dc02f189c",
+      "sha256": "8495ddf95d423096c9b6c3a873d6dfc77ec80ee4a3c962ea2587e3a00403a190",
       "bytes": 77103
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "12268eeb04ad4d48cf22a12705ea5de586cef6fecaafe60b85a7cf61377e6165",
+      "sha256": "3a8ec1f85364c26993294dd660da6fb3e8ef7068d7eb35c9fb8f163978d4937c",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "1c030a2dc62d060ba16d614b33ec12d25f1a1b602f886f20cc651caadd4eb307",
+      "sha256": "77376e91ae425dd2d6c6fec1683aacdb76a8c9a2855fa47c4ba576effa925085",
       "bytes": 487
     },
     {
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "e35ad464a4619301976aa768ef9ca26b089c669baba73514e95006763d509631",
+      "sha256": "a7cd263739ccde02c56e9d8590d6f82aba3ecb5eb5668d220c03e8242062ce72",
       "bytes": 447389
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "4fc9272a88067fe6baf7305d7d1a14a28086d951f8a6e79b2e6ecc491f789a00",
-      "bytes": 2421
+      "sha256": "37a6da6e08c091ad3694bd61ecd513187a2cf5d79f2c9680dbad3ad5aa2d1ca0",
+      "bytes": 2422
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",

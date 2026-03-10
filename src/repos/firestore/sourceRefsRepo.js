@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { toMillis } = require('./queryFallback');
 const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
+const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
 
 const COLLECTION = 'source_refs';
 const VALIDITY_DAYS = 120;
@@ -280,6 +281,7 @@ async function createSourceRef(data) {
   const id = resolveId(data);
   const db = getDb();
   const recordEnvelope = buildSourceRefEnvelope(id, normalized, null);
+  assertRecordEnvelopeCompliance({ dataClass: 'source_refs', recordEnvelope });
   await db.collection(COLLECTION).doc(id).set({
     url: normalized.url,
     status: normalized.status,
@@ -391,6 +393,7 @@ async function updateSourceRef(sourceRefId, patch) {
   const payload = patch && typeof patch === 'object' ? Object.assign({}, patch) : {};
   const mergedForEnvelope = normalizeSourceRefData(Object.assign({}, current || {}, payload));
   payload.recordEnvelope = buildSourceRefEnvelope(sourceRefId, mergedForEnvelope, current && current.recordEnvelope);
+  assertRecordEnvelopeCompliance({ dataClass: 'source_refs', recordEnvelope: payload.recordEnvelope });
   payload.updatedAt = serverTimestamp();
   const db = getDb();
   await db.collection(COLLECTION).doc(sourceRefId).set(payload, { merge: true });

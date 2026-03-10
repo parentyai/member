@@ -2,6 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
+const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
 const COLLECTION = 'memory_compliance';
 
 function normalizeLineUserId(value) {
@@ -15,27 +16,29 @@ async function putComplianceMemory(lineUserId, payload) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(String(normalizedLineUserId));
   const nowIso = new Date().toISOString();
+  const recordEnvelope = buildUniversalRecordEnvelope({
+    recordId: docRef.id,
+    recordType: 'memory_compliance',
+    sourceSystem: 'member_firestore',
+    sourceSnapshotRef: 'snapshot:memory_compliance',
+    effectiveFrom: nowIso,
+    authorityTier: 'T1_OFFICIAL_OPERATION',
+    bindingLevel: 'POLICY',
+    status: 'active',
+    retentionTag: 'memory_compliance_365d',
+    piiClass: 'regulated_context',
+    accessScope: ['system', 'admin'],
+    maskingPolicy: 'memory_payload_masked_strict',
+    deletionPolicy: 'retention_policy_v1',
+    createdAt: nowIso,
+    updatedAt: nowIso
+  });
+  assertRecordEnvelopeCompliance({ dataClass: 'memory_compliance', recordEnvelope });
   await docRef.set({
     lineUserId: String(normalizedLineUserId),
     lane: 'compliance',
     data: payload && typeof payload === 'object' ? payload : {},
-    recordEnvelope: buildUniversalRecordEnvelope({
-      recordId: docRef.id,
-      recordType: 'memory_compliance',
-      sourceSystem: 'member_firestore',
-      sourceSnapshotRef: 'snapshot:memory_compliance',
-      effectiveFrom: nowIso,
-      authorityTier: 'T1_OFFICIAL_OPERATION',
-      bindingLevel: 'POLICY',
-      status: 'active',
-      retentionTag: 'memory_compliance_365d',
-      piiClass: 'regulated_context',
-      accessScope: ['system', 'admin'],
-      maskingPolicy: 'memory_payload_masked_strict',
-      deletionPolicy: 'retention_policy_v1',
-      createdAt: nowIso,
-      updatedAt: nowIso
-    }),
+    recordEnvelope,
     updatedAt: serverTimestamp()
   }, { merge: true });
   return { id: docRef.id };

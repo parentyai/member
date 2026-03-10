@@ -111,19 +111,21 @@
       "requirementId": "DATA-C-02",
       "sourceSpec": "data_integration_spec",
       "summary": "Universal Record Envelope for all persisted records",
-      "status": "partial",
+      "status": "aligned",
       "severity": "high",
       "blastRadius": "audit_traceability",
-      "recommendedAction": "promote shadow_write data classes to enforced mode and add compliance gate",
+      "recommendedAction": "keep enforced-mode compliance gate active and monitor envelope validation failures",
       "evidence": [
         "/Volumes/Arumamihs/Member/src/domain/data/universalRecordEnvelope.js:1",
+        "/Volumes/Arumamihs/Member/src/domain/data/universalRecordEnvelopeCompliance.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/llmActionLogsRepo.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/llmQualityLogsRepo.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/faqAnswerLogsRepo.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/sourceRefsRepo.js:1",
         "/Volumes/Arumamihs/Member/src/v1/memory_fabric/taskMemoryRepo.js:1",
         "/Volumes/Arumamihs/Member/src/v1/evidence_ledger/deliveryRecordsRepo.js:1",
-        "/Volumes/Arumamihs/Member/src/repos/firestore/liffSyntheticEventsRepo.js:1"
+        "/Volumes/Arumamihs/Member/src/repos/firestore/liffSyntheticEventsRepo.js:1",
+        "/Volumes/Arumamihs/Member/docs/DATA_HANDLING_ENVELOPE_POLICY_V2.md:1"
       ]
     },
     {

@@ -2,6 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
+const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
 
 const COLLECTION = 'llm_quality_logs';
 const QUALITY_SLICE_KEYS = new Set([
@@ -95,6 +96,7 @@ async function appendLlmQualityLog(params) {
     createdAt: payload.createdAt || new Date().toISOString(),
     updatedAt: payload.updatedAt || payload.createdAt || new Date().toISOString()
   });
+  assertRecordEnvelopeCompliance({ dataClass: 'llm_quality_logs', recordEnvelope });
   const data = {
     userId: normalizeString(payload.userId, ''),
     intent: normalizeString(payload.intent, 'faq_search'),
