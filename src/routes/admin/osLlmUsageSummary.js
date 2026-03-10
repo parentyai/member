@@ -499,6 +499,7 @@ function buildConversationQualitySummary(actionRows) {
     if (typeof row.domainIntent === 'string' && row.domainIntent.trim()) return true;
     if (typeof row.followupIntent === 'string' && row.followupIntent.trim()) return true;
     if (row.directAnswerApplied === true) return true;
+    if (row.misunderstandingRecovered === true) return true;
     if (row.conciseModeApplied === true) return true;
     if (row.repetitionPrevented === true) return true;
     if (row.clarifySuppressed === true) return true;
@@ -561,6 +562,8 @@ function buildConversationQualitySummary(actionRows) {
   let contextResumeHandledCount = 0;
   let recoverySignalSeenCount = 0;
   let recoverySignalCount = 0;
+  let misunderstandingRecoveredSeenCount = 0;
+  let misunderstandingRecoveredCount = 0;
   let recoveryRiskSeenCount = 0;
   let recoveryHandledCount = 0;
 
@@ -590,6 +593,7 @@ function buildConversationQualitySummary(actionRows) {
     const repetitionPrevented = row && row.repetitionPrevented === true;
     const directAnswerApplied = row && row.directAnswerApplied === true;
     const clarifySuppressed = row && row.clarifySuppressed === true;
+    const misunderstandingRecovered = row && row.misunderstandingRecovered === true;
     const followupCarryFromHistory = row && row.followupCarryFromHistory === true;
     const recoverySignal = row && row.recoverySignal === true;
     const contextCarryScore = Number.isFinite(Number(row && row.contextCarryScore)) ? Number(row.contextCarryScore) : null;
@@ -647,6 +651,10 @@ function buildConversationQualitySummary(actionRows) {
       recoverySignalSeenCount += 1;
       if (recoverySignal) recoverySignalCount += 1;
     }
+    if (Object.prototype.hasOwnProperty.call(row, 'misunderstandingRecovered')) {
+      misunderstandingRecoveredSeenCount += 1;
+      if (misunderstandingRecovered) misunderstandingRecoveredCount += 1;
+    }
     if (typeof row.routerReason === 'string' && row.routerReason.trim()) {
       defaultCasualSeenCount += 1;
       if (routerReason === 'default_casual') defaultCasualCount += 1;
@@ -671,7 +679,7 @@ function buildConversationQualitySummary(actionRows) {
     }
     if (repeatRiskScore !== null && repeatRiskScore >= 0.55) {
       recoveryRiskSeenCount += 1;
-      if (repetitionPrevented || directAnswerApplied || clarifySuppressed || followupCarryFromHistory || recoverySignal) {
+      if (misunderstandingRecovered || repetitionPrevented || directAnswerApplied || clarifySuppressed || followupCarryFromHistory || recoverySignal) {
         recoveryHandledCount += 1;
       }
     }
@@ -779,6 +787,9 @@ function buildConversationQualitySummary(actionRows) {
       : 0,
     recoverySignalRate: recoverySignalSeenCount > 0
       ? Math.round((recoverySignalCount / recoverySignalSeenCount) * 10000) / 10000
+      : 0,
+    misunderstandingRecoveredRate: misunderstandingRecoveredSeenCount > 0
+      ? Math.round((misunderstandingRecoveredCount / misunderstandingRecoveredSeenCount) * 10000) / 10000
       : 0,
     recoveryHandledRate: recoveryRiskSeenCount > 0
       ? Math.round((recoveryHandledCount / recoveryRiskSeenCount) * 10000) / 10000
@@ -1029,6 +1040,7 @@ function buildQualityFrameworkSummary(payload) {
   const followupCarryFromHistoryRate = clamp01(conversation.followupCarryFromHistoryRate);
   const contextualResumeHandledRate = clamp01(conversation.contextualResumeHandledRate);
   const recoverySignalRate = clamp01(conversation.recoverySignalRate);
+  const misunderstandingRecoveredRate = clamp01(conversation.misunderstandingRecoveredRate);
   const recoveryHandledRate = clamp01(conversation.recoveryHandledRate);
   const domainConciergeRate = clamp01(conversation.domainIntentConciergeRate);
   const unsupportedClaims = clamp01(1 - Math.min(1, Number(conversation.avgUnsupportedClaimCount || 0)));
@@ -1093,6 +1105,8 @@ function buildQualityFrameworkSummary(payload) {
     minority_persona_robustness: clamp01((followupRate + unsupportedClaims) / 2),
     misunderstanding_recovery: clamp01(
       (
+        misunderstandingRecoveredRate
+        +
         repetitionPreventedRate
         + directAnswerRate
         + (1 - repeatRiskScore)
@@ -1101,7 +1115,7 @@ function buildQualityFrameworkSummary(payload) {
         + recoverySignalRate
         + recoveryHandledRate
         + followupResolutionRate
-      ) / 8
+      ) / 9
     ),
     escalation_appropriateness: clamp01((officialOnlyRate + sourceAuthority) / 2),
     operational_reliability: clamp01(acceptedRate),

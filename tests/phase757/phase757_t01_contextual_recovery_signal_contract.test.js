@@ -61,6 +61,7 @@ test('phase757: quality framework lifts continuity/recovery dimensions when cont
       followupCarryFromHistoryRate: 0.86,
       contextualResumeHandledRate: 0.9,
       recoverySignalRate: 0.84,
+      misunderstandingRecoveredRate: 0.9,
       recoveryHandledRate: 0.88,
       domainIntentConciergeRate: 0.9,
       avgUnsupportedClaimCount: 0.01,

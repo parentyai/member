@@ -79,6 +79,7 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'repetitionPrevented',
   'directAnswerApplied',
   'clarifySuppressed',
+  'misunderstandingRecovered',
   'contextCarryScore',
   'repeatRiskScore',
   'legacyTemplateHit',

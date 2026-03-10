@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T22:28:35-04:00",
-  "gitCommit": "414a5d7da07e3952a471407442b8b50ad631a35e",
-  "branch": "codex/phase762-batch-casual-followup-directanswer",
-  "sourceDigest": "f985c220f3fd1f262f81e694fd2e9f024143eb486c45864c59b4590a68fd83ec",
+  "generatedAt": "2026-03-09T22:43:00-04:00",
+  "gitCommit": "da4fa54423b342bec85e9afa6ea91ab6e9366ff7",
+  "branch": "codex/phase763-recovery-signal-uplift",
+  "sourceDigest": "9f440ee8a0971bf9ae268c6da5267dd630db0759e2e925957aab0130845924b1",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
