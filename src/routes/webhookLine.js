@@ -411,6 +411,10 @@ function resolveV1FastSlowDispatchEnabled() {
   return resolveBooleanEnvFlag('ENABLE_V1_FAST_SLOW_DISPATCH', false);
 }
 
+function resolveV1ActionGatewayEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_V1_ACTION_GATEWAY', false);
+}
+
 function resolvePaidInterventionCooldownTurns() {
   const raw = Number(process.env.PAID_INTERVENTION_COOLDOWN_TURNS || 5);
   if (!Number.isFinite(raw)) return 5;
@@ -1412,6 +1416,18 @@ async function appendLlmActionLogBestEffort(data) {
       conversationState: conciergeMeta.conversationState || null,
       conversationMove: conciergeMeta.conversationMove || null,
       styleId: conciergeMeta.styleId || null,
+      actionClass: typeof payload.actionClass === 'string' && payload.actionClass.trim()
+        ? payload.actionClass.trim().toLowerCase()
+        : null,
+      actionGatewayEnabled: payload.actionGatewayEnabled === true,
+      actionGatewayEnforced: payload.actionGatewayEnforced === true,
+      actionGatewayAllowed: payload.actionGatewayAllowed !== false,
+      actionGatewayDecision: typeof payload.actionGatewayDecision === 'string' && payload.actionGatewayDecision.trim()
+        ? payload.actionGatewayDecision.trim().toLowerCase()
+        : null,
+      actionGatewayReason: typeof payload.actionGatewayReason === 'string' && payload.actionGatewayReason.trim()
+        ? payload.actionGatewayReason.trim().toLowerCase().replace(/\s+/g, '_')
+        : null,
       conversationMode: typeof payload.conversationMode === 'string'
         ? payload.conversationMode
         : (conciergeMeta && conciergeMeta.conversationState ? 'concierge' : null),
@@ -1691,7 +1707,8 @@ async function tryHandlePaidOrchestratorV2(params) {
       llmStyleEngineEnabled: payload.llmStyleEngineEnabled,
       llmBanditEnabled: payload.llmBanditEnabled,
       qualityEnabled: payload.qualityEnabled,
-      snapshotStrictMode: payload.snapshotStrictMode
+      snapshotStrictMode: payload.snapshotStrictMode,
+      actionGatewayEnabled: payload.actionGatewayEnabled === true
     },
     maxNextActionsCap: payload.maxNextActionsCap,
     recentEngagement: payload.recentEngagement,
@@ -1793,6 +1810,12 @@ async function tryHandlePaidOrchestratorV2(params) {
     clarifySuppressed: orchestrated.telemetry ? orchestrated.telemetry.clarifySuppressed === true : false,
     contextCarryScore: orchestrated.telemetry ? orchestrated.telemetry.contextCarryScore : 0,
     repeatRiskScore: orchestrated.telemetry ? orchestrated.telemetry.repeatRiskScore : 0,
+    actionClass: orchestrated.telemetry ? orchestrated.telemetry.actionClass : null,
+    actionGatewayEnabled: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayEnabled === true : false,
+    actionGatewayEnforced: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayEnforced === true : false,
+    actionGatewayAllowed: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayAllowed === true : true,
+    actionGatewayDecision: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayDecision : null,
+    actionGatewayReason: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayReason : null,
     legalSnapshot
   });
   await appendLlmActionLogBestEffort({
@@ -1839,6 +1862,12 @@ async function tryHandlePaidOrchestratorV2(params) {
     clarifySuppressed: orchestrated.telemetry ? orchestrated.telemetry.clarifySuppressed === true : false,
     contextCarryScore: orchestrated.telemetry ? orchestrated.telemetry.contextCarryScore : 0,
     repeatRiskScore: orchestrated.telemetry ? orchestrated.telemetry.repeatRiskScore : 0,
+    actionClass: orchestrated.telemetry ? orchestrated.telemetry.actionClass : null,
+    actionGatewayEnabled: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayEnabled === true : false,
+    actionGatewayEnforced: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayEnforced === true : false,
+    actionGatewayAllowed: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayAllowed === true : true,
+    actionGatewayDecision: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayDecision : null,
+    actionGatewayReason: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayReason : null,
     committedNextActions: orchestrated.telemetry ? orchestrated.telemetry.committedNextActions : [],
     committedFollowupQuestion: orchestrated.telemetry ? orchestrated.telemetry.committedFollowupQuestion : null,
     recentUserGoal: Array.isArray(orchestrated.packet && orchestrated.packet.recentUserGoals)
@@ -2608,6 +2637,7 @@ async function handleAssistantMessage(params) {
   }
 
   const qualityEnabled = resolvePaidFaqQualityEnabled();
+  const actionGatewayEnabled = resolveV1ActionGatewayEnabled();
   const contextSnapshot = snapshotResult && snapshotResult.ok === true && snapshotResult.stale !== true
     ? snapshotResult.snapshot
     : null;
@@ -2698,6 +2728,7 @@ async function handleAssistantMessage(params) {
     llmStyleEngineEnabled,
     llmBanditEnabled,
     qualityEnabled,
+    actionGatewayEnabled,
     snapshotStrictMode,
     maxNextActionsCap,
     recentEngagement,

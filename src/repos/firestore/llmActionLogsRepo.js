@@ -4,6 +4,8 @@ const { getDb, serverTimestamp } = require('../../infra/firestore');
 
 const COLLECTION = 'llm_action_logs';
 const CONVERSATION_MODES = new Set(['casual', 'concierge']);
+const ACTION_CLASSES = new Set(['lookup', 'draft', 'assist', 'human_only']);
+const ACTION_GATEWAY_DECISIONS = new Set(['allow', 'clarify', 'block', 'bypass']);
 const OPPORTUNITY_TYPES = new Set(['none', 'action', 'blocked', 'life']);
 const STRATEGIES = new Set(['casual', 'domain_concierge', 'concierge', 'recommendation', 'clarify', 'grounded_answer']);
 const RETRIEVAL_QUALITIES = new Set(['none', 'good', 'mixed', 'bad']);
@@ -122,6 +124,18 @@ function normalizeConversationMode(value) {
   const normalized = normalizeString(value, '').toLowerCase();
   if (!normalized) return null;
   return CONVERSATION_MODES.has(normalized) ? normalized : null;
+}
+
+function normalizeActionClass(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return ACTION_CLASSES.has(normalized) ? normalized : 'lookup';
+}
+
+function normalizeActionGatewayDecision(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return ACTION_GATEWAY_DECISIONS.has(normalized) ? normalized : null;
 }
 
 function normalizeOpportunityType(value) {
@@ -329,6 +343,12 @@ async function appendLlmActionLog(params) {
     conversationState: normalizeString(payload.conversationState, null),
     conversationMove: normalizeString(payload.conversationMove, null),
     styleId: normalizeString(payload.styleId, null),
+    actionClass: normalizeActionClass(payload.actionClass),
+    actionGatewayEnabled: payload.actionGatewayEnabled === true,
+    actionGatewayEnforced: payload.actionGatewayEnforced === true,
+    actionGatewayAllowed: payload.actionGatewayAllowed !== false,
+    actionGatewayDecision: normalizeActionGatewayDecision(payload.actionGatewayDecision),
+    actionGatewayReason: normalizeString(payload.actionGatewayReason, null),
     conversationMode: normalizeConversationMode(payload.conversationMode),
     routerReason: normalizeString(payload.routerReason, null),
     opportunityType: normalizeOpportunityType(payload.opportunityType),

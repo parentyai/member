@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T06:41:46-04:00",
-  "gitCommit": "ed8f00e8a3154b861bfa177794bd8615975d47b7",
-  "branch": "codex/spec-v2-contract-freeze-foundation",
-  "sourceDigest": "2922927cb42fa6fb140fdde244d08cfb88ed7ea80e76604442361391366574a1",
+  "generatedAt": "2026-03-10T08:46:14-04:00",
+  "gitCommit": "634fdf6d1c84b5af573ddba48cccd1317c3ec4d8",
+  "branch": "codex/spec-v2-pr5-action-gateway-intercept",
+  "sourceDigest": "68c8865afa47979e848cebbe8bddd7c706ce1c283d12a5e5e8435fa9cf5611dc",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
