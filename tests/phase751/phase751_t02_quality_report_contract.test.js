@@ -47,4 +47,6 @@ test('phase751: quality report script emits required top_10 outputs', () => {
   assert.ok(Array.isArray(report.top_10_context_loss_cases));
   assert.ok(Array.isArray(report.top_10_japanese_service_failures));
   assert.ok(Array.isArray(report.top_10_line_fit_failures));
+  assert.equal(report.signal_coverage.missingSignalCount, 0);
+  assert.equal(report.signal_coverage.availableSignalCount, report.signal_coverage.requiredSignalCount);
 });

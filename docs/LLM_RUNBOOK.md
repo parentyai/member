@@ -612,6 +612,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 10. `npm run llm:quality:release-policy:strict`（strict runtime signals を必須化）
 11. `npm run llm:quality:report`（`tmp/llm_usage_summary.json` がある場合。`tmp/llm_quality_failure_register.json` と `tmp/llm_quality_counterexample_queue.json` を同時生成）
     - failure register は materiality filter を適用（`jp_service_failure` / `line_fit_failure` は `value > 0.01` のみ対象）
+    - `conversationQuality` 欠損シグナルは failure に含めず `signal_coverage.missingSignals` で運用監視する
 
 ### Merge Block 条件
 - `llm:quality:gate` が non-zero
