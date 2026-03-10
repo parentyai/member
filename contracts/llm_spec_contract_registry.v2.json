@@ -67,13 +67,14 @@
       "requirementId": "V2-C-04",
       "sourceSpec": "master_spec_v2",
       "summary": "Semantic Response Object is the single generation contract",
-      "status": "partial",
+      "status": "aligned",
       "severity": "critical",
       "blastRadius": "response_quality",
-      "recommendedAction": "semantic adapter on all runtime output paths",
+      "recommendedAction": "keep semantic reply envelope mandatory on webhook runtime reply paths",
       "evidence": [
         "/Volumes/Arumamihs/Member/schemas/semantic_response_object.schema.json:1",
-        "/Volumes/Arumamihs/Member/src/routes/webhookLine.js:2055"
+        "/Volumes/Arumamihs/Member/src/v1/semantic/responseContractConformance.js:1",
+        "/Volumes/Arumamihs/Member/src/routes/webhookLine.js:1"
       ]
     },
     {

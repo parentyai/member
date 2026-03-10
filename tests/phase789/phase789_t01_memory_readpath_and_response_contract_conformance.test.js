@@ -115,6 +115,18 @@ test('phase789: response contract conformance checker normalizes concise line re
   assert.ok(evaluated.responseMarkdown.includes('SSNの必要書類は3点です。'));
 });
 
+test('phase789: response contract conformance preserves explicit response_markdown for runtime-safe semantic envelope', () => {
+  const replyText = '結論です。\n1. 必要書類を先に確認します。';
+  const evaluated = evaluateResponseContractConformance({
+    replyText,
+    domainIntent: 'general',
+    conversationMode: 'concierge',
+    nextSteps: ['必要書類を確認する']
+  });
+  assert.equal(evaluated.conformant, true);
+  assert.equal(evaluated.responseMarkdown, replyText);
+});
+
 test('phase789: registry keeps V2-C-06 and YAML-C-03 aligned after read-path and conformance rollout', () => {
   const registry = JSON.parse(fs.readFileSync('contracts/llm_spec_contract_registry.v2.json', 'utf8'));
   const memoryRow = registry.requirements.find((row) => row && row.requirementId === 'V2-C-06');

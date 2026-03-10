@@ -86,12 +86,14 @@ function buildSemanticResponseObjectFromReply(params) {
 function evaluateResponseContractConformance(params) {
   const semanticResponseObject = buildSemanticResponseObjectFromReply(params);
   const validation = validateSemanticResponseObject(semanticResponseObject);
+  const responseMarkdown = normalizeText(validation.value && validation.value.response_markdown)
+    || toResponseMarkdown(validation.value);
   return {
     conformant: validation.ok === true,
     errors: Array.isArray(validation.errors) ? validation.errors : [],
     errorCount: Array.isArray(validation.errors) ? validation.errors.length : 0,
     semanticResponseObject: validation.value,
-    responseMarkdown: toResponseMarkdown(validation.value),
+    responseMarkdown,
     fallbackApplied: validation.ok !== true
   };
 }
