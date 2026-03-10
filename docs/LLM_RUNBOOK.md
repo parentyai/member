@@ -634,6 +634,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
     - `defaultCasualRate > 0.02`
     - `directAnswerMissRate > 0.08`
     - `avgRepeatRiskScore > 0.5`
+    - `defaultCasualRate/directAnswerAppliedRate/avgRepeatRiskScore` の欠損は fail（`runtime_signal_missing:*`）
 
 ### Warning 条件
 - quality delta < +2 かつ latency p95 regression > 25%

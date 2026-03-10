@@ -101,6 +101,13 @@ function readSummaryData(summaryPath) {
   }
 }
 
+function readFiniteNumber(obj, key) {
+  if (!obj || typeof obj !== 'object') return null;
+  if (!Object.prototype.hasOwnProperty.call(obj, key)) return null;
+  const value = Number(obj[key]);
+  return Number.isFinite(value) ? value : null;
+}
+
 function main(argv) {
   const args = parseArgs(argv);
   const root = process.cwd();
@@ -203,17 +210,49 @@ function main(argv) {
   const conversation = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
     ? summary.conversationQuality
     : null;
-  const runtimeSignals = conversation
+  const runtimeSignalKeys = ['defaultCasualRate', 'directAnswerAppliedRate', 'avgRepeatRiskScore'];
+  const runtimeSignalRaw = conversation
     ? {
-      defaultCasualRate: Number(conversation.defaultCasualRate || 0),
-      directAnswerMissRate: Math.max(0, 1 - Number(conversation.directAnswerAppliedRate || 0)),
-      avgRepeatRiskScore: Number(conversation.avgRepeatRiskScore || 0)
+      defaultCasualRate: readFiniteNumber(conversation, 'defaultCasualRate'),
+      directAnswerAppliedRate: readFiniteNumber(conversation, 'directAnswerAppliedRate'),
+      avgRepeatRiskScore: readFiniteNumber(conversation, 'avgRepeatRiskScore')
     }
     : null;
+  const runtimeSignalCoverage = runtimeSignalRaw
+    ? {
+      requiredKeys: runtimeSignalKeys.slice(),
+      availableKeys: runtimeSignalKeys.filter((key) => runtimeSignalRaw[key] != null),
+      missingKeys: runtimeSignalKeys.filter((key) => runtimeSignalRaw[key] == null)
+    }
+    : {
+      requiredKeys: runtimeSignalKeys.slice(),
+      availableKeys: [],
+      missingKeys: runtimeSignalKeys.slice()
+    };
+  const runtimeSignals = runtimeSignalRaw
+    ? {
+      defaultCasualRate: runtimeSignalRaw.defaultCasualRate,
+      directAnswerMissRate: runtimeSignalRaw.directAnswerAppliedRate == null
+        ? null
+        : Math.max(0, 1 - runtimeSignalRaw.directAnswerAppliedRate),
+      avgRepeatRiskScore: runtimeSignalRaw.avgRepeatRiskScore
+    }
+    : null;
+  if (runtimeSignalCoverage.missingKeys.length > 0) {
+    const missingCode = `runtime_signal_missing:${runtimeSignalCoverage.missingKeys.join(',')}`;
+    if (requireStrictRuntimeSignals === true) failures.push(missingCode);
+    else warnings.push(missingCode);
+  }
   if (requireStrictRuntimeSignals === true && runtimeSignals) {
-    if (runtimeSignals.defaultCasualRate > 0.02) failures.push('runtime_signal_default_casual_rate_too_high');
-    if (runtimeSignals.directAnswerMissRate > 0.08) failures.push('runtime_signal_direct_answer_miss_rate_too_high');
-    if (runtimeSignals.avgRepeatRiskScore > 0.5) failures.push('runtime_signal_repeat_risk_too_high');
+    if (runtimeSignals.defaultCasualRate != null && runtimeSignals.defaultCasualRate > 0.02) {
+      failures.push('runtime_signal_default_casual_rate_too_high');
+    }
+    if (runtimeSignals.directAnswerMissRate != null && runtimeSignals.directAnswerMissRate > 0.08) {
+      failures.push('runtime_signal_direct_answer_miss_rate_too_high');
+    }
+    if (runtimeSignals.avgRepeatRiskScore != null && runtimeSignals.avgRepeatRiskScore > 0.5) {
+      failures.push('runtime_signal_repeat_risk_too_high');
+    }
   }
 
   if (!mustPass || mustPass.ok !== true) failures.push('must_pass_fixtures_failed');
@@ -251,6 +290,7 @@ function main(argv) {
     allSlices: allSliceChecks,
     summaryPath,
     runtimeSignals,
+    runtimeSignalCoverage,
     mustPassSummary: {
       ok: mustPass && mustPass.ok === true,
       failureCount: Number(mustPass && mustPass.failureCount ? mustPass.failureCount : 0),

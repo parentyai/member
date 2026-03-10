@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T23:33:39-04:00",
-  "gitCommit": "13dd3fdfea3740245b8217a2cd7af78597e30308",
-  "branch": "codex/phase768-quality-signal-coverage",
-  "sourceDigest": "332535308c1ff9404ac3c743aff856e5b8a8c48ff5f00a802dffc3081847e200",
+  "generatedAt": "2026-03-09T23:41:05-04:00",
+  "gitCommit": "417528f7102e3f42a230836aa70421390ceabe4f",
+  "branch": "codex/phase769-runtime-signal-coverage-guard",
+  "sourceDigest": "366d3650d9c6e8b5c632f95ecaea62c8c455257be1db92591a4422e729e9b6c9",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
