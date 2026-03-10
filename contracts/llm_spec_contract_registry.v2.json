@@ -1,6 +1,6 @@
 {
   "registryVersion": "v2.0.0",
-  "registryHash": "sha256:llm-spec-contract-v2-20260310-runtimefirst-compatgovernance",
+  "registryHash": "sha256:llm-spec-contract-v2-20260310-data-c03-runtimefirst-compatgovernance",
   "generatedAt": "2026-03-10T00:00:00.000Z",
   "authorityOrder": [
     "Member_LLM_Unified_Master_Spec_v2",
@@ -132,13 +132,18 @@
       "requirementId": "DATA-C-03",
       "sourceSpec": "data_integration_spec",
       "summary": "approved_knowledge and candidate_knowledge lifecycle split",
-      "status": "partial",
+      "status": "aligned",
       "severity": "high",
       "blastRadius": "knowledge_freshness",
-      "recommendedAction": "explicit lifecycle state machine",
+      "recommendedAction": "keep lifecycle state machine on source_refs/faq_articles and monitor approved-only retrieval telemetry",
       "evidence": [
         "/Volumes/Arumamihs/Member/src/repos/firestore/sourceRefsRepo.js:1",
-        "/Volumes/Arumamihs/Member/src/usecases/faq/answerFaqFromKb.js:1"
+        "/Volumes/Arumamihs/Member/src/repos/firestore/faqArticlesRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/domain/data/knowledgeLifecycleStateMachine.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase792/phase792_t01_knowledge_lifecycle_state_machine_contract.test.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase792/phase792_t02_source_refs_lifecycle_bucket_contract.test.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase792/phase792_t03_faq_articles_approved_knowledge_search_contract.test.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase792/phase792_t04_data_c03_registry_status_contract.test.js:1"
       ]
     },
     {

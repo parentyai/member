@@ -1,6 +1,13 @@
 'use strict';
 
 const { getDb } = require('../../infra/firestore');
+const {
+  deriveKnowledgeLifecycleState,
+  resolveKnowledgeLifecycleBucket,
+  normalizeKnowledgeLifecycleBucket,
+  assertKnowledgeLifecycleTransition,
+  isKnowledgeLifecycleState
+} = require('../../domain/data/knowledgeLifecycleStateMachine');
 
 const COLLECTION = 'faq_articles';
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
@@ -69,6 +76,32 @@ function normalizeVersionValue(value) {
   return normalized;
 }
 
+function normalizeKnowledgeLifecycleFields(payload, fallbackState, options) {
+  const source = payload && typeof payload === 'object' ? payload : {};
+  const strict = Boolean(options && options.strict === true);
+  if (Object.prototype.hasOwnProperty.call(source, 'knowledgeLifecycleState')
+    && !isKnowledgeLifecycleState(source.knowledgeLifecycleState)) {
+    if (strict) throw new Error('knowledgeLifecycleState invalid');
+  }
+  const lifecycleInput = Object.prototype.hasOwnProperty.call(source, 'knowledgeLifecycleState')
+    && !isKnowledgeLifecycleState(source.knowledgeLifecycleState)
+    ? undefined
+    : source.knowledgeLifecycleState;
+  const knowledgeLifecycleState = deriveKnowledgeLifecycleState({
+    knowledgeLifecycleState: lifecycleInput,
+    status: source.status,
+    fallbackState: fallbackState || 'candidate'
+  });
+  const knowledgeLifecycleBucket = normalizeKnowledgeLifecycleBucket(
+    source.knowledgeLifecycleBucket,
+    resolveKnowledgeLifecycleBucket(knowledgeLifecycleState)
+  );
+  return {
+    knowledgeLifecycleState,
+    knowledgeLifecycleBucket
+  };
+}
+
 function normalizeKbArticleForSearch(article) {
   if (!article || typeof article !== 'object') return null;
   const status = normalizeStatus(article.status);
@@ -83,12 +116,22 @@ function normalizeKbArticleForSearch(article) {
     || (article.versionSemver !== undefined && article.versionSemver !== null && versionSemver === null)) {
     return null;
   }
+  const lifecycle = normalizeKnowledgeLifecycleFields(
+    {
+      knowledgeLifecycleState: article.knowledgeLifecycleState,
+      knowledgeLifecycleBucket: article.knowledgeLifecycleBucket,
+      status
+    },
+    'candidate'
+  );
   return Object.assign({}, article, {
     status,
     riskLevel,
     allowedIntents,
     version: version || versionSemver || null,
-    versionSemver: versionSemver || version || null
+    versionSemver: versionSemver || version || null,
+    knowledgeLifecycleState: lifecycle.knowledgeLifecycleState,
+    knowledgeLifecycleBucket: lifecycle.knowledgeLifecycleBucket
   });
 }
 
@@ -194,6 +237,10 @@ async function searchActiveArticles(params) {
   const query = typeof payload.query === 'string' ? payload.query : '';
   const limit = Number.isInteger(payload.limit) && payload.limit > 0 ? payload.limit : 5;
   const intent = typeof payload.intent === 'string' && payload.intent.trim().length > 0 ? payload.intent.trim() : 'FAQ';
+  const knowledgeLifecycleBucket = normalizeKnowledgeLifecycleBucket(
+    payload.knowledgeLifecycleBucket,
+    'approved_knowledge'
+  );
   const nowMs = toMillis(payload.now) || Date.now();
 
   const db = getDb();
@@ -219,12 +266,11 @@ async function searchActiveArticles(params) {
     .filter((row) => String(row.locale || '').trim() === locale);
   const filtered = normalizedRows
     .filter((row) => isValidByTime(row, nowMs))
+    .filter((row) => row.knowledgeLifecycleBucket === knowledgeLifecycleBucket)
     .filter((row) => isIntentAllowed(row, intent));
   const avgDocLength =
     filtered.length > 0 ? filtered.reduce((sum, row) => sum + estimateDocLength(row), 0) / filtered.length : 1;
-  const scored = normalizedRows
-    .filter((row) => isValidByTime(row, nowMs))
-    .filter((row) => isIntentAllowed(row, intent))
+  const scored = filtered
     .map((row) => ({ row, score: scoreArticle(row, tokens, intent, { avgDocLength }) }))
     .filter((item) => item.score >= 0)
     .sort((a, b) => {
@@ -264,6 +310,11 @@ function validateKbArticle(data) {
     errors.push('allowedIntents: must be an array (use [] to allow all intents)');
   }
 
+  if (Object.prototype.hasOwnProperty.call(payload, 'knowledgeLifecycleState')
+    && !isKnowledgeLifecycleState(payload.knowledgeLifecycleState)) {
+    errors.push('knowledgeLifecycleState: must be one of candidate|approved|rejected|deprecated');
+  }
+
   return { valid: errors.length === 0, errors };
 }
 
@@ -277,8 +328,15 @@ async function createArticle(data) {
   }
   const db = getDb();
   const now = new Date().toISOString();
+  const lifecycle = normalizeKnowledgeLifecycleFields(data, 'candidate', { strict: true });
+  const record = Object.assign({}, data, {
+    knowledgeLifecycleState: lifecycle.knowledgeLifecycleState,
+    knowledgeLifecycleBucket: lifecycle.knowledgeLifecycleBucket,
+    createdAt: now,
+    updatedAt: now
+  });
   const docRef = db.collection(COLLECTION).doc();
-  await docRef.set(Object.assign({}, data, { createdAt: now, updatedAt: now }));
+  await docRef.set(record);
   return { id: docRef.id };
 }
 
@@ -286,8 +344,38 @@ async function updateArticle(id, patch) {
   if (!id) throw new Error('article id required');
   const db = getDb();
   const now = new Date().toISOString();
+  const current = await getArticle(id);
+  const fromState = normalizeKnowledgeLifecycleFields(
+    {
+      knowledgeLifecycleState: current && current.knowledgeLifecycleState,
+      knowledgeLifecycleBucket: current && current.knowledgeLifecycleBucket,
+      status: current && current.status
+    },
+    'candidate',
+    { strict: false }
+  ).knowledgeLifecycleState;
+  const lifecycleInput = {
+    status: Object.prototype.hasOwnProperty.call(patch || {}, 'status')
+      ? patch.status
+      : (current && current.status)
+  };
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'knowledgeLifecycleState')) {
+    lifecycleInput.knowledgeLifecycleState = patch.knowledgeLifecycleState;
+  }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'knowledgeLifecycleBucket')) {
+    lifecycleInput.knowledgeLifecycleBucket = patch.knowledgeLifecycleBucket;
+  }
+  const lifecycle = normalizeKnowledgeLifecycleFields(lifecycleInput, fromState, { strict: true });
+  assertKnowledgeLifecycleTransition({
+    fromState,
+    toState: lifecycle.knowledgeLifecycleState
+  });
   await db.collection(COLLECTION).doc(id).set(
-    Object.assign({}, patch, { updatedAt: now }),
+    Object.assign({}, patch, {
+      knowledgeLifecycleState: lifecycle.knowledgeLifecycleState,
+      knowledgeLifecycleBucket: lifecycle.knowledgeLifecycleBucket,
+      updatedAt: now
+    }),
     { merge: true }
   );
   return { id };
@@ -297,8 +385,15 @@ async function deleteArticle(id) {
   if (!id) throw new Error('article id required');
   const db = getDb();
   const now = new Date().toISOString();
+  const lifecycle = normalizeKnowledgeLifecycleFields({ status: 'disabled' }, 'deprecated', { strict: false });
   await db.collection(COLLECTION).doc(id).set(
-    { status: 'disabled', deletedAt: now, updatedAt: now },
+    {
+      status: 'disabled',
+      knowledgeLifecycleState: lifecycle.knowledgeLifecycleState,
+      knowledgeLifecycleBucket: lifecycle.knowledgeLifecycleBucket,
+      deletedAt: now,
+      updatedAt: now
+    },
     { merge: true }
   );
   return { id };
