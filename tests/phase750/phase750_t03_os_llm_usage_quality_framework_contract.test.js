@@ -63,6 +63,8 @@ test('phase750: usage summary builds quality framework payload with scorecard/sl
   assert.ok(summary.replay && typeof summary.replay === 'object');
   assert.ok(summary.frontier && typeof summary.frontier === 'object');
   assert.ok(Array.isArray(summary.top_10_quality_failures));
+  assert.ok(Array.isArray(summary.counterexampleQueue));
+  assert.equal(typeof summary.counterexampleQueueOpenCount, 'number');
   assert.ok(Array.isArray(summary.top_10_loop_cases));
   assert.ok(Array.isArray(summary.top_10_context_loss_cases));
   assert.ok(Array.isArray(summary.top_10_japanese_service_failures));

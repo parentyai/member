@@ -5,6 +5,7 @@ const llmActionLogsRepo = require('../../repos/firestore/llmActionLogsRepo');
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+const { buildCounterexampleQueueFromSignalEntries } = require('../../domain/llm/quality/counterexampleQueue');
 
 function parsePositiveInt(value, fallback, min, max) {
   if (value === null || value === undefined || value === '') return fallback;
@@ -1012,6 +1013,67 @@ function buildTopQualityBoards(actionRows, hardFailures) {
   };
 }
 
+function buildCounterexampleQueueFromBoards(boards) {
+  const data = boards && typeof boards === 'object' ? boards : {};
+  const entries = [];
+  (Array.isArray(data.topQualityFailures) ? data.topQualityFailures : []).forEach((row, index) => {
+    const signal = normalizeReason(row && row.failure);
+    if (signal === 'none') return;
+    entries.push({
+      category: 'quality_failure',
+      signal,
+      rank: index + 1,
+      severity: 'high',
+      count: 1
+    });
+  });
+  (Array.isArray(data.topLoopCases) ? data.topLoopCases : []).forEach((row, index) => {
+    const signal = normalizeReason(row && row.signal);
+    if (signal === 'none') return;
+    entries.push({
+      category: 'loop_case',
+      signal,
+      rank: index + 1,
+      severity: 'high',
+      count: Number(row && row.count) || 1
+    });
+  });
+  (Array.isArray(data.topContextLossCases) ? data.topContextLossCases : []).forEach((row, index) => {
+    const signal = normalizeReason(row && row.signal);
+    if (signal === 'none') return;
+    entries.push({
+      category: 'context_loss_case',
+      signal,
+      rank: index + 1,
+      severity: 'high',
+      count: Number(row && row.count) || 1
+    });
+  });
+  (Array.isArray(data.topJapaneseServiceFailures) ? data.topJapaneseServiceFailures : []).forEach((row, index) => {
+    const signal = normalizeReason(row && row.signal);
+    if (signal === 'none') return;
+    entries.push({
+      category: 'jp_service_failure',
+      signal,
+      rank: index + 1,
+      severity: 'medium',
+      count: Number(row && row.count) || 1
+    });
+  });
+  (Array.isArray(data.topLineFitFailures) ? data.topLineFitFailures : []).forEach((row, index) => {
+    const signal = normalizeReason(row && row.signal);
+    if (signal === 'none') return;
+    entries.push({
+      category: 'line_fit_failure',
+      signal,
+      rank: index + 1,
+      severity: 'medium',
+      count: Number(row && row.count) || 1
+    });
+  });
+  return buildCounterexampleQueueFromSignalEntries(entries, { limit: 10 });
+}
+
 function buildQualityFrameworkSummary(payload) {
   const data = payload && typeof payload === 'object' ? payload : {};
   const conversation = data.conversationQuality && typeof data.conversationQuality === 'object' ? data.conversationQuality : {};
@@ -1344,6 +1406,7 @@ function buildQualityFrameworkSummary(payload) {
   frontierFailures.forEach((item) => hardFailures.push(`frontier:${item}`));
 
   const boards = buildTopQualityBoards(actionRows, hardFailures);
+  const counterexampleQueue = buildCounterexampleQueueFromBoards(boards);
 
   return {
     frameworkVersion: 'v1',
@@ -1375,6 +1438,8 @@ function buildQualityFrameworkSummary(payload) {
     topContextLossCases: boards.topContextLossCases,
     topJapaneseServiceFailures: boards.topJapaneseServiceFailures,
     topLineFitFailures: boards.topLineFitFailures,
+    counterexampleQueue,
+    counterexampleQueueOpenCount: counterexampleQueue.length,
     judgeCalibration: {
       confidence: judgeConfidence,
       disagreementRate: judgeDisagreement,
@@ -1605,5 +1670,6 @@ module.exports = {
   buildConversationQualitySummary,
   buildReleaseReadiness,
   buildQualityFrameworkSummary,
+  buildCounterexampleQueueFromBoards,
   maskLineUserId
 };

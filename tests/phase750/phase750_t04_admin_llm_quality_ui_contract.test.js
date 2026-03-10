@@ -17,6 +17,7 @@ test('phase750: admin llm pane includes quality framework sections', () => {
     'llm-quality-replay',
     'llm-quality-frontier',
     'llm-quality-top-failures',
+    'llm-quality-counterexamples',
     'llm-quality-top-patterns'
   ].forEach((id) => {
     assert.match(html, new RegExp(`id=\\"${id}\\"`));
@@ -28,5 +29,6 @@ test('phase750: admin app renders quality framework dashboard from usage summary
   assert.match(appJs, /function renderLlmQualityFrameworkDashboard\(/);
   assert.match(appJs, /renderLlmQualityFrameworkDashboard\(data && data\.summary \? data\.summary : null\)/);
   assert.match(appJs, /llm-quality-top-failures/);
+  assert.match(appJs, /llm-quality-counterexamples/);
   assert.match(appJs, /llm-quality-top-patterns/);
 });
