@@ -41,6 +41,7 @@
     "journeyTodoItemsRepo",
     "journeyTodoStatsRepo",
     "kpiSnapshotsReadRepo",
+    "liffSyntheticEventsRepo",
     "linkRegistryRepo",
     "llmActionLogsRepo",
     "llmBanditStateRepo",

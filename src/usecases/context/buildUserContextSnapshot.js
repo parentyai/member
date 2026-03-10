@@ -5,6 +5,10 @@ const analyticsReadRepo = require('../../repos/firestore/analyticsReadRepo');
 const userContextSnapshotsRepo = require('../../repos/firestore/userContextSnapshotsRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
+const { putTaskMemory } = require('../../v1/memory_fabric/taskMemoryRepo');
+const { putSessionMemory } = require('../../v1/memory_fabric/sessionMemoryRepo');
+const { putProfileMemory } = require('../../v1/memory_fabric/profileMemoryRepo');
+const { putComplianceMemory } = require('../../v1/memory_fabric/complianceMemoryRepo');
 
 const MAX_EVENTS = 200;
 const MAX_TASKS = 5;
@@ -287,6 +291,66 @@ async function appendSnapshotAudit(action, payload) {
   }
 }
 
+function buildMemoryLanePayloads(snapshot) {
+  const payload = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const topTaskKeys = Array.isArray(payload.topOpenTasks)
+    ? payload.topOpenTasks.map((item) => (item && item.key ? String(item.key) : '')).filter(Boolean).slice(0, 5)
+    : [];
+  const riskFlags = Array.isArray(payload.riskFlags) ? payload.riskFlags.filter((item) => typeof item === 'string' && item.trim()).slice(0, 5) : [];
+  const priorities = Array.isArray(payload.priorities) ? payload.priorities.filter((item) => typeof item === 'string' && item.trim()).slice(0, 3) : [];
+  const city = payload.location && typeof payload.location.city === 'string' ? payload.location.city.trim() : '';
+  const state = payload.location && typeof payload.location.state === 'string' ? payload.location.state.trim() : '';
+
+  return {
+    task: {
+      current_goal: payload.shortSummary || '',
+      current_missing_slots: [],
+      current_constraints: riskFlags,
+      current_selected_options: topTaskKeys
+    },
+    session: {
+      clarification_history: [],
+      user_decisions: priorities,
+      shown_options: topTaskKeys,
+      unresolved_items: topTaskKeys
+    },
+    profile: {
+      language_preference: 'ja',
+      family_structure: payload.family && payload.family.spouse === true ? 'with_spouse' : 'single',
+      recurring_constraints: riskFlags,
+      communication_style: 'polite',
+      recurring_destinations: [city, state].filter(Boolean),
+      recurring_document_patterns: priorities
+    },
+    compliance: {
+      source_snapshot_refs: ['snapshot:user_context_snapshots'],
+      effective_dates: {
+        sourceUpdatedAt: payload.sourceUpdatedAt || null,
+        snapshotUpdatedAt: payload.updatedAt || null
+      },
+      confirmations: [],
+      action_class_used: 'lookup',
+      escalations: [],
+      disclaimers_shown: []
+    }
+  };
+}
+
+async function shadowWriteMemoryFabric(lineUserId, snapshot, deps) {
+  const payload = deps && typeof deps === 'object' ? deps : {};
+  const taskRepo = payload.taskMemoryRepo || { putTaskMemory };
+  const sessionRepo = payload.sessionMemoryRepo || { putSessionMemory };
+  const profileRepo = payload.profileMemoryRepo || { putProfileMemory };
+  const complianceRepo = payload.complianceMemoryRepo || { putComplianceMemory };
+  const lanes = buildMemoryLanePayloads(snapshot);
+  await Promise.all([
+    taskRepo.putTaskMemory(lineUserId, lanes.task),
+    sessionRepo.putSessionMemory(lineUserId, lanes.session),
+    profileRepo.putProfileMemory(lineUserId, lanes.profile),
+    complianceRepo.putComplianceMemory(lineUserId, lanes.compliance)
+  ]);
+}
+
 async function buildUserContextSnapshot(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
@@ -363,6 +427,7 @@ async function buildUserContextSnapshot(params, deps) {
 
   if (payload.write !== false) {
     await snapshots.upsertUserContextSnapshot(lineUserId, snapshot);
+    await shadowWriteMemoryFabric(lineUserId, snapshot, resolvedDeps).catch(() => null);
   }
 
   await appendSnapshotAudit('snapshot_updated', {

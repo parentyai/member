@@ -1,8 +1,8 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-10T13:51:45.109Z
-- gitCommit: c95f6aaac68a07389b87cce4531f0623d6cbf3c6
-- branch: codex/spec-v2-pr9-channel-edge-default
+- generatedAt: 2026-03-10T15:31:12.349Z
+- gitCommit: 76fd138816c03d13da9c0e7205fc381cd81d03fd
+- branch: codex/spec-v2-pr10-envelope-memory-shadow
 - flagCount: 86
 - source: src/**/*.js
 - check: `npm run feature-flags:check`
