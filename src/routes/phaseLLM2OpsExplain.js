@@ -3,6 +3,7 @@
 const { getOpsExplanation } = require('../usecases/phaseLLM2/getOpsExplanation');
 const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
 const { resolveSharedAnswerReadiness } = require('../domain/llm/quality/resolveSharedAnswerReadiness');
+const { resolveV1FeatureMatrix } = require('../v1/shared/featureMatrix');
 const { enforceLlmGenerationKillSwitch } = require('./admin/osContext');
 
 const COMPAT_ROUTE_ID = 'compat_phaseLLM2_ops_explain';
@@ -55,6 +56,7 @@ async function handleOpsExplain(req, res) {
     if (!allowed) return;
     const result = await getOpsExplanation({ lineUserId, traceId, actor });
     const qualitySignals = buildCompatQualitySignals(result);
+    const v1Matrix = resolveV1FeatureMatrix();
     const opsExplanationText = result && result.explanation && typeof result.explanation.opsExplanation === 'string'
       ? result.explanation.opsExplanation
       : '';
@@ -66,7 +68,10 @@ async function handleOpsExplain(req, res) {
       lawfulBasis: 'consent',
       consentVerified: true,
       legalDecision: 'allow',
-      sourceReadinessDecision: result && result.llmUsed === true ? 'allow' : 'clarify'
+      sourceReadinessDecision: result && result.llmUsed === true ? 'allow' : 'clarify',
+      actionGatewayEnabled: v1Matrix.actionGateway === true,
+      actionClass: 'lookup',
+      toolName: 'lookup'
     });
     if (result && result.explanation && typeof result.explanation === 'object' && opsExplanationText) {
       result.explanation.opsExplanation = sharedReadiness.replyText;
@@ -101,6 +106,12 @@ async function handleOpsExplain(req, res) {
       readinessReasonCodes: sharedReadiness.readiness.reasonCodes,
       readinessSafeResponseMode: sharedReadiness.readiness.safeResponseMode,
       intentRiskTier: sharedReadiness.intentRiskTier,
+      actionClass: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.actionClass : null,
+      actionGatewayEnabled: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.enabled === true : false,
+      actionGatewayEnforced: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.enforced === true : false,
+      actionGatewayAllowed: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.allowed === true : true,
+      actionGatewayDecision: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.decision : null,
+      actionGatewayReason: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.reason : null,
       entryType: 'compat',
       gatesApplied: ['kill_switch']
     }).catch(() => null);

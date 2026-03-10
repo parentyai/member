@@ -86,6 +86,12 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'followupQuestionIncluded',
   'actionCount',
   'pitfallIncluded',
+  'actionClass',
+  'actionGatewayEnabled',
+  'actionGatewayEnforced',
+  'actionGatewayAllowed',
+  'actionGatewayDecision',
+  'actionGatewayReason',
   'domainIntent',
   'fallbackType',
   'interventionSuppressedBy'

@@ -19,14 +19,17 @@ test('phase778: admin/compat LLM routes include shared answer-readiness telemetr
   assert.ok(adminOps.includes('resolveSharedAnswerReadiness'));
   assert.ok(adminOps.includes('readinessDecision'));
   assert.ok(adminOps.includes('intentRiskTier'));
+  assert.ok(adminOps.includes('actionGatewayDecision'));
+  assert.ok(adminOps.includes('actionGatewayReason'));
 
   assert.ok(compatOpsExplain.includes('resolveSharedAnswerReadiness'));
   assert.ok(compatOpsExplain.includes('readinessDecision'));
+  assert.ok(compatOpsExplain.includes('actionGatewayDecision'));
 
   assert.ok(compatNextActions.includes('resolveSharedAnswerReadiness'));
   assert.ok(compatNextActions.includes('readinessSafeResponseMode'));
+  assert.ok(compatNextActions.includes('actionGatewayReason'));
 
   assert.ok(adminFaq.includes('readinessDecision: result && result.readinessDecision'));
   assert.ok(compatFaq.includes('readinessDecision: result && result.readinessDecision'));
 });
-

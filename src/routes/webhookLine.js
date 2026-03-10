@@ -411,6 +411,10 @@ function resolveV1FastSlowDispatchEnabled() {
   return resolveBooleanEnvFlag('ENABLE_V1_FAST_SLOW_DISPATCH', false);
 }
 
+function resolveV1ActionGatewayEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_V1_ACTION_GATEWAY', false);
+}
+
 function resolvePaidInterventionCooldownTurns() {
   const raw = Number(process.env.PAID_INTERVENTION_COOLDOWN_TURNS || 5);
   if (!Number.isFinite(raw)) return 5;
@@ -1412,6 +1416,18 @@ async function appendLlmActionLogBestEffort(data) {
       conversationState: conciergeMeta.conversationState || null,
       conversationMove: conciergeMeta.conversationMove || null,
       styleId: conciergeMeta.styleId || null,
+      actionClass: typeof payload.actionClass === 'string' && payload.actionClass.trim()
+        ? payload.actionClass.trim().toLowerCase()
+        : null,
+      actionGatewayEnabled: payload.actionGatewayEnabled === true,
+      actionGatewayEnforced: payload.actionGatewayEnforced === true,
+      actionGatewayAllowed: payload.actionGatewayAllowed !== false,
+      actionGatewayDecision: typeof payload.actionGatewayDecision === 'string' && payload.actionGatewayDecision.trim()
+        ? payload.actionGatewayDecision.trim().toLowerCase()
+        : null,
+      actionGatewayReason: typeof payload.actionGatewayReason === 'string' && payload.actionGatewayReason.trim()
+        ? payload.actionGatewayReason.trim().toLowerCase().replace(/\s+/g, '_')
+        : null,
       conversationMode: typeof payload.conversationMode === 'string'
         ? payload.conversationMode
         : (conciergeMeta && conciergeMeta.conversationState ? 'concierge' : null),
@@ -1691,7 +1707,8 @@ async function tryHandlePaidOrchestratorV2(params) {
       llmStyleEngineEnabled: payload.llmStyleEngineEnabled,
       llmBanditEnabled: payload.llmBanditEnabled,
       qualityEnabled: payload.qualityEnabled,
-      snapshotStrictMode: payload.snapshotStrictMode
+      snapshotStrictMode: payload.snapshotStrictMode,
+      actionGatewayEnabled: payload.actionGatewayEnabled === true
     },
     maxNextActionsCap: payload.maxNextActionsCap,
     recentEngagement: payload.recentEngagement,
@@ -1793,6 +1810,12 @@ async function tryHandlePaidOrchestratorV2(params) {
     clarifySuppressed: orchestrated.telemetry ? orchestrated.telemetry.clarifySuppressed === true : false,
     contextCarryScore: orchestrated.telemetry ? orchestrated.telemetry.contextCarryScore : 0,
     repeatRiskScore: orchestrated.telemetry ? orchestrated.telemetry.repeatRiskScore : 0,
+    actionClass: orchestrated.telemetry ? orchestrated.telemetry.actionClass : null,
+    actionGatewayEnabled: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayEnabled === true : false,
+    actionGatewayEnforced: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayEnforced === true : false,
+    actionGatewayAllowed: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayAllowed === true : true,
+    actionGatewayDecision: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayDecision : null,
+    actionGatewayReason: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayReason : null,
     legalSnapshot
   });
   await appendLlmActionLogBestEffort({
@@ -1839,6 +1862,12 @@ async function tryHandlePaidOrchestratorV2(params) {
     clarifySuppressed: orchestrated.telemetry ? orchestrated.telemetry.clarifySuppressed === true : false,
     contextCarryScore: orchestrated.telemetry ? orchestrated.telemetry.contextCarryScore : 0,
     repeatRiskScore: orchestrated.telemetry ? orchestrated.telemetry.repeatRiskScore : 0,
+    actionClass: orchestrated.telemetry ? orchestrated.telemetry.actionClass : null,
+    actionGatewayEnabled: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayEnabled === true : false,
+    actionGatewayEnforced: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayEnforced === true : false,
+    actionGatewayAllowed: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayAllowed === true : true,
+    actionGatewayDecision: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayDecision : null,
+    actionGatewayReason: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayReason : null,
     committedNextActions: orchestrated.telemetry ? orchestrated.telemetry.committedNextActions : [],
     committedFollowupQuestion: orchestrated.telemetry ? orchestrated.telemetry.committedFollowupQuestion : null,
     recentUserGoal: Array.isArray(orchestrated.packet && orchestrated.packet.recentUserGoals)
@@ -2608,6 +2637,7 @@ async function handleAssistantMessage(params) {
   }
 
   const qualityEnabled = resolvePaidFaqQualityEnabled();
+  const actionGatewayEnabled = resolveV1ActionGatewayEnabled();
   const contextSnapshot = snapshotResult && snapshotResult.ok === true && snapshotResult.stale !== true
     ? snapshotResult.snapshot
     : null;
@@ -2698,6 +2728,7 @@ async function handleAssistantMessage(params) {
     llmStyleEngineEnabled,
     llmBanditEnabled,
     qualityEnabled,
+    actionGatewayEnabled,
     snapshotStrictMode,
     maxNextActionsCap,
     recentEngagement,
@@ -3274,6 +3305,10 @@ async function handleLineWebhook(options) {
   const secret = process.env.LINE_CHANNEL_SECRET || '';
   const signature = options && options.signature;
   const body = options && options.body;
+  const trustedPayload = options && options.trustedPayload && typeof options.trustedPayload === 'object'
+    ? options.trustedPayload
+    : null;
+  const trustedPayloadMode = trustedPayload !== null;
   const logger = (options && options.logger) || (() => {});
   const optionRequestId = options && typeof options.requestId === 'string' ? options.requestId.trim() : '';
   const optionTraceId = options && typeof options.traceId === 'string' ? options.traceId.trim() : '';
@@ -3282,7 +3317,7 @@ async function handleLineWebhook(options) {
   const isWebhookEdge = process.env.SERVICE_MODE === 'webhook';
   const allowWelcome = Boolean(options && options.allowWelcome === true);
 
-  if (!secret) {
+  if (!trustedPayloadMode && !secret) {
     logger(`[webhook] requestId=${requestId} reject=missing-secret`);
     return {
       status: 500,
@@ -3295,7 +3330,7 @@ async function handleLineWebhook(options) {
       })
     };
   }
-  if (typeof signature !== 'string' || signature.length === 0) {
+  if (!trustedPayloadMode && (typeof signature !== 'string' || signature.length === 0)) {
     logger(`[webhook] requestId=${requestId} reject=missing-signature`);
     return {
       status: 401,
@@ -3308,7 +3343,7 @@ async function handleLineWebhook(options) {
       })
     };
   }
-  if (!verifyLineSignature(secret, body, signature)) {
+  if (!trustedPayloadMode && !verifyLineSignature(secret, body, signature)) {
     logger(`[webhook] requestId=${requestId} reject=invalid-signature`);
     return {
       status: 401,
@@ -3323,20 +3358,24 @@ async function handleLineWebhook(options) {
   }
 
   let payload;
-  try {
-    payload = JSON.parse(body || '{}');
-  } catch (err) {
-    logger(`[webhook] requestId=${requestId} reject=invalid-json`);
-    return {
-      status: 400,
-      body: 'invalid json',
-      outcome: buildOutcome({ ok: false }, {
-        state: 'error',
-        reason: 'invalid_json',
-        routeType: 'webhook',
-        guard: { routeKey: ROUTE_KEY, decision: 'block' }
-      })
-    };
+  if (trustedPayloadMode) {
+    payload = trustedPayload;
+  } else {
+    try {
+      payload = JSON.parse(body || '{}');
+    } catch (err) {
+      logger(`[webhook] requestId=${requestId} reject=invalid-json`);
+      return {
+        status: 400,
+        body: 'invalid json',
+        outcome: buildOutcome({ ok: false }, {
+          state: 'error',
+          reason: 'invalid_json',
+          routeType: 'webhook',
+          guard: { routeKey: ROUTE_KEY, decision: 'block' }
+        })
+      };
+    }
   }
 
   const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'
@@ -3516,8 +3555,44 @@ async function handleLineWebhook(options) {
     if (event && event.type === 'message') {
       const text = extractMessageText(event);
       const replyToken = extractReplyToken(event);
-      if (text && replyToken) {
+      const isSyntheticMessage = event && event._synthetic === true;
+      const canSyntheticReply = isSyntheticMessage && Boolean(userId);
+      const syntheticReplyToken = canSyntheticReply
+        ? `synthetic_${typeof event.webhookEventId === 'string' && event.webhookEventId ? event.webhookEventId : requestId}`
+        : null;
+      const effectiveReplyToken = replyToken || syntheticReplyToken;
+      const effectiveReplyFn = replyToken
+        ? replyFn
+        : (canSyntheticReply
+          ? async (_replyToken, message) => pushFn(userId, message)
+          : null);
+      if (text && effectiveReplyToken && typeof effectiveReplyFn === 'function') {
         try {
+          if (isSyntheticMessage) {
+            const assistant = await handleAssistantMessage({
+              lineUserId: userId,
+              text,
+              replyToken: effectiveReplyToken,
+              replyFn: effectiveReplyFn,
+              requestId,
+              llmConciergeEnabled,
+              llmWebSearchEnabled,
+              llmStyleEngineEnabled,
+              llmBanditEnabled
+            });
+            if (assistant && assistant.handled) {
+              const mode = assistant.mode || 'unknown';
+              const blockedReason = assistant.blockedReason || '-';
+              logger(`[webhook] requestId=${requestId} synthetic_assistant mode=${mode} blockedReason=${blockedReason} lineUserId=${userId}`);
+              continue;
+            }
+            await effectiveReplyFn(effectiveReplyToken, {
+              type: 'text',
+              text: '受け取りました。続けて状況を一緒に整理します。'
+            });
+            continue;
+          }
+
           if (fastSlowDispatchEnabled) {
             const dispatch = classifyDispatchMode(event);
             await appendAuditLog({

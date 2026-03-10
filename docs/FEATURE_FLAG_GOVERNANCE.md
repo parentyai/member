@@ -1,9 +1,9 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-10T12:14:56.048Z
-- gitCommit: ed8f00e8a3154b861bfa177794bd8615975d47b7
-- branch: codex/spec-v2-contract-freeze-foundation
-- flagCount: 85
+- generatedAt: 2026-03-10T13:07:34.694Z
+- gitCommit: 17c0117e43391e5524a727e544cc5e14e9d83fd6
+- branch: codex/spec-v2-pr5-action-gateway-intercept
+- flagCount: 86
 - source: src/**/*.js
 - check: `npm run feature-flags:check`
 
@@ -87,6 +87,7 @@
 | ENABLE_UXOS_FATIGUE_WARN_V1 | ux-os | false | 2026-09-30 | user_facing | Runtime gate for enable_uxos_fatigue_warn_v1 | src/domain/tasks/featureFlags.js:186<br>src/index.js:148 |
 | ENABLE_UXOS_NBA_V1 | ux-os | false | 2026-09-30 | user_facing | Runtime gate for enable_uxos_nba_v1 | src/domain/tasks/featureFlags.js:182 |
 | ENABLE_UXOS_POLICY_READONLY_V1 | ux-os | false | 2026-09-30 | user_facing | Runtime gate for enable_uxos_policy_readonly_v1 | src/domain/tasks/featureFlags.js:190<br>src/index.js:144 |
+| ENABLE_V1_ACTION_GATEWAY | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_v1_action_gateway | src/routes/webhookLine.js:415 |
 | ENABLE_V1_CHANNEL_EDGE | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_v1_channel_edge | src/routes/webhookLine.js:396 |
 | ENABLE_V1_FAST_SLOW_ACK | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_v1_fast_slow_ack | src/routes/webhookLine.js:3156 |
 | ENABLE_V1_FAST_SLOW_DISPATCH | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_v1_fast_slow_dispatch | src/routes/webhookLine.js:400 |

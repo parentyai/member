@@ -46,6 +46,9 @@ test('phase731: orchestrator clarifies broad paid questions without retrieval', 
   assert.equal(typeof result.telemetry.readinessDecision, 'string');
   assert.ok(Array.isArray(result.telemetry.readinessReasonCodes));
   assert.equal(result.telemetry.answerReadinessLogOnly, false);
+  assert.equal(result.telemetry.actionClass, 'lookup');
+  assert.equal(result.telemetry.actionGatewayDecision, 'bypass');
+  assert.equal(result.telemetry.actionGatewayAllowed, true);
   assert.equal(result.replyText.includes('対象を絞って案内したい'), true);
 });
 
@@ -113,6 +116,8 @@ test('phase731: orchestrator rejects legacy grounded candidate and prefers compo
   assert.equal(typeof result.telemetry.readinessDecision, 'string');
   assert.ok(Array.isArray(result.telemetry.readinessReasonCodes));
   assert.equal(result.telemetry.answerReadinessLogOnly, false);
+  assert.equal(result.telemetry.actionClass, 'lookup');
+  assert.equal(result.telemetry.actionGatewayDecision, 'bypass');
   assert.equal(result.replyText.includes('FAQ候補'), false);
   assert.equal(result.replyText.includes('根拠キー'), false);
   assert.equal(result.finalMeta.legacyTemplateHit, false);
@@ -161,6 +166,71 @@ test('phase731: orchestrator applies loop-break when repetitive casual candidate
   assert.equal(result.telemetry.judgeWinner, 'conversation_candidate');
   assert.equal(result.telemetry.loopBreakApplied, true);
   assert.equal(result.telemetry.orchestratorPathUsed, true);
+  assert.equal(result.telemetry.actionClass, 'lookup');
+  assert.equal(result.telemetry.actionGatewayDecision, 'bypass');
   assert.ok(result.replyText.includes('対象を絞って案内したい'));
   assert.equal(result.replyText.includes('優先したい手続きがあれば1つだけ教えてください。'), false);
+});
+
+test('phase731: action gateway enforce mode clarifies assist strategy without confirmation token', async () => {
+  const result = await runPaidConversationOrchestrator({
+    lineUserId: 'U_PHASE731_ACTION',
+    messageText: 'SSNの予約方法を教えて',
+    paidIntent: 'next_action_generation',
+    planInfo: { plan: 'pro', status: 'active' },
+    llmFlags: {
+      llmConciergeEnabled: true,
+      llmWebSearchEnabled: true,
+      llmStyleEngineEnabled: true,
+      llmBanditEnabled: false,
+      qualityEnabled: true,
+      snapshotStrictMode: false,
+      actionGatewayEnabled: true
+    },
+    actionClassOverride: 'assist',
+    actionToolName: 'assist',
+    confirmationToken: '',
+    deps: {
+      generatePaidCasualReply: () => ({ replyText: 'こんにちは。' }),
+      generateGroundedReply: async () => ({
+        ok: true,
+        replyText: 'SSNは予約確認が必要です。',
+        output: {
+          situation: 'SSN手続きです。',
+          nextActions: ['窓口の予約要否を確認する'],
+          risks: ['窓口差があります。'],
+          gaps: ['地域はどこですか？']
+        },
+        assistantQuality: {
+          intentResolved: 'next_action_generation',
+          kbTopScore: 0.9,
+          evidenceCoverage: 1,
+          blockedStage: null,
+          fallbackReason: null
+        },
+        top1Score: 0.9,
+        tokensIn: 10,
+        tokensOut: 20,
+        model: 'gpt-4o-mini'
+      }),
+      generateDomainConciergeCandidate: async () => ({
+        ok: true,
+        replyText: 'SSN手続きの次を整理します。',
+        domainIntent: 'ssn',
+        conversationMode: 'concierge',
+        opportunityType: 'action',
+        opportunityReasonKeys: ['domain_intent'],
+        interventionBudget: 1,
+        auditMeta: null
+      })
+    }
+  });
+
+  assert.equal(result.telemetry.actionClass, 'assist');
+  assert.equal(result.telemetry.actionGatewayEnabled, true);
+  assert.equal(result.telemetry.actionGatewayAllowed, false);
+  assert.equal(result.telemetry.actionGatewayDecision, 'clarify');
+  assert.equal(result.telemetry.actionGatewayReason, 'assist_confirmation_required');
+  assert.equal(result.telemetry.readinessDecision, 'clarify');
+  assert.ok(result.replyText.includes('対象手続きと期限'));
 });

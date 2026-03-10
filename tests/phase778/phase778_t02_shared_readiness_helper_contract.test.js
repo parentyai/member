@@ -37,3 +37,21 @@ test('phase778: explicit readiness decision overrides computed decision', () => 
   assert.equal(result.readiness.safeResponseMode, 'answer_with_hedge');
 });
 
+test('phase778: shared readiness helper enforces action gateway decision when enabled', () => {
+  const result = resolveSharedAnswerReadiness({
+    domainIntent: 'general',
+    llmUsed: true,
+    replyText: '回答です',
+    actionGatewayEnabled: true,
+    actionClass: 'assist',
+    toolName: 'assist',
+    confirmationToken: ''
+  });
+
+  assert.equal(result.actionGateway.enabled, true);
+  assert.equal(result.actionGateway.actionClass, 'assist');
+  assert.equal(result.actionGateway.allowed, false);
+  assert.equal(result.actionGateway.decision, 'clarify');
+  assert.equal(result.actionGateway.reason, 'assist_confirmation_required');
+  assert.equal(result.readiness.decision, 'clarify');
+});

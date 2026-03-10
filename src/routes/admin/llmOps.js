@@ -4,6 +4,7 @@ const { getOpsExplanation } = require('../../usecases/phaseLLM2/getOpsExplanatio
 const { getNextActionCandidates } = require('../../usecases/phaseLLM3/getNextActionCandidates');
 const { appendLlmGateDecision } = require('../../usecases/llm/appendLlmGateDecision');
 const { resolveSharedAnswerReadiness } = require('../../domain/llm/quality/resolveSharedAnswerReadiness');
+const { resolveV1FeatureMatrix } = require('../../v1/shared/featureMatrix');
 const { requireActor, resolveTraceId } = require('./osContext');
 
 function buildOpsQualitySignals(result, mode) {
@@ -67,6 +68,7 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
     const traceId = resolveTraceId(req);
     const result = await getOpsExplanation({ lineUserId, traceId, actor }, deps);
     const qualitySignals = buildOpsQualitySignals(result, 'ops_explain');
+    const v1Matrix = resolveV1FeatureMatrix();
     const opsExplanationText = result && result.explanation && typeof result.explanation.opsExplanation === 'string'
       ? result.explanation.opsExplanation
       : '';
@@ -78,7 +80,10 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
       lawfulBasis: 'consent',
       consentVerified: true,
       legalDecision: 'allow',
-      sourceReadinessDecision: result && result.llmUsed === true ? 'allow' : 'clarify'
+      sourceReadinessDecision: result && result.llmUsed === true ? 'allow' : 'clarify',
+      actionGatewayEnabled: v1Matrix.actionGateway === true,
+      actionClass: 'lookup',
+      toolName: 'lookup'
     });
     if (result && result.explanation && typeof result.explanation === 'object' && opsExplanationText) {
       result.explanation.opsExplanation = sharedReadiness.replyText;
@@ -113,6 +118,12 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
       readinessReasonCodes: sharedReadiness.readiness.reasonCodes,
       readinessSafeResponseMode: sharedReadiness.readiness.safeResponseMode,
       intentRiskTier: sharedReadiness.intentRiskTier,
+      actionClass: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.actionClass : null,
+      actionGatewayEnabled: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.enabled === true : false,
+      actionGatewayEnforced: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.enforced === true : false,
+      actionGatewayAllowed: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.allowed === true : true,
+      actionGatewayDecision: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.decision : null,
+      actionGatewayReason: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.reason : null,
       entryType: 'admin',
       gatesApplied: ['kill_switch']
     }).catch(() => null);
@@ -140,6 +151,7 @@ async function handleAdminLlmNextActions(req, res, deps) {
     const traceId = resolveTraceId(req);
     const result = await getNextActionCandidates({ lineUserId, traceId, actor }, deps);
     const qualitySignals = buildOpsQualitySignals(result, 'next_actions');
+    const v1Matrix = resolveV1FeatureMatrix();
     const firstReason = result
       && result.nextActionCandidates
       && Array.isArray(result.nextActionCandidates.candidates)
@@ -155,7 +167,10 @@ async function handleAdminLlmNextActions(req, res, deps) {
       lawfulBasis: 'consent',
       consentVerified: true,
       legalDecision: 'allow',
-      sourceReadinessDecision: result && result.llmUsed === true ? 'allow' : 'clarify'
+      sourceReadinessDecision: result && result.llmUsed === true ? 'allow' : 'clarify',
+      actionGatewayEnabled: v1Matrix.actionGateway === true,
+      actionClass: 'lookup',
+      toolName: 'lookup'
     });
     result.readinessDecision = sharedReadiness.readiness.decision;
     result.readinessReasonCodes = sharedReadiness.readiness.reasonCodes;
@@ -187,6 +202,12 @@ async function handleAdminLlmNextActions(req, res, deps) {
       readinessReasonCodes: sharedReadiness.readiness.reasonCodes,
       readinessSafeResponseMode: sharedReadiness.readiness.safeResponseMode,
       intentRiskTier: sharedReadiness.intentRiskTier,
+      actionClass: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.actionClass : null,
+      actionGatewayEnabled: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.enabled === true : false,
+      actionGatewayEnforced: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.enforced === true : false,
+      actionGatewayAllowed: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.allowed === true : true,
+      actionGatewayDecision: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.decision : null,
+      actionGatewayReason: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.reason : null,
       entryType: 'admin',
       gatesApplied: ['kill_switch']
     }).catch(() => null);

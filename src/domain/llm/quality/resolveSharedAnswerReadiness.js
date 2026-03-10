@@ -3,6 +3,8 @@
 const { evaluateAnswerReadiness } = require('./evaluateAnswerReadiness');
 const { applyAnswerReadinessDecision } = require('./applyAnswerReadinessDecision');
 const { resolveIntentRiskTier } = require('../policy/resolveIntentRiskTier');
+const { enforceActionGateway } = require('../../../v1/action_gateway/actionGateway');
+const { resolveActionClass } = require('../../../v1/policy_graph/resolveActionClass');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -36,6 +38,32 @@ function normalizeScore(value, fallback) {
   return num;
 }
 
+function normalizeBoolean(value, fallback) {
+  if (typeof value === 'boolean') return value;
+  return fallback;
+}
+
+function applyActionGatewayToReadiness(readiness, actionGateway) {
+  const base = readiness && typeof readiness === 'object'
+    ? readiness
+    : { decision: 'allow', reasonCodes: [], safeResponseMode: 'answer', qualitySnapshot: {} };
+  if (!actionGateway || actionGateway.enabled !== true) return base;
+  if (actionGateway.allowed === true) return base;
+  const reasonCodes = normalizeReasonCodes([].concat(base.reasonCodes || [], actionGateway.reason || []));
+  if (actionGateway.decision === 'clarify') {
+    return Object.assign({}, base, {
+      decision: 'clarify',
+      reasonCodes,
+      safeResponseMode: 'clarify'
+    });
+  }
+  return Object.assign({}, base, {
+    decision: 'refuse',
+    reasonCodes,
+    safeResponseMode: 'refuse'
+  });
+}
+
 function resolveSharedAnswerReadiness(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const domainIntent = normalizeText(payload.domainIntent).toLowerCase() || 'general';
@@ -65,7 +93,23 @@ function resolveSharedAnswerReadiness(params) {
     reasonCodes: normalizeReasonCodes([].concat(risk.riskReasonCodes || [], explicitReasonCodes))
   });
 
-  const readiness = explicitDecision
+  const actionClass = resolveActionClass(normalizeText(payload.actionClass) || 'lookup');
+  const actionGatewayEnabled = normalizeBoolean(payload.actionGatewayEnabled, false);
+  const actionGatewayDecision = enforceActionGateway({
+    actionClass,
+    toolName: normalizeText(payload.toolName) || (actionClass === 'draft' ? 'draft' : 'lookup'),
+    confirmationToken: normalizeText(payload.confirmationToken)
+  });
+  const actionGateway = {
+    enabled: actionGatewayEnabled,
+    actionClass,
+    decision: actionGatewayEnabled ? actionGatewayDecision.decision : 'bypass',
+    reason: actionGatewayEnabled ? actionGatewayDecision.reason : 'action_gateway_disabled',
+    allowed: actionGatewayEnabled ? actionGatewayDecision.allowed === true : true,
+    enforced: actionGatewayEnabled
+  };
+
+  const readinessRaw = explicitDecision
     ? {
       decision: explicitDecision,
       reasonCodes: explicitReasonCodes.length ? explicitReasonCodes : evaluated.reasonCodes,
@@ -73,6 +117,7 @@ function resolveSharedAnswerReadiness(params) {
       qualitySnapshot: evaluated.qualitySnapshot
     }
     : evaluated;
+  const readiness = applyActionGatewayToReadiness(readinessRaw, actionGateway);
 
   const applied = applyAnswerReadinessDecision({
     decision: readiness.decision,
@@ -86,11 +131,11 @@ function resolveSharedAnswerReadiness(params) {
     domainIntent: risk.domainIntent,
     intentRiskTier: risk.intentRiskTier,
     replyText: applied.replyText,
-    readinessEnforced: applied.enforced === true
+    readinessEnforced: applied.enforced === true,
+    actionGateway
   };
 }
 
 module.exports = {
   resolveSharedAnswerReadiness
 };
-

@@ -14,6 +14,8 @@ const { resolveLlmLegalPolicySnapshot } = require('../policy/resolveLlmLegalPoli
 const { resolveIntentRiskTier } = require('../policy/resolveIntentRiskTier');
 const { computeSourceReadiness } = require('../knowledge/computeSourceReadiness');
 const { evaluateAnswerReadiness } = require('../quality/evaluateAnswerReadiness');
+const { enforceActionGateway } = require('../../../v1/action_gateway/actionGateway');
+const { resolveActionClass } = require('../../../v1/policy_graph/resolveActionClass');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -47,6 +49,65 @@ function isConciseReplyText(text) {
   const lines = normalized.split('\n').map((line) => line.trim()).filter(Boolean);
   if (!lines.length || lines.length > 3) return false;
   return normalized.length <= 180;
+}
+
+function uniqueReasonCodes(values) {
+  const rows = Array.isArray(values) ? values : [];
+  const out = [];
+  rows.forEach((item) => {
+    const normalized = normalizeText(item).toLowerCase().replace(/\s+/g, '_');
+    if (!normalized) return;
+    if (!out.includes(normalized)) out.push(normalized);
+  });
+  return out.slice(0, 12);
+}
+
+function resolveActionClassForOrchestrator(packet, strategyPlan, payload) {
+  const explicit = normalizeText(payload.actionClassOverride);
+  if (explicit) return resolveActionClass(explicit);
+  const strategy = normalizeText(strategyPlan && strategyPlan.strategy).toLowerCase();
+  const domainIntent = normalizeText(packet && packet.normalizedConversationIntent).toLowerCase();
+  if (strategy === 'recommendation') return 'draft';
+  if (strategy === 'domain_concierge' || strategy === 'concierge') {
+    if (domainIntent === 'ssn' || domainIntent === 'banking') return 'lookup';
+    return 'draft';
+  }
+  return 'lookup';
+}
+
+function resolveActionToolName(actionClass, payload) {
+  const explicit = normalizeText(payload.actionToolName).toLowerCase();
+  if (explicit) return explicit;
+  if (actionClass === 'assist') return 'assist';
+  if (actionClass === 'human_only') return 'human_only';
+  if (actionClass === 'draft') return 'draft';
+  return 'lookup';
+}
+
+function applyActionGatewayToReadiness(readiness, gatewayDecision, enabled) {
+  const base = readiness && typeof readiness === 'object'
+    ? readiness
+    : {
+      decision: 'allow',
+      reasonCodes: [],
+      safeResponseMode: 'answer',
+      qualitySnapshot: {}
+    };
+  if (enabled !== true) return base;
+  if (!gatewayDecision || gatewayDecision.allowed === true) return base;
+  const reasonCodes = uniqueReasonCodes([].concat(base.reasonCodes || [], gatewayDecision.reason || []));
+  if (gatewayDecision.decision === 'clarify') {
+    return Object.assign({}, base, {
+      decision: 'clarify',
+      safeResponseMode: 'clarify',
+      reasonCodes
+    });
+  }
+  return Object.assign({}, base, {
+    decision: 'refuse',
+    safeResponseMode: 'refuse',
+    reasonCodes
+  });
 }
 
 const DOMAIN_CLARIFY_VARIANTS = Object.freeze({
@@ -589,12 +650,21 @@ async function runPaidConversationOrchestrator(params) {
       ? groundedResult.blockedReason
       : null
   });
+  const actionGatewayEnabled = payload.llmFlags && payload.llmFlags.actionGatewayEnabled === true;
+  const actionClass = resolveActionClassForOrchestrator(packet, strategyPlan, payload);
+  const actionToolName = resolveActionToolName(actionClass, payload);
+  const actionGatewayDecision = enforceActionGateway({
+    actionClass,
+    toolName: actionToolName,
+    confirmationToken: payload.confirmationToken
+  });
+  const effectiveReadiness = applyActionGatewayToReadiness(readinessResult, actionGatewayDecision, actionGatewayEnabled);
   const finalized = finalizeCandidate({
     selected: verified.selected,
     verificationOutcome: verified.verificationOutcome,
     contradictionFlags: verified.contradictionFlags,
-    readinessDecision: readinessResult.decision,
-    readinessSafeResponseMode: readinessResult.safeResponseMode,
+    readinessDecision: effectiveReadiness.decision,
+    readinessSafeResponseMode: effectiveReadiness.safeResponseMode,
     fallbackText: '状況を整理しながら進めます。優先する手続きを1つ決めましょう。'
   });
 
@@ -677,12 +747,18 @@ async function runPaidConversationOrchestrator(params) {
       sourceReadinessReasons: readinessSourceReasons,
       misunderstandingRecovered,
       officialOnlySatisfied: readinessOfficialOnlySatisfied,
-      readinessDecision: readinessResult.decision,
-      readinessReasonCodes: readinessResult.reasonCodes,
-      readinessSafeResponseMode: readinessResult.safeResponseMode,
+      readinessDecision: effectiveReadiness.decision,
+      readinessReasonCodes: effectiveReadiness.reasonCodes,
+      readinessSafeResponseMode: effectiveReadiness.safeResponseMode,
       unsupportedClaimCount,
       contradictionDetected: Array.isArray(verified.contradictionFlags) && verified.contradictionFlags.length > 0,
       answerReadinessLogOnly: false,
+      actionClass,
+      actionGatewayEnabled,
+      actionGatewayEnforced: actionGatewayEnabled,
+      actionGatewayAllowed: actionGatewayEnabled ? actionGatewayDecision.allowed === true : true,
+      actionGatewayDecision: actionGatewayEnabled ? actionGatewayDecision.decision : 'bypass',
+      actionGatewayReason: actionGatewayEnabled ? actionGatewayDecision.reason : 'action_gateway_disabled',
       judgeWinner: judged.judgeWinner,
       judgeScores: judged.judgeScores,
       verificationOutcome: finalized.finalMeta.verificationOutcome,
@@ -692,7 +768,14 @@ async function runPaidConversationOrchestrator(params) {
       committedFollowupQuestion: finalized.finalMeta.committedFollowupQuestion
     },
     finalMeta: finalized.finalMeta,
-    legalSnapshot
+    legalSnapshot,
+    actionClass,
+    actionGateway: {
+      enabled: actionGatewayEnabled,
+      decision: actionGatewayEnabled ? actionGatewayDecision.decision : 'bypass',
+      reason: actionGatewayEnabled ? actionGatewayDecision.reason : 'action_gateway_disabled',
+      allowed: actionGatewayEnabled ? actionGatewayDecision.allowed === true : true
+    }
   };
 }
 

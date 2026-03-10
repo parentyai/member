@@ -278,7 +278,8 @@ function buildConversationPacket(params) {
       llmStyleEngineEnabled: llmFlags.llmStyleEngineEnabled !== false,
       llmBanditEnabled: llmFlags.llmBanditEnabled === true,
       qualityEnabled: llmFlags.qualityEnabled !== false,
-      snapshotStrictMode: llmFlags.snapshotStrictMode === true
+      snapshotStrictMode: llmFlags.snapshotStrictMode === true,
+      actionGatewayEnabled: llmFlags.actionGatewayEnabled === true
     },
     maxNextActionsCap: Number.isFinite(Number(payload.maxNextActionsCap)) ? Number(payload.maxNextActionsCap) : null,
     recentEngagement: payload.recentEngagement && typeof payload.recentEngagement === 'object'
