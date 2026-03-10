@@ -12,7 +12,7 @@ function makeFakeEnv(answer) {
       status: 200,
       json: async () => ({
         model: 'gpt-4o-mini',
-        choices: [{ message: { content: JSON.stringify(answer) } }]
+        output_text: JSON.stringify(answer)
       })
     })
   };
