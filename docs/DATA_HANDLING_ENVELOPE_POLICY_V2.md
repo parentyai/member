@@ -37,6 +37,12 @@
 2. 監査/運用確認後に `enforced` へ昇格。
 3. rollback は `enforced -> shadow_write` の順で戻す。
 
+## DATA-C-03 knowledge lifecycle split
+- `source_refs` と `faq_articles` は add-only で `knowledgeLifecycleState` / `knowledgeLifecycleBucket` を保持する。
+- state: `candidate | approved | rejected | deprecated`
+- bucket: `approved_knowledge | candidate_knowledge`
+- FAQ retrieval (`searchActiveArticles`) は既定で `approved_knowledge` のみを返し、candidateは評価対象から除外する。
+
 ## Enforcement toggle
 - `ENABLE_DATA_ENVELOPE_ENFORCED_V1`（default: `true`）
   - `true`: 対象 writer は `recordEnvelope` 必須検証（enforced）

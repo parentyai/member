@@ -5,6 +5,13 @@ const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { toMillis } = require('./queryFallback');
 const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
 const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
+const {
+  deriveKnowledgeLifecycleState,
+  resolveKnowledgeLifecycleBucket,
+  assertKnowledgeLifecycleTransition,
+  isKnowledgeLifecycleState,
+  normalizeKnowledgeLifecycleBucket
+} = require('../../domain/data/knowledgeLifecycleStateMachine');
 
 const COLLECTION = 'source_refs';
 const VALIDITY_DAYS = 120;
@@ -135,6 +142,14 @@ function resolveRegionKeyFilter(value) {
   return regionKey || null;
 }
 
+function resolveKnowledgeLifecycleBucketFilter(value) {
+  if (typeof value !== 'string') return null;
+  const bucket = value.trim().toLowerCase();
+  if (!bucket) return null;
+  if (bucket !== 'approved_knowledge' && bucket !== 'candidate_knowledge') return null;
+  return bucket;
+}
+
 function normalizeConfidenceScore(value) {
   const num = Number(value);
   if (!Number.isFinite(num)) return null;
@@ -178,9 +193,20 @@ function normalizeArray(values) {
 
 function normalizeSourceRefData(data) {
   const payload = data && typeof data === 'object' ? data : {};
+  const knowledgeLifecycleState = deriveKnowledgeLifecycleState({
+    knowledgeLifecycleState: payload.knowledgeLifecycleState,
+    status: payload.status,
+    fallbackState: payload.fallbackState
+  });
+  const knowledgeLifecycleBucket = normalizeKnowledgeLifecycleBucket(
+    payload.knowledgeLifecycleBucket,
+    resolveKnowledgeLifecycleBucket(knowledgeLifecycleState)
+  );
   return {
     url: typeof payload.url === 'string' ? payload.url.trim() : '',
     status: normalizeStatus(payload.status),
+    knowledgeLifecycleState,
+    knowledgeLifecycleBucket,
     validFrom: resolveValidFrom(payload),
     validUntil: resolveValidUntil(payload),
     lastResult: typeof payload.lastResult === 'string' ? payload.lastResult.trim() : null,
@@ -276,6 +302,11 @@ function buildSourceRefEnvelope(sourceRefId, normalized, existingEnvelope) {
 }
 
 async function createSourceRef(data) {
+  if (data && typeof data === 'object'
+    && Object.prototype.hasOwnProperty.call(data, 'knowledgeLifecycleState')
+    && !isKnowledgeLifecycleState(data.knowledgeLifecycleState)) {
+    throw new Error('knowledgeLifecycleState invalid');
+  }
   const normalized = normalizeSourceRefData(data);
   ensureUrl(normalized.url);
   const id = resolveId(data);
@@ -285,6 +316,8 @@ async function createSourceRef(data) {
   await db.collection(COLLECTION).doc(id).set({
     url: normalized.url,
     status: normalized.status,
+    knowledgeLifecycleState: normalized.knowledgeLifecycleState,
+    knowledgeLifecycleBucket: normalized.knowledgeLifecycleBucket,
     validFrom: normalized.validFrom,
     validUntil: normalized.validUntil,
     lastResult: normalized.lastResult,
@@ -331,11 +364,18 @@ async function listSourceRefs(params) {
   if (sourceType) baseQuery = baseQuery.where('sourceType', '==', sourceType);
   const authorityLevel = resolveAuthorityLevelFilter(opts.authorityLevel);
   if (authorityLevel) baseQuery = baseQuery.where('authorityLevel', '==', authorityLevel);
+  const knowledgeLifecycleBucketFilter = resolveKnowledgeLifecycleBucketFilter(opts.knowledgeLifecycleBucket);
   const schoolTypeFilter = resolveSchoolTypeFilter(opts.schoolType);
   const eduScopeFilter = resolveEduScopeFilter(opts.eduScope);
   const regionKeyFilter = resolveRegionKeyFilter(opts.regionKey);
   const bufferedEnabled = isSourceRefsBufferedLimitEnabled();
-  const hasPostFilter = Boolean(schoolTypeFilter || eduScopeFilter || regionKeyFilter || expiringBeforeMs);
+  const hasPostFilter = Boolean(
+    knowledgeLifecycleBucketFilter
+    || schoolTypeFilter
+    || eduScopeFilter
+    || regionKeyFilter
+    || expiringBeforeMs
+  );
   const bufferMultiplier = resolveSourceRefsBufferMultiplier();
   const scanMax = resolveSourceRefsScanMax();
   const readLimit = hasPostFilter && bufferedEnabled
@@ -345,6 +385,17 @@ async function listSourceRefs(params) {
   const snap = await baseQuery.orderBy('updatedAt', 'desc').limit(readLimit).get();
   const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   const filteredRows = rows.filter((row) => {
+    if (knowledgeLifecycleBucketFilter) {
+      const lifecycleBucket = normalizeKnowledgeLifecycleBucket(
+        row && row.knowledgeLifecycleBucket,
+        resolveKnowledgeLifecycleBucket(deriveKnowledgeLifecycleState({
+          knowledgeLifecycleState: row && row.knowledgeLifecycleState,
+          status: row && row.status,
+          fallbackState: 'candidate'
+        }))
+      );
+      if (lifecycleBucket !== knowledgeLifecycleBucketFilter) return false;
+    }
     if (schoolTypeFilter) {
       const schoolType = typeof row.schoolType === 'string' ? row.schoolType.toLowerCase() : 'unknown';
       if (schoolType !== schoolTypeFilter) return false;
@@ -391,6 +442,30 @@ async function updateSourceRef(sourceRefId, patch) {
   if (!sourceRefId) throw new Error('sourceRefId required');
   const current = await getSourceRef(sourceRefId);
   const payload = patch && typeof patch === 'object' ? Object.assign({}, patch) : {};
+  if (Object.prototype.hasOwnProperty.call(payload, 'knowledgeLifecycleState')
+    && !isKnowledgeLifecycleState(payload.knowledgeLifecycleState)) {
+    throw new Error('knowledgeLifecycleState invalid');
+  }
+  const currentLifecycleState = deriveKnowledgeLifecycleState({
+    knowledgeLifecycleState: current && current.knowledgeLifecycleState,
+    status: current && current.status,
+    fallbackState: 'candidate'
+  });
+  const nextLifecycleState = deriveKnowledgeLifecycleState({
+    knowledgeLifecycleState: Object.prototype.hasOwnProperty.call(payload, 'knowledgeLifecycleState')
+      ? payload.knowledgeLifecycleState
+      : undefined,
+    status: Object.prototype.hasOwnProperty.call(payload, 'status')
+      ? payload.status
+      : (current && current.status),
+    fallbackState: currentLifecycleState
+  });
+  assertKnowledgeLifecycleTransition({
+    fromState: currentLifecycleState,
+    toState: nextLifecycleState
+  });
+  payload.knowledgeLifecycleState = nextLifecycleState;
+  payload.knowledgeLifecycleBucket = resolveKnowledgeLifecycleBucket(nextLifecycleState);
   const mergedForEnvelope = normalizeSourceRefData(Object.assign({}, current || {}, payload));
   payload.recordEnvelope = buildSourceRefEnvelope(sourceRefId, mergedForEnvelope, current && current.recordEnvelope);
   assertRecordEnvelopeCompliance({ dataClass: 'source_refs', recordEnvelope: payload.recordEnvelope });
