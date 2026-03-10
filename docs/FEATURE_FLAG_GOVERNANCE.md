@@ -1,9 +1,9 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-10T20:17:56.214Z
-- gitCommit: 5f147f1a7089174b6ca34c4e0eed6d23c7ef4b98
-- branch: codex/data-c01-canonical-core-bridge-r793
-- flagCount: 88
+- generatedAt: 2026-03-10T20:36:36.929Z
+- gitCommit: 7743197615c4ff16fb71c12a2a23e715f9e7b8ad
+- branch: codex/data-c01-postgres-sink-r794
+- flagCount: 90
 - source: src/**/*.js
 - check: `npm run feature-flags:check`
 
@@ -28,6 +28,8 @@
 | ENABLE_BILLING_LIFECYCLE_AUTOMATION | billing | false | 2026-09-30 | cross_module | Runtime gate for enable_billing_lifecycle_automation | src/usecases/billing/handleBillingLifecycleAutomation.js:22 |
 | ENABLE_CANONICAL_CORE_OUTBOX_DUAL_WRITE_V1 | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_canonical_core_outbox_dual_write_v1 | src/domain/data/canonicalCoreBridge.js:13 |
 | ENABLE_CANONICAL_CORE_OUTBOX_STRICT_V1 | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_canonical_core_outbox_strict_v1 | src/domain/data/canonicalCoreBridge.js:17 |
+| ENABLE_CANONICAL_CORE_POSTGRES_SINK_STRICT_V1 | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_canonical_core_postgres_sink_strict_v1 | src/domain/data/canonicalCorePostgresSink.js:19 |
+| ENABLE_CANONICAL_CORE_POSTGRES_SINK_V1 | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_canonical_core_postgres_sink_v1 | src/domain/data/canonicalCorePostgresSink.js:15 |
 | ENABLE_CITY_PACK_AUDIT_RUNS_ORDERBY_V1 | city-pack | true | 2026-09-30 | user_facing | Runtime gate for enable_city_pack_audit_runs_orderby_v1 | src/repos/firestore/sourceAuditRunsRepo.js:18 |
 | ENABLE_CITY_PACK_CONTENT_MANAGE_V1 | city-pack | true | 2026-09-30 | user_facing | Runtime gate for enable_city_pack_content_manage_v1 | src/index.js:108 |
 | ENABLE_CITY_PACK_METRICS_BOUNDED_V1 | city-pack | true | 2026-09-30 | user_facing | Runtime gate for enable_city_pack_metrics_bounded_v1 | src/usecases/cityPack/computeCityPackMetrics.js:46 |

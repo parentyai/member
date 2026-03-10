@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T16:15:46-04:00",
-  "gitCommit": "5f147f1a7089174b6ca34c4e0eed6d23c7ef4b98",
-  "branch": "codex/data-c01-canonical-core-bridge-r793",
-  "sourceDigest": "2e712e37165438a72dbb10d94b45624a170f701de3ed8af5399f40a8c2c3c858",
+  "generatedAt": "2026-03-10T16:21:42-04:00",
+  "gitCommit": "7743197615c4ff16fb71c12a2a23e715f9e7b8ad",
+  "branch": "codex/data-c01-postgres-sink-r794",
+  "sourceDigest": "65e5b5e5f1a68d3f5ba89ce7776ad3c11f7edb0e033c1e0cadcc2a14b779bbf9",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

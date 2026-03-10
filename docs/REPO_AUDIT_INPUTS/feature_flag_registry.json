@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-03-10T20:17:56.214Z",
-  "gitCommit": "5f147f1a7089174b6ca34c4e0eed6d23c7ef4b98",
-  "branch": "codex/data-c01-canonical-core-bridge-r793",
+  "generatedAt": "2026-03-10T20:36:36.929Z",
+  "gitCommit": "7743197615c4ff16fb71c12a2a23e715f9e7b8ad",
+  "branch": "codex/data-c01-postgres-sink-r794",
   "flags": [
     {
       "name": "ENABLE_ADMIN_BUILD_META",
@@ -248,6 +248,32 @@
       "blastRadius": "cross_module",
       "sourceRefs": [
         "src/domain/data/canonicalCoreBridge.js:17"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CANONICAL_CORE_POSTGRES_SINK_STRICT_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_canonical_core_postgres_sink_strict_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/domain/data/canonicalCorePostgresSink.js:19"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CANONICAL_CORE_POSTGRES_SINK_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_canonical_core_postgres_sink_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/domain/data/canonicalCorePostgresSink.js:15"
       ],
       "status": "active"
     },
