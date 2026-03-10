@@ -80,3 +80,41 @@ test('phase758: domain follow-up clarify remains domain-specific when domain can
   assert.equal(result.telemetry.directAnswerApplied, false);
   assert.equal(result.telemetry.followupIntent, 'appointment_needed');
 });
+
+test('phase758: recovery signal keeps domain-aware clarify wording instead of generic reset', async () => {
+  const result = await runPaidConversationOrchestrator({
+    lineUserId: 'U_PHASE758_RECOVERY',
+    messageText: '違う、予約じゃなくて書類',
+    paidIntent: 'situation_analysis',
+    planInfo: { plan: 'pro', status: 'active' },
+    routerMode: 'casual',
+    routerReason: 'default_casual',
+    llmFlags: {
+      llmConciergeEnabled: true,
+      llmWebSearchEnabled: true,
+      llmStyleEngineEnabled: true,
+      llmBanditEnabled: false,
+      qualityEnabled: true,
+      snapshotStrictMode: false
+    },
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'ssn',
+        followupIntent: 'appointment_needed',
+        replyText: 'SSN窓口の予約要否を確認しましょう。'
+      }
+    ],
+    deps: {
+      generatePaidCasualReply: () => ({ replyText: '了解です。' }),
+      generateGroundedReply: async () => ({ ok: false, blockedReason: 'not_used' }),
+      generateDomainConciergeCandidate: async () => ({ ok: false, blockedReason: 'not_used' })
+    }
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.packet.recoverySignal, true);
+  assert.equal(result.packet.normalizedConversationIntent, 'ssn');
+  assert.match(result.replyText, /SSN|書類/);
+  assert.equal(result.replyText.includes('対象を絞って案内したいので'), false);
+});

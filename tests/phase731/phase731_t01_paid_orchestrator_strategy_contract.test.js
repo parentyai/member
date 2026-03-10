@@ -105,3 +105,28 @@ test('phase731: low-information casual without recent domain prefers clarify', (
   assert.equal(plan.fallbackType, 'low_information_clarify');
   assert.deepEqual(plan.candidateSet, ['clarify_candidate', 'conversation_candidate']);
 });
+
+test('phase731: recovery signal under domain keeps domain concierge strategy', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE731_RECOVERY',
+    messageText: '違う、予約じゃなくて書類',
+    planInfo: { plan: 'pro', status: 'active' },
+    paidIntent: 'situation_analysis',
+    llmFlags: {
+      llmConciergeEnabled: true
+    },
+    recentActionRows: [
+      {
+        createdAt: '2026-03-08T00:00:00.000Z',
+        domainIntent: 'ssn',
+        followupIntent: 'appointment_needed'
+      }
+    ]
+  });
+  const plan = buildStrategyPlan(packet);
+  assert.equal(packet.recoverySignal, true);
+  assert.equal(packet.contextResume, true);
+  assert.equal(packet.normalizedConversationIntent, 'ssn');
+  assert.equal(plan.strategy, 'domain_concierge');
+  assert.equal(plan.fallbackType, 'recovery_domain_resume');
+});
