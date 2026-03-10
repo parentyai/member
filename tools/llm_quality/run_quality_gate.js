@@ -64,6 +64,8 @@ function buildConversationDimensionOverrides(payload) {
     : clamp01((1 - contradictionRate + directAnswerRate) / 2);
 
   return {
+    procedural_utility: clamp01((domainConciergeRate + conciseRate + directAnswerRate) / 3),
+    next_step_clarity: clamp01((conciseRate + followupRate + repetitionPreventedRate + directAnswerRate) / 4),
     conversation_continuity: clamp01(
       (
         1 - defaultCasualRate
@@ -89,6 +91,8 @@ function buildConversationDimensionOverrides(payload) {
       ) / 7
     ),
     direct_answer_first: clamp01((directAnswerRate + conciseRate) / 2),
+    japanese_naturalness: clamp01((conciseRate + directAnswerRate + followupResolutionRate) / 3),
+    keigo_distance: clamp01((conciseRate + clarifySuppressedRate + contextCarryScore) / 3),
     empathy: clamp01(
       (
         followupRate

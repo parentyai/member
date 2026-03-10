@@ -56,6 +56,21 @@ function buildTopQualityFailures(candidate) {
   }));
 }
 
+function buildSoftFloorGaps(candidate, floor) {
+  const threshold = Number.isFinite(Number(floor)) ? Number(floor) : 0.8;
+  const rows = Array.isArray(candidate && candidate.dimensions) ? candidate.dimensions : [];
+  return rows
+    .filter((row) => row && typeof row.key === 'string' && row.hardGate !== true)
+    .map((row) => ({
+      key: row.key,
+      score: Number(row.score || 0),
+      gap: Number((threshold - Number(row.score || 0)).toFixed(4))
+    }))
+    .filter((row) => row.gap > 0)
+    .sort((a, b) => b.gap - a.gap || a.key.localeCompare(b.key, 'ja'))
+    .slice(0, 10);
+}
+
 function buildLoopCases(summary) {
   const conversation = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
     ? summary.conversationQuality
@@ -234,6 +249,8 @@ function main(argv) {
       ? candidate.hardGate.failures
       : [],
     top_10_quality_failures: buildTopQualityFailures(candidate),
+    soft_floor_threshold: 0.8,
+    soft_floor_gaps: buildSoftFloorGaps(candidate, 0.8),
     top_10_loop_cases: buildLoopCases(summary),
     top_10_context_loss_cases: buildContextLossCases(summary),
     top_10_japanese_service_failures: buildJapaneseServiceFailures(summary),
