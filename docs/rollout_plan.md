@@ -13,7 +13,7 @@
 10. must-pass fixtures pass (`npm run llm:quality:must-pass`)
 11. release policy pass (`npm run llm:quality:release-policy`)
 12. quality report + failure register/counterexample queue refresh (`npm run llm:quality:report`)
-13. strict runtime gate pass (`npm run llm:quality:gate:strict` + `npm run llm:quality:release-policy:strict`)
+13. strict runtime gate pass (`npm run llm:quality:gate:strict` + `npm run llm:quality:release-policy:strict` with soft-floor 0.80)
 
 ## No-Go
 - duplicate_event drop anomaly
@@ -27,3 +27,4 @@
   - `defaultCasualRate > 0.02`
   - `directAnswerMissRate > 0.08`
   - `avgRepeatRiskScore > 0.5`
+  - non-hard-gate dimension `score < 0.80`
