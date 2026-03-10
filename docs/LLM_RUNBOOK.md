@@ -604,7 +604,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 2. `npm run llm:quality:candidate`
 3. `npm run llm:quality:diff`
 4. `npm run llm:quality:runtime-scorecard`（`tmp/llm_usage_summary.json` がある場合）
-5. `npm run llm:quality:gate`（runtime-first。all slices pass を既定で必須。`tmp/llm_usage_summary.json` が無い場合は frozen summary fallback を使用）
+5. `npm run llm:quality:gate`（runtime-first。all slices pass を既定で必須。実行前に `llm:quality:runtime-summary:prepare` が `tmp/llm_usage_summary.json` を準備）
 6. `npm run llm:quality:gate:strict`（all slices pass + runtime summary 必須）
 7. `npm run llm:quality:arena`
 8. `npm run llm:quality:must-pass`
