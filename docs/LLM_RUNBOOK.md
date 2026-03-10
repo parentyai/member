@@ -692,6 +692,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 
 ### 目的
 - 統合仕様 V2 / データ統合仕様 / 親YAML の契約差分を `contracts/llm_spec_contract_registry.v2.json` に固定し、品質ゲート前に構造逸脱を検知する。
+- 親YAMLの `enum/routing` と `required_core_facts` は runtime telemetry と readiness gate で検証し、`tests/phase790/*` で回帰を防止する。
 
 ### Block 条件
 - registry の必須項目不足（version/hash/specHierarchy/requirements/conflicts）

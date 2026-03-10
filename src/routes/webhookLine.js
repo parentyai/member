@@ -1303,6 +1303,44 @@ async function appendLlmGateDecisionBestEffort(data) {
           ? Number(payload.actionCount)
           : Number(qualityMeta.actionCount || 0),
         pitfallIncluded: payload.pitfallIncluded === true || qualityMeta.pitfallIncluded === true,
+        parentIntentType: typeof payload.parentIntentType === 'string' && payload.parentIntentType.trim()
+          ? payload.parentIntentType.trim().toUpperCase()
+          : null,
+        parentAnswerMode: typeof payload.parentAnswerMode === 'string' && payload.parentAnswerMode.trim()
+          ? payload.parentAnswerMode.trim().toUpperCase()
+          : null,
+        parentLifecycleStage: typeof payload.parentLifecycleStage === 'string' && payload.parentLifecycleStage.trim()
+          ? payload.parentLifecycleStage.trim().toUpperCase()
+          : null,
+        parentChapter: typeof payload.parentChapter === 'string' && payload.parentChapter.trim()
+          ? payload.parentChapter.trim().toUpperCase()
+          : null,
+        parentRoutingInvariantStatus: typeof payload.parentRoutingInvariantStatus === 'string'
+          ? payload.parentRoutingInvariantStatus.trim().toLowerCase()
+          : null,
+        parentRoutingInvariantErrors: Array.isArray(payload.parentRoutingInvariantErrors)
+          ? payload.parentRoutingInvariantErrors
+            .map((item) => (typeof item === 'string' ? item.trim().toLowerCase().replace(/\s+/g, '_') : ''))
+            .filter(Boolean)
+            .slice(0, 8)
+          : [],
+        requiredCoreFactsComplete: payload.requiredCoreFactsComplete === true,
+        missingRequiredCoreFacts: Array.isArray(payload.missingRequiredCoreFacts)
+          ? payload.missingRequiredCoreFacts
+            .map((item) => (typeof item === 'string' ? item.trim().toLowerCase() : ''))
+            .filter(Boolean)
+            .slice(0, 12)
+          : [],
+        missingRequiredCoreFactsCount: Number.isFinite(Number(payload.missingRequiredCoreFactsCount))
+          ? Number(payload.missingRequiredCoreFactsCount)
+          : 0,
+        requiredCoreFactsCriticalMissingCount: Number.isFinite(Number(payload.requiredCoreFactsCriticalMissingCount))
+          ? Number(payload.requiredCoreFactsCriticalMissingCount)
+          : 0,
+        requiredCoreFactsGateDecision: typeof payload.requiredCoreFactsGateDecision === 'string' && payload.requiredCoreFactsGateDecision.trim()
+          ? payload.requiredCoreFactsGateDecision.trim().toLowerCase()
+          : null,
+        requiredCoreFactsGateLogOnly: payload.requiredCoreFactsGateLogOnly === true,
         domainIntent: normalizeDomainIntent(payload.domainIntent || qualityMeta.domainIntent || 'general'),
         fallbackType: typeof payload.fallbackType === 'string' && payload.fallbackType.trim()
           ? payload.fallbackType.trim().toLowerCase()
@@ -1459,6 +1497,44 @@ async function appendLlmActionLogBestEffort(data) {
       actionGatewayReason: typeof payload.actionGatewayReason === 'string' && payload.actionGatewayReason.trim()
         ? payload.actionGatewayReason.trim().toLowerCase().replace(/\s+/g, '_')
         : null,
+      parentIntentType: typeof payload.parentIntentType === 'string' && payload.parentIntentType.trim()
+        ? payload.parentIntentType.trim().toUpperCase()
+        : null,
+      parentAnswerMode: typeof payload.parentAnswerMode === 'string' && payload.parentAnswerMode.trim()
+        ? payload.parentAnswerMode.trim().toUpperCase()
+        : null,
+      parentLifecycleStage: typeof payload.parentLifecycleStage === 'string' && payload.parentLifecycleStage.trim()
+        ? payload.parentLifecycleStage.trim().toUpperCase()
+        : null,
+      parentChapter: typeof payload.parentChapter === 'string' && payload.parentChapter.trim()
+        ? payload.parentChapter.trim().toUpperCase()
+        : null,
+      parentRoutingInvariantStatus: typeof payload.parentRoutingInvariantStatus === 'string' && payload.parentRoutingInvariantStatus.trim()
+        ? payload.parentRoutingInvariantStatus.trim().toLowerCase()
+        : null,
+      parentRoutingInvariantErrors: Array.isArray(payload.parentRoutingInvariantErrors)
+        ? payload.parentRoutingInvariantErrors
+          .map((item) => (typeof item === 'string' ? item.trim().toLowerCase().replace(/\s+/g, '_') : ''))
+          .filter(Boolean)
+          .slice(0, 8)
+        : [],
+      requiredCoreFactsComplete: payload.requiredCoreFactsComplete === true,
+      missingRequiredCoreFacts: Array.isArray(payload.missingRequiredCoreFacts)
+        ? payload.missingRequiredCoreFacts
+          .map((item) => (typeof item === 'string' ? item.trim().toLowerCase() : ''))
+          .filter(Boolean)
+          .slice(0, 12)
+        : [],
+      missingRequiredCoreFactsCount: Number.isFinite(Number(payload.missingRequiredCoreFactsCount))
+        ? Number(payload.missingRequiredCoreFactsCount)
+        : 0,
+      requiredCoreFactsCriticalMissingCount: Number.isFinite(Number(payload.requiredCoreFactsCriticalMissingCount))
+        ? Number(payload.requiredCoreFactsCriticalMissingCount)
+        : 0,
+      requiredCoreFactsGateDecision: typeof payload.requiredCoreFactsGateDecision === 'string' && payload.requiredCoreFactsGateDecision.trim()
+        ? payload.requiredCoreFactsGateDecision.trim().toLowerCase()
+        : null,
+      requiredCoreFactsGateLogOnly: payload.requiredCoreFactsGateLogOnly === true,
       conversationMode: typeof payload.conversationMode === 'string'
         ? payload.conversationMode
         : (conciergeMeta && conciergeMeta.conversationState ? 'concierge' : null),
@@ -1855,6 +1931,20 @@ async function tryHandlePaidOrchestratorV2(params) {
     actionGatewayAllowed: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayAllowed === true : true,
     actionGatewayDecision: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayDecision : null,
     actionGatewayReason: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayReason : null,
+    parentIntentType: orchestrated.telemetry ? orchestrated.telemetry.parentIntentType : null,
+    parentAnswerMode: orchestrated.telemetry ? orchestrated.telemetry.parentAnswerMode : null,
+    parentLifecycleStage: orchestrated.telemetry ? orchestrated.telemetry.parentLifecycleStage : null,
+    parentChapter: orchestrated.telemetry ? orchestrated.telemetry.parentChapter : null,
+    parentRoutingInvariantStatus: orchestrated.telemetry ? orchestrated.telemetry.parentRoutingInvariantStatus : null,
+    parentRoutingInvariantErrors: orchestrated.telemetry ? orchestrated.telemetry.parentRoutingInvariantErrors : [],
+    requiredCoreFactsComplete: orchestrated.telemetry ? orchestrated.telemetry.requiredCoreFactsComplete === true : false,
+    missingRequiredCoreFacts: orchestrated.telemetry ? orchestrated.telemetry.missingRequiredCoreFacts : [],
+    missingRequiredCoreFactsCount: orchestrated.telemetry ? orchestrated.telemetry.missingRequiredCoreFactsCount : 0,
+    requiredCoreFactsCriticalMissingCount: orchestrated.telemetry
+      ? orchestrated.telemetry.requiredCoreFactsCriticalMissingCount
+      : 0,
+    requiredCoreFactsGateDecision: orchestrated.telemetry ? orchestrated.telemetry.requiredCoreFactsGateDecision : null,
+    requiredCoreFactsGateLogOnly: orchestrated.telemetry ? orchestrated.telemetry.requiredCoreFactsGateLogOnly === true : false,
     legalSnapshot
   });
   await appendLlmActionLogBestEffort({
@@ -1907,6 +1997,20 @@ async function tryHandlePaidOrchestratorV2(params) {
     actionGatewayAllowed: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayAllowed === true : true,
     actionGatewayDecision: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayDecision : null,
     actionGatewayReason: orchestrated.telemetry ? orchestrated.telemetry.actionGatewayReason : null,
+    parentIntentType: orchestrated.telemetry ? orchestrated.telemetry.parentIntentType : null,
+    parentAnswerMode: orchestrated.telemetry ? orchestrated.telemetry.parentAnswerMode : null,
+    parentLifecycleStage: orchestrated.telemetry ? orchestrated.telemetry.parentLifecycleStage : null,
+    parentChapter: orchestrated.telemetry ? orchestrated.telemetry.parentChapter : null,
+    parentRoutingInvariantStatus: orchestrated.telemetry ? orchestrated.telemetry.parentRoutingInvariantStatus : null,
+    parentRoutingInvariantErrors: orchestrated.telemetry ? orchestrated.telemetry.parentRoutingInvariantErrors : [],
+    requiredCoreFactsComplete: orchestrated.telemetry ? orchestrated.telemetry.requiredCoreFactsComplete === true : false,
+    missingRequiredCoreFacts: orchestrated.telemetry ? orchestrated.telemetry.missingRequiredCoreFacts : [],
+    missingRequiredCoreFactsCount: orchestrated.telemetry ? orchestrated.telemetry.missingRequiredCoreFactsCount : 0,
+    requiredCoreFactsCriticalMissingCount: orchestrated.telemetry
+      ? orchestrated.telemetry.requiredCoreFactsCriticalMissingCount
+      : 0,
+    requiredCoreFactsGateDecision: orchestrated.telemetry ? orchestrated.telemetry.requiredCoreFactsGateDecision : null,
+    requiredCoreFactsGateLogOnly: orchestrated.telemetry ? orchestrated.telemetry.requiredCoreFactsGateLogOnly === true : false,
     committedNextActions: orchestrated.telemetry ? orchestrated.telemetry.committedNextActions : [],
     committedFollowupQuestion: orchestrated.telemetry ? orchestrated.telemetry.committedFollowupQuestion : null,
     recentUserGoal: Array.isArray(orchestrated.packet && orchestrated.packet.recentUserGoals)

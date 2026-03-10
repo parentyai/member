@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T11:56:53-04:00",
-  "gitCommit": "7677bf1fc8127ace9c9c3ca8def0f7aa1c409250",
-  "branch": "codex/v2-memory-response-contract-r789",
-  "sourceDigest": "208bf8a87f17074d565075e3aeceec727b46df12bae9778eff1e44be0f68ab11",
+  "generatedAt": "2026-03-10T12:30:26-04:00",
+  "gitCommit": "f91d5f52862091bd0164007d1098b7f337594f90",
+  "branch": "codex/yaml-core-facts-gate-r791",
+  "sourceDigest": "f76a41b1b33c93c1008d25656adb7ab262b7876521ab77f80e1a998239fceed8",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

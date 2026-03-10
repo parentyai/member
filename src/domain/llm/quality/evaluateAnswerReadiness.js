@@ -90,6 +90,13 @@ function evaluateAnswerReadiness(params) {
   const officialOnlySatisfied = payload.officialOnlySatisfied !== false;
   const unsupportedClaimCount = Math.max(0, Math.floor(Number.isFinite(Number(payload.unsupportedClaimCount)) ? Number(payload.unsupportedClaimCount) : 0));
   const contradictionDetected = payload.contradictionDetected === true;
+  const requiredCoreFactsComplete = payload.requiredCoreFactsComplete !== false;
+  const missingRequiredCoreFactsCount = Math.max(0, Math.floor(
+    Number.isFinite(Number(payload.missingRequiredCoreFactsCount)) ? Number(payload.missingRequiredCoreFactsCount) : 0
+  ));
+  const requiredCoreFactsMissing = normalizeReasonCodes(payload.requiredCoreFactsMissing);
+  const requiredCoreFactsDecision = normalizeSourceReadinessDecision(payload.requiredCoreFactsDecision);
+  const requiredCoreFactsLogOnly = payload.requiredCoreFactsLogOnly === true;
   const fallbackType = normalizeText(payload.fallbackType).toLowerCase() || null;
   const reasonCodes = normalizeReasonCodes(payload.reasonCodes);
   const thresholds = resolveThresholds(intentRiskTier);
@@ -108,6 +115,12 @@ function evaluateAnswerReadiness(params) {
   } else if (intentRiskTier === 'high' && unsupportedClaimCount > 0 && evidenceCoverage < thresholds.minEvidenceHedge) {
     decision = 'refuse';
     reasonCodes.push('unsupported_claim_high_risk');
+  } else if (requiredCoreFactsLogOnly !== true && requiredCoreFactsDecision === 'clarify') {
+    decision = 'clarify';
+    reasonCodes.push('missing_required_core_facts');
+  } else if (requiredCoreFactsLogOnly !== true && requiredCoreFactsComplete !== true && missingRequiredCoreFactsCount >= 7) {
+    decision = 'clarify';
+    reasonCodes.push('missing_required_core_facts');
   } else if (contradictionDetected) {
     if (
       evidenceCoverage >= thresholds.minEvidenceAllow
@@ -166,6 +179,11 @@ function evaluateAnswerReadiness(params) {
       sourceFreshnessScore,
       sourceReadinessDecision,
       officialOnlySatisfied: officialOnlySatisfied === true,
+      requiredCoreFactsComplete: requiredCoreFactsComplete === true,
+      missingRequiredCoreFactsCount,
+      requiredCoreFactsMissing,
+      requiredCoreFactsDecision,
+      requiredCoreFactsLogOnly,
       unsupportedClaimCount,
       contradictionDetected,
       evidenceCoverage,
