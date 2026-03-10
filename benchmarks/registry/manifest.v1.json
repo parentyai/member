@@ -5,6 +5,12 @@
   "artifactHash": "sha256:benchv100",
   "fixtures": [
     {
+      "id": "runtime_summary_snapshot",
+      "path": "benchmarks/frozen/v1/runtime_summary_snapshot.v1.json",
+      "version": "1.0.0",
+      "contaminationRisk": "low"
+    },
+    {
       "id": "paid_short_followup_core",
       "path": "benchmarks/frozen/v1/paid_short_followup_core.json",
       "version": "1.0.0",

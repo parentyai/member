@@ -10,6 +10,13 @@ test('phase791: DATA-C-02 registry status is aligned', () => {
   assert.ok(row, 'DATA-C-02 must exist');
   assert.equal(row.status, 'aligned');
   assert.match(String(row.recommendedAction || ''), /enforced-mode compliance gate/i);
+  const runtimeFirst = registry.requirements.find((item) => item && item.requirementId === 'V2-C-11');
+  const compatGovernance = registry.requirements.find((item) => item && item.requirementId === 'V2-C-12');
+  assert.ok(runtimeFirst, 'V2-C-11 must exist');
+  assert.ok(compatGovernance, 'V2-C-12 must exist');
+  assert.equal(runtimeFirst.status, 'aligned');
+  assert.equal(compatGovernance.status, 'aligned');
+  assert.equal(registry.conflicts.some((item) => item && item.conflictId === 'CF-08'), false);
 });
 
 test('phase791: DATA_HANDLING_ENVELOPE_POLICY_V2 marks target classes as enforced', () => {
@@ -27,4 +34,3 @@ test('phase791: DATA_HANDLING_ENVELOPE_POLICY_V2 marks target classes as enforce
   });
   assert.match(doc, /ENABLE_DATA_ENVELOPE_ENFORCED_V1/);
 });
-

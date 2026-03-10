@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T15:28:40-04:00",
-  "gitCommit": "5c8839be82387406dc5022fd5527c791c2c235eb",
-  "branch": "codex/data-c03-knowledge-lifecycle-r795",
-  "sourceDigest": "8403320982199e950648ae47ffd3b664543666d474a5e93eabeb6114ed612c37",
+  "generatedAt": "2026-03-10T15:57:51-04:00",
+  "gitCommit": "e513cc816ef27d8697c182aab2fa45fc311a899c",
+  "branch": "codex/runtime-first-compat-governance-r795",
+  "sourceDigest": "9a85a80c712a3767b5e9dacfae772896dfc410cbf8a75de6de57a924a0d74ba3",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

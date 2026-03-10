@@ -209,6 +209,10 @@ function resolveCandidateMetrics(params) {
           metrics: converted,
           source: source.pathValue,
           sourceType: source.sourceType,
+          summary,
+          runtimeSummarySource: summary && typeof summary.runtimeSummarySource === 'string'
+            ? summary.runtimeSummarySource
+            : null,
           runtimeSummaryReadable,
           runtimeSummaryConverted
         };
@@ -222,6 +226,8 @@ function resolveCandidateMetrics(params) {
     metrics: readJson(candidateMetricsPath),
     source: candidateMetricsPath,
     sourceType: 'candidate_metrics_fallback',
+    summary: null,
+    runtimeSummarySource: null,
     runtimeSummaryReadable,
     runtimeSummaryConverted
   };
@@ -235,6 +241,46 @@ function toBool(value, fallback) {
     if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
   }
   return fallback;
+}
+
+function parseRate(value, fallback) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  if (num < 0) return 0;
+  if (num > 1) return 1;
+  return num;
+}
+
+function normalizeRuntimeSummarySource(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
+}
+
+function isRuntimeSummaryProvenanceAccepted(value) {
+  const source = normalizeRuntimeSummarySource(value);
+  if (!source) return false;
+  return [
+    'runtime_live',
+    'runtime_summary_live',
+    'runtime_collected',
+    'existing_runtime_summary_kept',
+    'seeded_from_frozen_runtime_snapshot',
+    'forced_refresh_from_frozen_runtime_snapshot'
+  ].includes(source);
+}
+
+function resolveCompatShareWindow(summary) {
+  if (!summary || typeof summary !== 'object') return null;
+  const summaryNode = summary.summary && typeof summary.summary === 'object' ? summary.summary : summary;
+  const optimization = summaryNode.optimization && typeof summaryNode.optimization === 'object'
+    ? summaryNode.optimization
+    : null;
+  if (!optimization) return null;
+  const raw = Number(optimization.compatShareWindow);
+  if (!Number.isFinite(raw)) return null;
+  if (raw < 0) return 0;
+  if (raw > 1) return 1;
+  return raw;
 }
 
 function main(argv) {
@@ -268,6 +314,18 @@ function main(argv) {
     args.requireRuntimeSummary,
     toBool(process.env.LLM_QUALITY_REQUIRE_RUNTIME_SUMMARY, false)
   );
+  const requireRuntimeProvenance = toBool(
+    args.requireRuntimeProvenance,
+    toBool(process.env.LLM_QUALITY_REQUIRE_RUNTIME_PROVENANCE, false)
+  );
+  const requireCompatGovernance = toBool(
+    args.requireCompatGovernance,
+    toBool(process.env.LLM_QUALITY_REQUIRE_COMPAT_GOVERNANCE, false)
+  );
+  const maxCompatShare = parseRate(
+    args.maxCompatShare,
+    parseRate(process.env.LLM_QUALITY_MAX_COMPAT_SHARE, 0.15)
+  );
 
   const baselineMetrics = readJson(baselineMetricsPath);
   const candidateResolved = resolveCandidateMetrics({
@@ -278,6 +336,9 @@ function main(argv) {
   const candidateMetrics = candidateResolved.metrics;
   const candidateSourcePath = candidateResolved.source;
   const candidateSourceType = candidateResolved.sourceType || 'candidate_metrics_fallback';
+  const runtimeSummarySource = candidateResolved.runtimeSummarySource;
+  const sourceSummary = candidateResolved.summary;
+  const compatShareWindow = resolveCompatShareWindow(sourceSummary);
   const runtimeSummaryReadable = candidateResolved.runtimeSummaryReadable === true;
   const runtimeSummaryConverted = candidateResolved.runtimeSummaryConverted === true;
   const adjudicationRows = readJson(adjudicationPath);
@@ -333,6 +394,24 @@ function main(argv) {
   if (requireRuntimeSummary === true && candidateSourceType !== 'runtime_summary') {
     failures.push('runtime_summary_required_but_missing');
   }
+  if (requireRuntimeProvenance === true) {
+    if (candidateSourceType !== 'runtime_summary') {
+      failures.push('runtime_summary_provenance_missing');
+    } else if (!isRuntimeSummaryProvenanceAccepted(runtimeSummarySource)) {
+      failures.push(`runtime_summary_provenance_invalid:${normalizeRuntimeSummarySource(runtimeSummarySource) || 'unknown'}`);
+    }
+  }
+  if (requireCompatGovernance === true) {
+    if (!Number.isFinite(Number(compatShareWindow))) {
+      failures.push('compat_share_window_missing');
+    } else if (Number(compatShareWindow) > maxCompatShare) {
+      failures.push('compat_share_window_exceeded');
+    }
+    const compatSlice = Array.isArray(candidateScorecard.slices)
+      ? candidateScorecard.slices.find((row) => row && row.sliceKey === 'compat')
+      : null;
+    if (!compatSlice || compatSlice.status !== 'pass') failures.push('compat_slice_not_pass');
+  }
 
   warnings.push(...candidateScorecard.hardGate.warnings);
   warnings.push(...sliceGate.warnings);
@@ -347,6 +426,11 @@ function main(argv) {
     summaryPath,
     summaryFallbackPath,
     requireRuntimeSummary,
+    requireRuntimeProvenance,
+    runtimeSummarySource,
+    requireCompatGovernance,
+    maxCompatShare,
+    compatShareWindow,
     runtimeSummaryReadable,
     runtimeSummaryConverted,
     requireAllSlicesPass,

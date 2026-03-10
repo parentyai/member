@@ -50,6 +50,14 @@ function toBool(value, fallback) {
   return fallback;
 }
 
+function parseRate(value, fallback) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  if (num < 0) return 0;
+  if (num > 1) return 1;
+  return num;
+}
+
 function checkDimensionNoRegression(baselineMap, candidateMap, key) {
   const before = baselineMap.get(key) || {};
   const after = candidateMap.get(key) || {};
@@ -108,6 +116,19 @@ function readFiniteNumber(obj, key) {
   return Number.isFinite(value) ? value : null;
 }
 
+function resolveCompatShareWindow(summary) {
+  if (!summary || typeof summary !== 'object') return null;
+  const optimization = summary.optimization && typeof summary.optimization === 'object'
+    ? summary.optimization
+    : null;
+  if (!optimization) return null;
+  const raw = Number(optimization.compatShareWindow);
+  if (!Number.isFinite(raw)) return null;
+  if (raw < 0) return 0;
+  if (raw > 1) return 1;
+  return raw;
+}
+
 const STRICT_RUNTIME_SIGNAL_KEYS = Object.freeze([
   'legacyTemplateHitRate',
   'defaultCasualRate',
@@ -145,6 +166,14 @@ function main(argv) {
     args.requireStrictRuntimeSignals,
     toBool(process.env.LLM_QUALITY_REQUIRE_STRICT_RUNTIME_SIGNALS, false)
   );
+  const requireCompatGovernance = toBool(
+    args.requireCompatGovernance,
+    toBool(process.env.LLM_QUALITY_REQUIRE_COMPAT_GOVERNANCE, false)
+  );
+  const maxCompatShare = parseRate(
+    args.maxCompatShare,
+    parseRate(process.env.LLM_QUALITY_MAX_COMPAT_SHARE, 0.15)
+  );
   const requireSoftFloor = toBool(
     args.requireSoftFloor,
     toBool(process.env.LLM_QUALITY_REQUIRE_SOFT_FLOOR_080, false)
@@ -159,6 +188,7 @@ function main(argv) {
   const candidate = readJson(candidatePath);
   const mustPass = readJson(mustPassPath);
   const summary = readSummaryData(summaryPath);
+  const compatShareWindow = resolveCompatShareWindow(summary);
 
   const baselineDimensionMap = toMap(baseline.dimensions, 'key');
   const candidateDimensionMap = toMap(candidate.dimensions, 'key');
@@ -180,6 +210,8 @@ function main(argv) {
     mustPassFixturesRequired: true,
     allSlicesPassRequired: requireAllSlicesPass === true,
     strictRuntimeSignalsRequired: requireStrictRuntimeSignals === true,
+    compatGovernanceRequired: requireCompatGovernance === true,
+    maxCompatShare,
     softFloorRequired: requireSoftFloor === true,
     softFloorValue: softFloor
   };
@@ -251,6 +283,12 @@ function main(argv) {
     allSliceChecks.forEach((row) => {
       if (row.pass !== true) failures.push(`slice_failed_or_not_improved:${row.sliceKey}`);
     });
+  }
+  if (requireCompatGovernance === true) {
+    if (!Number.isFinite(Number(compatShareWindow))) failures.push('compat_share_window_missing');
+    else if (Number(compatShareWindow) > maxCompatShare) failures.push('compat_share_window_exceeded');
+    const compatSlice = candidateSliceMap.get('compat') || {};
+    if (compatSlice.status !== 'pass') failures.push('compat_slice_not_pass');
   }
 
   const conversation = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
@@ -351,6 +389,11 @@ function main(argv) {
     summaryPath,
     runtimeSignals,
     runtimeSignalCoverage,
+    compatGovernance: {
+      required: requireCompatGovernance === true,
+      maxCompatShare,
+      compatShareWindow
+    },
     mustPassSummary: {
       ok: mustPass && mustPass.ok === true,
       failureCount: Number(mustPass && mustPass.failureCount ? mustPass.failureCount : 0),
