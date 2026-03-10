@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T23:16:45-04:00",
-  "gitCommit": "fbe13b439792380a3d3be81afcdf046038704c5c",
-  "branch": "codex/phase766-quality-counterexample-board",
-  "sourceDigest": "0ff8ee410174b5618836e94ad6088b87966893eb6cbf3e9125327b0ec06393a0",
+  "generatedAt": "2026-03-09T23:27:58-04:00",
+  "gitCommit": "f0da71d3be26b2482a2e2bc3f3b72a87bf1353ab",
+  "branch": "main",
+  "sourceDigest": "783fb02f44b7eaf890b5a56f126734ed3c86bc74ed3f53b5ce72ae92ecec3e0e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

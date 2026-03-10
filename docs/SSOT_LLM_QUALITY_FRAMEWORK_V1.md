@@ -113,8 +113,8 @@
   - candidate scorecard
   - diff
   - quality report (`top_10_*` を含む)
-  - quality failure register (`tmp/llm_quality_failure_register.json`)
-  - counterexample queue (`tmp/llm_quality_counterexample_queue.json`)
+- quality failure register (`tmp/llm_quality_failure_register.json`)
+- counterexample queue (`tmp/llm_quality_counterexample_queue.json`)
   - benchmark version/hash
   - replay/perturbation report
   - must-pass fixture result
@@ -142,6 +142,7 @@
 - `top_10_context_loss_cases`
 - `top_10_japanese_service_failures`
 - `top_10_line_fit_failures`
+- register は materiality filter を適用（`jp_service_failure` / `line_fit_failure` は `value > 0.01` のみ記録）
 
 ## Rubric Assets
 - human eval rubric: `docs/LLM_QUALITY_HUMAN_EVAL_RUBRIC_V1.md`
