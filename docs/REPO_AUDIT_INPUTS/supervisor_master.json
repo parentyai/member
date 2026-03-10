@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T12:30:26-04:00",
-  "gitCommit": "f91d5f52862091bd0164007d1098b7f337594f90",
-  "branch": "codex/yaml-core-facts-gate-r791",
-  "sourceDigest": "f76a41b1b33c93c1008d25656adb7ab262b7876521ab77f80e1a998239fceed8",
+  "generatedAt": "2026-03-10T14:19:33-04:00",
+  "gitCommit": "959ac60fdaa84209e03290628feda4623e639a9c",
+  "branch": "codex/v2-c04-semantic-envelope-r793",
+  "sourceDigest": "5d0a3ee59ebf3ce13bd2f68886fceb727eb936956113129e70ab54fbc9d4a831",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
