@@ -7,6 +7,10 @@ const { parseArgs, readJson, writeJson } = require('./lib');
 const REGISTER_VERSION = 'v1';
 const DEFAULT_MAX_HISTORY = 30;
 const DEFAULT_LIMIT = 10;
+const VALUE_FAILURE_THRESHOLDS = Object.freeze({
+  jp_service_failure: 0.01,
+  line_fit_failure: 0.01
+});
 
 function toNumber(value, fallback) {
   const n = Number(value);
@@ -18,6 +22,22 @@ function toRecordList(category, rows, mapper) {
   return list.map((row, index) => mapper(row, index))
     .filter((row) => row && typeof row === 'object')
     .map((row) => Object.assign({ category }, row));
+}
+
+function isMaterialFailureEntry(entry) {
+  const row = entry && typeof entry === 'object' ? entry : {};
+  const category = String(row.category || '').trim().toLowerCase();
+  if (category === 'quality_failure') {
+    return String(row.signal || '').trim() !== '' && String(row.signal || '').trim() !== 'unknown';
+  }
+  if (category === 'loop_case' || category === 'context_loss_case') {
+    return Math.max(0, Math.floor(toNumber(row.count, 0))) > 0;
+  }
+  if (category === 'jp_service_failure' || category === 'line_fit_failure') {
+    const threshold = toNumber(VALUE_FAILURE_THRESHOLDS[category], 0);
+    return toNumber(row.value, 0) > threshold;
+  }
+  return false;
 }
 
 function normalizeEntries(report, limit) {
@@ -62,6 +82,7 @@ function normalizeEntries(report, limit) {
 
   return quality
     .concat(loops, contextLoss, jpService, lineFit)
+    .filter((row) => isMaterialFailureEntry(row))
     .slice(0, max * 5);
 }
 
@@ -157,6 +178,7 @@ if (require.main === module) {
 
 module.exports = {
   normalizeEntries,
+  isMaterialFailureEntry,
   buildSnapshot,
   mergeHistory,
   main
