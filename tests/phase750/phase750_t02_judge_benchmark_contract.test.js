@@ -28,6 +28,7 @@ test('phase750: benchmark registry is frozen and contamination guard excludes hi
 
   const contamination = evaluateRisk(manifest);
   assert.equal(contamination.overall, 'high');
+  assert.equal(contamination.hardGateOverall, 'medium');
   assert.ok(contamination.excludedFixtureIds.includes('open_web_scrape_probe'));
   assert.ok(!contamination.hardGateEligibleFixtureIds.includes('open_web_scrape_probe'));
 });
