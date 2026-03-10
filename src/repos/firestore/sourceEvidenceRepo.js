@@ -2,6 +2,8 @@
 
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
+const { appendCanonicalCoreOutboxEvent } = require('./canonicalCoreOutboxRepo');
 
 const COLLECTION = 'source_evidence';
 
@@ -34,13 +36,65 @@ function resolveId(data) {
   return `se_${crypto.randomUUID()}`;
 }
 
+function resolveLifecycleStateFromResult(result) {
+  if (typeof result !== 'string') return 'candidate';
+  const normalized = result.trim().toLowerCase();
+  if (normalized === 'ok') return 'approved';
+  return 'candidate';
+}
+
+function resolveLifecycleBucketFromState(state) {
+  if (state === 'approved') return 'approved_knowledge';
+  return 'candidate_knowledge';
+}
+
+function buildSourceEvidenceEnvelope(evidenceId, payload) {
+  const normalized = payload && typeof payload === 'object' ? payload : {};
+  return buildUniversalRecordEnvelope({
+    recordId: evidenceId,
+    recordType: 'evidence_claim',
+    sourceSystem: 'member_firestore',
+    sourceSnapshotRef: `source_evidence:${evidenceId}`,
+    effectiveFrom: normalized.checkedAt || new Date().toISOString(),
+    effectiveTo: null,
+    authorityTier: 'UNKNOWN',
+    bindingLevel: 'REFERENCE',
+    jurisdiction: null,
+    status: 'active',
+    retentionTag: 'source_evidence_indefinite',
+    piiClass: 'none',
+    accessScope: ['operator', 'audit'],
+    maskingPolicy: 'none',
+    deletionPolicy: 'retention_policy_v1'
+  });
+}
+
 async function createEvidence(data) {
   const payload = normalizePayload(data);
   if (!payload.sourceRefId) throw new Error('sourceRefId required');
   if (!payload.traceId) throw new Error('traceId required');
   const id = resolveId(data);
+  const lifecycleState = resolveLifecycleStateFromResult(payload.result);
+  const lifecycleBucket = resolveLifecycleBucketFromState(lifecycleState);
+  const recordEnvelope = buildSourceEvidenceEnvelope(id, payload);
   const db = getDb();
-  await db.collection(COLLECTION).doc(id).set(Object.assign({}, payload, { createdAt: serverTimestamp() }), { merge: false });
+  await db.collection(COLLECTION).doc(id).set(Object.assign({}, payload, {
+    recordEnvelope,
+    createdAt: serverTimestamp()
+  }), { merge: false });
+
+  await appendCanonicalCoreOutboxEvent({
+    objectType: 'evidence_claim',
+    objectId: id,
+    eventType: 'upsert',
+    recordEnvelope,
+    payloadSummary: {
+      lifecycleState,
+      lifecycleBucket,
+      status: payload.result
+    },
+    traceId: payload.traceId
+  });
   return { id };
 }
 

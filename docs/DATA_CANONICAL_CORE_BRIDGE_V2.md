@@ -7,7 +7,7 @@
 ## Runtime Flags
 - `ENABLE_CANONICAL_CORE_OUTBOX_DUAL_WRITE_V1`
   - default: `false`
-  - `true` のとき `source_refs` / `faq_articles` 更新で `canonical_core_outbox` にイベントを書き込む。
+  - `true` のとき `source_refs` / `source_evidence` / `faq_articles` 更新で `canonical_core_outbox` にイベントを書き込む。
 - `ENABLE_CANONICAL_CORE_OUTBOX_STRICT_V1`
   - default: `false`
   - `true` のとき outbox 書き込み失敗を本処理失敗として返す。
@@ -20,7 +20,7 @@
   - `true` のとき PostgreSQL sink 失敗を job error として扱う（非strict時は skipped/failed 集計で継続）。
 
 ## Event Contract (canonical_core_outbox)
-- `objectType`: `source_snapshot | knowledge_object | ...`
+- `objectType`: `source_snapshot | evidence_claim | knowledge_object | ...`
 - `objectId`
 - `eventType`: `upsert | delete | status_change`
 - `sourceSystem`
