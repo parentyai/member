@@ -179,6 +179,7 @@ jobs:
             tmp/llm_quality_release_policy_result.json
             tmp/llm_quality_report.json
             tmp/llm_quality_failure_register.json
+            tmp/llm_quality_counterexample_queue.json
             tmp/llm_replay_arena_result.json
 
   audit:

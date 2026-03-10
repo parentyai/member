@@ -12,4 +12,5 @@ test('phase764: audit workflow quality job runs report and uploads failure regis
   assert.match(workflow, /npm run llm:quality:report/);
   assert.match(workflow, /tmp\/llm_quality_report\.json/);
   assert.match(workflow, /tmp\/llm_quality_failure_register\.json/);
+  assert.match(workflow, /tmp\/llm_quality_counterexample_queue\.json/);
 });
