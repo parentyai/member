@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T19:46:32-04:00",
-  "gitCommit": "a42a8afb25241a17db205d47eb2c7fc28f955641",
-  "branch": "codex/slice-pass-r761",
-  "sourceDigest": "ceb3481ef1a747544bd4a58cd96134ec2d780d74fb836c386bca6261652dfc8c",
+  "generatedAt": "2026-03-09T19:57:05-04:00",
+  "gitCommit": "dd43d343b4039ef852b8a51e4a3a7cfcf45acd20",
+  "branch": "main",
+  "sourceDigest": "c544fa00ffff933c2b039323fdab6465a117617e33c975f39b74e31b08e6e4ec",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
