@@ -94,7 +94,11 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'actionGatewayReason',
   'domainIntent',
   'fallbackType',
-  'interventionSuppressedBy'
+  'interventionSuppressedBy',
+  'responseContractConformant',
+  'responseContractErrorCount',
+  'responseContractErrors',
+  'responseContractFallbackApplied'
 ]);
 
 function resolveAppendAuditLog() {
