@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T01:05:38-04:00",
-  "gitCommit": "835247375013af5aac14aa2129652e3681642c98",
+  "generatedAt": "2026-03-10T06:41:46-04:00",
+  "gitCommit": "ed8f00e8a3154b861bfa177794bd8615975d47b7",
   "branch": "codex/spec-v2-contract-freeze-foundation",
-  "sourceDigest": "a14f6a0c12340fac00fa5e189660e14b517f972f4e428c5428c8cefdd22ba9f4",
+  "sourceDigest": "2922927cb42fa6fb140fdde244d08cfb88ed7ea80e76604442361391366574a1",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

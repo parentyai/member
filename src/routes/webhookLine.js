@@ -74,7 +74,7 @@ const { resolveFreeContextualFollowup } = require('../domain/llm/conversation/fr
 const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
 const { handleJourneyPostback } = require('../usecases/journey/handleJourneyPostback');
 const { InMemoryWebhookDedupeStore } = require('../v1/channel_edge/line/dedupeStore');
-const { filterWebhookEvents } = require('../v1/channel_edge/line/receiver');
+const { filterWebhookEventsAsync } = require('../v1/channel_edge/line/receiver');
 const { classifyDispatchMode } = require('../v1/channel_edge/line/dispatcher');
 const { buildServiceAckMessage } = require('../v1/line_renderer/fallbackRenderer');
 const taskNodesRepo = require('../repos/firestore/taskNodesRepo');
@@ -100,7 +100,13 @@ const {
 } = require('../domain/redacLineMessages');
 const ROUTE_KEY = 'webhook_line';
 const PAID_CONCIERGE_DOMAIN_INTENTS = new Set(['housing', 'school', 'ssn', 'banking']);
+const { FirestoreWebhookEdgeStateStore } = require('../v1/channel_edge/line/firestoreEdgeStateStore');
 const WEBHOOK_DEDUPE_STORE = new InMemoryWebhookDedupeStore(24 * 60 * 60 * 1000);
+const WEBHOOK_EDGE_STATE_STORE = new FirestoreWebhookEdgeStateStore({
+  dedupeTtlMs: 24 * 60 * 60 * 1000,
+  orderingTtlMs: 24 * 60 * 60 * 1000,
+  inMemoryDedupe: WEBHOOK_DEDUPE_STORE
+});
 
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -3440,8 +3446,9 @@ async function handleLineWebhook(options) {
   // Ensure users and run interactive commands (best-effort).
   const rawEvents = Array.isArray(payload && payload.events) ? payload.events : [];
   const filteredEvents = channelEdgeEnabled
-    ? filterWebhookEvents(rawEvents, {
-      dedupeStore: WEBHOOK_DEDUPE_STORE,
+    ? await filterWebhookEventsAsync(rawEvents, {
+      dedupeStore: WEBHOOK_EDGE_STATE_STORE,
+      orderingStore: WEBHOOK_EDGE_STATE_STORE,
       skewToleranceMs: 20000
     })
     : { accepted: rawEvents, dropped: [] };

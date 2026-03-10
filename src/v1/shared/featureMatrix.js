@@ -8,7 +8,7 @@ function resolveV1FeatureMatrix(env) {
     channelEdge: resolveBooleanEnvFlag('ENABLE_V1_CHANNEL_EDGE', false, source),
     fastSlowDispatch: resolveBooleanEnvFlag('ENABLE_V1_FAST_SLOW_DISPATCH', false, source),
     liffSyntheticEvents: resolveBooleanEnvFlag('ENABLE_V1_LIFF_SYNTHETIC_EVENTS', false, source),
-    openAiResponses: resolveBooleanEnvFlag('ENABLE_V1_OPENAI_RESPONSES', false, source),
+    openAiResponses: resolveBooleanEnvFlag('ENABLE_V1_OPENAI_RESPONSES', true, source),
     semanticObjectStrict: resolveBooleanEnvFlag('ENABLE_V1_SEMANTIC_OBJECT_STRICT', false, source),
     memoryFabric: resolveBooleanEnvFlag('ENABLE_V1_MEMORY_FABRIC', false, source),
     actionGateway: resolveBooleanEnvFlag('ENABLE_V1_ACTION_GATEWAY', false, source),

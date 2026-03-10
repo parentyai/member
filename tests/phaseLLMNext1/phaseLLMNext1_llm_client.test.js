@@ -48,7 +48,7 @@ test('llmClient: throws llm_api_error on empty response content', async () => {
     _fetchFn: async () => ({
       ok: true,
       status: 200,
-      json: async () => ({ choices: [] })
+      json: async () => ({ output_text: '' })
     })
   };
   await assert.rejects(
@@ -65,7 +65,7 @@ test('llmClient: throws llm_api_error on non-JSON response content', async () =>
       status: 200,
       json: async () => ({
         model: 'gpt-4o-mini',
-        choices: [{ message: { content: 'not json at all' } }]
+        output_text: 'not json at all'
       })
     })
   };
@@ -85,7 +85,7 @@ test('llmClient: returns { answer, model } on successful response', async () => 
       status: 200,
       json: async () => ({
         model: 'gpt-4o',
-        choices: [{ message: { content: JSON.stringify(fakeAnswer) } }]
+        output_text: JSON.stringify(fakeAnswer)
       })
     })
   };
@@ -106,7 +106,7 @@ test('llmClient: uses OPENAI_MODEL env var when set', async () => {
         status: 200,
         json: async () => ({
           model: 'gpt-4-turbo',
-          choices: [{ message: { content: JSON.stringify({ ok: true }) } }]
+          output_text: JSON.stringify({ ok: true })
         })
       };
     }
@@ -126,7 +126,7 @@ test('llmClient: defaults to gpt-4o-mini when OPENAI_MODEL not set', async () =>
         status: 200,
         json: async () => ({
           model: 'gpt-4o-mini',
-          choices: [{ message: { content: JSON.stringify({ ok: true }) } }]
+          output_text: JSON.stringify({ ok: true })
         })
       };
     }
@@ -146,7 +146,7 @@ test('llmClient: sends Authorization header with Bearer token', async () => {
         status: 200,
         json: async () => ({
           model: 'gpt-4o-mini',
-          choices: [{ message: { content: JSON.stringify({ ok: true }) } }]
+          output_text: JSON.stringify({ ok: true })
         })
       };
     }
@@ -155,7 +155,7 @@ test('llmClient: sends Authorization header with Bearer token', async () => {
   assert.equal(capturedHeaders.Authorization, 'Bearer sk-my-secret-key');
 });
 
-test('llmClient: uses json_object response_format', async () => {
+test('llmClient: uses responses text json_schema format', async () => {
   let capturedBody;
   const env = {
     OPENAI_API_KEY: 'sk-test-key',
@@ -166,11 +166,11 @@ test('llmClient: uses json_object response_format', async () => {
         status: 200,
         json: async () => ({
           model: 'gpt-4o-mini',
-          choices: [{ message: { content: JSON.stringify({ ok: true }) } }]
+          output_text: JSON.stringify({ ok: true })
         })
       };
     }
   };
   await llmClient.answerFaq(VALID_PAYLOAD, env);
-  assert.deepEqual(capturedBody.response_format, { type: 'json_object' });
+  assert.equal(capturedBody.text.format.type, 'json_schema');
 });

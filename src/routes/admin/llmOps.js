@@ -3,6 +3,7 @@
 const { getOpsExplanation } = require('../../usecases/phaseLLM2/getOpsExplanation');
 const { getNextActionCandidates } = require('../../usecases/phaseLLM3/getNextActionCandidates');
 const { appendLlmGateDecision } = require('../../usecases/llm/appendLlmGateDecision');
+const { resolveSharedAnswerReadiness } = require('../../domain/llm/quality/resolveSharedAnswerReadiness');
 const { requireActor, resolveTraceId } = require('./osContext');
 
 function buildOpsQualitySignals(result, mode) {
@@ -66,6 +67,26 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
     const traceId = resolveTraceId(req);
     const result = await getOpsExplanation({ lineUserId, traceId, actor }, deps);
     const qualitySignals = buildOpsQualitySignals(result, 'ops_explain');
+    const opsExplanationText = result && result.explanation && typeof result.explanation.opsExplanation === 'string'
+      ? result.explanation.opsExplanation
+      : '';
+    const sharedReadiness = resolveSharedAnswerReadiness({
+      domainIntent: 'general',
+      llmUsed: result && result.llmUsed === true,
+      fallbackType: qualitySignals.fallbackType,
+      replyText: opsExplanationText,
+      lawfulBasis: 'consent',
+      consentVerified: true,
+      legalDecision: 'allow',
+      sourceReadinessDecision: result && result.llmUsed === true ? 'allow' : 'clarify'
+    });
+    if (result && result.explanation && typeof result.explanation === 'object' && opsExplanationText) {
+      result.explanation.opsExplanation = sharedReadiness.replyText;
+    }
+    result.readinessDecision = sharedReadiness.readiness.decision;
+    result.readinessReasonCodes = sharedReadiness.readiness.reasonCodes;
+    result.readinessSafeResponseMode = sharedReadiness.readiness.safeResponseMode;
+    result.intentRiskTier = sharedReadiness.intentRiskTier;
     await appendLlmGateDecision({
       actor,
       traceId,
@@ -88,6 +109,10 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
       fallbackType: qualitySignals.fallbackType,
       contextCarryScore: qualitySignals.contextCarryScore,
       repeatRiskScore: qualitySignals.repeatRiskScore,
+      readinessDecision: sharedReadiness.readiness.decision,
+      readinessReasonCodes: sharedReadiness.readiness.reasonCodes,
+      readinessSafeResponseMode: sharedReadiness.readiness.safeResponseMode,
+      intentRiskTier: sharedReadiness.intentRiskTier,
       entryType: 'admin',
       gatesApplied: ['kill_switch']
     }).catch(() => null);
@@ -115,6 +140,27 @@ async function handleAdminLlmNextActions(req, res, deps) {
     const traceId = resolveTraceId(req);
     const result = await getNextActionCandidates({ lineUserId, traceId, actor }, deps);
     const qualitySignals = buildOpsQualitySignals(result, 'next_actions');
+    const firstReason = result
+      && result.nextActionCandidates
+      && Array.isArray(result.nextActionCandidates.candidates)
+      && result.nextActionCandidates.candidates[0]
+      && typeof result.nextActionCandidates.candidates[0].reason === 'string'
+      ? result.nextActionCandidates.candidates[0].reason
+      : '';
+    const sharedReadiness = resolveSharedAnswerReadiness({
+      domainIntent: 'general',
+      llmUsed: result && result.llmUsed === true,
+      fallbackType: qualitySignals.fallbackType,
+      replyText: firstReason,
+      lawfulBasis: 'consent',
+      consentVerified: true,
+      legalDecision: 'allow',
+      sourceReadinessDecision: result && result.llmUsed === true ? 'allow' : 'clarify'
+    });
+    result.readinessDecision = sharedReadiness.readiness.decision;
+    result.readinessReasonCodes = sharedReadiness.readiness.reasonCodes;
+    result.readinessSafeResponseMode = sharedReadiness.readiness.safeResponseMode;
+    result.intentRiskTier = sharedReadiness.intentRiskTier;
     await appendLlmGateDecision({
       actor,
       traceId,
@@ -137,6 +183,10 @@ async function handleAdminLlmNextActions(req, res, deps) {
       fallbackType: qualitySignals.fallbackType,
       contextCarryScore: qualitySignals.contextCarryScore,
       repeatRiskScore: qualitySignals.repeatRiskScore,
+      readinessDecision: sharedReadiness.readiness.decision,
+      readinessReasonCodes: sharedReadiness.readiness.reasonCodes,
+      readinessSafeResponseMode: sharedReadiness.readiness.safeResponseMode,
+      intentRiskTier: sharedReadiness.intentRiskTier,
       entryType: 'admin',
       gatesApplied: ['kill_switch']
     }).catch(() => null);

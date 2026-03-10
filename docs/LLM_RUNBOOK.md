@@ -618,6 +618,20 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 
 ### Merge Block 条件
 - `llm:quality:gate:strict` が non-zero
+
+## Phase778 Addendum（Responses-only + Durable Channel Edge + Shared Readiness）
+
+### Runtime defaults
+- `ENABLE_V1_OPENAI_RESPONSES` は deploy/webhook deploy で `true` を固定する。
+- `llmClient` は Responses API のみを使用し、legacy chat/completions は runtime で使用しない。
+
+### Channel edge durability
+- webhook event filter は `filterWebhookEventsAsync` を使用し、dedupe/order state を `webhook_edge_state` に保存する。
+- Firestore書込失敗時は in-memory fallback へ降格するため、`line_webhook.events.filtered` の急減/急増を監視する。
+
+### Shared answer-readiness scope
+- admin/compat ops explain/next-actions でも `resolveSharedAnswerReadiness` を通して `readinessDecision` を記録する。
+- FAQ admin/compat は usecase の readiness telemetry を `llm_gate.decision` へ透過記録する。
 - critical slice regression:
   - `short_followup`
   - `domain_continuation`

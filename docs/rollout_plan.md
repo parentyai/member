@@ -3,7 +3,7 @@
 ## Stage gates
 1. contract freeze gate pass (`npm run llm:spec-contract:freeze:check`)
 2. stg with flags off (baseline)
-3. responses adapter canary
+3. responses adapter contract check (`ENABLE_V1_OPENAI_RESPONSES=true` pinned)
 4. renderer canary
 5. edge guard canary
 6. memory/evidence canary
