@@ -613,6 +613,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 11. `npm run llm:quality:report`（`tmp/llm_usage_summary.json` がある場合。`tmp/llm_quality_failure_register.json` と `tmp/llm_quality_counterexample_queue.json` を同時生成）
     - failure register は signal別 materiality filter を適用（例: `defaultCasualRate > 0.02`, `retrieveNeededRate > 0.25`, `legacyTemplateHitRate > 0.005`）
     - `conversationQuality` 欠損シグナルは failure に含めず `signal_coverage.missingSignals` で運用監視する
+    - `conversationQuality` がある場合、`conversation_continuity/clarification_quality/empathy/misunderstanding_recovery/latency_surface_efficiency` は signal 補正を適用し、precomputed scorecard の過小評価を補正する
     - `signal_coverage.missingSignalCount > 0` は `runtime_signal_gap` として register/queue に記録される
 
 ### Merge Block 条件
