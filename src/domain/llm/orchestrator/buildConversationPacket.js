@@ -172,6 +172,7 @@ function computeContextCarryScore(params) {
   if (typeof payload.contextResumeDomain === 'string' && payload.contextResumeDomain.trim()) score += 0.2;
   if (typeof payload.followupIntent === 'string' && payload.followupIntent.trim()) score += 0.1;
   if (typeof payload.recoveryFollowupIntent === 'string' && payload.recoveryFollowupIntent.trim()) score += 0.05;
+  if (payload.followupCarryFromHistory === true) score += 0.1;
   if (Number.isFinite(Number(payload.unresolvedTaskCount)) && Number(payload.unresolvedTaskCount) > 0) score += 0.05;
   if (Number.isFinite(Number(payload.recentAssistantCommitmentCount)) && Number(payload.recentAssistantCommitmentCount) > 0) {
     score += 0.05;
@@ -212,7 +213,8 @@ function buildConversationPacket(params) {
   const followupIntentDecision = resolveFollowupIntent({
     messageText,
     domainIntent: normalizedConversationIntent,
-    contextResumeDomain: contextResume ? recentDomain : null
+    contextResumeDomain: contextResume ? recentDomain : null,
+    recentFollowupIntents: recentHistory.recentFollowupIntents
   });
   const providedRouterReason = normalizeText(payload.routerReason);
   const routerReason = contextResume
@@ -223,10 +225,14 @@ function buildConversationPacket(params) {
   const detectedFollowupIntent = followupIntentDecision && typeof followupIntentDecision.followupIntent === 'string'
     ? followupIntentDecision.followupIntent
     : null;
+  const followupIntentReason = followupIntentDecision && typeof followupIntentDecision.reason === 'string'
+    ? followupIntentDecision.reason
+    : 'none';
   const recoveryFollowupIntent = recoverySignal ? resolveRecoveryFollowupIntent(messageText) : null;
   const followupIntent = detectedFollowupIntent
     || recoveryFollowupIntent
     || ((contextResume && normalizedConversationIntent !== 'general') ? 'next_step' : null);
+  const followupCarryFromHistory = followupIntentReason === 'history_followup_carry';
   const contextCarryScore = computeContextCarryScore({
     contextResume,
     lowInformationMessage,
@@ -234,6 +240,7 @@ function buildConversationPacket(params) {
     recoverySignal,
     contextResumeDomain: contextResume ? recentDomain : null,
     followupIntent,
+    followupCarryFromHistory,
     recoveryFollowupIntent,
     unresolvedTaskCount,
     recentAssistantCommitmentCount: recentHistory.assistantCommitments.length,
@@ -259,6 +266,8 @@ function buildConversationPacket(params) {
     recoverySignal,
     contextResumeDomain: contextResume ? recentDomain : null,
     followupIntent,
+    followupIntentReason,
+    followupCarryFromHistory,
     recoveryFollowupIntent,
     lowInformationMessage,
     unresolvedTaskCount,

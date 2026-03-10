@@ -79,3 +79,27 @@ test('phase752: recovery correction prefers docs_required followup intent on con
   assert.equal(packet.recoveryFollowupIntent, 'docs_required');
   assert.equal(packet.followupIntent, 'docs_required');
 });
+
+test('phase752: history carry keeps previous followup intent for ultra-short confirmation turn', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_HISTORY',
+    messageText: 'それで？',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'school',
+        followupIntent: 'docs_required',
+        replyText: '学校手続きは住所証明と予防接種記録を先にそろえるのが最優先です。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.contextResume, true);
+  assert.equal(packet.normalizedConversationIntent, 'school');
+  assert.equal(packet.followupIntent, 'docs_required');
+  assert.equal(packet.followupIntentReason, 'history_followup_carry');
+  assert.equal(packet.followupCarryFromHistory, true);
+  assert.equal(packet.contextCarryScore >= 0.85, true);
+});

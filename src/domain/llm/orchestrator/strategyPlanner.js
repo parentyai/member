@@ -17,8 +17,10 @@ function buildStrategyPlan(params) {
   const routerMode = normalizeText(payload.routerMode || 'casual').toLowerCase();
   const normalizedIntent = normalizeText(payload.normalizedConversationIntent || 'general').toLowerCase();
   const followupIntent = normalizeText(payload.followupIntent || '').toLowerCase();
+  const followupIntentReason = normalizeText(payload.followupIntentReason || '').toLowerCase();
+  const followupCarryFromHistory = payload.followupCarryFromHistory === true || followupIntentReason === 'history_followup_carry';
   const hasFollowupIntent = followupIntent === 'docs_required' || followupIntent === 'appointment_needed' || followupIntent === 'next_step';
-  const directAnswerHint = hasFollowupIntent || payload.contextResume === true || payload.lowInformationMessage === true;
+  const directAnswerHint = hasFollowupIntent || payload.contextResume === true || payload.lowInformationMessage === true || followupCarryFromHistory;
   const recoverySignal = payload.recoverySignal === true;
   const intentReason = payload.intentDecision && typeof payload.intentDecision === 'object'
     ? normalizeText(payload.intentDecision.reason).toLowerCase()
@@ -50,6 +52,18 @@ function buildStrategyPlan(params) {
         verifyNeeded: false,
         candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
         fallbackType: 'followup_direct_answer',
+        directAnswerFirst: true,
+        clarifySuppressed: true
+      };
+    }
+    if (followupCarryFromHistory && normalizedIntent !== 'general') {
+      return {
+        strategy: 'domain_concierge',
+        conversationMode: 'concierge',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        fallbackType: 'history_followup_carry',
         directAnswerFirst: true,
         clarifySuppressed: true
       };
@@ -167,8 +181,21 @@ function buildStrategyPlan(params) {
         clarifySuppressed: true
       };
     }
+    if (followupCarryFromHistory && normalizedIntent !== 'general') {
+      return {
+        strategy: 'domain_concierge',
+        conversationMode: 'concierge',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        fallbackType: 'history_followup_carry',
+        directAnswerFirst: true,
+        clarifySuppressed: true
+      };
+    }
     const clarifyFirst = isBroadQuestion(messageText)
-      && (!opportunityDecision || opportunityDecision.conversationMode !== 'concierge');
+      && (!opportunityDecision || opportunityDecision.conversationMode !== 'concierge')
+      && directAnswerHint !== true;
     return {
       strategy: clarifyFirst ? 'clarify' : 'grounded_answer',
       conversationMode: clarifyFirst ? 'casual' : (llmConciergeEnabled ? 'concierge' : 'casual'),

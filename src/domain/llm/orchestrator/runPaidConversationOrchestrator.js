@@ -607,11 +607,19 @@ async function runPaidConversationOrchestrator(params) {
     : null;
 
   const selectedKind = String(finalized.finalMeta && finalized.finalMeta.candidateKind ? finalized.finalMeta.candidateKind : '').toLowerCase();
+  const followupIntent = typeof packet.followupIntent === 'string' ? packet.followupIntent : null;
+  const selectedIsFollowupDomainAnswer = Boolean(
+    followupIntent
+    && selectedKind === 'domain_concierge_candidate'
+  );
   const directAnswerApplied = selected.directAnswerCandidate === true
+    || selectedIsFollowupDomainAnswer
     || (
       strategyPlan.directAnswerFirst === true
       && selectedKind !== 'clarify_candidate'
     );
+  const clarifySuppressed = strategyPlan.clarifySuppressed === true
+    || (Boolean(followupIntent) && selectedKind !== 'clarify_candidate');
   const conciseModeApplied = selected && selected.conciseModeApplied === true
     ? true
     : isConciseReplyText(finalized.replyText);
@@ -635,9 +643,11 @@ async function runPaidConversationOrchestrator(params) {
     telemetry: {
       strategy: strategyPlan.strategy,
       directAnswerApplied,
-      clarifySuppressed: strategyPlan.clarifySuppressed === true,
+      clarifySuppressed,
       recoverySignal: packet.recoverySignal === true,
       recoveryFollowupIntent: packet.recoveryFollowupIntent || null,
+      followupIntentReason: packet.followupIntentReason || null,
+      followupCarryFromHistory: packet.followupCarryFromHistory === true,
       retrieveNeeded: strategyPlan.retrieveNeeded === true,
       retrievalQuality: candidateSet.retrievalQuality,
       orchestratorPathUsed: true,
@@ -645,7 +655,7 @@ async function runPaidConversationOrchestrator(params) {
       contextCarryScore: Number.isFinite(Number(packet.contextCarryScore)) ? Number(packet.contextCarryScore) : 0,
       loopBreakApplied: loopResolved.loopBreakApplied === true,
       repeatRiskScore: Number.isFinite(Number(loopResolved.repeatRiskScore)) ? Number(loopResolved.repeatRiskScore) : 0,
-      followupIntent: packet.followupIntent || null,
+      followupIntent: followupIntent || null,
       conciseModeApplied,
       repetitionPrevented: loopResolved.repetitionPrevented === true,
       sourceAuthorityScore: readinessSourceAuthorityScore,

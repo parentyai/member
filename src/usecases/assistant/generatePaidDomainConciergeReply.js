@@ -206,6 +206,16 @@ function pickLeastRepeatedLine(lines, hints) {
   return scored[0].line;
 }
 
+function hasDomainWord(line, domainIntent) {
+  const text = normalizeText(line);
+  if (!text) return false;
+  if (domainIntent === 'school') return /(学校|学区|入学)/.test(text);
+  if (domainIntent === 'ssn') return /(SSN|ソーシャルセキュリティ)/i.test(text);
+  if (domainIntent === 'housing') return /(住まい|物件|賃貸|住宅|内見)/.test(text);
+  if (domainIntent === 'banking') return /(銀行|口座|支店)/.test(text);
+  return true;
+}
+
 function countFollowupIntentStreak(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const followupIntent = normalizeText(payload.followupIntent).toLowerCase();
@@ -234,7 +244,8 @@ function resolveFollowupIntentForDomain(params) {
 
 function buildConciseReply(parts) {
   const payload = parts && typeof parts === 'object' ? parts : {};
-  const spec = DOMAIN_SPECS[payload.domainIntent] || DOMAIN_SPECS.general;
+  const domainIntent = resolveDomainIntent(payload.domainIntent);
+  const spec = DOMAIN_SPECS[domainIntent] || DOMAIN_SPECS.general;
   const followupIntent = payload.followupIntent || null;
   const repeatedFollowupStreak = Number.isFinite(Number(payload.repeatedFollowupStreak))
     ? Math.max(0, Math.floor(Number(payload.repeatedFollowupStreak)))
@@ -256,8 +267,22 @@ function buildConciseReply(parts) {
       '次の一手を進めるなら、まず期限の近い手続きを1つだけ確定しましょう。'
     ]
   };
+  const repeatedActionByIntent = {
+    docs_required: [
+      '次は不足しやすい書類を1つずつ確認しましょう。',
+      '次は提出先ごとの必要書類を先に分けて整理しましょう。'
+    ],
+    appointment_needed: [
+      '次は最寄り窓口を1つ決めて予約可否を確認しましょう。',
+      '次は対象窓口を1つに絞って予約要否を先に確定しましょう。'
+    ],
+    next_step: [
+      '次は期限が近い手続きを1つに固定して進めましょう。',
+      '次は最優先手続きを1つだけ決めて進めましょう。'
+    ]
+  };
   const recoveryLeadLine = payload.recoverySignal === true ? '了解です。前提を修正して続けます。' : '';
-  const resolvedPrimaryLine = (
+  let resolvedPrimaryLine = (
     followupIntent
       ? (repeatedFollowupIntent
         ? (() => {
@@ -269,6 +294,10 @@ function buildConciseReply(parts) {
         : directAnswers[followupIntent])
       : (payload.situationLine || spec.situationLine)
   );
+  if (followupIntent && domainIntent !== 'general' && !hasDomainWord(resolvedPrimaryLine, domainIntent)) {
+    const lead = normalizeText(spec.situationLine).replace(/[。！？!?]$/, '');
+    resolvedPrimaryLine = `${lead}は ${resolvedPrimaryLine}`;
+  }
   const primaryLineCandidate = recoveryLeadLine
     ? `${recoveryLeadLine} ${resolvedPrimaryLine || payload.situationLine || spec.situationLine}`
     : resolvedPrimaryLine;
@@ -279,7 +308,17 @@ function buildConciseReply(parts) {
       || spec.situationLine
   );
   const actions = normalizeActions(payload.nextActions, 3);
-  const actionLine = buildActionLine(actions[0] || spec.defaultAction);
+  const repeatedActionLine = (
+    repeatedFollowupIntent
+      ? (() => {
+        const variants = repeatedActionByIntent[followupIntent];
+        if (!Array.isArray(variants) || !variants.length) return '';
+        const index = Math.min(variants.length - 1, repeatedFollowupStreak - 1);
+        return ensureSentence(variants[index] || variants[0]);
+      })()
+      : ''
+  );
+  const actionLine = repeatedActionLine || buildActionLine(actions[0] || spec.defaultAction);
   const pitfall = ensureSentence(`詰まりやすいのは ${sanitizeReplyLine(payload.pitfall) || spec.pitfall}`);
   const question = sanitizeReplyLine(payload.followupQuestion);
   const questionLine = question
@@ -287,13 +326,19 @@ function buildConciseReply(parts) {
     : '';
 
   const lines = [primaryLine];
-  if (actionLine && actionLine !== primaryLine) lines.push(actionLine);
-  if (questionLine) {
-    lines.push(questionLine);
-  } else if (pitfall) {
-    lines.push(pitfall);
+  if (followupIntent) {
+    if (actionLine && actionLine !== primaryLine) lines.push(actionLine);
+    if (repeatedFollowupIntent && questionLine) lines.push(questionLine);
+  } else {
+    if (actionLine && actionLine !== primaryLine) lines.push(actionLine);
+    if (questionLine) {
+      lines.push(questionLine);
+    } else if (pitfall) {
+      lines.push(pitfall);
+    }
   }
-  const replyText = trimForLineMessage(lines.filter(Boolean).slice(0, 3).join('\n'));
+  const lineLimit = followupIntent ? 2 : 3;
+  const replyText = trimForLineMessage(lines.filter(Boolean).slice(0, lineLimit).join('\n'));
   return {
     replyText,
     atoms: {
