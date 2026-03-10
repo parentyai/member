@@ -145,6 +145,7 @@
 - `top_10_line_fit_failures`
 - register は materiality filter を適用（`jp_service_failure` / `line_fit_failure` は `value > 0.01` のみ記録）
 - `signal_coverage` を同時出力し、`conversationQuality` 欠損シグナルは failure 集計対象外にする（missing は coverage で追跡）
+- `signal_coverage.missingSignalCount > 0` の場合は register に `runtime_signal_gap` を記録し、counterexample queue で運用追跡する
 
 ## Rubric Assets
 - human eval rubric: `docs/LLM_QUALITY_HUMAN_EVAL_RUBRIC_V1.md`
