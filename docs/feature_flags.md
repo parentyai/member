@@ -12,3 +12,7 @@
 | ENABLE_V1_LINE_RENDERER | false | true | false |
 | ENABLE_V1_EVIDENCE_LEDGER | false | true | false |
 | ENABLE_V1_REPLAY_GATES | false | true | false |
+
+## Non-flag release contract
+- `llm:spec-contract:freeze:check` is a non-flag mandatory gate.
+- This gate has no runtime rollback toggle; rollback is performed by reverting registry/script changes.

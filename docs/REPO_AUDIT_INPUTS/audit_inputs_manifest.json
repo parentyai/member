@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T04:58:25.820Z",
-  "gitCommit": "80717eac510bcc093c894ed253df35d4df2603df",
-  "branch": "codex/phase778-soft-floor-strict-default",
-  "sourceDigest": "3f474fcdb796a6ec845459bd6fa70b8ecd27af60dd47c70ca1bb900352f4d079",
+  "generatedAt": "2026-03-10T10:40:42.643Z",
+  "gitCommit": "835247375013af5aac14aa2129652e3681642c98",
+  "branch": "codex/spec-v2-contract-freeze-foundation",
+  "sourceDigest": "33221939e933b02e002212ccca118ad653cf0a54609c7ea469b147992ef77019",
   "counts": {
     "endpoints": 290,
     "routes": 129,
@@ -76,7 +76,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "41bc9fccb2f20070035fc9c1a467d45a5cfc1bd165a015283a80fe08d8182dab",
+      "sha256": "90a715aeea358719aab7c26a62a57ef60eb89f24297fb72b12ec50bc9b5d3a18",
       "bytes": 77103
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "a2fd464ea4089bc040a455294ce362533bb7341ca21246714d2aba506215040b",
+      "sha256": "6e9d79ea1f710038c793f0b9c4dfc466ff1fc4e6abc101cd5c39589289b2af5e",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "8979acf83f516111844d43aca7baea12e6a2ae226317396dd3d8cda5e96a8fb3",
+      "sha256": "06113a2279d8fdb95f0ca978acb58109127b5f31d21f625d614a7834997a2599",
       "bytes": 487
     },
     {
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "0d7a4db69a588cf3c2fe7c9b7718c31e0865ba1dc9c2adf62026660a49e2a4dd",
+      "sha256": "90df742d69367446de1439f0744c10aa061279c8286d5c0d5425fd12951b93b9",
       "bytes": 447389
     },
     {
@@ -171,7 +171,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "c3c0c10effa60f7a1ecc2c6f648bdbadcbd5abf8985234cc787da842fd041d94",
+      "sha256": "634d7b9940d81f9fcc69f520264ca9b3fc5c3cc0f0c23b0d84c7fe7a82d27412",
       "bytes": 2426
     },
     {

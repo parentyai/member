@@ -1,19 +1,20 @@
 # V1 Rollout Plan
 
 ## Stage gates
-1. stg with flags off (baseline)
-2. responses adapter canary
-3. renderer canary
-4. edge guard canary
-5. memory/evidence canary
-6. replay harness pass
-7. quality framework gate pass (`npm run llm:quality:gate`; all slices pass required)
-8. slice-first gate pass（critical slice regression = 0）
-9. frontier warning review（quality-latency-cost）
-10. must-pass fixtures pass (`npm run llm:quality:must-pass`)
-11. release policy pass (`npm run llm:quality:release-policy`)
-12. quality report + failure register/counterexample queue refresh (`npm run llm:quality:report`)
-13. strict runtime gate pass (`npm run llm:quality:gate:strict` + `npm run llm:quality:release-policy:strict` with soft-floor 0.80)
+1. contract freeze gate pass (`npm run llm:spec-contract:freeze:check`)
+2. stg with flags off (baseline)
+3. responses adapter canary
+4. renderer canary
+5. edge guard canary
+6. memory/evidence canary
+7. replay harness pass
+8. quality framework gate pass (`npm run llm:quality:gate`; all slices pass required)
+9. slice-first gate pass（critical slice regression = 0）
+10. frontier warning review（quality-latency-cost）
+11. must-pass fixtures pass (`npm run llm:quality:must-pass`)
+12. release policy pass (`npm run llm:quality:release-policy`)
+13. quality report + failure register/counterexample queue refresh (`npm run llm:quality:report`)
+14. strict runtime gate pass (`npm run llm:quality:gate:strict` + `npm run llm:quality:release-policy:strict` with soft-floor 0.80)
 
 ## No-Go
 - duplicate_event drop anomaly

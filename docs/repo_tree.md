@@ -15,4 +15,6 @@
 - `src/v1/audit_eval_update`
 - `tools/migrations/v1`
 - `tools/replay/v1`
+- `contracts/llm_spec_contract_registry.v2.json`
 - `schemas/semantic_response_object.schema.json`
+- `schemas/universal_record_envelope.schema.json`

@@ -3,6 +3,7 @@
 ## Contract
 - semantic response schema strict parse
 - response contract compatibility adapter
+- spec contract freeze registry validation (`npm run llm:spec-contract:freeze:check`)
 
 ## LINE constraints
 - max message objects = 5

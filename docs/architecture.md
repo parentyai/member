@@ -21,3 +21,4 @@
 ## Cutover
 - legacy routes stay API-compatible.
 - V1 behavior is controlled by `ENABLE_V1_*` flags.
+- Contract freeze gate (`llm:spec-contract:freeze:check`) is mandatory before quality/replay gates.

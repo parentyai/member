@@ -17026,6 +17026,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
   const hardGate = quality.hardGate && typeof quality.hardGate === 'object' ? quality.hardGate : { pass: false, failures: [] };
   const judge = quality.judgeCalibration && typeof quality.judgeCalibration === 'object' ? quality.judgeCalibration : {};
   const benchmark = quality.benchmark && typeof quality.benchmark === 'object' ? quality.benchmark : {};
+  const contractFreeze = quality.contractFreeze && typeof quality.contractFreeze === 'object' ? quality.contractFreeze : {};
   const replay = quality.replay && typeof quality.replay === 'object' ? quality.replay : {};
   const frontier = quality.frontier && typeof quality.frontier === 'object' ? quality.frontier : {};
   const topQualityFailures = Array.isArray(quality.top_10_quality_failures) ? quality.top_10_quality_failures : [];
@@ -17070,7 +17071,12 @@ function renderLlmQualityFrameworkDashboard(summary) {
     ok: true,
     version: benchmark.version || '-',
     frozen: benchmark.frozen === true,
-    contaminationRisk: benchmark.contaminationRisk || '-'
+    contaminationRisk: benchmark.contaminationRisk || '-',
+    contractRegistryVersion: contractFreeze.registryVersion || '-',
+    contractRegistryHash: contractFreeze.registryHash || '-',
+    blockingConflictCount: Number.isFinite(Number(contractFreeze.blockingConflictCount))
+      ? Number(contractFreeze.blockingConflictCount)
+      : 0
   });
   renderLlmResult('llm-quality-replay', {
     ok: true,

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T00:52:53-04:00",
-  "gitCommit": "80717eac510bcc093c894ed253df35d4df2603df",
-  "branch": "codex/phase778-soft-floor-strict-default",
-  "sourceDigest": "61c26ff7582c57ee1faef365a82a7031de003f043a9485f7ffb1a2df7ec2f729",
+  "generatedAt": "2026-03-10T01:05:38-04:00",
+  "gitCommit": "835247375013af5aac14aa2129652e3681642c98",
+  "branch": "codex/spec-v2-contract-freeze-foundation",
+  "sourceDigest": "a14f6a0c12340fac00fa5e189660e14b517f972f4e428c5428c8cefdd22ba9f4",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -3,6 +3,7 @@
 const llmUsageLogsRepo = require('../../repos/firestore/llmUsageLogsRepo');
 const llmActionLogsRepo = require('../../repos/firestore/llmActionLogsRepo');
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
+const specContractRegistry = require('../../../contracts/llm_spec_contract_registry.v2.json');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 const { buildCounterexampleQueueFromSignalEntries } = require('../../domain/llm/quality/counterexampleQueue');
@@ -77,6 +78,27 @@ const QUALITY_FRONTIER_THRESHOLDS = Object.freeze({
   costRegressionBlockRate: 0.2,
   ackSlaViolationBlockRate: 0.01
 });
+
+function buildContractFreezeSummary(registryPayload) {
+  const payload = registryPayload && typeof registryPayload === 'object' ? registryPayload : {};
+  const requirements = Array.isArray(payload.requirements) ? payload.requirements : [];
+  const conflicts = Array.isArray(payload.conflicts) ? payload.conflicts : [];
+  const statusCounts = requirements.reduce((acc, row) => {
+    const key = normalizeReason(row && row.status ? row.status : 'unknown');
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const blockingConflicts = conflicts.filter((row) => row && row.blocking === true).length;
+  return {
+    registryVersion: typeof payload.registryVersion === 'string' ? payload.registryVersion : 'unknown',
+    registryHash: typeof payload.registryHash === 'string' ? payload.registryHash : 'unknown',
+    requirementCount: requirements.length,
+    blockingConflictCount: blockingConflicts,
+    statusCounts
+  };
+}
+
+const CONTRACT_FREEZE_SUMMARY = Object.freeze(buildContractFreezeSummary(specContractRegistry));
 
 function toMillis(value) {
   if (!value) return null;
@@ -1452,6 +1474,7 @@ function buildQualityFrameworkSummary(payload) {
       frozen: true,
       contaminationRisk
     },
+    contractFreeze: CONTRACT_FREEZE_SUMMARY,
     replay: {
       totalCases: Number(conversation.sampleCount || 0),
       criticalFailures: replayCriticalFailures,
@@ -1631,6 +1654,12 @@ async function handleLlmUsageSummary(req, res) {
         compatShareWindow: optimizationSummary.compatShareWindow,
         qualityOverallScore: qualityFrameworkSummary.overallScore,
         qualityHardGatePass: qualityFrameworkSummary.hardGate && qualityFrameworkSummary.hardGate.pass === true,
+        contractRegistryVersion: qualityFrameworkSummary.contractFreeze && qualityFrameworkSummary.contractFreeze.registryVersion
+          ? qualityFrameworkSummary.contractFreeze.registryVersion
+          : 'unknown',
+        contractRegistryHash: qualityFrameworkSummary.contractFreeze && qualityFrameworkSummary.contractFreeze.registryHash
+          ? qualityFrameworkSummary.contractFreeze.registryHash
+          : 'unknown',
         scanLimit,
         topUserCount: summary.topUsers.length
       }
@@ -1670,6 +1699,7 @@ module.exports = {
   buildConversationQualitySummary,
   buildReleaseReadiness,
   buildQualityFrameworkSummary,
+  buildContractFreezeSummary,
   buildCounterexampleQueueFromBoards,
   maskLineUserId
 };

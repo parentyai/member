@@ -669,3 +669,25 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 - Hard Gate Impact
 - Quality Risks
 - What Improves / What Might Regress
+
+## Contract Freeze Gate（V2/統合仕様）
+
+### 実行コマンド
+- `npm run llm:spec-contract:freeze:check`
+
+### 目的
+- 統合仕様 V2 / データ統合仕様 / 親YAML の契約差分を `contracts/llm_spec_contract_registry.v2.json` に固定し、品質ゲート前に構造逸脱を検知する。
+
+### Block 条件
+- registry の必須項目不足（version/hash/specHierarchy/requirements/conflicts）
+- requirement `status` が許可値外
+- conflict 行で `blocking` が未定義
+
+### Warning 条件（運用レビュー必須）
+- evidence path がローカルで解決できない
+- specHierarchy の required path が参照不能
+
+### ロールバック
+1. `catchup:gate:pr` から `llm:spec-contract:freeze:check` を一時除外。
+2. registry 変更を `git revert`。
+3. 既存 quality gate のみで暫定運用し、次PRで再導入。
