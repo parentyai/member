@@ -747,8 +747,19 @@ async function buildPaidDomainConciergeResult(params) {
 async function replyWithPaidDomainConcierge(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const result = await buildPaidDomainConciergeResult(payload);
-  await payload.replyFn(payload.replyToken, { type: 'text', text: result.replyText });
-  return result;
+  const semanticReplyEnvelope = buildSemanticReplyEnvelope({
+    replyText: result.replyText,
+    domainIntent: payload.domainIntent || (result.conversationQuality && result.conversationQuality.domainIntent) || 'general',
+    conversationMode: result.opportunityDecision && result.opportunityDecision.conversationMode
+      ? result.opportunityDecision.conversationMode
+      : 'concierge',
+    nextSteps: result.atoms && Array.isArray(result.atoms.nextActions) ? result.atoms.nextActions : [],
+    followupQuestion: result.atoms && typeof result.atoms.followupQuestion === 'string'
+      ? result.atoms.followupQuestion
+      : null
+  });
+  await payload.replyFn(payload.replyToken, { type: 'text', text: semanticReplyEnvelope.replyText });
+  return Object.assign({}, result, semanticReplyEnvelope);
 }
 
 async function replyWithPaidHousingConcierge(params) {
@@ -1017,6 +1028,27 @@ function buildConversationQualityMeta(params) {
   };
 }
 
+function buildSemanticReplyEnvelope(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const responseContractConformance = evaluateResponseContractConformance({
+    replyText: payload.replyText || '',
+    domainIntent: normalizeDomainIntent(payload.domainIntent || 'general'),
+    conversationMode: typeof payload.conversationMode === 'string'
+      ? payload.conversationMode
+      : null,
+    nextSteps: Array.isArray(payload.nextSteps) ? payload.nextSteps : [],
+    followupQuestion: typeof payload.followupQuestion === 'string'
+      ? payload.followupQuestion
+      : null
+  });
+  const conformedReplyText = normalizeReplyText(responseContractConformance.responseMarkdown || payload.replyText || '');
+  return {
+    replyText: conformedReplyText || '回答を準備しています。対象手続きを1つ教えてください。',
+    responseContractConformance,
+    semanticResponseObject: responseContractConformance.semanticResponseObject
+  };
+}
+
 function resolveAnswerReadinessTelemetry(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const hasMetric = (value) => value !== null && value !== undefined && Number.isFinite(Number(value));
@@ -1150,17 +1182,20 @@ async function appendLlmGateDecisionBestEffort(data) {
     unsupportedClaimCount: payload.unsupportedClaimCount,
     contradictionDetected: payload.contradictionDetected === true
   });
-  const responseContractConformance = evaluateResponseContractConformance({
-    replyText: payload.replyText || payload.finalReplyText || '',
-    domainIntent: normalizeDomainIntent(payload.domainIntent || qualityMeta.domainIntent || 'general'),
-    conversationMode: typeof payload.conversationMode === 'string'
-      ? payload.conversationMode
-      : null,
-    nextSteps: Array.isArray(payload.committedNextActions) ? payload.committedNextActions : [],
-    followupQuestion: typeof payload.committedFollowupQuestion === 'string'
-      ? payload.committedFollowupQuestion
-      : null
-  });
+  const responseContractConformance = payload.responseContractConformance
+    && typeof payload.responseContractConformance === 'object'
+    ? payload.responseContractConformance
+    : evaluateResponseContractConformance({
+      replyText: payload.replyText || payload.finalReplyText || '',
+      domainIntent: normalizeDomainIntent(payload.domainIntent || qualityMeta.domainIntent || 'general'),
+      conversationMode: typeof payload.conversationMode === 'string'
+        ? payload.conversationMode
+        : null,
+      nextSteps: Array.isArray(payload.committedNextActions) ? payload.committedNextActions : [],
+      followupQuestion: typeof payload.committedFollowupQuestion === 'string'
+        ? payload.committedFollowupQuestion
+        : null
+    });
   try {
     await appendLlmGateDecision({
       actor: 'line_webhook',
@@ -1459,17 +1494,20 @@ async function appendLlmActionLogBestEffort(data) {
     unsupportedClaimCount: payload.unsupportedClaimCount,
     contradictionDetected: payload.contradictionDetected === true
   });
-  const responseContractConformance = evaluateResponseContractConformance({
-    replyText: payload.replyText || payload.finalReplyText || '',
-    domainIntent: qualityMeta.domainIntent || payload.domainIntent || 'general',
-    conversationMode: typeof payload.conversationMode === 'string'
-      ? payload.conversationMode
-      : (conciergeMeta && conciergeMeta.conversationState ? 'concierge' : null),
-    nextSteps: Array.isArray(payload.committedNextActions) ? payload.committedNextActions : [],
-    followupQuestion: typeof payload.committedFollowupQuestion === 'string'
-      ? payload.committedFollowupQuestion
-      : null
-  });
+  const responseContractConformance = payload.responseContractConformance
+    && typeof payload.responseContractConformance === 'object'
+    ? payload.responseContractConformance
+    : evaluateResponseContractConformance({
+      replyText: payload.replyText || payload.finalReplyText || '',
+      domainIntent: qualityMeta.domainIntent || payload.domainIntent || 'general',
+      conversationMode: typeof payload.conversationMode === 'string'
+        ? payload.conversationMode
+        : (conciergeMeta && conciergeMeta.conversationState ? 'concierge' : null),
+      nextSteps: Array.isArray(payload.committedNextActions) ? payload.committedNextActions : [],
+      followupQuestion: typeof payload.committedFollowupQuestion === 'string'
+        ? payload.committedFollowupQuestion
+        : null
+    });
 
   try {
     await llmActionLogsRepo.appendLlmActionLog({
@@ -1839,10 +1877,21 @@ async function tryHandlePaidOrchestratorV2(params) {
   });
 
   if (!orchestrated || orchestrated.ok !== true) return null;
-
-  await payload.replyFn(payload.replyToken, { type: 'text', text: orchestrated.replyText });
-  const conversationQuality = buildConversationQualityMeta({
+  const orchestratedReplyEnvelope = buildSemanticReplyEnvelope({
     replyText: orchestrated.replyText,
+    domainIntent: orchestrated.domainIntent || 'general',
+    conversationMode: orchestrated.conversationMode || 'concierge',
+    nextSteps: orchestrated.finalMeta && Array.isArray(orchestrated.finalMeta.committedNextActions)
+      ? orchestrated.finalMeta.committedNextActions
+      : [],
+    followupQuestion: orchestrated.finalMeta && typeof orchestrated.finalMeta.committedFollowupQuestion === 'string'
+      ? orchestrated.finalMeta.committedFollowupQuestion
+      : null
+  });
+  const orchestratedReplyText = orchestratedReplyEnvelope.replyText;
+  await payload.replyFn(payload.replyToken, { type: 'text', text: orchestratedReplyText });
+  const conversationQuality = buildConversationQualityMeta({
+    replyText: orchestratedReplyText,
     domainIntent: orchestrated.domainIntent,
     nextActions: orchestrated.finalMeta && Array.isArray(orchestrated.finalMeta.committedNextActions)
       ? orchestrated.finalMeta.committedNextActions
@@ -1945,14 +1994,15 @@ async function tryHandlePaidOrchestratorV2(params) {
       : 0,
     requiredCoreFactsGateDecision: orchestrated.telemetry ? orchestrated.telemetry.requiredCoreFactsGateDecision : null,
     requiredCoreFactsGateLogOnly: orchestrated.telemetry ? orchestrated.telemetry.requiredCoreFactsGateLogOnly === true : false,
-    legalSnapshot
+    legalSnapshot,
+    responseContractConformance: orchestratedReplyEnvelope.responseContractConformance
   });
   await appendLlmActionLogBestEffort({
     lineUserId: payload.lineUserId,
     plan: payload.planInfo.plan,
     traceId: payload.traceId,
     requestId: payload.requestId,
-    replyText: orchestrated.replyText,
+    replyText: orchestratedReplyText,
     conciergeMeta: orchestrated.conciergeMeta,
     llmBanditEnabled: payload.llmBanditEnabled,
     conversationMode: orchestrated.conversationMode,
@@ -2015,7 +2065,8 @@ async function tryHandlePaidOrchestratorV2(params) {
     committedFollowupQuestion: orchestrated.telemetry ? orchestrated.telemetry.committedFollowupQuestion : null,
     recentUserGoal: Array.isArray(orchestrated.packet && orchestrated.packet.recentUserGoals)
       ? (orchestrated.packet.recentUserGoals[0] || null)
-      : null
+      : null,
+    responseContractConformance: orchestratedReplyEnvelope.responseContractConformance
   });
   await appendJourneyEventBestEffort({
     lineUserId: payload.lineUserId,
@@ -2026,7 +2077,7 @@ async function tryHandlePaidOrchestratorV2(params) {
       ? orchestrated.finalMeta.committedNextActions
       : [],
     evidenceKeys: [],
-    summary: orchestrated.replyText.split('\n')[0] || null,
+    summary: orchestratedReplyText.split('\n')[0] || null,
     createdAt: new Date().toISOString()
   });
 
@@ -2205,6 +2256,16 @@ async function replyWithFreeRetrieval(params) {
     replyText = trimForPaidLineMessage(replyText);
   }
 
+  const semanticReplyEnvelope = buildSemanticReplyEnvelope({
+    replyText,
+    domainIntent,
+    conversationMode: payload.plan === 'pro' ? 'concierge' : 'casual',
+    nextSteps: [],
+    followupQuestion: contextualFollowup && typeof contextualFollowup.replyText === 'string'
+      ? contextualFollowup.replyText
+      : null
+  });
+  replyText = semanticReplyEnvelope.replyText;
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
   const conversationQuality = buildConversationQualityMeta({
     replyText,
@@ -2226,7 +2287,9 @@ async function replyWithFreeRetrieval(params) {
     followupIntent: contextualFollowup ? contextualFollowup.followupIntent : null,
     contextualFollowupUsed: Boolean(contextualFollowup),
     conciergeMeta,
-    conversationQuality
+    conversationQuality,
+    responseContractConformance: semanticReplyEnvelope.responseContractConformance,
+    semanticResponseObject: semanticReplyEnvelope.semanticResponseObject
   });
 }
 
@@ -2425,7 +2488,14 @@ async function handleAssistantMessage(params) {
       disablePitfall: true,
       disableFollowup: true
     });
-    const replyText = guardedReply.replyText;
+    const semanticReplyEnvelope = buildSemanticReplyEnvelope({
+      replyText: guardedReply.replyText,
+      domainIntent: normalizedConversationIntent,
+      conversationMode: 'casual',
+      nextSteps: [],
+      followupQuestion: null
+    });
+    const replyText = semanticReplyEnvelope.replyText;
     await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
@@ -2475,7 +2545,8 @@ async function handleAssistantMessage(params) {
       opportunityReasonKeys: routerReason ? [routerReason] : [],
       interventionBudget: 0,
       domainIntent: normalizedConversationIntent,
-      conversationQuality
+      conversationQuality,
+      responseContractConformance: semanticReplyEnvelope.responseContractConformance
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -2487,7 +2558,8 @@ async function handleAssistantMessage(params) {
       routerReason: routerReason || 'router_casual',
       opportunityType: 'none',
       opportunityReasonKeys: routerReason ? [routerReason] : [],
-      interventionBudget: 0
+      interventionBudget: 0,
+      responseContractConformance: semanticReplyEnvelope.responseContractConformance
     });
     return {
       handled: true,
@@ -2909,7 +2981,14 @@ async function handleAssistantMessage(params) {
       disablePitfall: true,
       disableFollowup: true
     });
-    const replyText = guardedReply.replyText;
+    const semanticReplyEnvelope = buildSemanticReplyEnvelope({
+      replyText: guardedReply.replyText,
+      domainIntent: normalizedConversationIntent,
+      conversationMode: opportunityDecision.conversationMode || 'casual',
+      nextSteps: [],
+      followupQuestion: null
+    });
+    const replyText = semanticReplyEnvelope.replyText;
     await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
@@ -2951,7 +3030,8 @@ async function handleAssistantMessage(params) {
       opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
       interventionBudget: opportunityDecision.interventionBudget,
       domainIntent: normalizedConversationIntent,
-      conversationQuality
+      conversationQuality,
+      responseContractConformance: semanticReplyEnvelope.responseContractConformance
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -2965,7 +3045,8 @@ async function handleAssistantMessage(params) {
       opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
       interventionBudget: opportunityDecision.interventionBudget,
       domainIntent: normalizedConversationIntent,
-      conversationQuality
+      conversationQuality,
+      responseContractConformance: semanticReplyEnvelope.responseContractConformance
     });
     return {
       handled: true,
@@ -3325,7 +3406,18 @@ async function handleAssistantMessage(params) {
     clarifyText: 'まず対象手続きと期限を1つずつ教えてください。そこから具体的な次の一手を整理します。',
     refuseText: 'この内容は安全に断定できないため、公式窓口で最終確認をお願いします。必要なら確認項目を整理します。'
   });
-  replyText = readinessApplied.replyText;
+  const semanticReplyEnvelope = buildSemanticReplyEnvelope({
+    replyText: readinessApplied.replyText,
+    domainIntent: normalizedConversationIntent,
+    conversationMode: (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath)
+      ? opportunityDecision.conversationMode
+      : (conversationRouterEnabled
+        ? (routerMode === 'problem' && llmConciergeEnabled ? 'concierge' : 'casual')
+        : (llmConciergeEnabled && !isLowRelevanceWarning ? 'concierge' : null)),
+    nextSteps: paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : [],
+    followupQuestion: paid && paid.output && Array.isArray(paid.output.gaps) ? paid.output.gaps[0] : ''
+  });
+  replyText = semanticReplyEnvelope.replyText;
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
   const tokenUsed = (paid.tokensIn || 0) + (paid.tokensOut || 0);
   const conversationMode = (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath)
@@ -3394,7 +3486,8 @@ async function handleAssistantMessage(params) {
     unsupportedClaimCount: readinessTelemetry.unsupportedClaimCount,
     contradictionDetected: readinessTelemetry.contradictionDetected,
     answerReadinessLogOnly: false,
-    legalSnapshot
+    legalSnapshot,
+    responseContractConformance: semanticReplyEnvelope.responseContractConformance
   });
   await appendLlmActionLogBestEffort({
     lineUserId,
@@ -3423,7 +3516,8 @@ async function handleAssistantMessage(params) {
     unsupportedClaimCount: readinessTelemetry.unsupportedClaimCount,
     contradictionDetected: readinessTelemetry.contradictionDetected,
     answerReadinessLogOnly: false,
-    legalSnapshot
+    legalSnapshot,
+    responseContractConformance: semanticReplyEnvelope.responseContractConformance
   });
 
   await appendJourneyEventBestEffort({
