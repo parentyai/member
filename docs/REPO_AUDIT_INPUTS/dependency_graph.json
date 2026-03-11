@@ -4,6 +4,7 @@
       "cityPacksRepo",
       "sourceRefsRepo"
     ],
+    "adaptSingleSheetCityPackTemplate": [],
     "aggregateJourneyKpis": [
       "analyticsReadRepo",
       "journeyKpiDailyRepo",
@@ -983,6 +984,7 @@
     ],
     "src/routes/admin/cityPacks.js": [
       "activateCityPack",
+      "adaptSingleSheetCityPackTemplate",
       "appendAuditLog",
       "composeCityAndNationwidePacks"
     ],
