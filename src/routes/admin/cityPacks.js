@@ -91,8 +91,6 @@ function normalizeImportTemplate(input) {
     packClass,
     language,
     nationwidePolicy,
-    modules: Array.isArray(template.modules) ? template.modules : [],
-    recommendedTasks: Array.isArray(template.recommendedTasks) ? template.recommendedTasks : [],
     status: 'draft'
   };
 }
@@ -149,9 +147,7 @@ async function handleCreateCityPack(req, res, bodyText, context) {
     overrides: payload.overrides,
     packClass: payload.packClass,
     language: payload.language,
-    nationwidePolicy: payload.nationwidePolicy,
-    modules: payload.modules,
-    recommendedTasks: payload.recommendedTasks
+    nationwidePolicy: payload.nationwidePolicy
   });
   await appendAuditLog({
     actor: context.actor,
@@ -258,9 +254,7 @@ async function handleExportCityPack(req, res, context, cityPackId) {
     overrides: cityPack.overrides || null,
     packClass: cityPack.packClass || 'regional',
     language: cityPack.language || 'ja',
-    nationwidePolicy: cityPack.nationwidePolicy || null,
-    modules: Array.isArray(cityPack.modules) ? cityPack.modules : [],
-    recommendedTasks: Array.isArray(cityPack.recommendedTasks) ? cityPack.recommendedTasks : []
+    nationwidePolicy: cityPack.nationwidePolicy || null
   };
   await appendAuditLog({
     actor: context.actor,

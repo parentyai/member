@@ -5,6 +5,7 @@ const { ALLOWED_MODULES } = require('./cityPacksRepo');
 
 const COLLECTION = 'user_city_pack_preferences';
 const ALLOWED_MODULE_SET = new Set(ALLOWED_MODULES);
+const BULK_READ_CHUNK_SIZE = 100;
 
 function normalizeLineUserId(value) {
   if (typeof value !== 'string') return '';
@@ -75,13 +76,31 @@ async function listUserCityPackPreferencesByLineUserIds(lineUserIds) {
     .filter(Boolean)));
   if (!ids.length) return [];
   const db = getDb();
-  const rows = [];
-  for (const lineUserId of ids) {
+
+  const refs = ids.map((lineUserId) => db.collection(COLLECTION).doc(lineUserId));
+  const snaps = [];
+  for (let offset = 0; offset < refs.length; offset += BULK_READ_CHUNK_SIZE) {
+    const chunkRefs = refs.slice(offset, offset + BULK_READ_CHUNK_SIZE);
+    if (typeof db.getAll === 'function') {
+      // Firestore native batch fetch path.
+      // eslint-disable-next-line no-await-in-loop
+      const chunkSnaps = await db.getAll(...chunkRefs);
+      snaps.push(...chunkSnaps);
+      continue;
+    }
+    // Fallback path for stubs and environments without db.getAll.
     // eslint-disable-next-line no-await-in-loop
-    const snap = await db.collection(COLLECTION).doc(lineUserId).get();
-    if (!snap.exists) continue;
-    rows.push(normalizePreference(lineUserId, snap.data()));
+    const chunkSnaps = await Promise.all(chunkRefs.map((ref) => ref.get()));
+    snaps.push(...chunkSnaps);
   }
+
+  const rows = [];
+  snaps.forEach((snap, index) => {
+    if (!snap || !snap.exists) return;
+    const lineUserId = normalizeLineUserId(snap.id || ids[index]);
+    if (!lineUserId) return;
+    rows.push(normalizePreference(lineUserId, snap.data()));
+  });
   return rows.filter(Boolean);
 }
 

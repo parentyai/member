@@ -19,6 +19,9 @@ const INTERNAL_JOB_PATHS = [
   '/internal/jobs/user-context-snapshot-build',
   '/internal/jobs/user-context-snapshot-recompress',
   '/internal/jobs/journey-kpi-build',
+  '/internal/jobs/task-nudge',
+  '/internal/jobs/journey-branch-dispatch',
+  '/internal/jobs/llm-action-reward-finalize',
   '/internal/jobs/canonical-core-outbox-sync',
   '/internal/jobs/emergency-sync',
   '/internal/jobs/emergency-provider-fetch',
@@ -42,6 +45,33 @@ const CITY_PACK_TOKEN_FILES = [
   'src/routes/internal/emergencyJobs.js'
 ];
 
+const DEDICATED_TOKEN_FILES = [
+  {
+    filePath: 'src/routes/internal/journeyTodoReminderJob.js',
+    header: "req.headers['x-journey-job-token']",
+    envKey: 'JOURNEY_JOB_TOKEN',
+    guardCall: 'requireJourneyJobToken(req, res)'
+  },
+  {
+    filePath: 'src/routes/internal/taskNudgeJob.js',
+    header: "req.headers['x-task-job-token']",
+    envKey: 'TASK_JOB_TOKEN',
+    guardCall: 'requireTaskJobToken(req, res)'
+  },
+  {
+    filePath: 'src/routes/internal/journeyBranchDispatchJob.js',
+    header: "req.headers['x-journey-branch-job-token']",
+    envKey: 'JOURNEY_BRANCH_JOB_TOKEN',
+    guardCall: 'requireJourneyBranchJobToken(req, res)'
+  },
+  {
+    filePath: 'src/routes/internal/llmActionRewardFinalizeJob.js',
+    header: "req.headers['x-llm-action-job-token']",
+    envKey: 'LLM_ACTION_JOB_TOKEN',
+    guardCall: 'requireLlmActionJobToken(req, res)'
+  }
+];
+
 test('phase657: index route wiring keeps internal jobs explicitly declared', () => {
   const src = fs.readFileSync('src/index.js', 'utf8');
   for (const routePath of INTERNAL_JOB_PATHS) {
@@ -61,8 +91,10 @@ test('phase657: internal job handlers keep token guards (CITY_PACK_JOB_TOKEN / J
     assert.ok(src.includes('requireInternalJobToken(req, res)'), `${filePath} must call requireInternalJobToken`);
   }
 
-  const journeySource = fs.readFileSync('src/routes/internal/journeyTodoReminderJob.js', 'utf8');
-  assert.ok(journeySource.includes("req.headers['x-journey-job-token']"));
-  assert.ok(journeySource.includes('JOURNEY_JOB_TOKEN'));
-  assert.ok(journeySource.includes('requireJourneyJobToken(req, res)'));
+  for (const contract of DEDICATED_TOKEN_FILES) {
+    const src = fs.readFileSync(contract.filePath, 'utf8');
+    assert.ok(src.includes(contract.header), `${contract.filePath} must read ${contract.header}`);
+    assert.ok(src.includes(contract.envKey), `${contract.filePath} must use ${contract.envKey}`);
+    assert.ok(src.includes(contract.guardCall), `${contract.filePath} must call ${contract.guardCall}`);
+  }
 });

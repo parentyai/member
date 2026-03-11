@@ -94,6 +94,13 @@
 - token: `x-city-pack-job-token`（internal token guard）
 - kill switch ON の場合は停止し、復旧後に再実行する。
 
+internal token matrix（routeごとの既定ヘッダー）:
+- CityPack / retention / ops snapshot / emergency / core outbox: `x-city-pack-job-token`（`CITY_PACK_JOB_TOKEN`）
+- Journey reminder: `x-journey-job-token`（`JOURNEY_JOB_TOKEN`）
+- Task nudge: `x-task-job-token`（`TASK_JOB_TOKEN`）
+- Journey branch dispatch: `x-journey-branch-job-token`（`JOURNEY_BRANCH_JOB_TOKEN`）
+- LLM action reward finalize: `x-llm-action-job-token`（`LLM_ACTION_JOB_TOKEN`）
+
 ### 即時ロールバック
 - snapshot更新停止: `ENABLE_OPS_SYSTEM_SNAPSHOT_V1=0`
 - realtime画面停止: `ENABLE_OPS_REALTIME_DASHBOARD_V1=0`
