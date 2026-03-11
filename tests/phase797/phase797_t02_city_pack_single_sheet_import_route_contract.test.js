@@ -71,8 +71,10 @@ function buildSingleSheetPayload() {
 test('phase797: city pack import dry-run/apply supports singleSheet payload adapter', async (t) => {
   const prevMode = process.env.SERVICE_MODE;
   const prevToken = process.env.ADMIN_OS_TOKEN;
+  const prevConfirmTokenSecret = process.env.OPS_CONFIRM_TOKEN_SECRET;
   if (prevMode !== undefined) delete process.env.SERVICE_MODE;
   process.env.ADMIN_OS_TOKEN = 'phase797_admin_token';
+  process.env.OPS_CONFIRM_TOKEN_SECRET = 'phase797_confirm_secret';
 
   setDbForTest(createDbStub());
   setServerTimestampForTest('SERVER_TIMESTAMP');
@@ -90,6 +92,8 @@ test('phase797: city pack import dry-run/apply supports singleSheet payload adap
     else process.env.SERVICE_MODE = prevMode;
     if (prevToken === undefined) delete process.env.ADMIN_OS_TOKEN;
     else process.env.ADMIN_OS_TOKEN = prevToken;
+    if (prevConfirmTokenSecret === undefined) delete process.env.OPS_CONFIRM_TOKEN_SECRET;
+    else process.env.OPS_CONFIRM_TOKEN_SECRET = prevConfirmTokenSecret;
   });
 
   const unauthorized = await request({
