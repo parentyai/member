@@ -1549,14 +1549,29 @@ th {
 }
 
 #pane-monitor[data-monitor-workspace-view="monitoring"] [data-monitor-surface="configuration"],
-#pane-monitor[data-monitor-workspace-view="configuration"] [data-monitor-surface="monitoring"] {
+#pane-monitor[data-monitor-workspace-view="monitoring"] [data-monitor-surface="summary"],
+#pane-monitor[data-monitor-workspace-view="configuration"] [data-monitor-surface="monitoring"],
+#pane-monitor[data-monitor-workspace-view="configuration"] [data-monitor-surface="summary"],
+#pane-monitor[data-monitor-workspace-view="summary"] [data-monitor-surface="monitoring"],
+#pane-monitor[data-monitor-workspace-view="summary"] [data-monitor-surface="configuration"] {
   display: none !important;
+}
+
+#pane-monitor[data-monitor-workspace-view="summary"] .pane-grid {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (max-width: 1100px) {
   #pane-monitor .pane-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.maintenance-overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
 }
 
 .safe-next-step {

@@ -33,7 +33,7 @@
             <span class="nav-icon" aria-hidden="true">M</span>
             <span data-dict-key="ui.label.nav.monitor">配信結果</span>
           </button>
-          <button class="nav-item" data-pane-target="monitor" data-scroll-target="monitor-journey-panel" data-nav-priority="238">
+          <button class="nav-item" data-pane-target="monitor" data-scroll-target="monitor-journey-panel" data-role-allow="admin,developer" data-nav-priority="238">
             <span class="nav-icon" aria-hidden="true">J</span>
             <span>ジャーニー状況</span>
           </button>
@@ -1039,6 +1039,7 @@
             <div class="monitor-view-switch" data-ui="monitor-view-switch">
               <div class="monitor-view-actions">
                 <button id="monitor-view-monitoring" type="button" class="secondary-btn monitor-view-btn is-active" data-monitor-view-target="monitoring" aria-pressed="true">監視</button>
+                <button id="monitor-view-summary" type="button" class="secondary-btn monitor-view-btn" data-monitor-view-target="summary" aria-pressed="false">通知集計</button>
                 <button id="monitor-view-configuration" type="button" class="secondary-btn monitor-view-btn" data-monitor-view-target="configuration" data-role-allow="admin,developer" aria-pressed="false">設定</button>
               </div>
               <div id="monitor-view-note" class="note">監視を表示中です。設定変更が必要な場合のみ「設定」を開いてください。</div>
@@ -1090,6 +1091,32 @@
                     </thead>
                     <tbody id="monitor-user-rows"></tbody>
                   </table>
+                </div>
+              </div>
+              <div id="monitor-read-model-panel" class="panel" data-monitor-surface="summary">
+                <div class="panel-title">通知集計サマリー</div>
+                <div class="panel-body">
+                  <div class="note">配信結果の主要指標を一覧で確認します。詳細分析が必要な場合は通知集計画面へ移動してください。</div>
+                  <div class="row row-top">
+                    <button id="monitor-read-model-reload" type="button">集計を更新</button>
+                    <button id="monitor-open-read-model" type="button" class="secondary-btn">通知集計画面を開く</button>
+                  </div>
+                  <div class="table-scroll">
+                    <table class="table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.readModel.col.title" data-dict-tip="ui.help.readModel.title">タイトル</th>
+                          <th data-dict-key="ui.label.readModel.col.scenario" data-dict-tip="ui.help.readModel.scenario">シナリオ</th>
+                          <th data-dict-key="ui.label.readModel.col.step" data-dict-tip="ui.help.readModel.step">ステップ</th>
+                          <th data-dict-key="ui.label.readModel.col.target" data-dict-tip="ui.help.readModel.target">対象数</th>
+                          <th data-dict-key="ui.label.readModel.col.last" data-dict-tip="ui.help.readModel.last">最終結果</th>
+                          <th data-dict-key="ui.label.readModel.col.ctr" data-dict-tip="ui.help.readModel.ctr">反応率</th>
+                          <th data-dict-key="ui.label.readModel.col.health" data-dict-tip="ui.help.readModel.health">健康度</th>
+                        </tr>
+                      </thead>
+                      <tbody id="monitor-read-model-rows"></tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
               <div class="panel is-hidden" id="task-rules-panel" aria-hidden="true">
@@ -4518,6 +4545,24 @@
         <section id="pane-maintenance" class="app-pane" data-pane="maintenance" data-role="admin" data-role-allow="admin,developer">
           <div class="pane-grid">
             <div class="pane-main">
+              <div id="maintenance-overview-panel" class="panel">
+                <div class="panel-title">保守サマリー</div>
+                <div class="panel-body">
+                  <div id="maintenance-overview-summary" class="note">読み込み待ちです。</div>
+                  <div class="today-metrics maintenance-overview-metrics">
+                    <div><span class="metric-label">readiness</span><span id="maintenance-overview-product-status" class="metric-value">-</span></div>
+                    <div><span class="metric-label">blockers</span><span id="maintenance-overview-blockers" class="metric-value">-</span></div>
+                    <div><span class="metric-label">snapshot stale</span><span id="maintenance-overview-stale" class="metric-value">-</span></div>
+                    <div><span class="metric-label">fallback count</span><span id="maintenance-overview-fallback" class="metric-value">-</span></div>
+                    <div><span class="metric-label">missing-index</span><span id="maintenance-overview-missing-index" class="metric-value">-</span></div>
+                    <div><span class="metric-label">feature warn</span><span id="maintenance-overview-feature-warn" class="metric-value">-</span></div>
+                  </div>
+                  <div class="row row-top">
+                    <button id="maintenance-overview-open-system-health" type="button" class="secondary-btn">システム健全性を開く</button>
+                    <button id="maintenance-overview-open-feature-catalog" type="button" class="secondary-btn">機能カタログを開く</button>
+                  </div>
+                </div>
+              </div>
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.maintenance.notice">保守操作はMasterで実行</div>
                 <div class="panel-body">
