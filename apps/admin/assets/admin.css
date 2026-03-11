@@ -2353,6 +2353,19 @@ details:not([open]) > *:not(summary) {
   gap: var(--space-2);
 }
 
+.city-pack-workspace-switch {
+  display: inline-flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.city-pack-workspace-btn.is-active {
+  border-color: var(--status-info);
+  background: var(--status-info-bg);
+  color: var(--status-info);
+  font-weight: 600;
+}
+
 .city-pack-v2-views {
   display: inline-flex;
   gap: var(--space-1);
@@ -2376,6 +2389,11 @@ details:not([open]) > *:not(summary) {
 .city-pack-v2-detail-panel {
   margin-top: var(--space-2);
   border-left: 4px solid var(--status-info);
+}
+
+#pane-city-pack[data-city-pack-workspace-view="workbench"] [data-city-pack-workspace-surface="detail"],
+#pane-city-pack[data-city-pack-workspace-view="detail"] [data-city-pack-workspace-surface="workbench"] {
+  display: none !important;
 }
 
 .city-pack-v2-detail-body {
