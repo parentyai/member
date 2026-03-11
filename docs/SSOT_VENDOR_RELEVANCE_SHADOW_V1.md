@@ -8,6 +8,7 @@
 - Usecase: `src/usecases/journey/computeVendorRelevanceScore.js`
 - Entry: `src/usecases/journey/handleJourneyLineCommand.js` (`todo_vendor`)
 - Admin read model: `GET /api/admin/vendors/shadow-relevance`
+  - response は `items[]` に加えて `summary`（`totalEvents/sortAppliedCount/orderDivergenceCount/todoKeyDistribution`）を返す
 
 ## Flags
 - `ENABLE_VENDOR_RELEVANCE_SHADOW_V1`（default: `true`）
@@ -33,6 +34,10 @@
 - `currentOrderLinkIds`
 - `rankedLinkIds`
 - `traceId`
+- `summary.totalEvents`
+- `summary.sortAppliedCount`
+- `summary.orderDivergenceCount`
+- `summary.todoKeyDistribution[]`
 
 ## Evidence Contract
 - Event: `todo_vendor_shadow_scored`

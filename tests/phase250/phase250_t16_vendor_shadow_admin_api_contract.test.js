@@ -92,4 +92,10 @@ test('phase250: vendor shadow admin API enforces admin token and returns compare
   assert.deepStrictEqual(payload.items[0].rankedLinkIds, ['vendor_a', 'vendor_b']);
   assert.ok(Array.isArray(payload.items[0].scores));
   assert.strictEqual(payload.items[0].scores[0].linkId, 'vendor_a');
+  assert.ok(payload.summary && typeof payload.summary === 'object');
+  assert.strictEqual(payload.summary.totalEvents, 1);
+  assert.strictEqual(payload.summary.sortAppliedCount, 0);
+  assert.strictEqual(payload.summary.orderDivergenceCount, 1);
+  assert.ok(Array.isArray(payload.summary.todoKeyDistribution));
+  assert.strictEqual(payload.summary.todoKeyDistribution[0].todoKey, 'bank_open');
 });

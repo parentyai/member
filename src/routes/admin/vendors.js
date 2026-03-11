@@ -113,6 +113,51 @@ function normalizeShadowItem(item) {
   };
 }
 
+function hasDifferentOrder(currentOrderLinkIds, rankedLinkIds) {
+  const current = Array.isArray(currentOrderLinkIds) ? currentOrderLinkIds : [];
+  const ranked = Array.isArray(rankedLinkIds) ? rankedLinkIds : [];
+  if (current.length !== ranked.length) return current.length > 0 || ranked.length > 0;
+  for (let i = 0; i < current.length; i += 1) {
+    if (current[i] !== ranked[i]) return true;
+  }
+  return false;
+}
+
+function buildShadowRelevanceSummary(items) {
+  const rows = Array.isArray(items) ? items : [];
+  const todoKeyCounts = new Map();
+  let sortAppliedCount = 0;
+  let divergenceCount = 0;
+  let latestCreatedAt = null;
+
+  rows.forEach((item) => {
+    if (!item || typeof item !== 'object') return;
+    if (item.sortApplied === true) sortAppliedCount += 1;
+    if (hasDifferentOrder(item.currentOrderLinkIds, item.rankedLinkIds)) divergenceCount += 1;
+    const todoKey = typeof item.todoKey === 'string' && item.todoKey.trim() ? item.todoKey.trim() : 'unknown';
+    todoKeyCounts.set(todoKey, (todoKeyCounts.get(todoKey) || 0) + 1);
+    if (typeof item.createdAt === 'string' && item.createdAt.trim()) {
+      if (!latestCreatedAt || item.createdAt > latestCreatedAt) latestCreatedAt = item.createdAt;
+    }
+  });
+
+  const totalEvents = rows.length;
+  const todoKeyDistribution = Array.from(todoKeyCounts.entries())
+    .map(([todoKey, count]) => ({ todoKey, count }))
+    .sort((a, b) => b.count - a.count || a.todoKey.localeCompare(b.todoKey))
+    .slice(0, 10);
+
+  return {
+    totalEvents,
+    sortAppliedCount,
+    sortAppliedRate: totalEvents > 0 ? Number((sortAppliedCount / totalEvents).toFixed(4)) : 0,
+    orderDivergenceCount: divergenceCount,
+    orderDivergenceRate: totalEvents > 0 ? Number((divergenceCount / totalEvents).toFixed(4)) : 0,
+    latestCreatedAt,
+    todoKeyDistribution
+  };
+}
+
 async function handleShadowRelevanceList(req, res, actor, traceId, requestId) {
   const url = new URL(req.url, 'http://localhost');
   const lineUserId = typeof url.searchParams.get('lineUserId') === 'string'
@@ -135,6 +180,7 @@ async function handleShadowRelevanceList(req, res, actor, traceId, requestId) {
     scanLimit: Math.min(limit * 10, 1000)
   });
   const items = rows.map(normalizeShadowItem);
+  const summary = buildShadowRelevanceSummary(items);
   await writeVendorAudit({
     actor,
     action: 'vendors.shadow_relevance.list',
@@ -145,11 +191,13 @@ async function handleShadowRelevanceList(req, res, actor, traceId, requestId) {
       lineUserId,
       todoKey: todoKey || null,
       limit,
-      count: items.length
+      count: items.length,
+      sortAppliedCount: summary.sortAppliedCount,
+      orderDivergenceCount: summary.orderDivergenceCount
     }
   });
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, traceId, items }));
+  res.end(JSON.stringify({ ok: true, traceId, items, summary }));
 }
 
 async function handleEdit(req, res, actor, traceId, requestId, linkId, bodyText) {

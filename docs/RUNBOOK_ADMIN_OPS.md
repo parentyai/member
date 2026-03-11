@@ -94,6 +94,13 @@
 - token: `x-city-pack-job-token`（internal token guard）
 - kill switch ON の場合は停止し、復旧後に再実行する。
 
+internal token matrix（routeごとの既定ヘッダー）:
+- CityPack / retention / ops snapshot / emergency / core outbox: `x-city-pack-job-token`（`CITY_PACK_JOB_TOKEN`）
+- Journey reminder: `x-journey-job-token`（`JOURNEY_JOB_TOKEN`）
+- Task nudge: `x-task-job-token`（`TASK_JOB_TOKEN`）
+- Journey branch dispatch: `x-journey-branch-job-token`（`JOURNEY_BRANCH_JOB_TOKEN`）
+- LLM action reward finalize: `x-llm-action-job-token`（`LLM_ACTION_JOB_TOKEN`）
+
 ### 即時ロールバック
 - snapshot更新停止: `ENABLE_OPS_SYSTEM_SNAPSHOT_V1=0`
 - realtime画面停止: `ENABLE_OPS_REALTIME_DASHBOARD_V1=0`
@@ -376,6 +383,15 @@
 
 ## City Pack Education運用（公立学校 / link-only）
 目的: 公立学校の公式リンクを安全運用し、120日監査で期限切れ/差分を管理する。
+
+### City Pack template import（dry-run/apply）
+- route: `POST /api/admin/city-packs/import/dry-run` / `POST /api/admin/city-packs/import/apply`
+- 既存 payload: `template`（city pack template v1）
+- 追加 payload（add-only）: `singleSheet`
+  - `singleSheet.headers[]` + `singleSheet.rows[]` または `singleSheet.csvText`
+  - `row_type=VIEW` かつ `view_type=city_pack` 行を city pack template へ正規化する
+  - `TASK` 行の `canonical_key + city_pack_module_key` は `recommendedTasks` へ変換する
+- apply は既存どおり `planHash + confirmToken` 必須（confirm token なし実行不可）
 
 ### 1) 教育リンク登録（Admin UI）
 1. `/admin/app?pane=city-pack` の `Education Links` で `regionKey/schoolYear/linkRegistryId` を入力して作成。

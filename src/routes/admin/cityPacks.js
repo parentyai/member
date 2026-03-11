@@ -5,6 +5,7 @@ const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
 const { createConfirmToken, verifyConfirmToken } = require('../../domain/confirmToken');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { activateCityPack } = require('../../usecases/cityPack/activateCityPack');
+const { adaptSingleSheetCityPackTemplate } = require('../../usecases/cityPack/singleSheetCityPackImportAdapter');
 const { composeCityAndNationwidePacks } = require('../../usecases/nationwidePack/composeCityAndNationwidePacks');
 const { resolveActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
 
@@ -61,9 +62,22 @@ function normalizeStringArray(values) {
 
 function normalizeImportTemplate(input) {
   const payload = input && typeof input === 'object' ? input : {};
-  const template = payload.template && typeof payload.template === 'object' && !Array.isArray(payload.template)
+  let template = payload.template && typeof payload.template === 'object' && !Array.isArray(payload.template)
     ? payload.template
     : null;
+  if (!template && payload.singleSheet && typeof payload.singleSheet === 'object') {
+    const adapted = adaptSingleSheetCityPackTemplate({
+      singleSheet: payload.singleSheet,
+      templateName: payload.templateName || payload.name || null,
+      description: payload.description || null,
+      validUntil: payload.validUntil || null,
+      packClass: payload.packClass || null,
+      language: payload.language || null,
+      nationwidePolicy: payload.nationwidePolicy || null,
+      metadata: payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {}
+    });
+    template = adapted.template;
+  }
   if (!template) throw new Error('template required');
   const name = typeof template.name === 'string' && template.name.trim() ? template.name.trim() : '';
   if (!name) throw new Error('template.name required');
@@ -91,8 +105,6 @@ function normalizeImportTemplate(input) {
     packClass,
     language,
     nationwidePolicy,
-    modules: Array.isArray(template.modules) ? template.modules : [],
-    recommendedTasks: Array.isArray(template.recommendedTasks) ? template.recommendedTasks : [],
     status: 'draft'
   };
 }
@@ -149,9 +161,7 @@ async function handleCreateCityPack(req, res, bodyText, context) {
     overrides: payload.overrides,
     packClass: payload.packClass,
     language: payload.language,
-    nationwidePolicy: payload.nationwidePolicy,
-    modules: payload.modules,
-    recommendedTasks: payload.recommendedTasks
+    nationwidePolicy: payload.nationwidePolicy
   });
   await appendAuditLog({
     actor: context.actor,
@@ -258,9 +268,7 @@ async function handleExportCityPack(req, res, context, cityPackId) {
     overrides: cityPack.overrides || null,
     packClass: cityPack.packClass || 'regional',
     language: cityPack.language || 'ja',
-    nationwidePolicy: cityPack.nationwidePolicy || null,
-    modules: Array.isArray(cityPack.modules) ? cityPack.modules : [],
-    recommendedTasks: Array.isArray(cityPack.recommendedTasks) ? cityPack.recommendedTasks : []
+    nationwidePolicy: cityPack.nationwidePolicy || null
   };
   await appendAuditLog({
     actor: context.actor,
