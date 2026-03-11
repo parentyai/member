@@ -384,6 +384,15 @@ internal token matrix（routeごとの既定ヘッダー）:
 ## City Pack Education運用（公立学校 / link-only）
 目的: 公立学校の公式リンクを安全運用し、120日監査で期限切れ/差分を管理する。
 
+### City Pack template import（dry-run/apply）
+- route: `POST /api/admin/city-packs/import/dry-run` / `POST /api/admin/city-packs/import/apply`
+- 既存 payload: `template`（city pack template v1）
+- 追加 payload（add-only）: `singleSheet`
+  - `singleSheet.headers[]` + `singleSheet.rows[]` または `singleSheet.csvText`
+  - `row_type=VIEW` かつ `view_type=city_pack` 行を city pack template へ正規化する
+  - `TASK` 行の `canonical_key + city_pack_module_key` は `recommendedTasks` へ変換する
+- apply は既存どおり `planHash + confirmToken` 必須（confirm token なし実行不可）
+
 ### 1) 教育リンク登録（Admin UI）
 1. `/admin/app?pane=city-pack` の `Education Links` で `regionKey/schoolYear/linkRegistryId` を入力して作成。
 2. `link_registry` は `schoolType=public` のみ許可。`private/unknown` は fail-closed。

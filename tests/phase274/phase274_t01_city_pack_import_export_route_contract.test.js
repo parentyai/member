@@ -16,6 +16,8 @@ test('phase274: city pack route supports export + import dry-run/apply with conf
   assert.match(file, /verifyConfirmToken/);
   assert.match(file, /city_pack\.template\.import_dry_run/);
   assert.match(file, /city_pack\.template\.import_apply/);
+  assert.match(file, /adaptSingleSheetCityPackTemplate/);
+  assert.match(file, /payload\.singleSheet/);
 });
 
 test('phase274: city pack import normalization keeps normalized modules/recommendedTasks as SSOT', () => {
