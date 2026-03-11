@@ -202,6 +202,7 @@ const state = {
   selectedCityPackUnifiedItemKey: null,
   cityPackUnifiedSortKey: 'updatedAt',
   cityPackUnifiedSortDir: 'desc',
+  cityPackWorkspaceView: 'workbench',
   cityPackKpi: null,
   cityPackMetrics: null,
   cityPackRuns: [],
@@ -333,6 +334,8 @@ const UI_FIXTURE_SUCCESS_VALUE = 'success';
 const MONITOR_WORKSPACE_VIEW_MONITORING = 'monitoring';
 const MONITOR_WORKSPACE_VIEW_SUMMARY = 'summary';
 const MONITOR_WORKSPACE_VIEW_CONFIGURATION = 'configuration';
+const CITY_PACK_WORKSPACE_VIEW_WORKBENCH = 'workbench';
+const CITY_PACK_WORKSPACE_VIEW_DETAIL = 'detail';
 
 function normalizeCopyForRole(text, role) {
   const value = String(text || '');
@@ -3084,6 +3087,38 @@ function applyCityPackUiV2Visibility() {
       el.removeAttribute('aria-hidden');
     }
   });
+  applyCityPackWorkspaceView(state.cityPackWorkspaceView, { persist: true });
+}
+
+function normalizeCityPackWorkspaceView(view) {
+  const raw = String(view || '').trim().toLowerCase();
+  return raw === CITY_PACK_WORKSPACE_VIEW_DETAIL
+    ? CITY_PACK_WORKSPACE_VIEW_DETAIL
+    : CITY_PACK_WORKSPACE_VIEW_WORKBENCH;
+}
+
+function applyCityPackWorkspaceView(view, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const pane = document.getElementById('pane-city-pack');
+  if (!pane) return;
+  const nextView = normalizeCityPackWorkspaceView(view);
+  pane.setAttribute('data-city-pack-workspace-view', nextView);
+  pane.querySelectorAll('[data-city-pack-workspace-target]').forEach((buttonEl) => {
+    const target = normalizeCityPackWorkspaceView(buttonEl.getAttribute('data-city-pack-workspace-target'));
+    const isActive = target === nextView;
+    buttonEl.classList.toggle('is-active', isActive);
+    buttonEl.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+  pane.querySelectorAll('[data-city-pack-workspace-surface]').forEach((surfaceEl) => {
+    const scope = normalizeCityPackWorkspaceView(surfaceEl.getAttribute('data-city-pack-workspace-surface'));
+    const visible = scope === nextView;
+    surfaceEl.classList.toggle('is-hidden', !visible);
+    if (!visible) surfaceEl.setAttribute('aria-hidden', 'true');
+    else surfaceEl.removeAttribute('aria-hidden');
+  });
+  if (opts.persist === true) {
+    state.cityPackWorkspaceView = nextView;
+  }
 }
 
 function scrollToPaneAnchor(targetId) {
@@ -16292,6 +16327,16 @@ function setupCityPackControls() {
     managePanel.classList.add('is-hidden');
   }
   applyCityPackUiV2Visibility();
+  document.querySelectorAll('[data-city-pack-workspace-target]').forEach((buttonEl) => {
+    buttonEl.addEventListener('click', () => {
+      const target = buttonEl.getAttribute('data-city-pack-workspace-target');
+      applyCityPackWorkspaceView(target, { persist: true });
+    });
+  });
+  document.getElementById('city-pack-workspace-back-workbench')?.addEventListener('click', () => {
+    applyCityPackWorkspaceView(CITY_PACK_WORKSPACE_VIEW_WORKBENCH, { persist: true });
+  });
+  applyCityPackWorkspaceView(state.cityPackWorkspaceView, { persist: true });
   document.getElementById('city-pack-v2-view-needs-review')?.addEventListener('click', () => {
     setCityPackUnifiedQuickStatus('needs_review');
   });

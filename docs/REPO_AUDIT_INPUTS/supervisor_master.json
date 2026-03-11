@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T22:49:43-04:00",
-  "gitCommit": "72d346d72f364195f5c5588ce1986372ae7d78dd",
-  "branch": "codex/admin-ui-b-pr1-shell-monitor",
-  "sourceDigest": "a116a62a948f7836cc02b51293bcc38094f33a60e5a8b2977cf194489f8cc822",
+  "generatedAt": "2026-03-10T23:19:03-04:00",
+  "gitCommit": "e634f486087432d93719f493b59e401bb999ce46",
+  "branch": "codex/admin-ui-b-pr2-citypack-isolation",
+  "sourceDigest": "763ffa714cb34df53d22179cc7e0e904419cef057d331690f414672a70af7fb9",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
