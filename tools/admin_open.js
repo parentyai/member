@@ -108,8 +108,37 @@ function resolveProjectId(cliProjectId) {
   return { projectId: '', source: 'unresolved' };
 }
 
-function resolveAdminToken(opts) {
-  const envToken = String(process.env.ADMIN_OS_TOKEN || '').trim();
+function buildAdminTokenSecretAccessArgs(projectId) {
+  return [
+    'secrets',
+    'versions',
+    'access',
+    'latest',
+    '--secret=ADMIN_OS_TOKEN',
+    '--project',
+    projectId,
+    '--quiet'
+  ];
+}
+
+function requiresInteractiveGcloudAuth(message) {
+  const text = String(message || '').toLowerCase();
+  if (!text) return false;
+  if (text.includes('reauthentication failed')) return true;
+  if (text.includes('cannot prompt during non-interactive execution')) return true;
+  return text.includes('gcloud auth login');
+}
+
+function resolveAdminToken(opts, deps) {
+  const src = deps && typeof deps === 'object' ? deps : {};
+  const envSource = src.env && typeof src.env === 'object' ? src.env : process.env;
+  const run = typeof src.runCommand === 'function' ? src.runCommand : runCommand;
+  const resolveProject = typeof src.resolveProjectId === 'function' ? src.resolveProjectId : resolveProjectId;
+  const log = typeof src.log === 'function'
+    ? src.log
+    : (line) => process.stdout.write(`${line}\n`);
+
+  const envToken = String(envSource.ADMIN_OS_TOKEN || '').trim();
   if (envToken) return { token: envToken, source: 'env:ADMIN_OS_TOKEN' };
 
   const cliToken = String(opts.token || '').trim();
@@ -121,13 +150,13 @@ function resolveAdminToken(opts) {
     if (token) return { token, source: `file:${fileFromCli}` };
   }
 
-  const fileFromEnv = String(process.env.ADMIN_OS_TOKEN_FILE || '').trim();
+  const fileFromEnv = String(envSource.ADMIN_OS_TOKEN_FILE || '').trim();
   if (fileFromEnv) {
     const token = readTokenFromFile(fileFromEnv);
     if (token) return { token, source: `env:ADMIN_OS_TOKEN_FILE (${fileFromEnv})` };
   }
 
-  const { projectId } = resolveProjectId(opts.projectId);
+  const { projectId } = resolveProject(opts.projectId);
   if (!projectId) {
     return {
       token: '',
@@ -136,16 +165,23 @@ function resolveAdminToken(opts) {
     };
   }
 
-  const secretRes = runCommand('gcloud', [
-    'secrets',
-    'versions',
-    'access',
-    'latest',
-    '--secret=ADMIN_OS_TOKEN',
-    '--project',
-    projectId,
-    '--quiet'
-  ]);
+  const secretArgs = buildAdminTokenSecretAccessArgs(projectId);
+  let secretRes = run('gcloud', secretArgs);
+  if (secretRes.status !== 0 && requiresInteractiveGcloudAuth(secretRes.stderr || secretRes.stdout)) {
+    log('[admin:open] gcloud account auth expired; launching browser for gcloud auth login');
+    const loginRes = run('gcloud', ['auth', 'login'], {
+      stdio: 'inherit'
+    });
+    if (loginRes.status !== 0) {
+      return {
+        token: '',
+        source: 'unresolved',
+        error: `gcloud auth login failed: ${String(loginRes.stderr || loginRes.stdout || 'unknown error').trim()}`
+      };
+    }
+    secretRes = run('gcloud', secretArgs);
+  }
+
   if (secretRes.status === 0) {
     const token = String(secretRes.stdout || '').trim();
     if (token) return { token, source: `secretmanager:${projectId}/ADMIN_OS_TOKEN` };

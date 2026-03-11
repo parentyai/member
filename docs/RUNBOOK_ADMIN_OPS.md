@@ -189,6 +189,7 @@
 - 実行: `npm run admin:open`
 - 既定動作:
   - `ADMIN_OS_TOKEN` を `env` -> `token file` -> Secret Manager（`ADMIN_OS_TOKEN`）の順で解決
+  - Secret Manager 読み出しで `gcloud` アカウント認証期限切れを検知した場合は `gcloud auth login` を対話起動して再試行
   - `FIRESTORE_PROJECT_ID` を env / gcloud config から解決
   - Firestore read-only probe が `ADC_REAUTH_REQUIRED` の場合は `gcloud auth application-default login` を自動起動して再認証を促す
   - 既存サーバがいた場合は `/api/admin/os/dashboard/kpi` と `/api/admin/ops-feature-catalog-status` のヘルスを確認し、失敗時は同ポートで自動再起動（壊れた古いプロセスの再利用を防止）
