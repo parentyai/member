@@ -85,7 +85,7 @@
             <span class="nav-icon" aria-hidden="true">A</span>
             <span data-dict-key="ui.label.nav.opsDecision">判断ログ</span>
           </button>
-          <button class="nav-item" data-pane-target="developer-map" data-scroll-target="developer-map-legacy" data-role="admin" data-role-allow="admin,developer" data-nav-priority="222">
+          <button class="nav-item" data-pane-target="developer-map" data-scroll-target="developer-map-legacy" data-role="developer" data-nav-priority="222">
             <span class="nav-icon" aria-hidden="true">LR</span>
             <span>運用証跡マップ</span>
           </button>
@@ -2478,7 +2478,7 @@
                 </div>
               </div>
             </div>
-            <div class="panel unified-admin-panel city-pack-unified-panel">
+            <div class="panel unified-admin-panel city-pack-unified-panel" data-city-pack-workspace-surface="workbench">
               <div class="panel-title">City Pack一覧</div>
               <div class="panel-body">
                 <div class="input-grid">
@@ -2547,6 +2547,10 @@
                   <button id="city-pack-unified-reload" type="button">更新</button>
                 </div>
                 <div id="city-pack-v2-toolbar" class="city-pack-v2-toolbar city-pack-v2-only is-hidden-by-flag">
+                  <div class="city-pack-workspace-switch" role="group" aria-label="City Pack workspace">
+                    <button id="city-pack-workspace-workbench" type="button" class="secondary-btn city-pack-workspace-btn is-active" data-city-pack-workspace-target="workbench" aria-pressed="true">作業</button>
+                    <button id="city-pack-workspace-detail" type="button" class="secondary-btn city-pack-workspace-btn" data-city-pack-workspace-target="detail" aria-pressed="false">詳細・証跡</button>
+                  </div>
                   <div class="city-pack-v2-views" role="group" aria-label="City Pack quick views">
                     <button id="city-pack-v2-view-needs-review" type="button" class="button-subtle">要確認</button>
                     <button id="city-pack-v2-view-blocked" type="button" class="button-subtle">Blocked</button>
@@ -2587,12 +2591,15 @@
                 </div>
               </div>
             </div>
-            <div id="city-pack-v2-detail-panel" class="panel city-pack-v2-detail-panel city-pack-v2-only is-hidden-by-flag">
+            <div id="city-pack-v2-detail-panel" class="panel city-pack-v2-detail-panel city-pack-v2-only is-hidden-by-flag" data-city-pack-workspace-surface="detail">
               <div class="panel-title">Selection Detail</div>
               <div class="panel-body city-pack-v2-detail-body">
                 <div class="city-pack-v2-detail-header">
                   <span id="city-pack-v2-detail-status" class="city-pack-v2-status-badge">-</span>
                   <strong id="city-pack-v2-detail-title">行を選択してください</strong>
+                </div>
+                <div class="row row-top">
+                  <button id="city-pack-workspace-back-workbench" type="button" class="secondary-btn">一覧作業に戻る</button>
                 </div>
                 <div id="city-pack-v2-detail-meta" class="note">種別 / 更新日時 / 担当 を表示します。</div>
                 <div id="city-pack-v2-detail-actions" class="city-pack-v2-detail-actions"></div>
@@ -2602,7 +2609,7 @@
                 </details>
               </div>
             </div>
-            <div class="pane-grid city-pack-legacy-block">
+            <div class="pane-grid city-pack-legacy-block" data-city-pack-workspace-surface="detail">
             <div class="pane-main">
               <div class="panel today-card">
                 <div class="panel-title" data-dict-key="ui.label.cityPack.kpi">City Pack監査KPI</div>
