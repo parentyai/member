@@ -331,6 +331,7 @@ const UI_COPY_BANNED_TERMS_FOR_OPERATOR = Object.freeze([
 const UI_FIXTURE_QUERY_KEY = 'ui_fixture';
 const UI_FIXTURE_SUCCESS_VALUE = 'success';
 const MONITOR_WORKSPACE_VIEW_MONITORING = 'monitoring';
+const MONITOR_WORKSPACE_VIEW_SUMMARY = 'summary';
 const MONITOR_WORKSPACE_VIEW_CONFIGURATION = 'configuration';
 
 function normalizeCopyForRole(text, role) {
@@ -2071,6 +2072,7 @@ async function loadOpsSystemSnapshot(options) {
     state.opsSystemSnapshot = null;
     renderOpsHomeDashboard();
     renderOpsSystemHealthRows();
+    renderMaintenanceOverview();
     return { ok: true, skipped: true };
   }
   try {
@@ -2085,6 +2087,7 @@ async function loadOpsSystemSnapshot(options) {
     syncOpsPaneUpdatedAt(state.opsSystemSnapshot, state.opsFeatureCatalogStatus);
     renderOpsHomeDashboard();
     renderOpsSystemHealthRows();
+    renderMaintenanceOverview();
     renderAllDecisionCards();
     if (notify) showToast('Ops snapshotを更新しました', 'ok');
     return data;
@@ -2092,6 +2095,7 @@ async function loadOpsSystemSnapshot(options) {
     state.opsSystemSnapshot = null;
     renderOpsHomeDashboard();
     renderOpsSystemHealthRows();
+    renderMaintenanceOverview();
     renderAllDecisionCards();
     if (notify) showToast('Ops snapshotの取得に失敗しました', 'danger');
     return { ok: false, error: 'ops snapshot load failed' };
@@ -2109,6 +2113,7 @@ async function loadOpsFeatureCatalogStatus(options) {
     state.opsFeatureCatalogLoadError = false;
     state.opsFeatureCatalogLoadMessage = null;
     renderOpsFeatureCatalogRows();
+    renderMaintenanceOverview();
     return { ok: true, skipped: true };
   }
   try {
@@ -2128,6 +2133,7 @@ async function loadOpsFeatureCatalogStatus(options) {
     syncOpsPaneUpdatedAt(state.opsSystemSnapshot, state.opsFeatureCatalogStatus);
     renderOpsFeatureCatalogRows();
     renderOpsHomeDashboard();
+    renderMaintenanceOverview();
     if (notify) showToast('Feature Catalog statusを更新しました', 'ok');
     return data;
   } catch (_err) {
@@ -2141,6 +2147,7 @@ async function loadOpsFeatureCatalogStatus(options) {
       : 'Feature Catalog statusの取得に失敗しました';
     renderOpsFeatureCatalogRows();
     renderOpsHomeDashboard();
+    renderMaintenanceOverview();
     if (notify) showToast('Feature Catalog statusの取得に失敗しました', 'danger');
     return { ok: false, error: 'feature catalog status load failed' };
   }
@@ -2156,6 +2163,7 @@ async function loadOpsSnapshotBundle(options) {
     renderOpsHomeDashboard();
     renderOpsFeatureCatalogRows();
     renderOpsSystemHealthRows();
+    renderMaintenanceOverview();
     return { ok: true, skipped: true };
   }
   const [snapshotRes, catalogRes] = await Promise.all([
@@ -2808,7 +2816,7 @@ function normalizeMonitorWorkspaceView(view, role) {
   const raw = String(view || '').trim().toLowerCase();
   const candidate = raw === MONITOR_WORKSPACE_VIEW_CONFIGURATION
     ? MONITOR_WORKSPACE_VIEW_CONFIGURATION
-    : MONITOR_WORKSPACE_VIEW_MONITORING;
+    : (raw === MONITOR_WORKSPACE_VIEW_SUMMARY ? MONITOR_WORKSPACE_VIEW_SUMMARY : MONITOR_WORKSPACE_VIEW_MONITORING);
   if (candidate === MONITOR_WORKSPACE_VIEW_CONFIGURATION && !canUseMonitorConfigurationView(role)) {
     return MONITOR_WORKSPACE_VIEW_MONITORING;
   }
@@ -2846,9 +2854,13 @@ function applyMonitorWorkspaceView(view, options) {
   });
   const noteEl = document.getElementById('monitor-view-note');
   if (noteEl) {
-    noteEl.textContent = nextView === MONITOR_WORKSPACE_VIEW_CONFIGURATION
-      ? '設定を表示中です。監視確認が必要な場合は「監視」を開いてください。'
-      : '監視を表示中です。設定変更が必要な場合のみ「設定」を開いてください。';
+    if (nextView === MONITOR_WORKSPACE_VIEW_CONFIGURATION) {
+      noteEl.textContent = '設定を表示中です。監視確認が必要な場合は「監視」を開いてください。';
+    } else if (nextView === MONITOR_WORKSPACE_VIEW_SUMMARY) {
+      noteEl.textContent = '通知集計を表示中です。配信結果の詳細確認は「監視」を開いてください。';
+    } else {
+      noteEl.textContent = '監視を表示中です。設定変更が必要な場合のみ「設定」を開いてください。';
+    }
   }
   const permissionNoticeEl = document.getElementById('monitor-view-permission-notice');
   if (permissionNoticeEl) {
@@ -5321,38 +5333,41 @@ function renderMonitorRows(items) {
 }
 
 function renderReadModelRows(items) {
-  const tbody = document.getElementById('read-model-rows');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-  if (!items.length) {
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = 7;
-    td.textContent = t('ui.label.common.empty', 'データなし');
-    tr.appendChild(td);
-    tbody.appendChild(tr);
-    return;
-  }
-  items.forEach((item) => {
-    const tr = document.createElement('tr');
-    applyRowHealthState(tr, item.notificationHealth);
-    const cols = [
-      item.title || '-',
-      withTip(scenarioLabel(item.scenarioKey), buildTip('ui.help.scenarioCode', item.scenarioKey)),
-      withTip(stepLabel(item.stepKey), buildTip('ui.help.stepCode', item.stepKey)),
-      item.targetCount != null ? String(item.targetCount) : '-',
-      withTip(reasonLabel(item.lastExecuteReason), buildTip('ui.help.reasonCode', item.lastExecuteReason)),
-      item.ctr != null ? String(item.ctr) : '-',
-      withTip(statusLabel(item.notificationHealth), buildTip('ui.help.healthCode', item.notificationHealth))
-    ];
-    cols.forEach((value, idx) => {
+  const bodyIds = ['read-model-rows', 'monitor-read-model-rows'];
+  bodyIds.forEach((bodyId) => {
+    const tbody = document.getElementById(bodyId);
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!items.length) {
+      const tr = document.createElement('tr');
       const td = document.createElement('td');
-      if (idx === 3 || idx === 5) td.classList.add('cell-num');
-      if (value instanceof Node) td.appendChild(value);
-      else td.textContent = value;
+      td.colSpan = 7;
+      td.textContent = t('ui.label.common.empty', 'データなし');
       tr.appendChild(td);
+      tbody.appendChild(tr);
+      return;
+    }
+    items.forEach((item) => {
+      const tr = document.createElement('tr');
+      applyRowHealthState(tr, item.notificationHealth);
+      const cols = [
+        item.title || '-',
+        withTip(scenarioLabel(item.scenarioKey), buildTip('ui.help.scenarioCode', item.scenarioKey)),
+        withTip(stepLabel(item.stepKey), buildTip('ui.help.stepCode', item.stepKey)),
+        item.targetCount != null ? String(item.targetCount) : '-',
+        withTip(reasonLabel(item.lastExecuteReason), buildTip('ui.help.reasonCode', item.lastExecuteReason)),
+        item.ctr != null ? String(item.ctr) : '-',
+        withTip(statusLabel(item.notificationHealth), buildTip('ui.help.healthCode', item.notificationHealth))
+      ];
+      cols.forEach((value, idx) => {
+        const td = document.createElement('td');
+        if (idx === 3 || idx === 5) td.classList.add('cell-num');
+        if (value instanceof Node) td.appendChild(value);
+        else td.textContent = value;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
     });
-    tbody.appendChild(tr);
   });
 }
 
@@ -13250,6 +13265,54 @@ function parseSnapshotHealthLimit() {
   return Math.min(Math.floor(value), 200);
 }
 
+function renderMaintenanceOverview() {
+  const summaryEl = document.getElementById('maintenance-overview-summary');
+  const readinessEl = document.getElementById('maintenance-overview-product-status');
+  const blockersEl = document.getElementById('maintenance-overview-blockers');
+  const staleEl = document.getElementById('maintenance-overview-stale');
+  const fallbackEl = document.getElementById('maintenance-overview-fallback');
+  const missingIndexEl = document.getElementById('maintenance-overview-missing-index');
+  const featureWarnEl = document.getElementById('maintenance-overview-feature-warn');
+  if (
+    !summaryEl
+    || !readinessEl
+    || !blockersEl
+    || !staleEl
+    || !fallbackEl
+    || !missingIndexEl
+    || !featureWarnEl
+  ) return;
+
+  const readinessStatus = state.productReadiness && state.productReadiness.status
+    ? String(state.productReadiness.status)
+    : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+  const blockers = Array.isArray(state.productReadiness && state.productReadiness.blockers)
+    ? state.productReadiness.blockers.length
+    : 0;
+  const snapshotRows = Array.isArray(state.snapshotHealthItems) ? state.snapshotHealthItems : [];
+  const staleCount = snapshotRows.filter((item) => item && item.isStale).length;
+  const fallbackRows = Array.isArray(state.readPathFallbackSummary) ? state.readPathFallbackSummary : [];
+  const fallbackCount = fallbackRows.reduce((sum, row) => sum + (Number.isFinite(Number(row && row.count)) ? Number(row.count) : 0), 0);
+  const missingIndexCount = Number.isFinite(Number(state.missingIndexSurfaceMeta && state.missingIndexSurfaceMeta.surfaceCount))
+    ? Number(state.missingIndexSurfaceMeta.surfaceCount)
+    : (Array.isArray(state.missingIndexSurfaceItems) ? state.missingIndexSurfaceItems.length : 0);
+  const featureCounts = state.opsFeatureCatalogStatus && state.opsFeatureCatalogStatus.counts && typeof state.opsFeatureCatalogStatus.counts === 'object'
+    ? state.opsFeatureCatalogStatus.counts
+    : {};
+  const featureWarn = Number(featureCounts.warn || featureCounts.WARN || 0);
+  const opsStatus = state.opsSystemSnapshot && state.opsSystemSnapshot.status
+    ? normalizeOpsStatus(state.opsSystemSnapshot.status)
+    : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+
+  readinessEl.textContent = readinessStatus;
+  blockersEl.textContent = String(blockers);
+  staleEl.textContent = `${staleCount}/${snapshotRows.length || 0}`;
+  fallbackEl.textContent = String(fallbackCount);
+  missingIndexEl.textContent = String(missingIndexCount);
+  featureWarnEl.textContent = String(featureWarn);
+  summaryEl.textContent = `ops=${opsStatus} / readiness=${readinessStatus} / blockers=${blockers} / stale=${staleCount} / fallback=${fallbackCount} / missing-index=${missingIndexCount}`;
+}
+
 function parseSnapshotHealthStaleAfterMinutes() {
   const el = document.getElementById('maintenance-snapshot-health-stale-after');
   const value = Number(el && el.value);
@@ -13329,10 +13392,12 @@ async function loadSnapshotHealth(options) {
     if (!data || data.ok !== true) throw new Error('failed');
     state.snapshotHealthItems = Array.isArray(data.items) ? data.items : [];
     renderSnapshotHealth(state.snapshotHealthItems);
+    renderMaintenanceOverview();
     if (notify) showToast(t('ui.toast.maintenance.snapshotHealth.reloadOk', 'Snapshot健全性を更新しました'), 'ok');
   } catch (_err) {
     state.snapshotHealthItems = [];
     renderSnapshotHealth([]);
+    renderMaintenanceOverview();
     renderDataLoadFailureGuard('snapshot_health_failed', _err);
     if (notify) showToast(t('ui.toast.maintenance.snapshotHealth.reloadFail', 'Snapshot健全性の取得に失敗しました'), 'danger');
   }
@@ -13430,10 +13495,12 @@ async function loadRetentionRuns(options) {
     if (!data || data.ok !== true) throw new Error('failed');
     state.retentionRuns = Array.isArray(data.items) ? data.items : [];
     renderRetentionRuns(state.retentionRuns);
+    renderMaintenanceOverview();
     if (notify) showToast(t('ui.toast.maintenance.retentionRuns.reloadOk', 'Retention実行履歴を更新しました'), 'ok');
   } catch (_err) {
     state.retentionRuns = [];
     renderRetentionRuns([]);
+    renderMaintenanceOverview();
     if (notify) showToast(t('ui.toast.maintenance.retentionRuns.reloadFail', 'Retention実行履歴の取得に失敗しました'), 'danger');
   }
 }
@@ -13519,11 +13586,13 @@ async function loadReadPathFallbackSummary(options) {
     state.readPathFallbackSummary = Array.isArray(data.items) ? data.items : [];
     renderReadPathFallbackSummary(state.readPathFallbackSummary);
     renderCityPackCompositionDiagnostics();
+    renderMaintenanceOverview();
     if (notify) showToast(t('ui.toast.maintenance.fallbackSummary.reloadOk', 'read-path fallback サマリーを更新しました'), 'ok');
   } catch (_err) {
     state.readPathFallbackSummary = [];
     renderReadPathFallbackSummary([]);
     renderCityPackCompositionDiagnostics();
+    renderMaintenanceOverview();
     if (notify) showToast(t('ui.toast.maintenance.fallbackSummary.reloadFail', 'read-path fallback サマリーの取得に失敗しました'), 'danger');
   }
 }
@@ -13607,11 +13676,13 @@ async function loadMissingIndexSurface(options) {
     state.missingIndexSurfaceItems = Array.isArray(data.items) ? data.items : [];
     state.missingIndexSurfaceMeta = data;
     renderMissingIndexSurface(data);
+    renderMaintenanceOverview();
     if (notify) showToast(t('ui.toast.maintenance.missingIndexSurface.reloadOk', 'missing-index surface を更新しました'), 'ok');
   } catch (_err) {
     state.missingIndexSurfaceItems = [];
     state.missingIndexSurfaceMeta = null;
     renderMissingIndexSurface(null);
+    renderMaintenanceOverview();
     if (notify) showToast(t('ui.toast.maintenance.missingIndexSurface.reloadFail', 'missing-index surface の取得に失敗しました'), 'danger');
   }
 }
@@ -13696,11 +13767,13 @@ async function loadProductReadiness(options) {
     state.productReadiness = data;
     renderProductReadiness(data);
     renderCityPackCompositionDiagnostics();
+    renderMaintenanceOverview();
     if (notify) showToast(t('ui.toast.maintenance.productReadiness.reloadOk', 'Product Readiness 判定を更新しました'), 'ok');
   } catch (_err) {
     state.productReadiness = null;
     renderProductReadiness(null);
     renderCityPackCompositionDiagnostics();
+    renderMaintenanceOverview();
     renderDataLoadFailureGuard('product_readiness_failed', _err);
     if (notify) showToast(t('ui.toast.maintenance.productReadiness.reloadFail', 'Product Readiness 判定の取得に失敗しました'), 'danger');
   }
@@ -15332,6 +15405,12 @@ function setupMonitorControls() {
   document.getElementById('monitor-reload')?.addEventListener('click', () => {
     loadMonitorData({ notify: true });
   });
+  document.getElementById('monitor-read-model-reload')?.addEventListener('click', () => {
+    void loadReadModelData({ notify: true });
+  });
+  document.getElementById('monitor-open-read-model')?.addEventListener('click', () => {
+    activatePane('read-model', { historyMode: 'push' });
+  });
   document.getElementById('monitor-global-reload')?.addEventListener('click', () => {
     loadMonitorData({ notify: true });
   });
@@ -16699,6 +16778,13 @@ function setupUxPolicyReadonlyControls() {
 }
 
 function setupMaintenanceControls() {
+  renderMaintenanceOverview();
+  document.getElementById('maintenance-overview-open-system-health')?.addEventListener('click', () => {
+    activatePane('ops-system-health', { historyMode: 'push' });
+  });
+  document.getElementById('maintenance-overview-open-feature-catalog')?.addEventListener('click', () => {
+    activatePane('ops-feature-catalog', { historyMode: 'push' });
+  });
   document.getElementById('maintenance-snapshot-health-reload')?.addEventListener('click', () => {
     void loadSnapshotHealth({ notify: true });
   });
