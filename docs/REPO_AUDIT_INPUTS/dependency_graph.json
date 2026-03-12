@@ -303,8 +303,16 @@
     ],
     "getTraceBundle": [
       "auditLogsRepo",
+      "cityPackBulletinsRepo",
       "decisionLogsRepo",
-      "decisionTimelineRepo"
+      "decisionTimelineRepo",
+      "emergencyBulletinsRepo",
+      "emergencyEventsRepo",
+      "faqAnswerLogsRepo",
+      "journeyBranchQueueRepo",
+      "llmActionLogsRepo",
+      "sourceEvidenceRepo",
+      "taskEventsRepo"
     ],
     "getUserContextSnapshot": [
       "userContextSnapshotsRepo"
@@ -926,6 +934,9 @@
     ],
     "taskContentsRepo": [
       "task_contents"
+    ],
+    "taskEventsRepo": [
+      "task_events"
     ],
     "tasksRepo": [
       "tasks"
