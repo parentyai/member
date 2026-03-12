@@ -30,6 +30,7 @@ const { resolveIntentRiskTier } = require('../../../domain/llm/policy/resolveInt
 const { computeSourceReadiness } = require('../../../domain/llm/knowledge/computeSourceReadiness');
 const { runAnswerReadinessGateV2 } = require('../../../domain/llm/quality/runAnswerReadinessGateV2');
 const { applyAnswerReadinessDecision } = require('../../../domain/llm/quality/applyAnswerReadinessDecision');
+const { resolveJourneyActionSignals } = require('../../../domain/llm/quality/resolveJourneyActionSignals');
 
 const CONTEXT_VERSION = 'concierge_ctx_v1';
 
@@ -378,6 +379,18 @@ async function composeConciergeReply(params) {
     evidenceDecision.evidenceOutcome = 'BLOCKED';
     blockedReasons.push('source_readiness_refuse');
   }
+  const journeySignals = resolveJourneyActionSignals({
+    contextSnapshot,
+    journeyPhase: payload.journeyPhase || (contextSnapshot && contextSnapshot.phase) || null,
+    blockedTask: payload.blockedTask || null,
+    nextActions: payload.opportunityHints && Array.isArray(payload.opportunityHints.nextActions)
+      ? payload.opportunityHints.nextActions
+      : []
+  });
+  const cityPackCandidatePresent = ranked.selected.some((item) => {
+    const row = item && typeof item === 'object' ? item : {};
+    return normalizeText(row.source).toLowerCase() === 'city_pack_source_ref';
+  });
   const readinessGate = runAnswerReadinessGateV2({
     lawfulBasis: payload && payload.legalSnapshot && typeof payload.legalSnapshot.lawfulBasis === 'string'
       ? payload.legalSnapshot.lawfulBasis
@@ -398,13 +411,15 @@ async function composeConciergeReply(params) {
       ? 1
       : (evidenceDecision.evidenceOutcome === 'INSUFFICIENT' ? 0.35 : 0),
     fallbackType: blockedReasons.length > 0 ? blockedReasons[0] : null,
-    journeyContext: Boolean(contextSnapshot),
-    journeyPhase: payload.journeyPhase || (contextSnapshot && contextSnapshot.phase) || null,
+    journeyContext: journeySignals.journeyContext === true,
+    journeyPhase: journeySignals.journeyPhase || null,
     contextSnapshot,
-    taskBlockerDetected: payload.blockedTaskPresent === true,
-    journeyAlignedAction: true,
-    cityPackContext: false,
-    cityPackGrounded: false,
+    taskBlockerDetected: journeySignals.taskBlockerDetected === true,
+    journeyAlignedAction: journeySignals.journeyAlignedAction !== false,
+    cityPackContext: cityPackCandidatePresent,
+    cityPackGrounded: cityPackCandidatePresent,
+    cityPackFreshnessScore: cityPackCandidatePresent ? sourceReadiness.sourceFreshnessScore : null,
+    cityPackAuthorityScore: cityPackCandidatePresent ? sourceReadiness.sourceAuthorityScore : null,
     savedFaqContext: false,
     crossSystemConflictDetected: false,
     enforceV2: false

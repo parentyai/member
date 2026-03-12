@@ -628,6 +628,9 @@
       "tasksRepo",
       "userJourneyProfilesRepo"
     ],
+    "searchCityPackCandidates": [
+      "usersRepo"
+    ],
     "sendNotice": [
       "auditLogsRepo",
       "deliveriesRepo",
@@ -1471,6 +1474,7 @@
       "recordLlmUsage",
       "recordUserLlmConsent",
       "resolvePlan",
+      "searchCityPackCandidates",
       "sendWelcomeMessage",
       "syncCityPackRecommendedTasks"
     ],
