@@ -2169,9 +2169,9 @@
                   <div class="row row-top">
                     <button id="monitor-open-audit-from-detail" type="button" class="button-subtle">監査ログへ（trace）</button>
                   </div>
-                  <details>
+                  <details data-json-collapsible="true">
                     <summary data-dict-key="ui.label.monitor.raw">RAW JSON</summary>
-                    <pre id="monitor-raw">-</pre>
+                    <pre id="monitor-raw" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
                 </div>
               </div>
@@ -3939,7 +3939,10 @@
                     <button id="audit-search" type="button" data-dict-key="ui.label.audit.searchBtn">検索</button>
                     <span id="audit-note"></span>
                   </div>
-                  <pre id="audit-result">-</pre>
+                  <details class="section" data-json-collapsible="true">
+                    <summary>監査結果（JSON）</summary>
+                    <pre id="audit-result" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
                 </div>
               </div>
             </div>
@@ -3947,7 +3950,10 @@
               <div class="panel">
                 <div class="panel-title">Decision Timeline / 詳細</div>
                 <div class="panel-body">
-                  <pre id="audit-detail">-</pre>
+                  <details class="section" data-json-collapsible="true">
+                    <summary>Decision Timeline（JSON）</summary>
+                    <pre id="audit-detail" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
                 </div>
               </div>
               <div class="panel" data-role="admin">
@@ -3978,9 +3984,9 @@
                       <tbody id="struct-drift-runs-rows"></tbody>
                     </table>
                   </div>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary data-dict-key="ui.label.structDrift.result">実行結果</summary>
-                    <pre id="struct-drift-result">-</pre>
+                    <pre id="struct-drift-result" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
                 </div>
               </div>
@@ -4231,17 +4237,17 @@
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.llm.results">結果</div>
                 <div class="panel-body">
-                  <details class="section" open>
+                  <details class="section" open data-json-collapsible="true">
                     <summary data-dict-key="ui.label.llm.opsExplain">Ops説明</summary>
-                    <pre id="llm-ops-explain-result">-</pre>
+                    <pre id="llm-ops-explain-result" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary data-dict-key="ui.label.llm.nextActions">次アクション候補</summary>
-                    <pre id="llm-next-actions-result">-</pre>
+                    <pre id="llm-next-actions-result" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary data-dict-key="ui.label.llm.faqAnswer">FAQ回答</summary>
-                    <pre id="llm-faq-result">-</pre>
+                    <pre id="llm-faq-result" data-visual-noise="evidence-placeholder">-</pre>
                     <div id="llm-faq-block" class="llm-block-panel is-hidden">
                       <div class="llm-block-title" data-dict-key="ui.label.llm.block.title">回答を停止しました</div>
                       <div class="llm-block-row">
@@ -4258,7 +4264,7 @@
                       </div>
                     </div>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>LLM Route &amp; Trace</summary>
                     <div class="input-grid">
                       <div>
@@ -4294,7 +4300,7 @@
                     <div class="row row-top">
                       <button id="llm-route-trace-open" type="button">この返答を追跡</button>
                     </div>
-                    <pre id="llm-route-trace-result">-</pre>
+                    <pre id="llm-route-trace-result" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
                 </div>
               </div>
@@ -4339,17 +4345,17 @@
                     <button id="llm-config-plan" type="button" data-dict-key="ui.label.llm.config.plan">計画</button>
                     <button id="llm-config-set" type="button" data-dict-key="ui.label.llm.config.set">適用</button>
                   </div>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary data-dict-key="ui.label.llm.config.status">状態</summary>
-                    <pre id="llm-config-status">-</pre>
+                    <pre id="llm-config-status" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary data-dict-key="ui.label.llm.config.planResult">計画結果</summary>
-                    <pre id="llm-config-plan-result">-</pre>
+                    <pre id="llm-config-plan-result" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary data-dict-key="ui.label.llm.config.setResult">適用結果</summary>
-                    <pre id="llm-config-set-result">-</pre>
+                    <pre id="llm-config-set-result" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
                   <details class="section">
                     <summary>LLM Runtime Status</summary>
@@ -4451,20 +4457,23 @@
                     <button id="llm-policy-set" type="button">ポリシー適用</button>
                     <button id="llm-policy-history" type="button">ポリシー履歴</button>
                   </div>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>ポリシー状態</summary>
-                    <pre id="llm-policy-status">-</pre>
+                    <pre id="llm-policy-status" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>ポリシー計画結果</summary>
-                    <pre id="llm-policy-plan-result">-</pre>
+                    <pre id="llm-policy-plan-result" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>ポリシー適用結果</summary>
-                    <pre id="llm-policy-set-result">-</pre>
+                    <pre id="llm-policy-set-result" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
                   <div class="note">ポリシー変更履歴</div>
-                  <pre id="llm-policy-history-result">-</pre>
+                  <details class="section" data-json-collapsible="true">
+                    <summary>ポリシー変更履歴（JSON）</summary>
+                    <pre id="llm-policy-history-result" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
                   <hr />
                   <div class="row row-top">
                     <label for="llm-usage-window-days">usage window(days)</label>
@@ -4472,46 +4481,49 @@
                     <button id="llm-usage-summary-reload" type="button">LLM usage集計</button>
                     <button id="llm-usage-export" type="button">LLM usage Export CSV</button>
                   </div>
-                  <pre id="llm-usage-summary-result">-</pre>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
+                    <summary>LLM usage集計（JSON）</summary>
+                    <pre id="llm-usage-summary-result" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
                     <summary>入口統制ダッシュボード</summary>
-                    <pre id="llm-entry-control-dashboard">-</pre>
+                    <pre id="llm-entry-control-dashboard" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>Quality Scorecard</summary>
-                    <pre id="llm-quality-scorecard">-</pre>
+                    <pre id="llm-quality-scorecard" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>Slice-first Board</summary>
-                    <pre id="llm-quality-slices">-</pre>
+                    <pre id="llm-quality-slices" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>Judge Calibration Board</summary>
-                    <pre id="llm-quality-judge">-</pre>
+                    <pre id="llm-quality-judge" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>Benchmark Registry</summary>
-                    <pre id="llm-quality-benchmark">-</pre>
+                    <pre id="llm-quality-benchmark" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>Replay / Perturbation</summary>
-                    <pre id="llm-quality-replay">-</pre>
+                    <pre id="llm-quality-replay" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>Quality-Latency-Cost Frontier</summary>
-                    <pre id="llm-quality-frontier">-</pre>
+                    <pre id="llm-quality-frontier" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>Top Quality Failures</summary>
-                    <pre id="llm-quality-top-failures">-</pre>
+                    <pre id="llm-quality-top-failures" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>Counterexample Queue</summary>
-                    <pre id="llm-quality-counterexamples">-</pre>
+                    <pre id="llm-quality-counterexamples" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
+                  <details class="section" data-json-collapsible="true">
                     <summary>Top Loop / Context Loss Patterns</summary>
-                    <pre id="llm-quality-top-patterns">-</pre>
+                    <pre id="llm-quality-top-patterns" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
                 </div>
               </div>
@@ -4566,25 +4578,25 @@
                     <button id="ux-policy-reload" type="button">状態更新</button>
                     <button id="ux-policy-open-audit" type="button">監査ログへ</button>
                   </div>
-                  <details class="section" open>
+                  <details class="section" data-json-collapsible="true">
                     <summary>Journey Policy（status）</summary>
-                    <pre id="ux-policy-journey-status">-</pre>
+                    <pre id="ux-policy-journey-status" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section" open>
+                  <details class="section" data-json-collapsible="true">
                     <summary>Task Rules（status）</summary>
-                    <pre id="ux-policy-task-rules-status">-</pre>
+                    <pre id="ux-policy-task-rules-status" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section" open>
+                  <details class="section" data-json-collapsible="true">
                     <summary>LLM Policy（status）</summary>
-                    <pre id="ux-policy-llm-policy-status">-</pre>
+                    <pre id="ux-policy-llm-policy-status" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section" open>
+                  <details class="section" data-json-collapsible="true">
                     <summary>Next Best Action（advisory）</summary>
-                    <pre id="ux-policy-next-best-action">-</pre>
+                    <pre id="ux-policy-next-best-action" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section" open>
+                  <details class="section" data-json-collapsible="true">
                     <summary>Notification Fatigue Warning（warn-only）</summary>
-                    <pre id="ux-policy-fatigue-warning">-</pre>
+                    <pre id="ux-policy-fatigue-warning" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
                 </div>
               </div>
