@@ -15,19 +15,22 @@ test('phase654: index wiring includes snapshot recompress and llm policy history
   assert.ok(src.includes("pathname === '/api/admin/llm/policy/history'"));
 });
 
-test('phase654: admin ui surfaces new dashboard/users/llm-history elements without fold ui', () => {
+test('phase654: admin ui keeps dashboard summary/users/llm-history elements without fold ui', () => {
   const html = read('apps/admin/app.html');
   assert.ok(html.includes('data-dashboard-card="avgTaskCompletion"'));
   assert.ok(html.includes('data-dashboard-card="dependencyBlockRate"'));
-  assert.ok(html.includes('id="dashboard-journey-task-completion"'));
-  assert.ok(html.includes('id="dashboard-journey-dependency-block"'));
+  assert.ok(html.includes('id="dashboard-summary-open-alerts"'));
+  assert.ok(html.includes('id="dashboard-summary-scheduled-today"'));
+  assert.ok(html.includes('id="dashboard-summary-registered-count"'));
+  assert.ok(!html.includes('id="dashboard-journey-task-completion"'));
+  assert.ok(!html.includes('id="dashboard-journey-dependency-block"'));
   assert.ok(html.includes('data-users-column-toggle="llmUsage"'));
   assert.ok(html.includes('data-users-column-toggle="todoProgressRate"'));
   assert.ok(html.includes('data-users-column-toggle="localGuidanceCoverage"'));
-  assert.ok(html.includes('id="dashboard-journey-next-action-72h"'));
-  assert.ok(html.includes('id="dashboard-journey-blocker-resolution-hours"'));
-  assert.ok(html.includes('id="dashboard-journey-local-open-rate"'));
-  assert.ok(html.includes('id="dashboard-journey-notification-fatigue"'));
+  assert.ok(!html.includes('id="dashboard-journey-next-action-72h"'));
+  assert.ok(!html.includes('id="dashboard-journey-blocker-resolution-hours"'));
+  assert.ok(!html.includes('id="dashboard-journey-local-open-rate"'));
+  assert.ok(!html.includes('id="dashboard-journey-notification-fatigue"'));
   assert.ok(html.includes('id="llm-policy-history"'));
   assert.ok(html.includes('id="llm-policy-history-result"'));
 });
