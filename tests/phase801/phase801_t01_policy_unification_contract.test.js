@@ -31,11 +31,11 @@ test('phase801: resolveLlmLegalPolicySnapshot preserves policy source/context an
 });
 
 test('phase801: admin and compat ops routes emit policy source/context into gate payloads', () => {
-  const adminOpsRoute = read('/Volumes/Arumamihs/Member-llm-quality-loop-v2/src/routes/admin/llmOps.js');
-  const compatExplainRoute = read('/Volumes/Arumamihs/Member-llm-quality-loop-v2/src/routes/phaseLLM2OpsExplain.js');
-  const compatNextActionsRoute = read('/Volumes/Arumamihs/Member-llm-quality-loop-v2/src/routes/phaseLLM3OpsNextActions.js');
-  const appendGate = read('/Volumes/Arumamihs/Member-llm-quality-loop-v2/src/usecases/llm/appendLlmGateDecision.js');
-  const llmAuditGuard = read('/Volumes/Arumamihs/Member-llm-quality-loop-v2/src/domain/audit/llmAuditPayloadGuard.js');
+  const adminOpsRoute = read('src/routes/admin/llmOps.js');
+  const compatExplainRoute = read('src/routes/phaseLLM2OpsExplain.js');
+  const compatNextActionsRoute = read('src/routes/phaseLLM3OpsNextActions.js');
+  const appendGate = read('src/usecases/llm/appendLlmGateDecision.js');
+  const llmAuditGuard = read('src/domain/audit/llmAuditPayloadGuard.js');
 
   assert.ok(adminOpsRoute.includes("policySource: 'admin_ops_default'"));
   assert.ok(adminOpsRoute.includes("policyContext: 'admin_ops'"));
