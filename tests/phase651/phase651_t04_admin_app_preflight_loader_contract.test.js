@@ -25,5 +25,5 @@ test('phase651: major loaders use shared failure guard path', () => {
   assert.ok(src.includes("renderDataLoadFailureGuard('city_pack_kpi_failed'"));
   assert.ok(src.includes('function resolveDashboardFallbackMode()'));
   assert.ok(src.includes('&fallbackOnEmpty=true'));
-  assert.ok(src.includes('await loadDashboardJourneyKpi({ notify: false });'));
+  assert.ok(!src.includes('await loadDashboardJourneyKpi({ notify: false });'));
 });

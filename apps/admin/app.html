@@ -242,26 +242,35 @@
               <span id="home-decision-updated">-</span>
             </div>
             <div class="decision-actions">
-              <button id="home-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="composer">作成・編集</button>
-              <button id="home-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-open-pane="monitor">有効化・公開</button>
-              <button id="home-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-open-pane="errors">停止・無効化</button>
-            </div>
-          </div>
-          <div id="ops-home-dashboard" class="panel ops-dashboard-panel">
-            <div class="panel-title">Realtime Ops Dashboard</div>
-            <div class="panel-body">
-              <div class="row row-top">
-                <button id="ops-home-reload" type="button">Snapshot更新</button>
-                <button id="ops-home-rebuild" type="button">Snapshot手動再計算</button>
-                <button id="ops-home-open-catalog" type="button">Feature Catalogへ</button>
-              </div>
-              <div id="ops-home-summary" class="note">-</div>
-              <div id="ops-home-cards" class="ops-status-grid"></div>
+              <button id="home-action-alerts" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="alerts">要対応を確認</button>
+              <button id="home-action-monitor" type="button" class="decision-action-btn" data-action-kind="secondary" data-open-pane="monitor">配信結果を確認</button>
+              <button id="home-action-read-model" type="button" class="decision-action-btn" data-action-kind="tertiary" data-open-pane="read-model">通知集計を確認</button>
             </div>
           </div>
           <details id="home-pane-details" class="decision-details section" open>
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
           </details>
+          <div class="panel dashboard-summary-panel">
+            <div class="panel-title">要対応サマリ</div>
+            <div class="panel-body">
+              <div class="dashboard-summary-grid">
+                <div class="note">未対応アラート: <strong id="dashboard-summary-open-alerts">-</strong></div>
+                <div class="note">本日配信予定: <strong id="dashboard-summary-scheduled-today">-</strong></div>
+                <div class="note">登録者数（直近）: <strong id="dashboard-summary-registered-count">-</strong></div>
+              </div>
+              <div class="task-card-list dashboard-shortcuts" data-dashboard-links="summary">
+                <button type="button" class="task-card-btn" data-open-pane="alerts">
+                  <span>要対応一覧へ</span>
+                </button>
+                <button type="button" class="task-card-btn" data-open-pane="audit">
+                  <span>証跡ログへ</span>
+                </button>
+                <button type="button" class="task-card-btn" data-open-pane="ops-system-health">
+                  <span>System状態へ</span>
+                </button>
+              </div>
+            </div>
+          </div>
           <div class="panel dashboard-panel">
             <div class="panel-title" data-dict-key="ui.label.home.dashboard">ダッシュボード</div>
             <div class="panel-body">
@@ -517,39 +526,6 @@
                   <div id="dashboard-kpi-dependencyBlockRate-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-dependencyBlockRate-note" class="dashboard-kpi-note">-</div>
                 </div>
-              </div>
-              <div class="panel dashboard-journey-panel">
-                <div class="panel-title">Retention / LTV</div>
-                <div class="panel-body">
-                  <div class="row row-top">
-                    <button id="dashboard-journey-kpi-reload" type="button">Journey KPI更新</button>
-                  </div>
-                  <div class="dashboard-journey-grid">
-                    <div class="note">Retention 7/30/60/90: <strong id="dashboard-journey-retention">-</strong></div>
-                    <div class="note">Phase完了率: <strong id="dashboard-journey-phase-completion">-</strong></div>
-                    <div class="note">Task完了率: <strong id="dashboard-journey-task-completion">-</strong></div>
-                    <div class="note">依存ブロック率: <strong id="dashboard-journey-dependency-block">-</strong></div>
-                    <div class="note">NextAction実行率: <strong id="dashboard-journey-next-action-rate">-</strong></div>
-                    <div class="note">NextAction 72h完了率: <strong id="dashboard-journey-next-action-72h">-</strong></div>
-                    <div class="note">Blocker解消中央値(h): <strong id="dashboard-journey-blocker-resolution-hours">-</strong></div>
-                    <div class="note">地域設定後Local導線開封率: <strong id="dashboard-journey-local-open-rate">-</strong></div>
-                    <div class="note">通知疲労率: <strong id="dashboard-journey-notification-fatigue">-</strong></div>
-                    <div class="note">Pro conversion: <strong id="dashboard-journey-pro-conversion">-</strong></div>
-                    <div class="note">Churn ratio: <strong id="dashboard-journey-churn">-</strong></div>
-                  </div>
-                  <pre id="dashboard-journey-kpi-result">-</pre>
-                </div>
-              </div>
-              <div class="task-card-list dashboard-shortcuts">
-                <button type="button" class="task-card-btn" data-open-pane="composer">
-                  <span data-dict-key="ui.label.home.task.compose">通知を作成・承認</span>
-                </button>
-                <button type="button" class="task-card-btn" data-open-pane="monitor">
-                  <span data-dict-key="ui.label.home.task.monitor">結果と証跡を確認</span>
-                </button>
-                <button type="button" class="task-card-btn" data-open-pane="errors">
-                  <span data-dict-key="ui.label.home.task.errors">異常確認から開始</span>
-                </button>
               </div>
             </div>
           </div>
