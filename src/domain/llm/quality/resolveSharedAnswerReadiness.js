@@ -1,6 +1,6 @@
 'use strict';
 
-const { evaluateAnswerReadiness } = require('./evaluateAnswerReadiness');
+const { runAnswerReadinessGateV2 } = require('./runAnswerReadinessGateV2');
 const { applyAnswerReadinessDecision } = require('./applyAnswerReadinessDecision');
 const { resolveIntentRiskTier } = require('../policy/resolveIntentRiskTier');
 const { enforceActionGateway } = require('../../../v1/action_gateway/actionGateway');
@@ -82,7 +82,7 @@ function resolveSharedAnswerReadiness(params) {
   const explicitReasonCodes = normalizeReasonCodes(payload.readinessReasonCodes);
   const explicitSafeResponseMode = normalizeText(payload.readinessSafeResponseMode).toLowerCase() || null;
 
-  const evaluated = evaluateAnswerReadiness({
+  const evaluatedGate = runAnswerReadinessGateV2({
     lawfulBasis: normalizeText(payload.lawfulBasis) || 'consent',
     consentVerified: payload.consentVerified !== false,
     crossBorder: payload.crossBorder === true,
@@ -98,8 +98,31 @@ function resolveSharedAnswerReadiness(params) {
     contradictionDetected: payload.contradictionDetected === true,
     evidenceCoverage: normalizeScore(payload.evidenceCoverage, llmUsed ? 0.7 : 0.5),
     fallbackType: normalizeText(payload.fallbackType) || null,
-    reasonCodes: normalizeReasonCodes([].concat(risk.riskReasonCodes || [], explicitReasonCodes))
+    reasonCodes: normalizeReasonCodes([].concat(risk.riskReasonCodes || [], explicitReasonCodes)),
+    emergencyContext: payload.emergencyContext === true,
+    emergencySeverity: payload.emergencySeverity || null,
+    emergencyOfficialSourceSatisfied: payload.emergencyOfficialSourceSatisfied === true,
+    journeyContext: payload.journeyContext === true,
+    journeyPhase: payload.journeyPhase || null,
+    taskBlockerDetected: payload.taskBlockerDetected === true,
+    taskBlockerContext: payload.taskBlockerContext === true,
+    journeyAlignedAction: typeof payload.journeyAlignedAction === 'boolean' ? payload.journeyAlignedAction : true,
+    cityPackContext: payload.cityPackContext === true,
+    cityPackGrounded: payload.cityPackGrounded === true,
+    cityPackFreshnessScore: payload.cityPackFreshnessScore,
+    cityPackAuthorityScore: payload.cityPackAuthorityScore,
+    savedFaqContext: payload.savedFaqContext === true || payload.savedFaqReused === true,
+    savedFaqReused: payload.savedFaqReused === true,
+    savedFaqReusePass: payload.savedFaqReusePass === true,
+    savedFaqValid: typeof payload.savedFaqValid === 'boolean' ? payload.savedFaqValid : undefined,
+    savedFaqAllowedIntent: typeof payload.savedFaqAllowedIntent === 'boolean' ? payload.savedFaqAllowedIntent : undefined,
+    savedFaqAuthorityScore: payload.savedFaqAuthorityScore,
+    savedFaqReuseReasonCodes: payload.savedFaqReuseReasonCodes,
+    sourceSnapshotRefs: payload.sourceSnapshotRefs,
+    crossSystemConflictDetected: payload.crossSystemConflictDetected === true,
+    enforceV2: false
   });
+  const evaluated = evaluatedGate.readiness;
 
   const actionClass = resolveActionClass(normalizeText(payload.actionClass) || 'lookup');
   const actionGatewayEnabled = normalizeBoolean(payload.actionGatewayEnabled, false);
@@ -136,11 +159,16 @@ function resolveSharedAnswerReadiness(params) {
 
   return {
     readiness,
+    readinessV2: evaluatedGate.readinessV2,
     domainIntent: risk.domainIntent,
     intentRiskTier: risk.intentRiskTier,
     replyText: applied.replyText,
     readinessEnforced: applied.enforced === true,
-    actionGateway
+    actionGateway,
+    answerReadinessVersion: evaluatedGate.answerReadinessVersion,
+    answerReadinessLogOnlyV2: evaluatedGate.answerReadinessLogOnlyV2,
+    answerReadinessEnforcedV2: evaluatedGate.answerReadinessEnforcedV2,
+    readinessTelemetryV2: evaluatedGate.telemetry
   };
 }
 

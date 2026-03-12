@@ -161,6 +161,8 @@ function computeSourceReadiness(params) {
   let nonOfficialCount = 0;
   let officialCount = 0;
   let requiredNonOfficialCount = 0;
+  let requiredBlockedCount = 0;
+  let optionalBlockedCount = 0;
 
   candidates.forEach((candidate) => {
     const typeScore = sourceTypeScore(candidate.sourceType);
@@ -176,7 +178,13 @@ function computeSourceReadiness(params) {
     }
     const itemFreshness = freshnessScore(candidate.validUntilMs, nowMs);
     freshnessScores.push(itemFreshness);
-    if (itemFreshness <= 0.05) staleSourceCount += 1;
+    const blockedByState = candidate.status === 'blocked' || candidate.status === 'dead' || candidate.status === 'retired';
+    const staleOrBlocked = itemFreshness <= 0.05 || blockedByState;
+    if (staleOrBlocked) {
+      staleSourceCount += 1;
+      if (candidate.requiredLevel === 'required') requiredBlockedCount += 1;
+      else optionalBlockedCount += 1;
+    }
   });
 
   const sourceAuthorityScore = authorityScores.length
@@ -191,6 +199,8 @@ function computeSourceReadiness(params) {
 
   if (thresholds.officialOnlyRequired && !officialOnlySatisfied) reasonCodes.push('official_only_not_satisfied');
   if (staleSourceCount > 0) reasonCodes.push('stale_source_detected');
+  if (requiredBlockedCount > 0) reasonCodes.push('required_source_blocked');
+  if (optionalBlockedCount > 0) reasonCodes.push('optional_source_stale');
   if (sourceAuthorityScore < thresholds.minAuthority) reasonCodes.push('authority_below_threshold');
   if (sourceFreshnessScore < thresholds.minFreshness) reasonCodes.push('freshness_below_threshold');
   if (retrievalQuality === 'bad') reasonCodes.push('retrieval_quality_bad');
@@ -198,11 +208,14 @@ function computeSourceReadiness(params) {
   if (evidenceCoverage > 0 && evidenceCoverage < 0.5) reasonCodes.push('evidence_coverage_low');
 
   let sourceReadinessDecision = 'allow';
-  if (!officialOnlySatisfied && thresholds.officialOnlyRequired) sourceReadinessDecision = 'refuse';
+  if (requiredBlockedCount > 0) sourceReadinessDecision = 'refuse';
+  else if (!officialOnlySatisfied && thresholds.officialOnlyRequired) sourceReadinessDecision = 'refuse';
   else if (intentRiskTier === 'high' && (sourceAuthorityScore < thresholds.minAuthority || sourceFreshnessScore < thresholds.minFreshness)) {
     sourceReadinessDecision = 'refuse';
   } else if (sourceAuthorityScore < thresholds.minAuthority || sourceFreshnessScore < thresholds.minFreshness || retrievalQuality === 'bad') {
     sourceReadinessDecision = intentRiskTier === 'low' ? 'hedged' : 'clarify';
+  } else if (optionalBlockedCount > 0) {
+    sourceReadinessDecision = 'hedged';
   } else if (retrievalQuality === 'mixed' || evidenceCoverage < 0.7) {
     sourceReadinessDecision = 'hedged';
   }
@@ -217,7 +230,9 @@ function computeSourceReadiness(params) {
     reasonCodes,
     sampleSize: candidates.length,
     staleSourceCount,
-    nonOfficialCount
+    nonOfficialCount,
+    requiredBlockedCount,
+    optionalBlockedCount
   };
 }
 

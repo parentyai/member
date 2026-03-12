@@ -30,7 +30,7 @@ const {
   loadLlmLegalPolicySnapshot
 } = require('../domain/llm/policy/resolveLlmLegalPolicySnapshot');
 const { resolveIntentRiskTier } = require('../domain/llm/policy/resolveIntentRiskTier');
-const { evaluateAnswerReadiness } = require('../domain/llm/quality/evaluateAnswerReadiness');
+const { runAnswerReadinessGateV2 } = require('../domain/llm/quality/runAnswerReadinessGateV2');
 const { applyAnswerReadinessDecision } = require('../domain/llm/quality/applyAnswerReadinessDecision');
 const { generatePaidDomainConciergeReply, FORBIDDEN_REPLY_PATTERN } = require('../usecases/assistant/generatePaidDomainConciergeReply');
 const { generatePaidHousingConciergeReply } = require('../usecases/assistant/generatePaidHousingConciergeReply');
@@ -1066,7 +1066,7 @@ function resolveAnswerReadinessTelemetry(params) {
   const sourceFreshnessScore = hasMetric(payload.sourceFreshnessScore)
     ? Number(payload.sourceFreshnessScore)
     : evidenceCoverage;
-  const computedReadiness = evaluateAnswerReadiness({
+  const readinessGate = runAnswerReadinessGateV2({
     lawfulBasis: payload.legalSnapshot && payload.legalSnapshot.lawfulBasis,
     consentVerified: payload.legalSnapshot && payload.legalSnapshot.consentVerified === true,
     crossBorder: payload.legalSnapshot && payload.legalSnapshot.crossBorder === true,
@@ -1079,7 +1079,29 @@ function resolveAnswerReadinessTelemetry(params) {
     unsupportedClaimCount,
     contradictionDetected,
     evidenceCoverage,
-    fallbackType: payload.fallbackType || null
+    fallbackType: payload.fallbackType || null,
+    emergencyContext: payload.emergencyContext === true,
+    emergencySeverity: payload.emergencySeverity || null,
+    emergencyOfficialSourceSatisfied: payload.emergencyOfficialSourceSatisfied === true,
+    journeyContext: payload.journeyContext === true,
+    journeyPhase: payload.journeyPhase || null,
+    taskBlockerDetected: payload.taskBlockerDetected === true,
+    taskBlockerContext: payload.taskBlockerContext === true,
+    journeyAlignedAction: typeof payload.journeyAlignedAction === 'boolean' ? payload.journeyAlignedAction : true,
+    cityPackContext: payload.cityPackContext === true,
+    cityPackGrounded: payload.cityPackGrounded === true,
+    cityPackFreshnessScore: payload.cityPackFreshnessScore,
+    cityPackAuthorityScore: payload.cityPackAuthorityScore,
+    savedFaqContext: payload.savedFaqContext === true || payload.savedFaqReused === true,
+    savedFaqReused: payload.savedFaqReused === true,
+    savedFaqReusePass: payload.savedFaqReusePass === true,
+    savedFaqValid: typeof payload.savedFaqValid === 'boolean' ? payload.savedFaqValid : undefined,
+    savedFaqAllowedIntent: typeof payload.savedFaqAllowedIntent === 'boolean' ? payload.savedFaqAllowedIntent : undefined,
+    savedFaqAuthorityScore: payload.savedFaqAuthorityScore,
+    savedFaqReuseReasonCodes: payload.savedFaqReuseReasonCodes,
+    sourceSnapshotRefs: payload.sourceSnapshotRefs,
+    crossSystemConflictDetected: payload.crossSystemConflictDetected === true,
+    enforceV2: false
   });
   const explicitDecision = normalizeReplyText(payload.readinessDecision).toLowerCase();
   const hasExplicitDecision = explicitDecision === 'allow'
@@ -1094,12 +1116,12 @@ function resolveAnswerReadinessTelemetry(params) {
     : [];
   const explicitSafeResponseMode = normalizeReplyText(payload.readinessSafeResponseMode).toLowerCase();
   const readiness = hasExplicitDecision
-    ? Object.assign({}, computedReadiness, {
+    ? Object.assign({}, readinessGate.readiness, {
       decision: explicitDecision,
-      reasonCodes: explicitReasonCodes.length ? explicitReasonCodes : computedReadiness.reasonCodes,
-      safeResponseMode: explicitSafeResponseMode || computedReadiness.safeResponseMode
+      reasonCodes: explicitReasonCodes.length ? explicitReasonCodes : readinessGate.readiness.reasonCodes,
+      safeResponseMode: explicitSafeResponseMode || readinessGate.readiness.safeResponseMode
     })
-    : computedReadiness;
+    : readinessGate.readiness;
   if (!hasExplicitDecision) {
     const legalBlocked = payload.legalSnapshot && payload.legalSnapshot.legalDecision === 'blocked';
     const sourceSignalPresent = hasMetric(payload.sourceAuthorityScore)
@@ -1116,6 +1138,10 @@ function resolveAnswerReadinessTelemetry(params) {
   }
   return {
     readiness,
+    readinessV2: readinessGate.readinessV2,
+    answerReadinessVersion: readinessGate.answerReadinessVersion,
+    answerReadinessLogOnlyV2: readinessGate.answerReadinessLogOnlyV2,
+    readinessTelemetryV2: readinessGate.telemetry,
     unsupportedClaimCount,
     contradictionDetected
   };
@@ -1310,6 +1336,42 @@ async function appendLlmGateDecisionBestEffort(data) {
         readinessDecision: readinessTelemetry.readiness.decision,
         readinessReasonCodes: readinessTelemetry.readiness.reasonCodes,
         readinessSafeResponseMode: readinessTelemetry.readiness.safeResponseMode,
+        answerReadinessVersion: readinessTelemetry.answerReadinessVersion,
+        readinessDecisionV2: readinessTelemetry.readinessV2.decision,
+        readinessReasonCodesV2: readinessTelemetry.readinessV2.reasonCodes,
+        readinessSafeResponseModeV2: readinessTelemetry.readinessV2.safeResponseMode,
+        emergencyContextActive: readinessTelemetry.readinessTelemetryV2.emergencyContextActive === true,
+        emergencyOfficialSourceSatisfied: readinessTelemetry.readinessTelemetryV2.emergencyOfficialSourceSatisfied === true,
+        journeyPhase: readinessTelemetry.readinessTelemetryV2.journeyPhase || null,
+        taskBlockerDetected: readinessTelemetry.readinessTelemetryV2.taskBlockerDetected === true,
+        journeyAlignedAction: typeof readinessTelemetry.readinessTelemetryV2.journeyAlignedAction === 'boolean'
+          ? readinessTelemetry.readinessTelemetryV2.journeyAlignedAction
+          : true,
+        cityPackGrounded: readinessTelemetry.readinessTelemetryV2.cityPackGrounded === true,
+        cityPackFreshnessScore: Number.isFinite(Number(readinessTelemetry.readinessTelemetryV2.cityPackFreshnessScore))
+          ? Number(readinessTelemetry.readinessTelemetryV2.cityPackFreshnessScore)
+          : null,
+        cityPackAuthorityScore: Number.isFinite(Number(readinessTelemetry.readinessTelemetryV2.cityPackAuthorityScore))
+          ? Number(readinessTelemetry.readinessTelemetryV2.cityPackAuthorityScore)
+          : null,
+        savedFaqReused: readinessTelemetry.readinessTelemetryV2.savedFaqReused === true,
+        savedFaqReusePass: readinessTelemetry.readinessTelemetryV2.savedFaqReusePass === true,
+        savedFaqReuseReasonCodes: Array.isArray(payload.savedFaqReuseReasonCodes)
+          ? payload.savedFaqReuseReasonCodes
+          : [],
+        savedFaqValid: typeof readinessTelemetry.readinessTelemetryV2.savedFaqValid === 'boolean'
+          ? readinessTelemetry.readinessTelemetryV2.savedFaqValid
+          : null,
+        savedFaqAllowedIntent: typeof readinessTelemetry.readinessTelemetryV2.savedFaqAllowedIntent === 'boolean'
+          ? readinessTelemetry.readinessTelemetryV2.savedFaqAllowedIntent
+          : null,
+        savedFaqAuthorityScore: Number.isFinite(Number(readinessTelemetry.readinessTelemetryV2.savedFaqAuthorityScore))
+          ? Number(readinessTelemetry.readinessTelemetryV2.savedFaqAuthorityScore)
+          : null,
+        sourceSnapshotRefs: Array.isArray(readinessTelemetry.readinessTelemetryV2.sourceSnapshotRefs)
+          ? readinessTelemetry.readinessTelemetryV2.sourceSnapshotRefs
+          : [],
+        crossSystemConflictDetected: readinessTelemetry.readinessTelemetryV2.crossSystemConflictDetected === true,
         unsupportedClaimCount: readinessTelemetry.unsupportedClaimCount,
         contradictionDetected: readinessTelemetry.contradictionDetected,
         answerReadinessLogOnly,
@@ -1650,6 +1712,42 @@ async function appendLlmActionLogBestEffort(data) {
       readinessDecision: readinessTelemetry.readiness.decision,
       readinessReasonCodes: readinessTelemetry.readiness.reasonCodes,
       readinessSafeResponseMode: readinessTelemetry.readiness.safeResponseMode,
+      answerReadinessVersion: readinessTelemetry.answerReadinessVersion,
+      readinessDecisionV2: readinessTelemetry.readinessV2.decision,
+      readinessReasonCodesV2: readinessTelemetry.readinessV2.reasonCodes,
+      readinessSafeResponseModeV2: readinessTelemetry.readinessV2.safeResponseMode,
+      emergencyContextActive: readinessTelemetry.readinessTelemetryV2.emergencyContextActive === true,
+      emergencyOfficialSourceSatisfied: readinessTelemetry.readinessTelemetryV2.emergencyOfficialSourceSatisfied === true,
+      journeyPhase: readinessTelemetry.readinessTelemetryV2.journeyPhase || null,
+      taskBlockerDetected: readinessTelemetry.readinessTelemetryV2.taskBlockerDetected === true,
+      journeyAlignedAction: typeof readinessTelemetry.readinessTelemetryV2.journeyAlignedAction === 'boolean'
+        ? readinessTelemetry.readinessTelemetryV2.journeyAlignedAction
+        : true,
+      cityPackGrounded: readinessTelemetry.readinessTelemetryV2.cityPackGrounded === true,
+      cityPackFreshnessScore: Number.isFinite(Number(readinessTelemetry.readinessTelemetryV2.cityPackFreshnessScore))
+        ? Number(readinessTelemetry.readinessTelemetryV2.cityPackFreshnessScore)
+        : null,
+      cityPackAuthorityScore: Number.isFinite(Number(readinessTelemetry.readinessTelemetryV2.cityPackAuthorityScore))
+        ? Number(readinessTelemetry.readinessTelemetryV2.cityPackAuthorityScore)
+        : null,
+      savedFaqReused: readinessTelemetry.readinessTelemetryV2.savedFaqReused === true,
+      savedFaqReusePass: readinessTelemetry.readinessTelemetryV2.savedFaqReusePass === true,
+      savedFaqReuseReasonCodes: Array.isArray(payload.savedFaqReuseReasonCodes)
+        ? payload.savedFaqReuseReasonCodes
+        : [],
+      savedFaqValid: typeof readinessTelemetry.readinessTelemetryV2.savedFaqValid === 'boolean'
+        ? readinessTelemetry.readinessTelemetryV2.savedFaqValid
+        : null,
+      savedFaqAllowedIntent: typeof readinessTelemetry.readinessTelemetryV2.savedFaqAllowedIntent === 'boolean'
+        ? readinessTelemetry.readinessTelemetryV2.savedFaqAllowedIntent
+        : null,
+      savedFaqAuthorityScore: Number.isFinite(Number(readinessTelemetry.readinessTelemetryV2.savedFaqAuthorityScore))
+        ? Number(readinessTelemetry.readinessTelemetryV2.savedFaqAuthorityScore)
+        : null,
+      sourceSnapshotRefs: Array.isArray(readinessTelemetry.readinessTelemetryV2.sourceSnapshotRefs)
+        ? readinessTelemetry.readinessTelemetryV2.sourceSnapshotRefs
+        : [],
+      crossSystemConflictDetected: readinessTelemetry.readinessTelemetryV2.crossSystemConflictDetected === true,
       unsupportedClaimCount: readinessTelemetry.unsupportedClaimCount,
       contradictionDetected: readinessTelemetry.contradictionDetected,
       answerReadinessLogOnly,

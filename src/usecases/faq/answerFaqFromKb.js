@@ -17,7 +17,7 @@ const { sanitizeRetrievalCandidates } = require('../assistant/retrieval/sanitize
 const { resolveLlmLegalPolicySnapshot } = require('../../domain/llm/policy/resolveLlmLegalPolicySnapshot');
 const { resolveIntentRiskTier } = require('../../domain/llm/policy/resolveIntentRiskTier');
 const { computeSourceReadiness } = require('../../domain/llm/knowledge/computeSourceReadiness');
-const { evaluateAnswerReadiness } = require('../../domain/llm/quality/evaluateAnswerReadiness');
+const { runAnswerReadinessGateV2 } = require('../../domain/llm/quality/runAnswerReadinessGateV2');
 
 const DEFAULT_TIMEOUT_MS = 2500;
 const PROMPT_VERSION = 'faq_answer_v2_kb_only';
@@ -216,6 +216,18 @@ function buildFaqTelemetryFields(params) {
   const savedFaqSignals = payload.savedFaqSignals && typeof payload.savedFaqSignals === 'object'
     ? payload.savedFaqSignals
     : {};
+  const answerReadinessGate = payload.answerReadinessGate && typeof payload.answerReadinessGate === 'object'
+    ? payload.answerReadinessGate
+    : {};
+  const readinessV2 = answerReadinessGate.readinessV2 && typeof answerReadinessGate.readinessV2 === 'object'
+    ? answerReadinessGate.readinessV2
+    : {};
+  const readinessV2Snapshot = readinessV2.qualitySnapshot && typeof readinessV2.qualitySnapshot === 'object'
+    ? readinessV2.qualitySnapshot
+    : {};
+  const readinessV2Telemetry = answerReadinessGate.telemetry && typeof answerReadinessGate.telemetry === 'object'
+    ? answerReadinessGate.telemetry
+    : {};
   return {
     policySource: payload.legalSnapshot && payload.legalSnapshot.policySource ? payload.legalSnapshot.policySource : 'system_flags',
     policyContext: payload.legalSnapshot && payload.legalSnapshot.policyContext ? payload.legalSnapshot.policyContext : 'default',
@@ -250,7 +262,35 @@ function buildFaqTelemetryFields(params) {
       : [],
     sourceSnapshotRefs: Array.isArray(savedFaqSignals.sourceSnapshotRefs)
       ? savedFaqSignals.sourceSnapshotRefs
-      : []
+      : [],
+    answerReadinessVersion: answerReadinessGate.answerReadinessVersion || null,
+    readinessDecisionV2: readinessV2.decision || null,
+    readinessReasonCodesV2: Array.isArray(readinessV2.reasonCodes) ? readinessV2.reasonCodes : [],
+    readinessSafeResponseModeV2: readinessV2.safeResponseMode || null,
+    emergencyContextActive: readinessV2Telemetry.emergencyContextActive === true,
+    emergencyOfficialSourceSatisfied: readinessV2Telemetry.emergencyOfficialSourceSatisfied === true,
+    journeyPhase: readinessV2Telemetry.journeyPhase || null,
+    taskBlockerDetected: readinessV2Telemetry.taskBlockerDetected === true,
+    journeyAlignedAction: typeof readinessV2Telemetry.journeyAlignedAction === 'boolean'
+      ? readinessV2Telemetry.journeyAlignedAction
+      : true,
+    cityPackGrounded: readinessV2Telemetry.cityPackGrounded === true,
+    cityPackFreshnessScore: Number.isFinite(Number(readinessV2Telemetry.cityPackFreshnessScore))
+      ? Number(readinessV2Telemetry.cityPackFreshnessScore)
+      : null,
+    cityPackAuthorityScore: Number.isFinite(Number(readinessV2Telemetry.cityPackAuthorityScore))
+      ? Number(readinessV2Telemetry.cityPackAuthorityScore)
+      : null,
+    savedFaqValid: typeof readinessV2Telemetry.savedFaqValid === 'boolean'
+      ? readinessV2Telemetry.savedFaqValid
+      : (readinessV2Snapshot.savedFaqValid === true),
+    savedFaqAllowedIntent: typeof readinessV2Telemetry.savedFaqAllowedIntent === 'boolean'
+      ? readinessV2Telemetry.savedFaqAllowedIntent
+      : (readinessV2Snapshot.savedFaqAllowedIntent === true),
+    savedFaqAuthorityScore: Number.isFinite(Number(readinessV2Telemetry.savedFaqAuthorityScore))
+      ? Number(readinessV2Telemetry.savedFaqAuthorityScore)
+      : null,
+    crossSystemConflictDetected: readinessV2Telemetry.crossSystemConflictDetected === true
   };
 }
 
@@ -428,6 +468,15 @@ function buildAuditSummaryBase(params) {
   const answerReadiness = payload.answerReadiness && typeof payload.answerReadiness === 'object'
     ? payload.answerReadiness
     : {};
+  const answerReadinessGate = payload.answerReadinessGate && typeof payload.answerReadinessGate === 'object'
+    ? payload.answerReadinessGate
+    : {};
+  const readinessV2 = answerReadinessGate.readinessV2 && typeof answerReadinessGate.readinessV2 === 'object'
+    ? answerReadinessGate.readinessV2
+    : {};
+  const readinessV2Telemetry = answerReadinessGate.telemetry && typeof answerReadinessGate.telemetry === 'object'
+    ? answerReadinessGate.telemetry
+    : {};
   return {
     purpose: 'faq',
     llmEnabled: payload.llmEnabled,
@@ -484,6 +533,32 @@ function buildAuditSummaryBase(params) {
       ? payload.savedFaqSignals.sourceSnapshotRefs
       : [],
     answerReadinessLogOnly: payload.answerReadinessLogOnly === true,
+    answerReadinessVersion: answerReadinessGate.answerReadinessVersion || null,
+    readinessDecisionV2: readinessV2.decision || null,
+    readinessReasonCodesV2: Array.isArray(readinessV2.reasonCodes) ? readinessV2.reasonCodes : [],
+    readinessSafeResponseModeV2: readinessV2.safeResponseMode || null,
+    emergencyContextActive: readinessV2Telemetry.emergencyContextActive === true,
+    emergencyOfficialSourceSatisfied: readinessV2Telemetry.emergencyOfficialSourceSatisfied === true,
+    journeyPhase: readinessV2Telemetry.journeyPhase || null,
+    taskBlockerDetected: readinessV2Telemetry.taskBlockerDetected === true,
+    journeyAlignedAction: typeof readinessV2Telemetry.journeyAlignedAction === 'boolean'
+      ? readinessV2Telemetry.journeyAlignedAction
+      : true,
+    cityPackGrounded: readinessV2Telemetry.cityPackGrounded === true,
+    cityPackFreshnessScore: Number.isFinite(Number(readinessV2Telemetry.cityPackFreshnessScore))
+      ? Number(readinessV2Telemetry.cityPackFreshnessScore)
+      : null,
+    cityPackAuthorityScore: Number.isFinite(Number(readinessV2Telemetry.cityPackAuthorityScore))
+      ? Number(readinessV2Telemetry.cityPackAuthorityScore)
+      : null,
+    savedFaqValid: typeof readinessV2Telemetry.savedFaqValid === 'boolean' ? readinessV2Telemetry.savedFaqValid : true,
+    savedFaqAllowedIntent: typeof readinessV2Telemetry.savedFaqAllowedIntent === 'boolean'
+      ? readinessV2Telemetry.savedFaqAllowedIntent
+      : true,
+    savedFaqAuthorityScore: Number.isFinite(Number(readinessV2Telemetry.savedFaqAuthorityScore))
+      ? Number(readinessV2Telemetry.savedFaqAuthorityScore)
+      : null,
+    crossSystemConflictDetected: readinessV2Telemetry.crossSystemConflictDetected === true,
     inputFieldCategoriesUsed: payload.inputFieldCategoriesUsed,
     fieldCategoriesUsed: payload.inputFieldCategoriesUsed
   };
@@ -667,7 +742,7 @@ async function answerFaqFromKb(params, deps) {
       ? Math.max(0, Math.min(1, Number(confidence.top1Score)))
       : 0
   });
-  const answerReadiness = evaluateAnswerReadiness({
+  const answerReadinessGate = runAnswerReadinessGateV2({
     lawfulBasis: legalSnapshot.lawfulBasis,
     consentVerified: legalSnapshot.consentVerified,
     crossBorder: legalSnapshot.crossBorder,
@@ -682,8 +757,19 @@ async function answerFaqFromKb(params, deps) {
     evidenceCoverage: confidence.top1Score !== null && confidence.top1Score !== undefined
       ? Math.max(0, Math.min(1, Number(confidence.top1Score)))
       : 0,
-    fallbackType: null
+    fallbackType: null,
+    savedFaqContext: savedFaqSignals.savedFaqReused === true,
+    savedFaqReused: savedFaqSignals.savedFaqReused === true,
+    savedFaqReusePass: savedFaqSignals.savedFaqReusePass === true,
+    savedFaqReuseReasonCodes: savedFaqSignals.savedFaqReuseReasonCodes,
+    savedFaqValid: !savedFaqSignals.savedFaqReuseReasonCodes.includes('saved_faq_stale'),
+    savedFaqAllowedIntent: !savedFaqSignals.savedFaqReuseReasonCodes.includes('saved_faq_intent_mismatch'),
+    savedFaqAuthorityScore: sourceReadiness.sourceAuthorityScore,
+    sourceSnapshotRefs: savedFaqSignals.sourceSnapshotRefs,
+    crossSystemConflictDetected: false,
+    enforceV2: false
   });
+  const answerReadiness = answerReadinessGate.readiness;
   const normalizedPersonalization = personalizationCheck.isAllowed
     ? {
       locale: personalizationCheck.keys.includes('locale') && personalization ? personalization.locale : undefined,
@@ -894,6 +980,7 @@ async function answerFaqFromKb(params, deps) {
           riskReasonCodes: riskSnapshot.riskReasonCodes,
           sourceReadiness,
           answerReadiness,
+          answerReadinessGate,
           savedFaqSignals,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
@@ -920,27 +1007,20 @@ async function answerFaqFromKb(params, deps) {
       )
     }, deps).catch(() => null);
 
-    await appendFaqAnswerLog({
+    await appendFaqAnswerLog(Object.assign({
       traceId,
       questionHash: hashText(question),
       locale,
       matchedArticleIds,
-      blockedReason: blocked.blockedReason,
-      policySource: legalSnapshot.policySource,
-      policyContext: legalSnapshot.policyContext,
-      legalDecision: legalSnapshot.legalDecision,
-      legalReasonCodes: legalSnapshot.legalReasonCodes,
-      intentRiskTier: riskSnapshot.intentRiskTier,
-      riskReasonCodes: riskSnapshot.riskReasonCodes,
-      sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
-      sourceReadinessReasons: sourceReadiness.reasonCodes,
-      readinessDecision: answerReadiness.decision,
-      readinessReasonCodes: answerReadiness.reasonCodes,
-      savedFaqReused: savedFaqSignals.savedFaqReused,
-      savedFaqReusePass: savedFaqSignals.savedFaqReusePass,
-      savedFaqReuseReasonCodes: savedFaqSignals.savedFaqReuseReasonCodes,
-      sourceSnapshotRefs: savedFaqSignals.sourceSnapshotRefs
-    }, deps).catch(() => null);
+      blockedReason: blocked.blockedReason
+    }, buildFaqTelemetryFields({
+      legalSnapshot,
+      riskSnapshot,
+      sourceReadiness,
+      answerReadiness,
+      answerReadinessGate,
+      savedFaqSignals
+    })), deps).catch(() => null);
     await appendDisclaimerRenderedAudit(
       {
         actor,
@@ -962,6 +1042,7 @@ async function answerFaqFromKb(params, deps) {
         riskSnapshot,
         sourceReadiness,
         answerReadiness,
+        answerReadinessGate,
         savedFaqSignals
       }),
       { auditId }
@@ -1046,6 +1127,7 @@ async function answerFaqFromKb(params, deps) {
           riskReasonCodes: riskSnapshot.riskReasonCodes,
           sourceReadiness,
           answerReadiness,
+          answerReadinessGate,
           savedFaqSignals,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
@@ -1073,27 +1155,20 @@ async function answerFaqFromKb(params, deps) {
       )
     }, deps).catch(() => null);
 
-    await appendFaqAnswerLog({
+    await appendFaqAnswerLog(Object.assign({
       traceId,
       questionHash: hashText(question),
       locale,
       matchedArticleIds,
-      blockedReason,
-      policySource: legalSnapshot.policySource,
-      policyContext: legalSnapshot.policyContext,
-      legalDecision: legalSnapshot.legalDecision,
-      legalReasonCodes: legalSnapshot.legalReasonCodes,
-      intentRiskTier: riskSnapshot.intentRiskTier,
-      riskReasonCodes: riskSnapshot.riskReasonCodes,
-      sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
-      sourceReadinessReasons: sourceReadiness.reasonCodes,
-      readinessDecision: answerReadiness.decision,
-      readinessReasonCodes: answerReadiness.reasonCodes,
-      savedFaqReused: savedFaqSignals.savedFaqReused,
-      savedFaqReusePass: savedFaqSignals.savedFaqReusePass,
-      savedFaqReuseReasonCodes: savedFaqSignals.savedFaqReuseReasonCodes,
-      sourceSnapshotRefs: savedFaqSignals.sourceSnapshotRefs
-    }, deps).catch(() => null);
+      blockedReason
+    }, buildFaqTelemetryFields({
+      legalSnapshot,
+      riskSnapshot,
+      sourceReadiness,
+      answerReadiness,
+      answerReadinessGate,
+      savedFaqSignals
+    })), deps).catch(() => null);
     await appendDisclaimerRenderedAudit(
       {
         actor,
@@ -1115,6 +1190,7 @@ async function answerFaqFromKb(params, deps) {
         riskSnapshot,
         sourceReadiness,
         answerReadiness,
+        answerReadinessGate,
         savedFaqSignals
       }),
       { auditId }
@@ -1163,6 +1239,7 @@ async function answerFaqFromKb(params, deps) {
           riskReasonCodes: riskSnapshot.riskReasonCodes,
           sourceReadiness,
           answerReadiness,
+          answerReadinessGate,
           savedFaqSignals,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
@@ -1189,27 +1266,20 @@ async function answerFaqFromKb(params, deps) {
         }
       )
     }, deps).catch(() => null);
-    await appendFaqAnswerLog({
+    await appendFaqAnswerLog(Object.assign({
       traceId,
       questionHash: hashText(question),
       locale,
       matchedArticleIds,
-      blockedReason,
-      policySource: legalSnapshot.policySource,
-      policyContext: legalSnapshot.policyContext,
-      legalDecision: legalSnapshot.legalDecision,
-      legalReasonCodes: legalSnapshot.legalReasonCodes,
-      intentRiskTier: riskSnapshot.intentRiskTier,
-      riskReasonCodes: riskSnapshot.riskReasonCodes,
-      sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
-      sourceReadinessReasons: sourceReadiness.reasonCodes,
-      readinessDecision: answerReadiness.decision,
-      readinessReasonCodes: answerReadiness.reasonCodes,
-      savedFaqReused: savedFaqSignals.savedFaqReused,
-      savedFaqReusePass: savedFaqSignals.savedFaqReusePass,
-      savedFaqReuseReasonCodes: savedFaqSignals.savedFaqReuseReasonCodes,
-      sourceSnapshotRefs: savedFaqSignals.sourceSnapshotRefs
-    }, deps).catch(() => null);
+      blockedReason
+    }, buildFaqTelemetryFields({
+      legalSnapshot,
+      riskSnapshot,
+      sourceReadiness,
+      answerReadiness,
+      answerReadinessGate,
+      savedFaqSignals
+    })), deps).catch(() => null);
     await appendDisclaimerRenderedAudit(
       {
         actor,
@@ -1230,6 +1300,7 @@ async function answerFaqFromKb(params, deps) {
         riskSnapshot,
         sourceReadiness,
         answerReadiness,
+        answerReadinessGate,
         savedFaqSignals
       }),
       { auditId }
@@ -1258,6 +1329,7 @@ async function answerFaqFromKb(params, deps) {
         riskReasonCodes: riskSnapshot.riskReasonCodes,
         sourceReadiness,
         answerReadiness,
+        answerReadinessGate,
         savedFaqSignals,
         disclaimerVersion: disclaimer.version,
         matchedArticleIds,
@@ -1285,27 +1357,20 @@ async function answerFaqFromKb(params, deps) {
       )
   }, deps).catch(() => null);
 
-  await appendFaqAnswerLog({
+  await appendFaqAnswerLog(Object.assign({
     traceId,
     questionHash: hashText(question),
     locale,
     matchedArticleIds,
-    blockedReason: null,
-    policySource: legalSnapshot.policySource,
-    policyContext: legalSnapshot.policyContext,
-    legalDecision: legalSnapshot.legalDecision,
-    legalReasonCodes: legalSnapshot.legalReasonCodes,
-    intentRiskTier: riskSnapshot.intentRiskTier,
-    riskReasonCodes: riskSnapshot.riskReasonCodes,
-    sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
-    sourceReadinessReasons: sourceReadiness.reasonCodes,
-    readinessDecision: answerReadiness.decision,
-    readinessReasonCodes: answerReadiness.reasonCodes,
-    savedFaqReused: savedFaqSignals.savedFaqReused,
-    savedFaqReusePass: savedFaqSignals.savedFaqReusePass,
-    savedFaqReuseReasonCodes: savedFaqSignals.savedFaqReuseReasonCodes,
-    sourceSnapshotRefs: savedFaqSignals.sourceSnapshotRefs
-  }, deps).catch(() => null);
+    blockedReason: null
+  }, buildFaqTelemetryFields({
+    legalSnapshot,
+    riskSnapshot,
+    sourceReadiness,
+    answerReadiness,
+    answerReadinessGate,
+    savedFaqSignals
+  })), deps).catch(() => null);
   await appendDisclaimerRenderedAudit(
     {
       actor,
@@ -1351,6 +1416,7 @@ async function answerFaqFromKb(params, deps) {
     riskSnapshot,
     sourceReadiness,
     answerReadiness,
+    answerReadinessGate,
     savedFaqSignals
   }));
 }
