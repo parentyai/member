@@ -549,6 +549,29 @@ const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'B', 'C', 'D']);
 const COMPOSER_STEP_ORDER = Object.freeze(['3mo', '2mo', '1mo', 'week', 'after1w', 'after1mo']);
 const COMPOSER_ALLOWED_STEPS = new Set(COMPOSER_STEP_ORDER);
 const COMPOSER_DEFAULT_TRIGGER = 'manual';
+const COMPOSER_STATE_STEPS = Object.freeze(['draft', 'approve', 'plan', 'execute', 'sent']);
+const COMPOSER_TYPE_SCHEMA_DEFS = Object.freeze({
+  GENERAL: Object.freeze({
+    required: Object.freeze(['タイトル', '本文', 'ボタン文言1', 'リンクID']),
+    optional: Object.freeze(['カテゴリ', '副CTA', '対象条件'])
+  }),
+  ANNOUNCEMENT: Object.freeze({
+    required: Object.freeze(['タイトル', '本文', 'ボタン文言1', 'リンクID']),
+    optional: Object.freeze(['公開期限', '優先度', 'カテゴリ'])
+  }),
+  VENDOR: Object.freeze({
+    required: Object.freeze(['タイトル', '本文', 'ボタン文言1', 'リンクID', 'ベンダーID']),
+    optional: Object.freeze(['対象条件', 'カテゴリ'])
+  }),
+  AB: Object.freeze({
+    required: Object.freeze(['タイトル', '本文', 'ボタン文言1', 'リンクID', 'バリエーション', '比率']),
+    optional: Object.freeze(['指標', 'カテゴリ'])
+  }),
+  STEP: Object.freeze({
+    required: Object.freeze(['タイトル', '本文', 'ボタン文言1', 'リンクID', 'シナリオ', 'ステップ', '上限件数']),
+    optional: Object.freeze(['地域', '会員のみ', 'カテゴリ', '副CTA'])
+  })
+});
 const COMPOSER_SECONDARY_CTA_FIELDS = Object.freeze([
   Object.freeze({ textId: 'secondaryCtaText1', linkId: 'secondaryLinkRegistryId1', slot: 'secondary1' }),
   Object.freeze({ textId: 'secondaryCtaText2', linkId: 'secondaryLinkRegistryId2', slot: 'secondary2' })
@@ -14051,6 +14074,125 @@ function updateComposerStatusPill() {
   applyBadgeState(pill, mapped, resolveComposerStatusTone(mapped), { messageLevel: 'inline', fallbackTone: 'unset' });
 }
 
+function resolveComposerStateBarActiveStep(gateState) {
+  const rawStatus = String(state.currentComposerStatus || '').trim().toUpperCase();
+  if (rawStatus === 'SENT' || rawStatus === 'EXECUTED') return 'sent';
+  if (rawStatus === 'EXECUTE') return 'execute';
+  if (rawStatus === 'PLAN' || rawStatus === 'PLANNED') return 'plan';
+  if (rawStatus === 'ACTIVE' || rawStatus === 'APPROVED') return 'approve';
+  if (rawStatus === 'DRAFT' || rawStatus === 'PREVIEW') return 'draft';
+  const mapped = mapComposerStatusLabel(state.currentComposerStatus);
+  if (mapped === 'executed') return 'sent';
+  if (mapped === 'planned') return 'plan';
+  if (mapped === 'approved') return 'approve';
+  if (gateState && gateState.hasNotificationId) return 'approve';
+  return 'draft';
+}
+
+function renderComposerStateBar(gateState) {
+  const active = resolveComposerStateBarActiveStep(gateState);
+  const activeIdx = COMPOSER_STATE_STEPS.indexOf(active);
+  const nextFromPlan = active === 'plan' && gateState && gateState.canExecute === true;
+  document.querySelectorAll('#composer-state-bar [data-composer-state-step]').forEach((el) => {
+    const step = String(el.getAttribute('data-composer-state-step') || '').trim().toLowerCase();
+    const idx = COMPOSER_STATE_STEPS.indexOf(step);
+    el.classList.remove('is-active', 'is-done', 'is-next');
+    if (idx === -1 || activeIdx === -1) return;
+    if (idx < activeIdx) el.classList.add('is-done');
+    if (idx === activeIdx) el.classList.add('is-active');
+    if (nextFromPlan && step === 'execute') el.classList.add('is-next');
+  });
+}
+
+function renderComposerFlowOverview(payload) {
+  const body = payload && typeof payload === 'object' ? payload : buildDraftPayload();
+  const type = normalizeComposerType(body.notificationType || selectedComposerType());
+  const scenario = String(body.scenarioKey || 'A').trim().toUpperCase();
+  const step = String(body.stepKey || 'week').trim();
+  const currentEl = document.getElementById('composer-flow-current');
+  if (currentEl) {
+    if (type === 'STEP') {
+      currentEl.textContent = `${scenarioLabel(scenario)} / ${stepLabel(step)} / 上限${Number(body.target && body.target.limit) || 50}件`;
+    } else {
+      currentEl.textContent = `${composerTypeLabel(type)} はシナリオ固定なしで配信します`;
+    }
+  }
+  const scenariosEl = document.getElementById('composer-flow-scenarios');
+  if (scenariosEl) {
+    scenariosEl.innerHTML = '';
+    ['A', 'B', 'C', 'D'].forEach((key) => {
+      const chip = document.createElement('span');
+      chip.className = 'composer-chip';
+      chip.textContent = scenarioLabel(key);
+      if (type === 'STEP' && key === scenario) chip.classList.add('is-active');
+      scenariosEl.appendChild(chip);
+    });
+  }
+  const stepsEl = document.getElementById('composer-flow-steps');
+  if (stepsEl) {
+    stepsEl.innerHTML = '';
+    COMPOSER_STEP_ORDER.forEach((key) => {
+      const chip = document.createElement('span');
+      chip.className = 'composer-chip';
+      chip.textContent = stepLabel(key);
+      if (type === 'STEP' && key === step) chip.classList.add('is-active');
+      stepsEl.appendChild(chip);
+    });
+  }
+}
+
+function renderComposerTypeSchemaOverview() {
+  const type = selectedComposerType();
+  const schema = COMPOSER_TYPE_SCHEMA_DEFS[type] || COMPOSER_TYPE_SCHEMA_DEFS.STEP;
+  const selectedEl = document.getElementById('composer-schema-selected');
+  if (selectedEl) selectedEl.textContent = `現在のタイプ: ${composerTypeLabel(type)}`;
+  const requiredEl = document.getElementById('composer-schema-required');
+  if (requiredEl) {
+    requiredEl.innerHTML = '';
+    schema.required.forEach((label) => {
+      const li = document.createElement('li');
+      li.textContent = label;
+      requiredEl.appendChild(li);
+    });
+  }
+  const optionalEl = document.getElementById('composer-schema-optional');
+  if (optionalEl) {
+    optionalEl.innerHTML = '';
+    schema.optional.forEach((label) => {
+      const li = document.createElement('li');
+      li.textContent = label;
+      optionalEl.appendChild(li);
+    });
+  }
+}
+
+function renderComposerFixGuidance(gateState, issues) {
+  const el = document.getElementById('composer-fix-guidance');
+  if (!el) return;
+  const gate = gateState && typeof gateState === 'object' ? gateState : {};
+  const issueList = Array.isArray(issues) ? issues : [];
+  const items = [];
+  if (gate.validationError) items.push(gate.validationError);
+  if (!gate.hasNotificationId) items.push('下書き作成を実行して notificationId を確定してください。');
+  if (gate.hasNotificationId && !gate.hasPlanToken) items.push('送信計画を実行して confirmToken を取得してください。');
+  if (gate.hasSafetyIssue) items.push('安全チェックのNG項目を先に解消してください。');
+  if (gate.canExecute) items.push('送信実行の前にプレビュー内容を最終確認してください。');
+  if (!items.length && issueList.length) items.push(issueList[0]);
+  if (!items.length) items.push('修正ガイドはありません。現在の入力は送信準備完了です。');
+  el.innerHTML = '';
+  const title = document.createElement('div');
+  title.className = 'composer-fix-guidance-title';
+  title.textContent = 'Fix guidance';
+  el.appendChild(title);
+  const list = document.createElement('ul');
+  items.slice(0, 4).forEach((text) => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    list.appendChild(li);
+  });
+  el.appendChild(list);
+}
+
 function buildComposerNotificationMeta(type) {
   if (type === 'ANNOUNCEMENT') {
     const expiry = document.getElementById('metaAnnouncementExpiry')?.value?.trim() || '';
@@ -14258,15 +14400,19 @@ function renderComposerSafety(issues) {
 
 function updateComposerSummary() {
   applyComposerTypeFields();
+  renderComposerTypeSchemaOverview();
   updateComposerStatusPill();
   renderComposerLivePreview();
   renderComposerCta2Notice();
   const payload = buildDraftPayload();
+  renderComposerFlowOverview(payload);
   renderComposerTriggerOrderNotice(payload);
   const issues = buildComposerLocalSafetyIssues(payload);
   renderComposerSafety(issues);
   const gateState = computeComposerActionGateState(payload, issues);
   state.composerActionGateState = gateState;
+  renderComposerStateBar(gateState);
+  renderComposerFixGuidance(gateState, issues);
   applyComposerActionGateState(COMPOSER_CATEGORY_WIZARD_V1 ? gateState : null);
   renderComposerCategoryWizard(payload, gateState);
 }
@@ -14293,6 +14439,10 @@ function updateSafetyBadge(result) {
     }
   }
   renderComposerSafety(issues);
+  const gateState = computeComposerActionGateState(payload, issues);
+  state.composerActionGateState = gateState;
+  renderComposerStateBar(gateState);
+  renderComposerFixGuidance(gateState, issues);
 }
 
 function buildDraftPayload() {
@@ -15108,6 +15258,19 @@ function setupComposerActions() {
   state.composerLinkSearch = '';
   state.composerLinkPreviews = {};
   applyComposerTypeOptionVisibility();
+  document.getElementById('composer-open-audit')?.addEventListener('click', async () => {
+    const traceId = ensureTraceInput('traceId') || newTraceId();
+    const auditTrace = document.getElementById('audit-trace');
+    if (auditTrace) auditTrace.value = traceId;
+    activatePane('audit', { historyMode: 'push' });
+    await loadAudit().catch(() => {
+      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+    });
+  });
+  document.getElementById('composer-open-trace-monitor')?.addEventListener('click', () => {
+    const traceId = ensureTraceInput('traceId') || newTraceId();
+    navigateToMonitorWithTrace(traceId, null);
+  });
 
   document.getElementById('create-draft')?.addEventListener('click', async () => {
     const resultEl = document.getElementById('draft-result');
