@@ -94,12 +94,25 @@ async function handleAdminLlmFaqAnswer(req, res, body, deps) {
       fallbackType: qualitySignals.fallbackType,
       contextCarryScore: qualitySignals.contextCarryScore,
       repeatRiskScore: qualitySignals.repeatRiskScore,
+      policySource: result && result.policySource ? result.policySource : null,
+      policyContext: result && result.policyContext ? result.policyContext : null,
+      legalDecision: result && result.legalDecision ? result.legalDecision : null,
+      legalReasonCodes: result && Array.isArray(result.legalReasonCodes) ? result.legalReasonCodes : [],
       intentRiskTier: result && result.intentRiskTier ? result.intentRiskTier : null,
+      riskReasonCodes: result && Array.isArray(result.riskReasonCodes) ? result.riskReasonCodes : [],
+      sourceReadinessDecision: result && result.sourceReadinessDecision ? result.sourceReadinessDecision : null,
+      sourceReadinessReasons: result && Array.isArray(result.sourceReadinessReasons) ? result.sourceReadinessReasons : [],
       readinessDecision: result && result.readinessDecision ? result.readinessDecision : null,
       readinessReasonCodes: result && Array.isArray(result.readinessReasonCodes)
         ? result.readinessReasonCodes
         : [],
       readinessSafeResponseMode: result && result.readinessSafeResponseMode ? result.readinessSafeResponseMode : null,
+      savedFaqReused: result ? result.savedFaqReused === true : false,
+      savedFaqReusePass: result ? result.savedFaqReusePass === true : false,
+      savedFaqReuseReasonCodes: result && Array.isArray(result.savedFaqReuseReasonCodes)
+        ? result.savedFaqReuseReasonCodes
+        : [],
+      sourceSnapshotRefs: result && Array.isArray(result.sourceSnapshotRefs) ? result.sourceSnapshotRefs : [],
       unsupportedClaimCount: result && Number.isFinite(Number(result.unsupportedClaimCount))
         ? Number(result.unsupportedClaimCount)
         : 0,

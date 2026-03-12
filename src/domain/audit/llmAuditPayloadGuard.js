@@ -74,6 +74,8 @@ const LLM_GATE_KEYS = new Set([
   'lawfulBasis',
   'consentVerified',
   'crossBorder',
+  'policySource',
+  'policyContext',
   'legalDecision',
   'legalReasonCodes',
   'intentRiskTier',
@@ -106,7 +108,11 @@ const LLM_GATE_KEYS = new Set([
   'pitfallIncluded',
   'domainIntent',
   'fallbackType',
-  'interventionSuppressedBy'
+  'interventionSuppressedBy',
+  'savedFaqReused',
+  'savedFaqReusePass',
+  'savedFaqReuseReasonCodes',
+  'sourceSnapshotRefs'
 ]);
 
 const LLM_USAGE_KEYS = new Set([

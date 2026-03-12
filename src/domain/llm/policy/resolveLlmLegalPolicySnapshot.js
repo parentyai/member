@@ -56,6 +56,11 @@ function normalizeReasonCodes(values) {
   return out.slice(0, 8);
 }
 
+function normalizeText(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
 function resolveLlmLegalPolicySnapshot(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const sourcePolicy = payload.policy && typeof payload.policy === 'object' ? payload.policy : null;
@@ -67,6 +72,9 @@ function resolveLlmLegalPolicySnapshot(params) {
     : normalized;
   const legalReasonCodes = [];
   let legalDecision = 'allow';
+  const policySource = normalizeText(payload.policySource) || 'system_flags';
+  const policyContext = normalizeText(payload.policyContext).toLowerCase() || 'default';
+  const emergencyHintActive = payload.emergencyHintActive === true;
 
   if (policy.lawfulBasis === 'consent' && policy.consentVerified !== true) {
     legalDecision = 'blocked';
@@ -78,6 +86,12 @@ function resolveLlmLegalPolicySnapshot(params) {
   if (policy.crossBorder === true) {
     legalReasonCodes.push('cross_border_enabled');
   }
+  if (emergencyHintActive) {
+    legalReasonCodes.push('emergency_priority_context');
+  }
+  if (policyContext && policyContext !== 'default') {
+    legalReasonCodes.push(`policy_context_${policyContext.replace(/\s+/g, '_')}`);
+  }
 
   return {
     policy,
@@ -86,7 +100,9 @@ function resolveLlmLegalPolicySnapshot(params) {
     crossBorder: policy.crossBorder === true,
     legalDecision,
     legalReasonCodes: normalizeReasonCodes(legalReasonCodes),
-    policySource: 'system_flags'
+    policySource,
+    policyContext,
+    emergencyHintActive
   };
 }
 

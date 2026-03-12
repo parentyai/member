@@ -67,7 +67,15 @@ function applyActionGatewayToReadiness(readiness, actionGateway) {
 function resolveSharedAnswerReadiness(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const domainIntent = normalizeText(payload.domainIntent).toLowerCase() || 'general';
-  const risk = resolveIntentRiskTier({ domainIntent });
+  const risk = resolveIntentRiskTier({
+    domainIntent,
+    emergencyContext: payload.emergencyContext === true,
+    taskBlockerContext: payload.taskBlockerContext === true || payload.taskBlockerDetected === true,
+    journeyContext: payload.journeyContext === true,
+    cityPackContext: payload.cityPackContext === true,
+    savedFaqContext: payload.savedFaqContext === true || payload.savedFaqReused === true,
+    reasonCodes: payload.riskReasonCodes
+  });
   const llmUsed = payload.llmUsed === true;
 
   const explicitDecision = normalizeDecision(payload.readinessDecision);
