@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-12T12:38:35-04:00",
-  "gitCommit": "f1e4a4f7b4de34780bd94d041e0c5e393345f511",
-  "branch": "codex/llm-quality-loop-v2-trace-ux",
-  "sourceDigest": "62823cf3115a3f44f109b01169c3d5fd8b88d544c6dc4bc548b4960c006257a8",
+  "generatedAt": "2026-03-12T13:28:23-04:00",
+  "gitCommit": "2854b51ee6a8923b58f1dafebeef3594ffd7b7f4",
+  "branch": "codex/llm-quality-loop-v2-soft-enforce",
+  "sourceDigest": "1a88519e28103ee48be3a4c7ecf60c4afdcb35e5c3826eb7af536b9a51f3020e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -180,6 +180,15 @@ function buildBlocked(params) {
     readinessDecision: payload.readinessDecision || null,
     readinessReasonCodes: Array.isArray(payload.readinessReasonCodes) ? payload.readinessReasonCodes : [],
     readinessSafeResponseMode: payload.readinessSafeResponseMode || null,
+    answerReadinessVersion: payload.answerReadinessVersion || null,
+    answerReadinessLogOnlyV2: payload.answerReadinessLogOnlyV2 === true,
+    answerReadinessEnforcedV2: payload.answerReadinessEnforcedV2 === true,
+    answerReadinessV2Mode: payload.answerReadinessV2Mode || null,
+    answerReadinessV2Stage: payload.answerReadinessV2Stage || null,
+    answerReadinessV2EnforcementReason: payload.answerReadinessV2EnforcementReason || null,
+    readinessDecisionV2: payload.readinessDecisionV2 || null,
+    readinessReasonCodesV2: Array.isArray(payload.readinessReasonCodesV2) ? payload.readinessReasonCodesV2 : [],
+    readinessSafeResponseModeV2: payload.readinessSafeResponseModeV2 || null,
     unsupportedClaimCount: Number.isFinite(Number(payload.unsupportedClaimCount))
       ? Number(payload.unsupportedClaimCount)
       : 0,
@@ -264,7 +273,15 @@ function buildFaqTelemetryFields(params) {
     sourceSnapshotRefs: Array.isArray(savedFaqSignals.sourceSnapshotRefs)
       ? savedFaqSignals.sourceSnapshotRefs
       : [],
+    answerReadinessLogOnly: typeof payload.answerReadinessLogOnly === 'boolean'
+      ? payload.answerReadinessLogOnly
+      : false,
+    answerReadinessLogOnlyV2: answerReadinessGate.answerReadinessLogOnlyV2 === true,
+    answerReadinessEnforcedV2: answerReadinessGate.answerReadinessEnforcedV2 === true,
     answerReadinessVersion: answerReadinessGate.answerReadinessVersion || null,
+    answerReadinessV2Mode: answerReadinessGate.mode ? answerReadinessGate.mode.mode : null,
+    answerReadinessV2Stage: answerReadinessGate.mode ? answerReadinessGate.mode.stage : null,
+    answerReadinessV2EnforcementReason: answerReadinessGate.mode ? answerReadinessGate.mode.enforcementReason : null,
     readinessDecisionV2: readinessV2.decision || null,
     readinessReasonCodesV2: Array.isArray(readinessV2.reasonCodes) ? readinessV2.reasonCodes : [],
     readinessSafeResponseModeV2: readinessV2.safeResponseMode || null,
@@ -533,8 +550,15 @@ function buildAuditSummaryBase(params) {
     sourceSnapshotRefs: payload.savedFaqSignals && Array.isArray(payload.savedFaqSignals.sourceSnapshotRefs)
       ? payload.savedFaqSignals.sourceSnapshotRefs
       : [],
-    answerReadinessLogOnly: payload.answerReadinessLogOnly === true,
+    answerReadinessLogOnly: typeof payload.answerReadinessLogOnly === 'boolean'
+      ? payload.answerReadinessLogOnly
+      : false,
+    answerReadinessLogOnlyV2: answerReadinessGate.answerReadinessLogOnlyV2 === true,
+    answerReadinessEnforcedV2: answerReadinessGate.answerReadinessEnforcedV2 === true,
     answerReadinessVersion: answerReadinessGate.answerReadinessVersion || null,
+    answerReadinessV2Mode: answerReadinessGate.mode ? answerReadinessGate.mode.mode : null,
+    answerReadinessV2Stage: answerReadinessGate.mode ? answerReadinessGate.mode.stage : null,
+    answerReadinessV2EnforcementReason: answerReadinessGate.mode ? answerReadinessGate.mode.enforcementReason : null,
     readinessDecisionV2: readinessV2.decision || null,
     readinessReasonCodesV2: Array.isArray(readinessV2.reasonCodes) ? readinessV2.reasonCodes : [],
     readinessSafeResponseModeV2: readinessV2.safeResponseMode || null,
@@ -749,6 +773,9 @@ async function answerFaqFromKb(params, deps) {
     intentRiskTier: riskSnapshot.intentRiskTier
   });
   const answerReadinessGate = runAnswerReadinessGateV2({
+    entryType: typeof payload.entryType === 'string' && payload.entryType.trim()
+      ? payload.entryType.trim()
+      : 'faq',
     lawfulBasis: legalSnapshot.lawfulBasis,
     consentVerified: legalSnapshot.consentVerified,
     crossBorder: legalSnapshot.crossBorder,
@@ -772,8 +799,7 @@ async function answerFaqFromKb(params, deps) {
     savedFaqAllowedIntent: !savedFaqSignals.savedFaqReuseReasonCodes.includes('saved_faq_intent_mismatch'),
     savedFaqAuthorityScore: sourceReadiness.sourceAuthorityScore,
     sourceSnapshotRefs: savedFaqSignals.sourceSnapshotRefs,
-    crossSystemConflictDetected: false,
-    enforceV2: false
+    crossSystemConflictDetected: false
   });
   const answerReadiness = answerReadinessGate.readiness;
   const normalizedPersonalization = personalizationCheck.isAllowed

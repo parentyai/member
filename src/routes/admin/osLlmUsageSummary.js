@@ -1428,13 +1428,28 @@ function buildQualityLoopV2Summary(data) {
   ];
 
   const readinessDecisionV2Breakdown = new Map();
+  const readinessModeBreakdown = new Map();
+  const readinessStageBreakdown = new Map();
   readinessV2Rows.forEach((row) => {
     incrementCount(readinessDecisionV2Breakdown, row && row.readinessDecisionV2 ? row.readinessDecisionV2 : 'none');
+    incrementCount(readinessModeBreakdown, row && row.answerReadinessV2Mode ? row.answerReadinessV2Mode : 'unknown');
+    incrementCount(readinessStageBreakdown, row && row.answerReadinessV2Stage ? row.answerReadinessV2Stage : 'unknown');
   });
+  const hardEnforcedCount = countWhere(readinessV2Rows, (row) => row && row.answerReadinessV2Stage === 'hard_enforcement');
+  const softEnforcedCount = countWhere(readinessV2Rows, (row) => row && row.answerReadinessEnforcedV2 === true && row.answerReadinessV2Stage === 'soft_enforcement');
+  const logOnlyCount = countWhere(readinessV2Rows, (row) => row && row.answerReadinessLogOnlyV2 === true);
+  let rolloutStage = 'design_only';
+  if (hardEnforcedCount > 0) {
+    rolloutStage = 'hard_enforcement';
+  } else if (softEnforcedCount > 0) {
+    rolloutStage = 'soft_enforcement';
+  } else if (readinessV2Rows.length > 0) {
+    rolloutStage = 'log_only';
+  }
 
   return {
     version: 'v2-foundation',
-    rolloutStage: 'log_only',
+    rolloutStage,
     crossSystemPriorityOrder: QUALITY_LOOP_V2_PRIORITY_ORDER.slice(),
     criticalSliceKeys: QUALITY_LOOP_V2_CRITICAL_SLICES.slice(),
     criticalSlices,
@@ -1442,7 +1457,12 @@ function buildQualityLoopV2Summary(data) {
     readinessV2: {
       sampleCount: readinessV2Rows.length,
       versionObserved: readinessV2Rows.length > 0 ? 'v2' : 'none',
-      decisionBreakdown: sortCountEntries(readinessDecisionV2Breakdown, 'decision', 10)
+      decisionBreakdown: sortCountEntries(readinessDecisionV2Breakdown, 'decision', 10),
+      modeBreakdown: sortCountEntries(readinessModeBreakdown, 'mode', 10),
+      stageBreakdown: sortCountEntries(readinessStageBreakdown, 'stage', 10),
+      hardEnforcedCount,
+      softEnforcedCount,
+      logOnlyCount
     },
     missingJoins: missingMeasurements.slice(),
     reservations: QUALITY_LOOP_V2_RESERVATIONS.slice()

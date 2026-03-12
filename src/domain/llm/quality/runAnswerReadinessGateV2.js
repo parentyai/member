@@ -2,23 +2,35 @@
 
 const { evaluateAnswerReadiness } = require('./evaluateAnswerReadiness');
 const { buildAnswerReadinessContext } = require('./buildAnswerReadinessContext');
+const { resolveAnswerReadinessV2Mode } = require('./resolveAnswerReadinessV2Mode');
 
 function runAnswerReadinessGateV2(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const context = buildAnswerReadinessContext(payload);
   const readinessLegacy = evaluateAnswerReadiness(context.legacyInput);
   const readinessV2 = evaluateAnswerReadiness(context.v2Input);
-  const enforceV2 = payload.enforceV2 === true;
+  const mode = resolveAnswerReadinessV2Mode({
+    entryType: payload.entryType,
+    readinessLegacy,
+    readinessV2
+  }, payload.env);
   return {
-    readiness: enforceV2 ? readinessV2 : readinessLegacy,
+    readiness: mode.enforceV2 === true ? readinessV2 : readinessLegacy,
     readinessLegacy,
     readinessV2,
+    mode,
     answerReadinessVersion: 'v2',
-    answerReadinessLogOnlyV2: enforceV2 !== true,
-    answerReadinessEnforcedV2: enforceV2 === true,
+    answerReadinessLogOnlyV2: mode.answerReadinessLogOnlyV2,
+    answerReadinessEnforcedV2: mode.answerReadinessEnforcedV2,
     context,
     telemetry: {
       answerReadinessVersion: 'v2',
+      answerReadinessEntryType: mode.entryType,
+      answerReadinessV2Stage: mode.stage,
+      answerReadinessV2Mode: mode.mode,
+      answerReadinessV2EnforcementReason: mode.enforcementReason,
+      answerReadinessEnforcedV2: mode.answerReadinessEnforcedV2,
+      answerReadinessLogOnlyV2: mode.answerReadinessLogOnlyV2,
       readinessDecisionV2: readinessV2.decision,
       readinessReasonCodesV2: readinessV2.reasonCodes,
       readinessSafeResponseModeV2: readinessV2.safeResponseMode,

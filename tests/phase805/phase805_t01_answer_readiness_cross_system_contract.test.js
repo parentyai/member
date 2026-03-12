@@ -103,18 +103,22 @@ test('phase805: webhook and audit sinks preserve v2 readiness shadow fields', ()
   assert.ok(webhookRoute.includes('crossSystemConflictDetected'));
 
   assert.ok(appendGate.includes("'readinessDecisionV2'"));
+  assert.ok(appendGate.includes("'answerReadinessV2Mode'"));
   assert.ok(appendGate.includes("'cityPackGrounded'"));
   assert.ok(appendGate.includes("'savedFaqValid'"));
 
   assert.ok(llmAuditGuard.includes("'readinessDecisionV2'"));
+  assert.ok(llmAuditGuard.includes("'answerReadinessV2Stage'"));
   assert.ok(llmAuditGuard.includes("'journeyPhase'"));
   assert.ok(llmAuditGuard.includes("'crossSystemConflictDetected'"));
 
   assert.ok(faqAuditGuard.includes("'readinessDecisionV2'"));
+  assert.ok(faqAuditGuard.includes("'answerReadinessV2EnforcementReason'"));
   assert.ok(faqAuditGuard.includes("'savedFaqValid'"));
   assert.ok(faqAuditGuard.includes("'cityPackAuthorityScore'"));
 
   assert.ok(llmActionRepo.includes('readinessDecisionV2: normalizeReadinessDecision(payload.readinessDecisionV2)'));
+  assert.ok(llmActionRepo.includes('answerReadinessV2Stage: normalizeString(payload.answerReadinessV2Stage, null)'));
   assert.ok(llmActionRepo.includes('cityPackGrounded: payload.cityPackGrounded === true'));
   assert.ok(llmActionRepo.includes('crossSystemConflictDetected: payload.crossSystemConflictDetected === true'));
 });

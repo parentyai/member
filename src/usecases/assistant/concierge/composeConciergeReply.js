@@ -300,7 +300,7 @@ function buildAuditMeta(input) {
       ? Math.max(0, Math.floor(Number(payload.unsupportedClaimCount)))
       : 0,
     contradictionDetected: payload.contradictionDetected === true,
-    answerReadinessLogOnly: payload.answerReadinessLogOnly !== false
+    answerReadinessLogOnly: payload.answerReadinessLogOnly === true
   };
 }
 
@@ -392,6 +392,7 @@ async function composeConciergeReply(params) {
     return normalizeText(row.source).toLowerCase() === 'city_pack_source_ref';
   });
   const readinessGate = runAnswerReadinessGateV2({
+    entryType: 'concierge',
     lawfulBasis: payload && payload.legalSnapshot && typeof payload.legalSnapshot.lawfulBasis === 'string'
       ? payload.legalSnapshot.lawfulBasis
       : 'unspecified',
@@ -421,8 +422,7 @@ async function composeConciergeReply(params) {
     cityPackFreshnessScore: cityPackCandidatePresent ? sourceReadiness.sourceFreshnessScore : null,
     cityPackAuthorityScore: cityPackCandidatePresent ? sourceReadiness.sourceAuthorityScore : null,
     savedFaqContext: false,
-    crossSystemConflictDetected: false,
-    enforceV2: false
+    crossSystemConflictDetected: false
   });
   const readinessResult = readinessGate.readiness;
 
@@ -714,6 +714,11 @@ async function composeConciergeReply(params) {
     readinessReasonCodes: readinessResult.reasonCodes,
     readinessSafeResponseMode: readinessResult.safeResponseMode,
     answerReadinessVersion: readinessGate.answerReadinessVersion,
+    answerReadinessLogOnlyV2: readinessGate.answerReadinessLogOnlyV2 === true,
+    answerReadinessEnforcedV2: readinessGate.answerReadinessEnforcedV2 === true,
+    answerReadinessV2Mode: readinessGate.mode ? readinessGate.mode.mode : null,
+    answerReadinessV2Stage: readinessGate.mode ? readinessGate.mode.stage : null,
+    answerReadinessV2EnforcementReason: readinessGate.mode ? readinessGate.mode.enforcementReason : null,
     readinessDecisionV2: readinessGate.readinessV2.decision,
     readinessReasonCodesV2: readinessGate.readinessV2.reasonCodes,
     readinessSafeResponseModeV2: readinessGate.readinessV2.safeResponseMode,

@@ -79,6 +79,7 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
       ? result.explanation.opsExplanation
       : '';
     const sharedReadiness = resolveSharedAnswerReadiness({
+      entryType: 'admin',
       domainIntent: 'general',
       llmUsed: result && result.llmUsed === true,
       fallbackType: qualitySignals.fallbackType,
@@ -128,6 +129,16 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
       readinessDecision: sharedReadiness.readiness.decision,
       readinessReasonCodes: sharedReadiness.readiness.reasonCodes,
       readinessSafeResponseMode: sharedReadiness.readiness.safeResponseMode,
+      answerReadinessLogOnly: false,
+      answerReadinessVersion: sharedReadiness.answerReadinessVersion,
+      answerReadinessLogOnlyV2: sharedReadiness.answerReadinessLogOnlyV2,
+      answerReadinessEnforcedV2: sharedReadiness.answerReadinessEnforcedV2,
+      answerReadinessV2Mode: sharedReadiness.answerReadinessV2Mode,
+      answerReadinessV2Stage: sharedReadiness.answerReadinessV2Stage,
+      answerReadinessV2EnforcementReason: sharedReadiness.answerReadinessV2EnforcementReason,
+      readinessDecisionV2: sharedReadiness.readinessV2 ? sharedReadiness.readinessV2.decision : null,
+      readinessReasonCodesV2: sharedReadiness.readinessV2 ? sharedReadiness.readinessV2.reasonCodes : [],
+      readinessSafeResponseModeV2: sharedReadiness.readinessV2 ? sharedReadiness.readinessV2.safeResponseMode : null,
       intentRiskTier: sharedReadiness.intentRiskTier,
       actionClass: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.actionClass : null,
       actionGatewayEnabled: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.enabled === true : false,
@@ -176,6 +187,7 @@ async function handleAdminLlmNextActions(req, res, deps) {
       ? result.nextActionCandidates.candidates[0].reason
       : '';
     const sharedReadiness = resolveSharedAnswerReadiness({
+      entryType: 'admin',
       domainIntent: 'general',
       llmUsed: result && result.llmUsed === true,
       fallbackType: qualitySignals.fallbackType,
@@ -222,6 +234,16 @@ async function handleAdminLlmNextActions(req, res, deps) {
       readinessDecision: sharedReadiness.readiness.decision,
       readinessReasonCodes: sharedReadiness.readiness.reasonCodes,
       readinessSafeResponseMode: sharedReadiness.readiness.safeResponseMode,
+      answerReadinessLogOnly: false,
+      answerReadinessVersion: sharedReadiness.answerReadinessVersion,
+      answerReadinessLogOnlyV2: sharedReadiness.answerReadinessLogOnlyV2,
+      answerReadinessEnforcedV2: sharedReadiness.answerReadinessEnforcedV2,
+      answerReadinessV2Mode: sharedReadiness.answerReadinessV2Mode,
+      answerReadinessV2Stage: sharedReadiness.answerReadinessV2Stage,
+      answerReadinessV2EnforcementReason: sharedReadiness.answerReadinessV2EnforcementReason,
+      readinessDecisionV2: sharedReadiness.readinessV2 ? sharedReadiness.readinessV2.decision : null,
+      readinessReasonCodesV2: sharedReadiness.readinessV2 ? sharedReadiness.readinessV2.reasonCodes : [],
+      readinessSafeResponseModeV2: sharedReadiness.readinessV2 ? sharedReadiness.readinessV2.safeResponseMode : null,
       intentRiskTier: sharedReadiness.intentRiskTier,
       actionClass: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.actionClass : null,
       actionGatewayEnabled: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.enabled === true : false,

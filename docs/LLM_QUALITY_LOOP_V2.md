@@ -76,6 +76,14 @@ The following slices are release blockers even if global quality remains `pass`.
 5. `nogo_gate_mandatory`
 6. `continuous_improvement_loop_active`
 
+## Readiness v2 Flags
+- `ENABLE_ANSWER_READINESS_V2_LOG_ONLY=true`
+  - v2 decision is computed and logged, but legacy decision remains applied.
+- `ENABLE_ANSWER_READINESS_V2_ENFORCE=true`
+  - `faq` / `admin` / `compat` routes may apply v2 only when critical reason codes are present.
+- `ENABLE_ANSWER_READINESS_V2_ENFORCE_WEBHOOK=true`
+  - `webhook` / `concierge` / `orchestrator` routes may apply v2.
+
 ## Replay / Golden Coverage
 - `city-pack-informed answer`
 - `emergency influenced answer`

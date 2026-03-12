@@ -39,8 +39,12 @@
    - integration KPI visible, no runtime enforcement
 3. `soft_enforcement`
    - FAQ / admin / compat first
+   - `ENABLE_ANSWER_READINESS_V2_LOG_ONLY=true`
+   - `ENABLE_ANSWER_READINESS_V2_ENFORCE=true`
+   - `ENABLE_ANSWER_READINESS_V2_ENFORCE_WEBHOOK=false`
 4. `hard_enforcement`
    - paid webhook / FAQ canonical / emergency override / journey blocker / high-risk saved FAQ reuse
+   - `ENABLE_ANSWER_READINESS_V2_ENFORCE_WEBHOOK=true`
 5. `nogo_gate_mandatory`
    - all critical slices block release
 6. `continuous_improvement_loop_active`

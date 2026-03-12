@@ -707,6 +707,7 @@ async function runPaidConversationOrchestrator(params) {
     })
   ]);
   const readinessGate = runAnswerReadinessGateV2({
+    entryType: 'orchestrator',
     lawfulBasis: legalSnapshot.lawfulBasis,
     consentVerified: legalSnapshot.consentVerified,
     crossBorder: legalSnapshot.crossBorder,
@@ -741,8 +742,7 @@ async function runPaidConversationOrchestrator(params) {
     cityPackAuthorityScore: cityPackSignals.cityPackAuthorityScore,
     cityPackValidation: cityPackSignals.cityPackValidation,
     savedFaqContext: false,
-    crossSystemConflictDetected: false,
-    enforceV2: false
+    crossSystemConflictDetected: false
   });
   const readinessResult = readinessGate.readiness;
   const actionGatewayEnabled = payload.llmFlags && payload.llmFlags.actionGatewayEnabled === true;
@@ -850,6 +850,11 @@ async function runPaidConversationOrchestrator(params) {
       readinessReasonCodes: effectiveReadiness.reasonCodes,
       readinessSafeResponseMode: effectiveReadiness.safeResponseMode,
       answerReadinessVersion: readinessGate.answerReadinessVersion,
+      answerReadinessLogOnlyV2: readinessGate.answerReadinessLogOnlyV2 === true,
+      answerReadinessEnforcedV2: readinessGate.answerReadinessEnforcedV2 === true,
+      answerReadinessV2Mode: readinessGate.mode ? readinessGate.mode.mode : null,
+      answerReadinessV2Stage: readinessGate.mode ? readinessGate.mode.stage : null,
+      answerReadinessV2EnforcementReason: readinessGate.mode ? readinessGate.mode.enforcementReason : null,
       readinessDecisionV2: readinessGate.readinessV2.decision,
       readinessReasonCodesV2: readinessGate.readinessV2.reasonCodes,
       readinessSafeResponseModeV2: readinessGate.readinessV2.safeResponseMode,
