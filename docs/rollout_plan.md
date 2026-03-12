@@ -47,6 +47,7 @@
    - `ENABLE_ANSWER_READINESS_V2_ENFORCE_WEBHOOK=true`
 5. `nogo_gate_mandatory`
    - all critical slices block release
+   - `ENABLE_LLM_QUALITY_LOOP_V2_NOGO_GATE=true`
 6. `continuous_improvement_loop_active`
    - nightly audit / integration audit / top failure register / PR plan generation
 

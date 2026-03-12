@@ -129,6 +129,17 @@ function resolveCompatShareWindow(summary) {
   return raw;
 }
 
+function extractQualityLoopV2(summary) {
+  if (!summary || typeof summary !== 'object') return null;
+  const qualityFramework = summary.qualityFramework && typeof summary.qualityFramework === 'object'
+    ? summary.qualityFramework
+    : null;
+  if (!qualityFramework || !qualityFramework.qualityLoopV2 || typeof qualityFramework.qualityLoopV2 !== 'object') {
+    return null;
+  }
+  return qualityFramework.qualityLoopV2;
+}
+
 const STRICT_RUNTIME_SIGNAL_KEYS = Object.freeze([
   'legacyTemplateHitRate',
   'defaultCasualRate',
@@ -170,6 +181,10 @@ function main(argv) {
     args.requireCompatGovernance,
     toBool(process.env.LLM_QUALITY_REQUIRE_COMPAT_GOVERNANCE, false)
   );
+  const requireNoGoGateMandatory = toBool(
+    args.requireNoGoGateMandatory,
+    toBool(process.env.LLM_QUALITY_REQUIRE_NOGO_GATE_MANDATORY, false)
+  );
   const maxCompatShare = parseRate(
     args.maxCompatShare,
     parseRate(process.env.LLM_QUALITY_MAX_COMPAT_SHARE, 0.15)
@@ -188,6 +203,7 @@ function main(argv) {
   const candidate = readJson(candidatePath);
   const mustPass = readJson(mustPassPath);
   const summary = readSummaryData(summaryPath);
+  const qualityLoopV2 = extractQualityLoopV2(summary);
   const compatShareWindow = resolveCompatShareWindow(summary);
 
   const baselineDimensionMap = toMap(baseline.dimensions, 'key');
@@ -211,6 +227,7 @@ function main(argv) {
     allSlicesPassRequired: requireAllSlicesPass === true,
     strictRuntimeSignalsRequired: requireStrictRuntimeSignals === true,
     compatGovernanceRequired: requireCompatGovernance === true,
+    noGoGateMandatoryRequired: requireNoGoGateMandatory === true,
     maxCompatShare,
     softFloorRequired: requireSoftFloor === true,
     softFloorValue: softFloor
@@ -289,6 +306,24 @@ function main(argv) {
     else if (Number(compatShareWindow) > maxCompatShare) failures.push('compat_share_window_exceeded');
     const compatSlice = candidateSliceMap.get('compat') || {};
     if (compatSlice.status !== 'pass') failures.push('compat_slice_not_pass');
+  }
+  if (requireNoGoGateMandatory === true) {
+    if (!qualityLoopV2) {
+      failures.push('quality_loop_v2_missing');
+    } else {
+      if (String(qualityLoopV2.rolloutStage || '') !== 'nogo_gate_mandatory') {
+        failures.push(`quality_loop_v2_rollout_stage_not_mandatory:${String(qualityLoopV2.rolloutStage || 'missing')}`);
+      }
+      const criticalSlices = Array.isArray(qualityLoopV2.criticalSlices) ? qualityLoopV2.criticalSlices : [];
+      if (criticalSlices.length === 0) {
+        failures.push('quality_loop_v2_critical_slices_missing');
+      } else {
+        criticalSlices.forEach((row) => {
+          if (!row || typeof row !== 'object') return;
+          if (row.status !== 'pass') failures.push(`quality_loop_v2_critical_slice_fail:${String(row.sliceKey || 'unknown')}`);
+        });
+      }
+    }
   }
 
   const conversation = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
@@ -389,6 +424,7 @@ function main(argv) {
     summaryPath,
     runtimeSignals,
     runtimeSignalCoverage,
+    qualityLoopV2,
     compatGovernance: {
       required: requireCompatGovernance === true,
       maxCompatShare,

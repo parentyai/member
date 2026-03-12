@@ -39,6 +39,7 @@ function normalizeReasonCodes(values) {
 }
 
 function resolveRolloutStage(flags) {
+  if (flags.nogoGate === true && flags.enforceWebhook === true) return 'nogo_gate_mandatory';
   if (flags.enforceWebhook === true) return 'hard_enforcement';
   if (flags.enforce === true) return 'soft_enforcement';
   if (flags.logOnly === true) return 'log_only';
@@ -59,7 +60,8 @@ function resolveAnswerReadinessV2Mode(params, env) {
   const flags = {
     logOnly: resolveBooleanEnvFlag('ENABLE_ANSWER_READINESS_V2_LOG_ONLY', true, source),
     enforce: resolveBooleanEnvFlag('ENABLE_ANSWER_READINESS_V2_ENFORCE', false, source),
-    enforceWebhook: resolveBooleanEnvFlag('ENABLE_ANSWER_READINESS_V2_ENFORCE_WEBHOOK', false, source)
+    enforceWebhook: resolveBooleanEnvFlag('ENABLE_ANSWER_READINESS_V2_ENFORCE_WEBHOOK', false, source),
+    nogoGate: resolveBooleanEnvFlag('ENABLE_LLM_QUALITY_LOOP_V2_NOGO_GATE', false, source)
   };
   const stage = resolveRolloutStage(flags);
   const legacyDecision = normalizeDecision(readinessLegacy.decision);

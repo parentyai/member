@@ -83,6 +83,9 @@ The following slices are release blockers even if global quality remains `pass`.
   - `faq` / `admin` / `compat` routes may apply v2 only when critical reason codes are present.
 - `ENABLE_ANSWER_READINESS_V2_ENFORCE_WEBHOOK=true`
   - `webhook` / `concierge` / `orchestrator` routes may apply v2.
+- `ENABLE_LLM_QUALITY_LOOP_V2_NOGO_GATE=true`
+  - strict quality gate / release policy require `qualityLoopV2.rolloutStage=nogo_gate_mandatory`
+  - critical slices must all remain `pass`
 
 ## Replay / Golden Coverage
 - `city-pack-informed answer`

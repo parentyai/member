@@ -105,3 +105,26 @@ test('phase815: quality loop v2 summary reports hard enforcement when webhook-st
   assert.ok(quality.readinessV2.modeBreakdown.some((row) => row.mode === 'hard_enforced_v2' && row.count === 1));
   assert.ok(quality.readinessV2.stageBreakdown.some((row) => row.stage === 'hard_enforcement' && row.count === 1));
 });
+
+test('phase815: quality loop v2 summary reports no-go mandatory after hard enforcement rows are promoted', () => {
+  const quality = buildQualityLoopV2Summary(buildBasePayload([
+    {
+      answerReadinessVersion: 'v2',
+      answerReadinessV2Stage: 'nogo_gate_mandatory',
+      answerReadinessV2Mode: 'hard_enforced_v2',
+      answerReadinessEnforcedV2: true,
+      answerReadinessLogOnlyV2: false,
+      readinessDecisionV2: 'allow',
+      emergencyContextActive: true,
+      emergencyOfficialSourceSatisfied: true,
+      intentRiskTier: 'high',
+      officialOnlySatisfied: true
+    }
+  ]));
+
+  assert.equal(quality.rolloutStage, 'nogo_gate_mandatory');
+  assert.equal(quality.nogoGateMandatoryActive, true);
+  assert.equal(quality.readinessV2.hardEnforcedCount, 1);
+  assert.equal(quality.readinessV2.nogoGateMandatoryCount, 1);
+  assert.ok(quality.readinessV2.stageBreakdown.some((row) => row.stage === 'nogo_gate_mandatory' && row.count === 1));
+});

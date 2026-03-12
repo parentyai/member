@@ -606,11 +606,11 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 3. `npm run llm:quality:diff`
 4. `npm run llm:quality:runtime-scorecard`（`tmp/llm_usage_summary.json` がある場合）
 5. `npm run llm:quality:gate`（runtime-first。all slices pass を既定で必須。実行前に `llm:quality:runtime-summary:prepare` が `tmp/llm_usage_summary.json` を準備）
-6. `npm run llm:quality:gate:strict`（all slices pass + runtime summary 必須 + runtime provenance 必須 + compat governance 必須）
+6. `npm run llm:quality:gate:strict`（all slices pass + runtime summary 必須 + runtime provenance 必須 + compat governance 必須 + `nogo_gate_mandatory` 必須）
 7. `npm run llm:quality:arena`
 8. `npm run llm:quality:must-pass`
 9. `npm run llm:quality:release-policy`（all slices pass を既定で必須）
-10. `npm run llm:quality:release-policy:strict`（strict runtime signals + soft floor 0.80 + compat governance を必須化）
+10. `npm run llm:quality:release-policy:strict`（strict runtime signals + soft floor 0.80 + compat governance + `nogo_gate_mandatory` を必須化）
 11. `npm run llm:quality:report`（`tmp/llm_usage_summary.json` がある場合。`tmp/llm_quality_failure_register.json` と `tmp/llm_quality_counterexample_queue.json` を同時生成）
     - failure register は signal別 materiality filter を適用（例: `defaultCasualRate > 0.02`, `retrieveNeededRate > 0.25`, `legacyTemplateHitRate > 0.005`）
     - `conversationQuality` 欠損シグナルは failure に含めず `signal_coverage.missingSignals` で運用監視する
@@ -743,6 +743,9 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 - `ENABLE_ANSWER_READINESS_V2_ENFORCE_WEBHOOK`
   - default: `false`
   - effect: webhook-family routes may apply v2 directly
+- `ENABLE_LLM_QUALITY_LOOP_V2_NOGO_GATE`
+  - default: `false`
+  - effect: strict quality gate / release policy require `qualityLoopV2.rolloutStage=nogo_gate_mandatory`
 
 ### Operator checks
 - `LLM Quality Loop v2` board is read-only.
