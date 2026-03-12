@@ -267,7 +267,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 109,
+      "tests_count": 110,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -729,7 +729,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 154,
+      "tests_count": 155,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -823,7 +823,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 70,
+      "tests_count": 71,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2619,7 +2619,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 68,
+      "tests_count": 69,
       "ssot_refs": [],
       "completion": "legacy"
     },
@@ -2990,7 +2990,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": false,
-      "tests_count": 72,
+      "tests_count": 73,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -3217,6 +3217,7 @@
         "recordLlmUsage",
         "recordUserLlmConsent",
         "resolvePlan",
+        "searchCityPackCandidates",
         "sendWelcomeMessage",
         "syncCityPackRecommendedTasks"
       ],
@@ -3276,7 +3277,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 72,
+      "tests_count": 75,
       "ssot_refs": [],
       "completion": "completed"
     },
