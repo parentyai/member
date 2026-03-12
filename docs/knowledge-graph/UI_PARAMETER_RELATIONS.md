@@ -1,68 +1,53 @@
 # UI_PARAMETER_RELATIONS
 
-- generatedAt: 2026-03-08T06:11:42.718Z
-- source.generatedAt: 2026-03-08T04:34:11.724Z
-- source.gitCommit: 690e9ec95691e2bb60ab84db1dc2c33a9fcfff4f
-- source.branch: codex/member-integrated-remediation-v1
-- note: derived from ENTITY_SCHEMA + API_OPERATION_MAP
+- generatedAt: 2026-03-11T23:59:00-05:00
+- scope: canonical Admin shell parameters only (`apps/admin/app.html` + `apps/admin/assets/admin_app.js`)
+- method: DOM id -> payload builder -> API endpoint -> route/usecase/repo
 
-| Parameter | Entity | Relation | Evidence |
-| --- | --- | --- | --- |
-| notificationType | UNOBSERVED_IN_DOCS | UNOBSERVED_IN_DOCS | docs/knowledge-graph/ENTITY_SCHEMA.md:1 |
-| scenario | UNOBSERVED_IN_DOCS | UNOBSERVED_IN_DOCS | docs/knowledge-graph/ENTITY_SCHEMA.md:1 |
-| step | Checklists | field:step | src/repos/firestore/analyticsReadRepo.js:212<br>docs/knowledge-graph/ENTITY_SCHEMA.md:24 |
-| step | Events | field:step | src/repos/firestore/analyticsReadRepo.js:212<br>docs/knowledge-graph/ENTITY_SCHEMA.md:242 |
-| step | NotificationDeliveries | field:step | src/repos/firestore/analyticsReadRepo.js:212<br>docs/knowledge-graph/ENTITY_SCHEMA.md:312 |
-| step | Notifications | field:step | src/repos/firestore/analyticsReadRepo.js:212<br>docs/knowledge-graph/ENTITY_SCHEMA.md:320 |
-| step | Notifications | field:stepKey | src/repos/firestore/notificationsRepo.js:63<br>docs/knowledge-graph/ENTITY_SCHEMA.md:321 |
-| step | StepRules | field:stepKey | src/repos/firestore/stepRulesRepo.js:265<br>docs/knowledge-graph/ENTITY_SCHEMA.md:409 |
-| step | UserChecklists | field:step | src/repos/firestore/analyticsReadRepo.js:212<br>docs/knowledge-graph/ENTITY_SCHEMA.md:439 |
-| step | Users | field:step | src/repos/firestore/analyticsReadRepo.js:212<br>docs/knowledge-graph/ENTITY_SCHEMA.md:452 |
-| step | Users | field:stepKey | src/repos/firestore/usersRepo.js:132<br>docs/knowledge-graph/ENTITY_SCHEMA.md:453 |
-| area | UNOBSERVED_IN_DOCS | UNOBSERVED_IN_DOCS | docs/knowledge-graph/ENTITY_SCHEMA.md:1 |
-| cityPack | CityPackBulletins | field:cityPackId | src/repos/firestore/cityPackBulletinsRepo.js:45<br>docs/knowledge-graph/ENTITY_SCHEMA.md:26 |
-| cityPack | CityPackMetricsDaily | field:cityPackId | src/repos/firestore/cityPackMetricsDailyRepo.js:97<br>docs/knowledge-graph/ENTITY_SCHEMA.md:64 |
-| cityPack | CityPackRequests | field:draftCityPackIds | src/repos/firestore/cityPackRequestsRepo.js:77<br>docs/knowledge-graph/ENTITY_SCHEMA.md:67 |
-| cityPack | CityPackUpdateProposals | field:cityPackId | src/repos/firestore/cityPackUpdateProposalsRepo.js:28<br>docs/knowledge-graph/ENTITY_SCHEMA.md:133 |
-| cityPack | SourceRefs | field:usedByCityPackIds | src/repos/firestore/sourceRefsRepo.js:198<br>docs/knowledge-graph/ENTITY_SCHEMA.md:403 |
-| vendor | UNOBSERVED_IN_DOCS | UNOBSERVED_IN_DOCS | docs/knowledge-graph/ENTITY_SCHEMA.md:1 |
-| audience | UNOBSERVED_IN_DOCS | UNOBSERVED_IN_DOCS | docs/knowledge-graph/ENTITY_SCHEMA.md:1 |
-| category | EmergencyBulletins | field:category | src/repos/firestore/emergencyBulletinsRepo.js:42<br>docs/knowledge-graph/ENTITY_SCHEMA.md:159 |
-| category | EmergencyDiffs | field:category | src/repos/firestore/emergencyDiffsRepo.js:43<br>docs/knowledge-graph/ENTITY_SCHEMA.md:176 |
-| category | EmergencyEventsNormalized | field:category | src/repos/firestore/emergencyEventsRepo.js:27<br>docs/knowledge-graph/ENTITY_SCHEMA.md:192 |
-| category | NotificationDeliveries | field:notificationCategory | src/repos/firestore/deliveriesRepo.js:72<br>docs/knowledge-graph/ENTITY_SCHEMA.md:301 |
-| status | CityPackBulletins | field:status | src/repos/firestore/cityPackBulletinsRepo.js:106<br>docs/knowledge-graph/ENTITY_SCHEMA.md:38 |
-| status | CityPackBulletins | field:status | src/repos/firestore/cityPackBulletinsRepo.js:44<br>docs/knowledge-graph/ENTITY_SCHEMA.md:39 |
-| status | CityPackFeedback | field:status | src/repos/firestore/cityPackFeedbackRepo.js:130<br>docs/knowledge-graph/ENTITY_SCHEMA.md:59 |
-| status | CityPackFeedback | field:status | src/repos/firestore/cityPackFeedbackRepo.js:65<br>docs/knowledge-graph/ENTITY_SCHEMA.md:60 |
-| status | CityPackRequests | field:status | src/repos/firestore/cityPackRequestsRepo.js:140<br>docs/knowledge-graph/ENTITY_SCHEMA.md:86 |
-| status | CityPackRequests | field:status | src/repos/firestore/cityPackRequestsRepo.js:67<br>docs/knowledge-graph/ENTITY_SCHEMA.md:87 |
-| status | CityPacks | field:status | src/repos/firestore/cityPacksRepo.js:210<br>docs/knowledge-graph/ENTITY_SCHEMA.md:111 |
-| status | CityPacks | field:status | src/repos/firestore/cityPacksRepo.js:435<br>docs/knowledge-graph/ENTITY_SCHEMA.md:112 |
-| status | CityPackTemplateLibrary | field:status | src/repos/firestore/cityPackTemplateLibraryRepo.js:32<br>docs/knowledge-graph/ENTITY_SCHEMA.md:125 |
-| status | CityPackTemplateLibrary | field:status | src/repos/firestore/cityPackTemplateLibraryRepo.js:85<br>docs/knowledge-graph/ENTITY_SCHEMA.md:126 |
-| status | CityPackUpdateProposals | field:status | src/repos/firestore/cityPackUpdateProposalsRepo.js:27<br>docs/knowledge-graph/ENTITY_SCHEMA.md:140 |
-| status | CityPackUpdateProposals | field:status | src/repos/firestore/cityPackUpdateProposalsRepo.js:82<br>docs/knowledge-graph/ENTITY_SCHEMA.md:141 |
-| status | EmergencyBulletins | field:status | src/repos/firestore/emergencyBulletinsRepo.js:40<br>docs/knowledge-graph/ENTITY_SCHEMA.md:172 |
-| status | EmergencyBulletins | field:status | src/repos/firestore/emergencyBulletinsRepo.js:92<br>docs/knowledge-graph/ENTITY_SCHEMA.md:173 |
-| status | EmergencyProviders | field:status | src/repos/firestore/emergencyProvidersRepo.js:69<br>docs/knowledge-graph/ENTITY_SCHEMA.md:220 |
-| status | FaqArticles | field:status | src/repos/firestore/faqArticlesRepo.js:204<br>docs/knowledge-graph/ENTITY_SCHEMA.md:247 |
-| status | FaqArticles | field:status | src/repos/firestore/faqArticlesRepo.js:247<br>docs/knowledge-graph/ENTITY_SCHEMA.md:248 |
-| status | JourneyBranchQueue | field:status | src/repos/firestore/journeyBranchQueueRepo.js:165<br>docs/knowledge-graph/ENTITY_SCHEMA.md:253 |
-| status | JourneyTodoItems | field:graphStatus | src/repos/firestore/journeyTodoItemsRepo.js:298<br>docs/knowledge-graph/ENTITY_SCHEMA.md:263 |
-| status | JourneyTodoItems | field:status | src/repos/firestore/journeyTodoItemsRepo.js:296<br>docs/knowledge-graph/ENTITY_SCHEMA.md:270 |
-| status | JourneyTodoItems | field:status | src/repos/firestore/journeyTodoItemsRepo.js:333<br>docs/knowledge-graph/ENTITY_SCHEMA.md:271 |
-| status | Notices | field:status | src/repos/firestore/noticesRepo.js:58<br>docs/knowledge-graph/ENTITY_SCHEMA.md:289 |
-| status | Notices | field:status | src/repos/firestore/noticesRepo.js:71<br>docs/knowledge-graph/ENTITY_SCHEMA.md:290 |
-| status | Notifications | field:status | src/repos/firestore/notificationsRepo.js:61<br>docs/knowledge-graph/ENTITY_SCHEMA.md:319 |
-| status | NotificationTemplates | field:status | src/repos/firestore/notificationTemplatesRepo.js:124<br>docs/knowledge-graph/ENTITY_SCHEMA.md:323 |
-| status | NotificationTemplates | field:status | src/repos/firestore/notificationTemplatesRepo.js:65<br>docs/knowledge-graph/ENTITY_SCHEMA.md:324 |
-| status | OpsSegments | field:status | src/repos/firestore/opsSegmentsRepo.js:62<br>docs/knowledge-graph/ENTITY_SCHEMA.md:340 |
-| status | SchoolCalendarLinks | field:status | src/repos/firestore/schoolCalendarLinksRepo.js:79<br>docs/knowledge-graph/ENTITY_SCHEMA.md:365 |
-| status | SendRetryQueue | field:status | src/repos/firestore/sendRetryQueueRepo.js:26<br>docs/knowledge-graph/ENTITY_SCHEMA.md:373 |
-| status | SendRetryQueue | field:status | src/repos/firestore/sendRetryQueueRepo.js:45<br>docs/knowledge-graph/ENTITY_SCHEMA.md:374 |
-| status | SourceRefs | field:status | src/repos/firestore/sourceRefsRepo.js:181<br>docs/knowledge-graph/ENTITY_SCHEMA.md:398 |
-| status | SourceRefs | field:status | src/repos/firestore/sourceRefsRepo.js:277<br>docs/knowledge-graph/ENTITY_SCHEMA.md:399 |
-| status | Tasks | field:status | src/repos/firestore/tasksRepo.js:216<br>docs/knowledge-graph/ENTITY_SCHEMA.md:430 |
-| status | TemplatesV | field:status | src/repos/firestore/templatesVRepo.js:79<br>docs/knowledge-graph/ENTITY_SCHEMA.md:432 |
-| llmSource | UNOBSERVED_IN_DOCS | UNOBSERVED_IN_DOCS | docs/knowledge-graph/ENTITY_SCHEMA.md:1 |
+## Parameter Graph
+
+| Parameter | UI Control (DOM) | Entity | Relation | Operation/API | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| `notificationType` | `#notificationType` | `notifications.notificationType` | composer input -> draft payload field | `POST /api/admin/os/notifications/draft` | `apps/admin/app.html:710-712` / `apps/admin/assets/admin_app.js:14299-14324` / `src/routes/admin/osNotifications.js:122-133` / `src/usecases/notifications/createNotification.js:201-206,225` |
+| `scenario` | `#scenarioKey` | `notifications.scenarioKey`, `users.scenarioKey` | campaign key + target selection key | `draft/preview/send` | `apps/admin/app.html:848-850` / `apps/admin/assets/admin_app.js:14308` / `src/usecases/adminOs/planNotificationSend.js:116-123` / `src/repos/firestore/usersRepo.js:135-137` |
+| `step` | `#stepKey` | `notifications.stepKey`, `users.stepKey` | workflow step key | `draft/preview/send` | `apps/admin/app.html:857-859` / `apps/admin/assets/admin_app.js:14309` / `src/usecases/notifications/createNotification.js:168-172,221` / `src/repos/firestore/usersRepo.js:136-137` |
+| `area` | `#targetRegion` + city filters | `notifications.target.region`, `users.regionKey/regionCity` | delivery region filter | `send plan/execute`, users list | `apps/admin/app.html:871-872,2495-2496` / `apps/admin/assets/admin_app.js:14337,2314-2317` / `src/usecases/adminOs/planNotificationSend.js:114-121` / `docs/knowledge-graph/runtime_probe.json:2207-2211` |
+| `cityPack` | city pack pane filters / IDs | `city_packs.id`, `source_refs.usedByCityPackIds` | pack object + source linkage | `GET/POST /api/admin/city-packs*` | `apps/admin/app.html:2364,2488-2542` / `src/routes/admin/cityPacks.js:195-207,366-399,490-559` / `src/usecases/cityPack/activateCityPack.js:131-133` / `docs/knowledge-graph/runtime_probe.json:1286-1312,2008-2032` |
+| `vendor` | `#metaVendorId` + vendor filters | `notifications.notificationMeta.vendorId`, link registry rows | vendor scoped messaging/review | `draft`, `/api/admin/vendors*` | `apps/admin/app.html:820-821,3698-3727` / `src/usecases/notifications/createNotification.js:206-213` / `src/routes/admin/vendors.js:66-82,203-227` |
+| `audience` | `#membersOnly`, `#targetLimit` | `notifications.target.membersOnly/limit` | target cohort/volume constraint | `send plan/execute` | `apps/admin/app.html:875-879` / `apps/admin/assets/admin_app.js:14328-14340` / `src/routes/admin/osNotifications.js:64-79` / `src/usecases/adminOs/planNotificationSend.js:112-122` |
+| `category` | `#notificationCategory` | `notifications.notificationCategory` | policy + analytics category | draft/list/filter | `apps/admin/app.html:767-768` / `apps/admin/assets/admin_app.js:14310` / `src/usecases/notifications/createNotification.js:199,224` / `src/routes/admin/osNotifications.js:333-339` |
+| `status` | saved list/status filters across panes | `notifications.status`, `city_packs.status`, vendor health/status | lifecycle state filtering | list/read/update | `apps/admin/app.html:2501-2502,3706-3707,971` / `src/routes/admin/osNotifications.js:303-332` / `src/repos/firestore/notificationsRepo.js:61` / `src/repos/firestore/cityPacksRepo.js:435` / `src/routes/admin/vendors.js:229-245` |
+| `llmSource` | `#llm-policy-model` (+ llm policy controls) | `opsConfig.llmPolicy.model` | model/provider choice for admin LLM policy | `/api/admin/llm/policy/*` | `apps/admin/app.html:4326,4390-4393` / `src/routes/admin/llmPolicyConfig.js:152-200,202-304` |
+
+## Supporting Parameters (Observed)
+
+| Parameter | UI Control | Entity | Relation | Evidence |
+| --- | --- | --- | --- | --- |
+| `linkRegistryId` | `#linkRegistryId`, `#secondaryLinkRegistryId1`, `#secondaryLinkRegistryId2` | `notifications.linkRegistryId`, `notifications.secondaryCtas[].linkRegistryId` | CTA destination binding | `apps/admin/app.html:758,742,752` / `src/usecases/notifications/createNotification.js:181-192,219` |
+| `metaAbVariants` | `#metaAbVariants` | `notifications.notificationMeta` | AB option metadata | `apps/admin/app.html:832-833` / `src/usecases/notifications/createNotification.js:202` |
+| `planHash` | hidden workflow state | `audit_logs(templateKey)` + execute guard | plan/execute consistency key | `apps/admin/assets/admin_app.js:15271-15274` / `src/usecases/adminOs/planNotificationSend.js:130-136` / `src/usecases/adminOs/executeNotificationSend.js:119-128` |
+| `confirmToken` | hidden workflow state | signed confirm token | irreversible send guard | `apps/admin/assets/admin_app.js:15273-15274` / `src/usecases/adminOs/planNotificationSend.js:131-136` / `src/usecases/adminOs/executeNotificationSend.js:159-163` |
+
+## Parameter Relationship Graph (Mermaid)
+
+```mermaid
+graph LR
+  A["notificationType"] --> N["notifications"]
+  B["scenario + step"] --> N
+  B --> U["users"]
+  C["targetRegion + membersOnly + targetLimit"] --> U
+  C --> N
+  D["notificationCategory"] --> N
+  E["metaVendorId"] --> N
+  E --> V["vendors(link registry)"]
+  F["cityPack filters"] --> CP["city_packs"]
+  CP --> SR["source_refs"]
+  G["llm-policy-model"] --> OC["opsConfig.llmPolicy"]
+  N --> ND["notification_deliveries"]
+  N --> DT["decision_timeline"]
+```
+
+## Unobserved / Not Directly Bound
+- `audience` は単独の DOM id は未観測。現実装では `membersOnly + targetLimit (+ scenario/step)` の合成で表現される（`apps/admin/app.html:875-879`, `apps/admin/assets/admin_app.js:14327-14340`）。
+- `llmSource` は文言としての単一キー未観測。`llm-policy-model` が実質パラメータ。
+
