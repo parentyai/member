@@ -1269,6 +1269,7 @@ function buildDurationMetric(params) {
 function buildQualityLoopV2Summary(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const actionRows = Array.isArray(payload.actionRows) ? payload.actionRows : [];
+  const traceSearchAuditRows = Array.isArray(payload.traceSearchAuditRows) ? payload.traceSearchAuditRows : [];
   const conversation = payload.conversationQuality && typeof payload.conversationQuality === 'object' ? payload.conversationQuality : {};
   const optimization = payload.optimization && typeof payload.optimization === 'object' ? payload.optimization : {};
 
@@ -1291,8 +1292,8 @@ function buildQualityLoopV2Summary(data) {
   const savedFaqRows = actionRows.filter((row) => row && row.savedFaqReused === true);
   const crossSystemRows = actionRows.filter((row) => row && Object.prototype.hasOwnProperty.call(row, 'crossSystemConflictDetected'));
   const readinessV2Rows = actionRows.filter((row) => row && normalizeReason(row.answerReadinessVersion).toLowerCase() === 'v2');
-  const traceJoinRows = actionRows.filter((row) => row && Number.isFinite(Number(row.traceJoinCompleteness)));
-  const traceResolutionRows = actionRows.filter((row) => row && Number.isFinite(Number(row.adminTraceResolutionTimeMs)));
+  const traceJoinRows = traceSearchAuditRows.filter((row) => row && Number.isFinite(Number(row.traceJoinCompleteness)));
+  const traceResolutionRows = traceSearchAuditRows.filter((row) => row && Number.isFinite(Number(row.adminTraceResolutionTimeMs)));
 
   const cityPackGroundingRate = buildRateMetric({
     key: 'cityPackGroundingRate',
@@ -1379,14 +1380,14 @@ function buildQualityLoopV2Summary(data) {
     value: traceJoinRows.length > 0 ? averageFromRows(traceJoinRows, (row) => row && row.traceJoinCompleteness) : null,
     sampleCount: traceJoinRows.length,
     threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.traceJoinCompleteness },
-    note: 'pending_cross_system_trace_join'
+    note: traceJoinRows.length > 0 ? null : 'pending_cross_system_trace_join'
   });
   const adminTraceResolutionTime = buildDurationMetric({
     key: 'adminTraceResolutionTime',
     value: traceResolutionRows.length > 0 ? averageFromRows(traceResolutionRows, (row) => row && row.adminTraceResolutionTimeMs) : null,
     sampleCount: traceResolutionRows.length,
     threshold: { operator: 'max', value: QUALITY_LOOP_V2_THRESHOLDS.adminTraceResolutionTimeMsStg },
-    note: 'pending_operator_trace_latency_wiring'
+    note: traceResolutionRows.length > 0 ? null : 'pending_operator_trace_latency_wiring'
   });
   const directUrlLeakage = buildRateMetric({
     key: 'directUrlLeakage',
@@ -1446,6 +1447,22 @@ function buildQualityLoopV2Summary(data) {
     missingJoins: missingMeasurements.slice(),
     reservations: QUALITY_LOOP_V2_RESERVATIONS.slice()
   };
+}
+
+function buildTraceSearchAuditRows(auditRows) {
+  return (Array.isArray(auditRows) ? auditRows : []).map((row) => {
+    const summary = row && row.payloadSummary && typeof row.payloadSummary === 'object' ? row.payloadSummary : {};
+    return {
+      traceJoinCompleteness: Number(summary.traceJoinCompleteness),
+      adminTraceResolutionTimeMs: Number(summary.adminTraceResolutionTimeMs),
+      traceBundleLoadMs: Number(summary.traceBundleLoadMs),
+      joinedDomainCount: Number(summary.joinedDomainCount),
+      missingDomainCount: Number(summary.missingDomainCount),
+      joinedDomains: Array.isArray(summary.joinedDomains) ? summary.joinedDomains.slice() : [],
+      missingDomains: Array.isArray(summary.missingDomains) ? summary.missingDomains.slice() : [],
+      createdAt: row && row.createdAt ? row.createdAt : null
+    };
+  }).filter((row) => Number.isFinite(row.traceJoinCompleteness) || Number.isFinite(row.adminTraceResolutionTimeMs));
 }
 
 function buildQualityFrameworkSummary(payload) {
@@ -1783,6 +1800,7 @@ function buildQualityFrameworkSummary(payload) {
   const counterexampleQueue = buildCounterexampleQueueFromBoards(boards);
   const qualityLoopV2 = buildQualityLoopV2Summary({
     actionRows,
+    traceSearchAuditRows: Array.isArray(data.traceSearchAuditRows) ? data.traceSearchAuditRows : [],
     conversationQuality: conversation,
     optimization: data.optimization
   });
@@ -1916,6 +1934,7 @@ async function handleLlmUsageSummary(req, res) {
     });
     let gateAuditRows = [];
     let actionRows = [];
+    let traceSearchAuditRows = [];
     try {
       const rawAuditRows = await auditLogsRepo.listAuditLogs({
         action: 'llm_gate.decision',
@@ -1938,6 +1957,20 @@ async function handleLlmUsageSummary(req, res) {
       });
     } catch (_err) {
       actionRows = [];
+    }
+    try {
+      const rawTraceAuditRows = await auditLogsRepo.listAuditLogs({
+        action: 'trace_search.view',
+        limit: scanLimit
+      });
+      const fromMs = fromAt.getTime();
+      const toMs = toAt.getTime();
+      traceSearchAuditRows = buildTraceSearchAuditRows((Array.isArray(rawTraceAuditRows) ? rawTraceAuditRows : []).filter((row) => {
+        const ms = toMillis(row && row.createdAt);
+        return Number.isFinite(ms) && ms >= fromMs && ms <= toMs;
+      }));
+    } catch (_err) {
+      traceSearchAuditRows = [];
     }
 
     const callsTotal = Array.isArray(rows) ? rows.length : 0;
@@ -1971,6 +2004,7 @@ async function handleLlmUsageSummary(req, res) {
       releaseReadiness,
       byPlan: buildPlanBreakdown(rows),
       actionRows,
+      traceSearchAuditRows,
       baselineOverallScore: Number(process.env.LLM_QUALITY_BASELINE_SCORE || 54.9)
     });
 
@@ -2067,6 +2101,7 @@ module.exports = {
   buildReleaseReadiness,
   buildQualityFrameworkSummary,
   buildQualityLoopV2Summary,
+  buildTraceSearchAuditRows,
   buildContractFreezeSummary,
   buildCounterexampleQueueFromBoards,
   maskLineUserId

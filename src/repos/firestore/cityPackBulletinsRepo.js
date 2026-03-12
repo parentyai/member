@@ -109,10 +109,30 @@ async function listBulletins(params) {
   return rows;
 }
 
+function toMillis(value) {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (value && typeof value.toDate === 'function') return value.toDate().getTime();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+async function listBulletinsByTraceId(traceId, limit) {
+  const normalizedTraceId = normalizeString(traceId);
+  if (!normalizedTraceId) throw new Error('traceId required');
+  const cap = Number.isFinite(Number(limit)) ? Math.min(Math.max(Math.floor(Number(limit)), 1), 200) : 50;
+  const snap = await getDb().collection(COLLECTION).where('traceId', '==', normalizedTraceId).limit(cap).get();
+  return snap.docs
+    .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .sort((a, b) => toMillis(b && b.updatedAt) - toMillis(a && a.updatedAt))
+    .slice(0, cap);
+}
+
 module.exports = {
   normalizeStatus,
   createBulletin,
   getBulletin,
   updateBulletin,
-  listBulletins
+  listBulletins,
+  listBulletinsByTraceId
 };

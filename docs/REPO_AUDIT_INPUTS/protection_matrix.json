@@ -5808,8 +5808,16 @@
       "killSwitch_confidence": "low",
       "writes_collections": [
         "audit_logs",
+        "city_pack_bulletins",
         "decision_logs",
-        "decision_timeline"
+        "decision_timeline",
+        "emergency_bulletins",
+        "emergency_events_normalized",
+        "faq_answer_logs",
+        "journey_branch_queue",
+        "llm_action_logs",
+        "source_evidence",
+        "task_events"
       ],
       "audit_required": true,
       "trace_required": true,
@@ -5834,8 +5842,16 @@
       "killSwitch_confidence": "low",
       "writes_collections": [
         "audit_logs",
+        "city_pack_bulletins",
         "decision_logs",
-        "decision_timeline"
+        "decision_timeline",
+        "emergency_bulletins",
+        "emergency_events_normalized",
+        "faq_answer_logs",
+        "journey_branch_queue",
+        "llm_action_logs",
+        "source_evidence",
+        "task_events"
       ],
       "audit_required": true,
       "trace_required": true,

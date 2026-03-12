@@ -63,7 +63,21 @@ async function listFaqAnswerLogs(params) {
   return items.filter((item) => toMillis(item.createdAt) >= sinceAtMs);
 }
 
+async function listFaqAnswerLogsByTraceId(params) {
+  const payload = params || {};
+  const traceId = typeof payload.traceId === 'string' ? payload.traceId.trim() : '';
+  if (!traceId) return [];
+  const limit = Number.isFinite(Number(payload.limit)) ? Math.min(Math.max(Math.floor(Number(payload.limit)), 1), 200) : 50;
+  const db = getDb();
+  const snap = await db.collection(COLLECTION).where('traceId', '==', traceId).limit(limit).get();
+  return snap.docs
+    .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .sort((a, b) => toMillis(b && b.createdAt) - toMillis(a && a.createdAt))
+    .slice(0, limit);
+}
+
 module.exports = {
   appendFaqAnswerLog,
-  listFaqAnswerLogs
+  listFaqAnswerLogs,
+  listFaqAnswerLogsByTraceId
 };

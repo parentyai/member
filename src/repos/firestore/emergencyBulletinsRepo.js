@@ -124,11 +124,20 @@ async function listBulletins(params) {
   return sortByUpdatedAtDesc(rows).slice(0, limit);
 }
 
+async function listBulletinsByTraceId(traceId, limit) {
+  const normalizedTraceId = normalizeString(traceId);
+  if (!normalizedTraceId) throw new Error('traceId required');
+  const cap = Number.isFinite(Number(limit)) ? Math.min(Math.max(Math.floor(Number(limit)), 1), 200) : 50;
+  const snap = await getDb().collection(COLLECTION).where('traceId', '==', normalizedTraceId).limit(cap).get();
+  return sortByUpdatedAtDesc(snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()))).slice(0, cap);
+}
+
 module.exports = {
   createBulletin,
   ensureDraftByDiff,
   resolveDraftIdFromDiff,
   getBulletin,
   updateBulletin,
-  listBulletins
+  listBulletins,
+  listBulletinsByTraceId
 };

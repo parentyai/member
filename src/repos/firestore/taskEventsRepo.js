@@ -135,11 +135,33 @@ async function listTaskEventsByUser(params) {
   return snap.docs.map((doc) => normalizeTaskEvent(doc.id, doc.data())).filter(Boolean);
 }
 
+async function listTaskEventsByTraceId(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const traceId = normalizeText(payload.traceId, '');
+  if (!traceId) return [];
+  const db = getDb();
+  const cap = normalizeLimit(payload.limit);
+  const snap = await db.collection(COLLECTION)
+    .where('traceId', '==', traceId)
+    .limit(cap)
+    .get();
+  return snap.docs
+    .map((doc) => normalizeTaskEvent(doc.id, doc.data()))
+    .filter(Boolean)
+    .sort((a, b) => {
+      const left = Date.parse(a && a.checkedAt || '');
+      const right = Date.parse(b && b.checkedAt || '');
+      return (Number.isFinite(right) ? right : 0) - (Number.isFinite(left) ? left : 0);
+    })
+    .slice(0, cap);
+}
+
 module.exports = {
   COLLECTION,
   DECISION_VALUES,
   normalizeTaskEvent,
   appendTaskEvent,
   listTaskEventsByTask,
-  listTaskEventsByUser
+  listTaskEventsByUser,
+  listTaskEventsByTraceId
 };

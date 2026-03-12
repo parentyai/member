@@ -70,9 +70,18 @@ async function listEventsByRegion(regionKey, limit) {
   return sortByUpdatedAtDesc(snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()))).slice(0, max);
 }
 
+async function listEventsByTraceId(traceId, limit) {
+  const key = typeof traceId === 'string' && traceId.trim() ? traceId.trim() : null;
+  if (!key) throw new Error('traceId required');
+  const max = Number.isFinite(Number(limit)) ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 100;
+  const snap = await getDb().collection(COLLECTION).where('traceId', '==', key).limit(max).get();
+  return sortByUpdatedAtDesc(snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()))).slice(0, max);
+}
+
 module.exports = {
   upsertEvent,
   getEvent,
   listEventsByProvider,
-  listEventsByRegion
+  listEventsByRegion,
+  listEventsByTraceId
 };
