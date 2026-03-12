@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-12T10:59:57-04:00",
-  "gitCommit": "f57fbd50fc94cacb12f4cf6581a536c1d3ec7595",
-  "branch": "codex/llm-quality-loop-v2-readiness",
-  "sourceDigest": "5cd8023d108996f0f9d88be5a6c73dbc3833d4fcc47731761debc5e331afca03",
+  "generatedAt": "2026-03-12T11:45:25-04:00",
+  "gitCommit": "86f53cd63f7dbc0dba393822821817f7c720c089",
+  "branch": "codex/llm-quality-loop-v2-governance",
+  "sourceDigest": "c28cd20a15592bfdb2949483a892d0219eb19ee8c73db5182cc0cca88f880e8b",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
