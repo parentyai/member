@@ -98,6 +98,11 @@ function normalizeIntent(value) {
   return value.trim();
 }
 
+function normalizeIntentToken(value) {
+  if (typeof value !== 'string' || value.trim().length === 0) return '';
+  return value.trim().toLowerCase();
+}
+
 function normalizeQuestion(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
@@ -156,6 +161,32 @@ function buildBlocked(params) {
     fallbackActions: Array.isArray(payload.fallbackActions) ? payload.fallbackActions : [],
     suggestedFaqs: Array.isArray(payload.suggestedFaqs) ? payload.suggestedFaqs : [],
     kbMeta: payload.kbMeta || null,
+    policySource: payload.policySource || 'system_flags',
+    policyContext: payload.policyContext || 'default',
+    legalDecision: payload.legalDecision || null,
+    legalReasonCodes: Array.isArray(payload.legalReasonCodes) ? payload.legalReasonCodes : [],
+    intentRiskTier: payload.intentRiskTier || null,
+    riskReasonCodes: Array.isArray(payload.riskReasonCodes) ? payload.riskReasonCodes : [],
+    sourceAuthorityScore: Number.isFinite(Number(payload.sourceAuthorityScore))
+      ? Number(payload.sourceAuthorityScore)
+      : null,
+    sourceFreshnessScore: Number.isFinite(Number(payload.sourceFreshnessScore))
+      ? Number(payload.sourceFreshnessScore)
+      : null,
+    sourceReadinessDecision: payload.sourceReadinessDecision || null,
+    sourceReadinessReasons: Array.isArray(payload.sourceReadinessReasons) ? payload.sourceReadinessReasons : [],
+    officialOnlySatisfied: payload.officialOnlySatisfied === true,
+    readinessDecision: payload.readinessDecision || null,
+    readinessReasonCodes: Array.isArray(payload.readinessReasonCodes) ? payload.readinessReasonCodes : [],
+    readinessSafeResponseMode: payload.readinessSafeResponseMode || null,
+    unsupportedClaimCount: Number.isFinite(Number(payload.unsupportedClaimCount))
+      ? Number(payload.unsupportedClaimCount)
+      : 0,
+    contradictionDetected: payload.contradictionDetected === true,
+    savedFaqReused: payload.savedFaqReused === true,
+    savedFaqReusePass: payload.savedFaqReusePass === true,
+    savedFaqReuseReasonCodes: Array.isArray(payload.savedFaqReuseReasonCodes) ? payload.savedFaqReuseReasonCodes : [],
+    sourceSnapshotRefs: Array.isArray(payload.sourceSnapshotRefs) ? payload.sourceSnapshotRefs : [],
     sanitizeApplied: payload.sanitizeApplied === true,
     sanitizedCandidateCount: Number.isFinite(Number(payload.sanitizedCandidateCount))
       ? Number(payload.sanitizedCandidateCount)
@@ -168,6 +199,58 @@ function buildBlocked(params) {
     disclaimer: payload.disclaimer || null,
     serverTime: payload.serverTime || new Date().toISOString(),
     deprecated: false
+  };
+}
+
+function buildFaqTelemetryFields(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const sourceReadiness = payload.sourceReadiness && typeof payload.sourceReadiness === 'object'
+    ? payload.sourceReadiness
+    : {};
+  const answerReadiness = payload.answerReadiness && typeof payload.answerReadiness === 'object'
+    ? payload.answerReadiness
+    : {};
+  const qualitySnapshot = answerReadiness.qualitySnapshot && typeof answerReadiness.qualitySnapshot === 'object'
+    ? answerReadiness.qualitySnapshot
+    : {};
+  const savedFaqSignals = payload.savedFaqSignals && typeof payload.savedFaqSignals === 'object'
+    ? payload.savedFaqSignals
+    : {};
+  return {
+    policySource: payload.legalSnapshot && payload.legalSnapshot.policySource ? payload.legalSnapshot.policySource : 'system_flags',
+    policyContext: payload.legalSnapshot && payload.legalSnapshot.policyContext ? payload.legalSnapshot.policyContext : 'default',
+    legalDecision: payload.legalSnapshot && payload.legalSnapshot.legalDecision ? payload.legalSnapshot.legalDecision : null,
+    legalReasonCodes: payload.legalSnapshot && Array.isArray(payload.legalSnapshot.legalReasonCodes)
+      ? payload.legalSnapshot.legalReasonCodes
+      : [],
+    intentRiskTier: payload.riskSnapshot && payload.riskSnapshot.intentRiskTier ? payload.riskSnapshot.intentRiskTier : null,
+    riskReasonCodes: payload.riskSnapshot && Array.isArray(payload.riskSnapshot.riskReasonCodes)
+      ? payload.riskSnapshot.riskReasonCodes
+      : [],
+    sourceAuthorityScore: Number.isFinite(Number(sourceReadiness.sourceAuthorityScore))
+      ? Number(sourceReadiness.sourceAuthorityScore)
+      : null,
+    sourceFreshnessScore: Number.isFinite(Number(sourceReadiness.sourceFreshnessScore))
+      ? Number(sourceReadiness.sourceFreshnessScore)
+      : null,
+    sourceReadinessDecision: sourceReadiness.sourceReadinessDecision || null,
+    sourceReadinessReasons: Array.isArray(sourceReadiness.reasonCodes) ? sourceReadiness.reasonCodes : [],
+    officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
+    readinessDecision: answerReadiness.decision || null,
+    readinessReasonCodes: Array.isArray(answerReadiness.reasonCodes) ? answerReadiness.reasonCodes : [],
+    readinessSafeResponseMode: answerReadiness.safeResponseMode || null,
+    unsupportedClaimCount: Number.isFinite(Number(qualitySnapshot.unsupportedClaimCount))
+      ? Number(qualitySnapshot.unsupportedClaimCount)
+      : 0,
+    contradictionDetected: qualitySnapshot.contradictionDetected === true,
+    savedFaqReused: savedFaqSignals.savedFaqReused === true,
+    savedFaqReusePass: savedFaqSignals.savedFaqReusePass === true,
+    savedFaqReuseReasonCodes: Array.isArray(savedFaqSignals.savedFaqReuseReasonCodes)
+      ? savedFaqSignals.savedFaqReuseReasonCodes
+      : [],
+    sourceSnapshotRefs: Array.isArray(savedFaqSignals.sourceSnapshotRefs)
+      ? savedFaqSignals.sourceSnapshotRefs
+      : []
   };
 }
 
@@ -242,6 +325,57 @@ function collectAllowedSourceIds(articles) {
   return Array.from(out);
 }
 
+function matchesAllowedIntent(allowedIntents, intent) {
+  const normalizedIntent = normalizeIntentToken(intent);
+  const rows = Array.isArray(allowedIntents) ? allowedIntents : [];
+  if (!rows.length) return true;
+  const normalized = rows
+    .map((item) => normalizeIntentToken(item))
+    .filter(Boolean);
+  if (!normalized.length) return true;
+  if (!normalizedIntent) return normalized.includes('general');
+  return normalized.includes(normalizedIntent) || normalized.includes('general');
+}
+
+function isValidUntilUsable(validUntil, nowMs) {
+  if (!validUntil) return true;
+  const parsed = Date.parse(validUntil);
+  if (!Number.isFinite(parsed)) return false;
+  return parsed >= nowMs;
+}
+
+function buildSavedFaqReuseSignals(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const candidates = Array.isArray(payload.candidates) ? payload.candidates : [];
+  const nowMs = Number.isFinite(Number(payload.nowMs)) ? Number(payload.nowMs) : Date.now();
+  const primary = candidates[0] && typeof candidates[0] === 'object' ? candidates[0] : null;
+  const sourceSnapshotRefs = collectAllowedSourceIds(candidates).slice(0, 8);
+  if (!primary) {
+    return {
+      savedFaqReused: false,
+      savedFaqReusePass: false,
+      savedFaqReuseReasonCodes: ['no_saved_faq_candidate'],
+      sourceSnapshotRefs
+    };
+  }
+  const reasonCodes = [];
+  if (!matchesAllowedIntent(primary.allowedIntents, payload.intent)) {
+    reasonCodes.push('saved_faq_intent_mismatch');
+  }
+  if (!isValidUntilUsable(primary.validUntil, nowMs)) {
+    reasonCodes.push('saved_faq_stale');
+  }
+  if (payload.intentRiskTier === 'high' && sourceSnapshotRefs.length === 0) {
+    reasonCodes.push('saved_faq_missing_official_source_refs');
+  }
+  return {
+    savedFaqReused: true,
+    savedFaqReusePass: reasonCodes.length === 0,
+    savedFaqReuseReasonCodes: reasonCodes.length ? reasonCodes : ['saved_faq_reuse_ready'],
+    sourceSnapshotRefs
+  };
+}
+
 function collectRequiredContactSourceIds(articles) {
   const out = new Set();
   for (const article of articles || []) {
@@ -300,6 +434,8 @@ function buildAuditSummaryBase(params) {
     envLlmFeatureFlag: payload.envEnabled,
     dbLlmEnabled: payload.dbEnabled,
     policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
+    policySource: payload.policySource || 'system_flags',
+    policyContext: payload.policyContext || 'default',
     schemaId: FAQ_ANSWER_SCHEMA_ID,
     disclaimerVersion: payload.disclaimerVersion,
     lawfulBasis: payload.llmPolicy.lawfulBasis,
@@ -339,6 +475,14 @@ function buildAuditSummaryBase(params) {
     contradictionDetected: answerReadiness.qualitySnapshot
       ? answerReadiness.qualitySnapshot.contradictionDetected === true
       : false,
+    savedFaqReused: payload.savedFaqSignals ? payload.savedFaqSignals.savedFaqReused === true : false,
+    savedFaqReusePass: payload.savedFaqSignals ? payload.savedFaqSignals.savedFaqReusePass === true : false,
+    savedFaqReuseReasonCodes: payload.savedFaqSignals && Array.isArray(payload.savedFaqSignals.savedFaqReuseReasonCodes)
+      ? payload.savedFaqSignals.savedFaqReuseReasonCodes
+      : [],
+    sourceSnapshotRefs: payload.savedFaqSignals && Array.isArray(payload.savedFaqSignals.sourceSnapshotRefs)
+      ? payload.savedFaqSignals.sourceSnapshotRefs
+      : [],
     answerReadinessLogOnly: payload.answerReadinessLogOnly === true,
     inputFieldCategoriesUsed: payload.inputFieldCategoriesUsed,
     fieldCategoriesUsed: payload.inputFieldCategoriesUsed
@@ -496,7 +640,16 @@ async function answerFaqFromKb(params, deps) {
   const suggestedFaqs = buildSuggestedFaqs(candidates);
   const confidence = evaluateConfidence(candidates);
   const kbMeta = buildKbMeta(candidates, confidence);
-  const riskSnapshot = resolveIntentRiskTier({ domainIntent: intent || 'general' });
+  const riskSnapshot = resolveIntentRiskTier({
+    domainIntent: intent || 'general',
+    savedFaqContext: candidates.length > 0
+  });
+  const savedFaqSignals = buildSavedFaqReuseSignals({
+    candidates,
+    intent,
+    intentRiskTier: riskSnapshot.intentRiskTier,
+    nowMs: now.getTime()
+  });
   const sourceReadiness = computeSourceReadiness({
     intentRiskTier: riskSnapshot.intentRiskTier,
     candidates: candidates.map((item) => ({
@@ -733,12 +886,15 @@ async function answerFaqFromKb(params, deps) {
           envEnabled,
           dbEnabled,
           llmPolicy,
+          policySource: legalSnapshot.policySource,
+          policyContext: legalSnapshot.policyContext,
           legalDecision: legalSnapshot.legalDecision,
           legalReasonCodes: legalSnapshot.legalReasonCodes,
           intentRiskTier: riskSnapshot.intentRiskTier,
           riskReasonCodes: riskSnapshot.riskReasonCodes,
           sourceReadiness,
           answerReadiness,
+          savedFaqSignals,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
@@ -769,7 +925,21 @@ async function answerFaqFromKb(params, deps) {
       questionHash: hashText(question),
       locale,
       matchedArticleIds,
-      blockedReason: blocked.blockedReason
+      blockedReason: blocked.blockedReason,
+      policySource: legalSnapshot.policySource,
+      policyContext: legalSnapshot.policyContext,
+      legalDecision: legalSnapshot.legalDecision,
+      legalReasonCodes: legalSnapshot.legalReasonCodes,
+      intentRiskTier: riskSnapshot.intentRiskTier,
+      riskReasonCodes: riskSnapshot.riskReasonCodes,
+      sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
+      sourceReadinessReasons: sourceReadiness.reasonCodes,
+      readinessDecision: answerReadiness.decision,
+      readinessReasonCodes: answerReadiness.reasonCodes,
+      savedFaqReused: savedFaqSignals.savedFaqReused,
+      savedFaqReusePass: savedFaqSignals.savedFaqReusePass,
+      savedFaqReuseReasonCodes: savedFaqSignals.savedFaqReuseReasonCodes,
+      sourceSnapshotRefs: savedFaqSignals.sourceSnapshotRefs
     }, deps).catch(() => null);
     await appendDisclaimerRenderedAudit(
       {
@@ -785,7 +955,17 @@ async function answerFaqFromKb(params, deps) {
       deps
     ).catch(() => null);
 
-    return Object.assign(blocked, { auditId });
+    return Object.assign(
+      blocked,
+      buildFaqTelemetryFields({
+        legalSnapshot,
+        riskSnapshot,
+        sourceReadiness,
+        answerReadiness,
+        savedFaqSignals
+      }),
+      { auditId }
+    );
   }
 
   let answer;
@@ -858,12 +1038,15 @@ async function answerFaqFromKb(params, deps) {
           envEnabled,
           dbEnabled,
           llmPolicy,
+          policySource: legalSnapshot.policySource,
+          policyContext: legalSnapshot.policyContext,
           legalDecision: legalSnapshot.legalDecision,
           legalReasonCodes: legalSnapshot.legalReasonCodes,
           intentRiskTier: riskSnapshot.intentRiskTier,
           riskReasonCodes: riskSnapshot.riskReasonCodes,
           sourceReadiness,
           answerReadiness,
+          savedFaqSignals,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
@@ -895,7 +1078,21 @@ async function answerFaqFromKb(params, deps) {
       questionHash: hashText(question),
       locale,
       matchedArticleIds,
-      blockedReason
+      blockedReason,
+      policySource: legalSnapshot.policySource,
+      policyContext: legalSnapshot.policyContext,
+      legalDecision: legalSnapshot.legalDecision,
+      legalReasonCodes: legalSnapshot.legalReasonCodes,
+      intentRiskTier: riskSnapshot.intentRiskTier,
+      riskReasonCodes: riskSnapshot.riskReasonCodes,
+      sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
+      sourceReadinessReasons: sourceReadiness.reasonCodes,
+      readinessDecision: answerReadiness.decision,
+      readinessReasonCodes: answerReadiness.reasonCodes,
+      savedFaqReused: savedFaqSignals.savedFaqReused,
+      savedFaqReusePass: savedFaqSignals.savedFaqReusePass,
+      savedFaqReuseReasonCodes: savedFaqSignals.savedFaqReuseReasonCodes,
+      sourceSnapshotRefs: savedFaqSignals.sourceSnapshotRefs
     }, deps).catch(() => null);
     await appendDisclaimerRenderedAudit(
       {
@@ -911,7 +1108,17 @@ async function answerFaqFromKb(params, deps) {
       deps
     ).catch(() => null);
 
-    return Object.assign(blockedResult, { auditId });
+    return Object.assign(
+      blockedResult,
+      buildFaqTelemetryFields({
+        legalSnapshot,
+        riskSnapshot,
+        sourceReadiness,
+        answerReadiness,
+        savedFaqSignals
+      }),
+      { auditId }
+    );
   }
 
   if (!hasRequiredCitation(answer, requiredContactSourceIds)) {
@@ -948,12 +1155,15 @@ async function answerFaqFromKb(params, deps) {
           envEnabled,
           dbEnabled,
           llmPolicy,
+          policySource: legalSnapshot.policySource,
+          policyContext: legalSnapshot.policyContext,
           legalDecision: legalSnapshot.legalDecision,
           legalReasonCodes: legalSnapshot.legalReasonCodes,
           intentRiskTier: riskSnapshot.intentRiskTier,
           riskReasonCodes: riskSnapshot.riskReasonCodes,
           sourceReadiness,
           answerReadiness,
+          savedFaqSignals,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
@@ -984,7 +1194,21 @@ async function answerFaqFromKb(params, deps) {
       questionHash: hashText(question),
       locale,
       matchedArticleIds,
-      blockedReason
+      blockedReason,
+      policySource: legalSnapshot.policySource,
+      policyContext: legalSnapshot.policyContext,
+      legalDecision: legalSnapshot.legalDecision,
+      legalReasonCodes: legalSnapshot.legalReasonCodes,
+      intentRiskTier: riskSnapshot.intentRiskTier,
+      riskReasonCodes: riskSnapshot.riskReasonCodes,
+      sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
+      sourceReadinessReasons: sourceReadiness.reasonCodes,
+      readinessDecision: answerReadiness.decision,
+      readinessReasonCodes: answerReadiness.reasonCodes,
+      savedFaqReused: savedFaqSignals.savedFaqReused,
+      savedFaqReusePass: savedFaqSignals.savedFaqReusePass,
+      savedFaqReuseReasonCodes: savedFaqSignals.savedFaqReuseReasonCodes,
+      sourceSnapshotRefs: savedFaqSignals.sourceSnapshotRefs
     }, deps).catch(() => null);
     await appendDisclaimerRenderedAudit(
       {
@@ -999,7 +1223,17 @@ async function answerFaqFromKb(params, deps) {
       },
       deps
     ).catch(() => null);
-    return Object.assign(blockedResult, { auditId });
+    return Object.assign(
+      blockedResult,
+      buildFaqTelemetryFields({
+        legalSnapshot,
+        riskSnapshot,
+        sourceReadiness,
+        answerReadiness,
+        savedFaqSignals
+      }),
+      { auditId }
+    );
   }
 
   const auditId = await appendAudit({
@@ -1016,12 +1250,15 @@ async function answerFaqFromKb(params, deps) {
         envEnabled,
         dbEnabled,
         llmPolicy,
+        policySource: legalSnapshot.policySource,
+        policyContext: legalSnapshot.policyContext,
         legalDecision: legalSnapshot.legalDecision,
         legalReasonCodes: legalSnapshot.legalReasonCodes,
         intentRiskTier: riskSnapshot.intentRiskTier,
         riskReasonCodes: riskSnapshot.riskReasonCodes,
         sourceReadiness,
         answerReadiness,
+        savedFaqSignals,
         disclaimerVersion: disclaimer.version,
         matchedArticleIds,
         confidence,
@@ -1053,7 +1290,21 @@ async function answerFaqFromKb(params, deps) {
     questionHash: hashText(question),
     locale,
     matchedArticleIds,
-    blockedReason: null
+    blockedReason: null,
+    policySource: legalSnapshot.policySource,
+    policyContext: legalSnapshot.policyContext,
+    legalDecision: legalSnapshot.legalDecision,
+    legalReasonCodes: legalSnapshot.legalReasonCodes,
+    intentRiskTier: riskSnapshot.intentRiskTier,
+    riskReasonCodes: riskSnapshot.riskReasonCodes,
+    sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
+    sourceReadinessReasons: sourceReadiness.reasonCodes,
+    readinessDecision: answerReadiness.decision,
+    readinessReasonCodes: answerReadiness.reasonCodes,
+    savedFaqReused: savedFaqSignals.savedFaqReused,
+    savedFaqReusePass: savedFaqSignals.savedFaqReusePass,
+    savedFaqReuseReasonCodes: savedFaqSignals.savedFaqReuseReasonCodes,
+    sourceSnapshotRefs: savedFaqSignals.sourceSnapshotRefs
   }, deps).catch(() => null);
   await appendDisclaimerRenderedAudit(
     {
@@ -1069,7 +1320,7 @@ async function answerFaqFromKb(params, deps) {
     deps
   ).catch(() => null);
 
-  return {
+  return Object.assign({
     ok: true,
     blocked: false,
     httpStatus: 200,
@@ -1095,7 +1346,13 @@ async function answerFaqFromKb(params, deps) {
     disclaimer: disclaimer.text,
     inputFieldCategoriesUsed: view.inputFieldCategoriesUsed,
     auditId
-  };
+  }, buildFaqTelemetryFields({
+    legalSnapshot,
+    riskSnapshot,
+    sourceReadiness,
+    answerReadiness,
+    savedFaqSignals
+  }));
 }
 
 module.exports = {

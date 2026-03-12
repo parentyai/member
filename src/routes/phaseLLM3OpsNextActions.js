@@ -3,6 +3,7 @@
 const { getNextActionCandidates } = require('../usecases/phaseLLM3/getNextActionCandidates');
 const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
 const { resolveSharedAnswerReadiness } = require('../domain/llm/quality/resolveSharedAnswerReadiness');
+const { resolveLlmLegalPolicySnapshot } = require('../domain/llm/policy/resolveLlmLegalPolicySnapshot');
 const { resolveV1FeatureMatrix } = require('../v1/shared/featureMatrix');
 const { enforceLlmGenerationKillSwitch } = require('./admin/osContext');
 
@@ -59,6 +60,11 @@ async function handleOpsNextActions(req, res) {
     const result = await getNextActionCandidates({ lineUserId, traceId, actor });
     const qualitySignals = buildCompatQualitySignals(result);
     const v1Matrix = resolveV1FeatureMatrix();
+    const legalSnapshot = resolveLlmLegalPolicySnapshot({
+      policy: { lawfulBasis: 'consent', consentVerified: true, crossBorder: false },
+      policySource: 'compat_ops_default',
+      policyContext: 'compat_ops'
+    });
     const firstReason = result
       && result.nextActionCandidates
       && Array.isArray(result.nextActionCandidates.candidates)
@@ -71,9 +77,10 @@ async function handleOpsNextActions(req, res) {
       llmUsed: result && result.llmUsed === true,
       fallbackType: qualitySignals.fallbackType,
       replyText: firstReason,
-      lawfulBasis: 'consent',
-      consentVerified: true,
-      legalDecision: 'allow',
+      lawfulBasis: legalSnapshot.lawfulBasis,
+      consentVerified: legalSnapshot.consentVerified,
+      crossBorder: legalSnapshot.crossBorder,
+      legalDecision: legalSnapshot.legalDecision,
       sourceReadinessDecision: result && result.llmUsed === true ? 'allow' : 'clarify',
       actionGatewayEnabled: v1Matrix.actionGateway === true,
       actionClass: 'lookup',
@@ -105,6 +112,10 @@ async function handleOpsNextActions(req, res) {
       fallbackType: qualitySignals.fallbackType,
       contextCarryScore: qualitySignals.contextCarryScore,
       repeatRiskScore: qualitySignals.repeatRiskScore,
+      policySource: legalSnapshot.policySource,
+      policyContext: legalSnapshot.policyContext,
+      legalDecision: legalSnapshot.legalDecision,
+      legalReasonCodes: legalSnapshot.legalReasonCodes,
       readinessDecision: sharedReadiness.readiness.decision,
       readinessReasonCodes: sharedReadiness.readiness.reasonCodes,
       readinessSafeResponseMode: sharedReadiness.readiness.safeResponseMode,

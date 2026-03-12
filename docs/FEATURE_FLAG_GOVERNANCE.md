@@ -1,8 +1,8 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-10T20:36:36.929Z
-- gitCommit: 7743197615c4ff16fb71c12a2a23e715f9e7b8ad
-- branch: codex/data-c01-postgres-sink-r794
+- generatedAt: 2026-03-12T14:19:17.501Z
+- gitCommit: cba74e7174c93f128061e1918066ae4d3f64893f
+- branch: codex/llm-quality-loop-v2-foundation
 - flagCount: 90
 - source: src/**/*.js
 - check: `npm run feature-flags:check`

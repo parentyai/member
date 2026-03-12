@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-12T01:02:22-04:00",
-  "gitCommit": "8e9e319650dcbf6957f3f73fa8e730735912de7f",
-  "branch": "codex/admin-ui-pr6-system-isolation",
-  "sourceDigest": "d431b2fcd9a0d7f9d36ee4506a440fe659ff33fab4037293a1475b6fbd48c335",
+  "generatedAt": "2026-03-12T10:16:57-04:00",
+  "gitCommit": "cba74e7174c93f128061e1918066ae4d3f64893f",
+  "branch": "codex/llm-quality-loop-v2-foundation",
+  "sourceDigest": "947f40f2485ca8f18601ed80868d7caf36034f92b52de6b039497c7f44009127",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

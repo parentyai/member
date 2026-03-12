@@ -4,6 +4,7 @@ const { getOpsExplanation } = require('../../usecases/phaseLLM2/getOpsExplanatio
 const { getNextActionCandidates } = require('../../usecases/phaseLLM3/getNextActionCandidates');
 const { appendLlmGateDecision } = require('../../usecases/llm/appendLlmGateDecision');
 const { resolveSharedAnswerReadiness } = require('../../domain/llm/quality/resolveSharedAnswerReadiness');
+const { resolveLlmLegalPolicySnapshot } = require('../../domain/llm/policy/resolveLlmLegalPolicySnapshot');
 const { resolveV1FeatureMatrix } = require('../../v1/shared/featureMatrix');
 const { requireActor, resolveTraceId } = require('./osContext');
 
@@ -69,6 +70,11 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
     const result = await getOpsExplanation({ lineUserId, traceId, actor }, deps);
     const qualitySignals = buildOpsQualitySignals(result, 'ops_explain');
     const v1Matrix = resolveV1FeatureMatrix();
+    const legalSnapshot = resolveLlmLegalPolicySnapshot({
+      policy: { lawfulBasis: 'consent', consentVerified: true, crossBorder: false },
+      policySource: 'admin_ops_default',
+      policyContext: 'admin_ops'
+    });
     const opsExplanationText = result && result.explanation && typeof result.explanation.opsExplanation === 'string'
       ? result.explanation.opsExplanation
       : '';
@@ -77,9 +83,10 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
       llmUsed: result && result.llmUsed === true,
       fallbackType: qualitySignals.fallbackType,
       replyText: opsExplanationText,
-      lawfulBasis: 'consent',
-      consentVerified: true,
-      legalDecision: 'allow',
+      lawfulBasis: legalSnapshot.lawfulBasis,
+      consentVerified: legalSnapshot.consentVerified,
+      crossBorder: legalSnapshot.crossBorder,
+      legalDecision: legalSnapshot.legalDecision,
       sourceReadinessDecision: result && result.llmUsed === true ? 'allow' : 'clarify',
       actionGatewayEnabled: v1Matrix.actionGateway === true,
       actionClass: 'lookup',
@@ -114,6 +121,10 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
       fallbackType: qualitySignals.fallbackType,
       contextCarryScore: qualitySignals.contextCarryScore,
       repeatRiskScore: qualitySignals.repeatRiskScore,
+      policySource: legalSnapshot.policySource,
+      policyContext: legalSnapshot.policyContext,
+      legalDecision: legalSnapshot.legalDecision,
+      legalReasonCodes: legalSnapshot.legalReasonCodes,
       readinessDecision: sharedReadiness.readiness.decision,
       readinessReasonCodes: sharedReadiness.readiness.reasonCodes,
       readinessSafeResponseMode: sharedReadiness.readiness.safeResponseMode,
@@ -152,6 +163,11 @@ async function handleAdminLlmNextActions(req, res, deps) {
     const result = await getNextActionCandidates({ lineUserId, traceId, actor }, deps);
     const qualitySignals = buildOpsQualitySignals(result, 'next_actions');
     const v1Matrix = resolveV1FeatureMatrix();
+    const legalSnapshot = resolveLlmLegalPolicySnapshot({
+      policy: { lawfulBasis: 'consent', consentVerified: true, crossBorder: false },
+      policySource: 'admin_ops_default',
+      policyContext: 'admin_ops'
+    });
     const firstReason = result
       && result.nextActionCandidates
       && Array.isArray(result.nextActionCandidates.candidates)
@@ -164,9 +180,10 @@ async function handleAdminLlmNextActions(req, res, deps) {
       llmUsed: result && result.llmUsed === true,
       fallbackType: qualitySignals.fallbackType,
       replyText: firstReason,
-      lawfulBasis: 'consent',
-      consentVerified: true,
-      legalDecision: 'allow',
+      lawfulBasis: legalSnapshot.lawfulBasis,
+      consentVerified: legalSnapshot.consentVerified,
+      crossBorder: legalSnapshot.crossBorder,
+      legalDecision: legalSnapshot.legalDecision,
       sourceReadinessDecision: result && result.llmUsed === true ? 'allow' : 'clarify',
       actionGatewayEnabled: v1Matrix.actionGateway === true,
       actionClass: 'lookup',
@@ -198,6 +215,10 @@ async function handleAdminLlmNextActions(req, res, deps) {
       fallbackType: qualitySignals.fallbackType,
       contextCarryScore: qualitySignals.contextCarryScore,
       repeatRiskScore: qualitySignals.repeatRiskScore,
+      policySource: legalSnapshot.policySource,
+      policyContext: legalSnapshot.policyContext,
+      legalDecision: legalSnapshot.legalDecision,
+      legalReasonCodes: legalSnapshot.legalReasonCodes,
       readinessDecision: sharedReadiness.readiness.decision,
       readinessReasonCodes: sharedReadiness.readiness.reasonCodes,
       readinessSafeResponseMode: sharedReadiness.readiness.safeResponseMode,
