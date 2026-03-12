@@ -78,6 +78,46 @@ const QUALITY_FRONTIER_THRESHOLDS = Object.freeze({
   costRegressionBlockRate: 0.2,
   ackSlaViolationBlockRate: 0.01
 });
+const QUALITY_LOOP_V2_PRIORITY_ORDER = Object.freeze([
+  'Emergency',
+  'Legal / Consent',
+  'Task Blocker',
+  'Journey State',
+  'City Pack / Source Refs / Local Guidance',
+  'Saved FAQ',
+  'Generic LLM reasoning'
+]);
+const QUALITY_LOOP_V2_CRITICAL_SLICES = Object.freeze([
+  'emergency_high_risk',
+  'saved_faq_high_risk_reuse',
+  'journey_blocker_conflict',
+  'stale_city_pack_required_source',
+  'compat_spike',
+  'trace_join_incomplete',
+  'direct_url_leakage',
+  'official_source_missing_on_high_risk'
+]);
+const QUALITY_LOOP_V2_RESERVATIONS = Object.freeze([
+  'judge_disagreement_queue',
+  'integration_counterexample_registry',
+  'replay_slice_registry',
+  'saved_faq_retirement_review',
+  'emergency_override_review_queue',
+  'city_pack_freshness_recertification_report'
+]);
+const QUALITY_LOOP_V2_THRESHOLDS = Object.freeze({
+  cityPackGroundingRate: 0.9,
+  staleSourceBlockRate: 0.95,
+  emergencyOfficialSourceRate: 1,
+  journeyAlignedActionRate: 0.85,
+  taskBlockerConflictRate: 0.02,
+  savedFaqReusePassRate: 0.9,
+  officialSourceUsageRateHighRisk: 0.95,
+  compatShareWindow: 0.15,
+  traceJoinCompleteness: 0.9,
+  adminTraceResolutionTimeMsStg: 15 * 60 * 1000,
+  crossSystemConflictWarningRate: 0.05
+});
 
 function buildContractFreezeSummary(registryPayload) {
   const payload = registryPayload && typeof registryPayload === 'object' ? registryPayload : {};
@@ -1158,6 +1198,256 @@ function buildCounterexampleQueueFromBoards(boards) {
   return buildCounterexampleQueueFromSignalEntries(entries, { limit: 10 });
 }
 
+function countWhere(rows, predicate) {
+  let total = 0;
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    if (predicate(row)) total += 1;
+  });
+  return total;
+}
+
+function buildRateMetric(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const sampleCount = Number.isFinite(Number(payload.sampleCount)) ? Number(payload.sampleCount) : 0;
+  const rawValue = Number(payload.value);
+  const threshold = payload.threshold && typeof payload.threshold === 'object' ? payload.threshold : {};
+  if (sampleCount <= 0 || !Number.isFinite(rawValue)) {
+    return {
+      key: payload.key || 'unknown',
+      value: null,
+      sampleCount,
+      status: 'missing',
+      operator: threshold.operator || null,
+      threshold: threshold.value !== undefined ? threshold.value : null,
+      note: payload.note || 'measurement_missing'
+    };
+  }
+  let status = 'pass';
+  if (threshold.operator === 'min' && rawValue < Number(threshold.value)) status = 'fail';
+  else if (threshold.operator === 'max' && rawValue > Number(threshold.value)) status = 'fail';
+  else if (threshold.operator === 'exact' && rawValue !== Number(threshold.value)) status = 'fail';
+  if (status === 'pass' && threshold.warnAbove !== undefined && rawValue > Number(threshold.warnAbove)) status = 'warning';
+  return {
+    key: payload.key || 'unknown',
+    value: Math.round(rawValue * 10000) / 10000,
+    sampleCount,
+    status,
+    operator: threshold.operator || null,
+    threshold: threshold.value !== undefined ? threshold.value : null,
+    note: payload.note || null
+  };
+}
+
+function buildDurationMetric(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const sampleCount = Number.isFinite(Number(payload.sampleCount)) ? Number(payload.sampleCount) : 0;
+  const rawValue = Number(payload.value);
+  const threshold = payload.threshold && typeof payload.threshold === 'object' ? payload.threshold : {};
+  if (sampleCount <= 0 || !Number.isFinite(rawValue)) {
+    return {
+      key: payload.key || 'unknown',
+      valueMs: null,
+      sampleCount,
+      status: 'missing',
+      operator: threshold.operator || null,
+      thresholdMs: threshold.value !== undefined ? threshold.value : null,
+      note: payload.note || 'measurement_missing'
+    };
+  }
+  const status = threshold.operator === 'max' && rawValue > Number(threshold.value) ? 'fail' : 'pass';
+  return {
+    key: payload.key || 'unknown',
+    valueMs: Math.round(rawValue),
+    sampleCount,
+    status,
+    operator: threshold.operator || null,
+    thresholdMs: threshold.value !== undefined ? threshold.value : null,
+    note: payload.note || null
+  };
+}
+
+function buildQualityLoopV2Summary(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const actionRows = Array.isArray(payload.actionRows) ? payload.actionRows : [];
+  const conversation = payload.conversationQuality && typeof payload.conversationQuality === 'object' ? payload.conversationQuality : {};
+  const optimization = payload.optimization && typeof payload.optimization === 'object' ? payload.optimization : {};
+
+  const cityPackRows = actionRows.filter((row) => row && (
+    row.cityPackGrounded === true
+    || Number(row.cityPackFreshnessScore) > 0
+    || Number(row.cityPackAuthorityScore) > 0
+  ));
+  const staleRows = actionRows.filter((row) => row && (
+    Number(row.cityPackFreshnessScore) > 0 && Number(row.cityPackFreshnessScore) < 0.6
+      || Number(row.sourceFreshnessScore) > 0 && Number(row.sourceFreshnessScore) < 0.6
+  ));
+  const emergencyRows = actionRows.filter((row) => row && row.emergencyContextActive === true);
+  const highRiskRows = actionRows.filter((row) => normalizeReason(row && row.intentRiskTier).toLowerCase() === 'high');
+  const journeyRows = actionRows.filter((row) => row && (
+    row.taskBlockerDetected === true
+    || normalizeReason(row.journeyPhase).toLowerCase() !== 'none'
+  ));
+  const blockerRows = actionRows.filter((row) => row && row.taskBlockerDetected === true);
+  const savedFaqRows = actionRows.filter((row) => row && row.savedFaqReused === true);
+  const crossSystemRows = actionRows.filter((row) => row && Object.prototype.hasOwnProperty.call(row, 'crossSystemConflictDetected'));
+  const readinessV2Rows = actionRows.filter((row) => row && normalizeReason(row.answerReadinessVersion).toLowerCase() === 'v2');
+  const traceJoinRows = actionRows.filter((row) => row && Number.isFinite(Number(row.traceJoinCompleteness)));
+  const traceResolutionRows = actionRows.filter((row) => row && Number.isFinite(Number(row.adminTraceResolutionTimeMs)));
+
+  const cityPackGroundingRate = buildRateMetric({
+    key: 'cityPackGroundingRate',
+    value: cityPackRows.length > 0
+      ? countWhere(cityPackRows, (row) => row.cityPackGrounded === true
+        && (Number(row.cityPackFreshnessScore) <= 0 || Number(row.cityPackFreshnessScore) >= 0.6)
+        && (Number(row.cityPackAuthorityScore) <= 0 || Number(row.cityPackAuthorityScore) >= 0.6)) / cityPackRows.length
+      : null,
+    sampleCount: cityPackRows.length,
+    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.cityPackGroundingRate }
+  });
+  const staleSourceBlockRate = buildRateMetric({
+    key: 'staleSourceBlockRate',
+    value: staleRows.length > 0
+      ? countWhere(staleRows, (row) => ['hedged', 'clarify', 'refuse'].includes(normalizeReason(row.readinessDecisionV2 || row.sourceReadinessDecision || row.readinessDecision).toLowerCase())) / staleRows.length
+      : null,
+    sampleCount: staleRows.length,
+    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.staleSourceBlockRate }
+  });
+  const emergencyOfficialSourceRate = buildRateMetric({
+    key: 'emergencyOfficialSourceRate',
+    value: emergencyRows.length > 0
+      ? countWhere(emergencyRows, (row) => row.emergencyOfficialSourceSatisfied === true) / emergencyRows.length
+      : null,
+    sampleCount: emergencyRows.length,
+    threshold: { operator: 'exact', value: QUALITY_LOOP_V2_THRESHOLDS.emergencyOfficialSourceRate }
+  });
+  const journeyAlignedActionRate = buildRateMetric({
+    key: 'journeyAlignedActionRate',
+    value: journeyRows.length > 0
+      ? countWhere(journeyRows, (row) => row.journeyAlignedAction === true) / journeyRows.length
+      : null,
+    sampleCount: journeyRows.length,
+    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.journeyAlignedActionRate }
+  });
+  const taskBlockerConflictRate = buildRateMetric({
+    key: 'taskBlockerConflictRate',
+    value: blockerRows.length > 0
+      ? countWhere(blockerRows, (row) => row.journeyAlignedAction !== true) / blockerRows.length
+      : null,
+    sampleCount: blockerRows.length,
+    threshold: { operator: 'max', value: QUALITY_LOOP_V2_THRESHOLDS.taskBlockerConflictRate }
+  });
+  const savedFaqReusePassRate = buildRateMetric({
+    key: 'savedFaqReusePassRate',
+    value: savedFaqRows.length > 0
+      ? countWhere(savedFaqRows, (row) => row.savedFaqReusePass === true) / savedFaqRows.length
+      : null,
+    sampleCount: savedFaqRows.length,
+    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.savedFaqReusePassRate }
+  });
+  const crossSystemConflictRate = buildRateMetric({
+    key: 'crossSystemConflictRate',
+    value: crossSystemRows.length > 0
+      ? countWhere(crossSystemRows, (row) => row.crossSystemConflictDetected === true) / crossSystemRows.length
+      : null,
+    sampleCount: crossSystemRows.length,
+    threshold: { operator: 'max', value: 1, warnAbove: QUALITY_LOOP_V2_THRESHOLDS.crossSystemConflictWarningRate },
+    note: 'review_on_spike'
+  });
+  const officialSourceUsageRateHighRisk = buildRateMetric({
+    key: 'officialSourceUsageRateHighRisk',
+    value: highRiskRows.length > 0
+      ? countWhere(highRiskRows, (row) => row.officialOnlySatisfied === true) / highRiskRows.length
+      : null,
+    sampleCount: highRiskRows.length,
+    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.officialSourceUsageRateHighRisk }
+  });
+  const compatShareWindow = buildRateMetric({
+    key: 'compatShareWindow',
+    value: Number.isFinite(Number(optimization.compatShareWindow)) ? Number(optimization.compatShareWindow) : null,
+    sampleCount: Number(conversation.sampleCount || 0),
+    threshold: { operator: 'max', value: QUALITY_LOOP_V2_THRESHOLDS.compatShareWindow }
+  });
+  const emergencyOverrideAppliedRate = buildRateMetric({
+    key: 'emergencyOverrideAppliedRate',
+    value: null,
+    sampleCount: emergencyRows.length,
+    threshold: { operator: 'min', value: 0 },
+    note: 'pending_emergency_override_wiring'
+  });
+  const traceJoinCompleteness = buildRateMetric({
+    key: 'traceJoinCompleteness',
+    value: traceJoinRows.length > 0 ? averageFromRows(traceJoinRows, (row) => row && row.traceJoinCompleteness) : null,
+    sampleCount: traceJoinRows.length,
+    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.traceJoinCompleteness },
+    note: 'pending_cross_system_trace_join'
+  });
+  const adminTraceResolutionTime = buildDurationMetric({
+    key: 'adminTraceResolutionTime',
+    value: traceResolutionRows.length > 0 ? averageFromRows(traceResolutionRows, (row) => row && row.adminTraceResolutionTimeMs) : null,
+    sampleCount: traceResolutionRows.length,
+    threshold: { operator: 'max', value: QUALITY_LOOP_V2_THRESHOLDS.adminTraceResolutionTimeMsStg },
+    note: 'pending_operator_trace_latency_wiring'
+  });
+  const directUrlLeakage = buildRateMetric({
+    key: 'directUrlLeakage',
+    value: null,
+    sampleCount: 0,
+    threshold: { operator: 'exact', value: 0 },
+    note: 'pending_direct_url_runtime_signal'
+  });
+
+  const integrationKpis = {
+    cityPackGroundingRate,
+    staleSourceBlockRate,
+    emergencyOfficialSourceRate,
+    emergencyOverrideAppliedRate,
+    journeyAlignedActionRate,
+    taskBlockerConflictRate,
+    savedFaqReusePassRate,
+    crossSystemConflictRate,
+    traceJoinCompleteness,
+    adminTraceResolutionTime,
+    officialSourceUsageRateHighRisk,
+    compatShareWindow,
+    directUrlLeakage
+  };
+  const missingMeasurements = Object.values(integrationKpis)
+    .filter((row) => row && row.status === 'missing')
+    .map((row) => row.key);
+
+  const criticalSlices = [
+    { sliceKey: 'emergency_high_risk', status: emergencyOfficialSourceRate.status, blocked: emergencyOfficialSourceRate.status === 'fail', sourceMetric: 'emergencyOfficialSourceRate' },
+    { sliceKey: 'saved_faq_high_risk_reuse', status: savedFaqReusePassRate.status, blocked: savedFaqReusePassRate.status === 'fail', sourceMetric: 'savedFaqReusePassRate' },
+    { sliceKey: 'journey_blocker_conflict', status: taskBlockerConflictRate.status, blocked: taskBlockerConflictRate.status === 'fail', sourceMetric: 'taskBlockerConflictRate' },
+    { sliceKey: 'stale_city_pack_required_source', status: staleSourceBlockRate.status, blocked: staleSourceBlockRate.status === 'fail', sourceMetric: 'staleSourceBlockRate' },
+    { sliceKey: 'compat_spike', status: compatShareWindow.status, blocked: compatShareWindow.status === 'fail', sourceMetric: 'compatShareWindow' },
+    { sliceKey: 'trace_join_incomplete', status: traceJoinCompleteness.status, blocked: traceJoinCompleteness.status !== 'pass', sourceMetric: 'traceJoinCompleteness' },
+    { sliceKey: 'direct_url_leakage', status: directUrlLeakage.status, blocked: directUrlLeakage.status !== 'pass', sourceMetric: 'directUrlLeakage' },
+    { sliceKey: 'official_source_missing_on_high_risk', status: officialSourceUsageRateHighRisk.status, blocked: officialSourceUsageRateHighRisk.status === 'fail', sourceMetric: 'officialSourceUsageRateHighRisk' }
+  ];
+
+  const readinessDecisionV2Breakdown = new Map();
+  readinessV2Rows.forEach((row) => {
+    incrementCount(readinessDecisionV2Breakdown, row && row.readinessDecisionV2 ? row.readinessDecisionV2 : 'none');
+  });
+
+  return {
+    version: 'v2-foundation',
+    rolloutStage: 'log_only',
+    crossSystemPriorityOrder: QUALITY_LOOP_V2_PRIORITY_ORDER.slice(),
+    criticalSliceKeys: QUALITY_LOOP_V2_CRITICAL_SLICES.slice(),
+    criticalSlices,
+    integrationKpis,
+    readinessV2: {
+      sampleCount: readinessV2Rows.length,
+      versionObserved: readinessV2Rows.length > 0 ? 'v2' : 'none',
+      decisionBreakdown: sortCountEntries(readinessDecisionV2Breakdown, 'decision', 10)
+    },
+    missingJoins: missingMeasurements.slice(),
+    reservations: QUALITY_LOOP_V2_RESERVATIONS.slice()
+  };
+}
+
 function buildQualityFrameworkSummary(payload) {
   const data = payload && typeof payload === 'object' ? payload : {};
   const conversation = data.conversationQuality && typeof data.conversationQuality === 'object' ? data.conversationQuality : {};
@@ -1491,6 +1781,11 @@ function buildQualityFrameworkSummary(payload) {
 
   const boards = buildTopQualityBoards(actionRows, hardFailures);
   const counterexampleQueue = buildCounterexampleQueueFromBoards(boards);
+  const qualityLoopV2 = buildQualityLoopV2Summary({
+    actionRows,
+    conversationQuality: conversation,
+    optimization: data.optimization
+  });
 
   return {
     frameworkVersion: 'v1',
@@ -1551,7 +1846,8 @@ function buildQualityFrameworkSummary(payload) {
       latencyRegressionRate: Math.round(latencyRegressionRate * 10000) / 10000,
       costRegressionRate: Math.round(costRegressionRate * 10000) / 10000,
       status: frontierFailures.length > 0 ? 'fail' : (frontierWarnings.length > 0 ? 'warning' : 'pass')
-    }
+    },
+    qualityLoopV2
   };
 }
 
@@ -1714,11 +2010,20 @@ async function handleLlmUsageSummary(req, res) {
         releaseBlockedBy: releaseReadiness.blockedBy.slice(0, 6),
         optimizationVersion: optimizationSummary.optimizationVersion,
         compatShareWindow: optimizationSummary.compatShareWindow,
-        qualityOverallScore: qualityFrameworkSummary.overallScore,
-        qualityHardGatePass: qualityFrameworkSummary.hardGate && qualityFrameworkSummary.hardGate.pass === true,
-        contractRegistryVersion: qualityFrameworkSummary.contractFreeze && qualityFrameworkSummary.contractFreeze.registryVersion
-          ? qualityFrameworkSummary.contractFreeze.registryVersion
-          : 'unknown',
+      qualityOverallScore: qualityFrameworkSummary.overallScore,
+      qualityHardGatePass: qualityFrameworkSummary.hardGate && qualityFrameworkSummary.hardGate.pass === true,
+      qualityLoopV2Version: qualityFrameworkSummary.qualityLoopV2 && qualityFrameworkSummary.qualityLoopV2.version
+        ? qualityFrameworkSummary.qualityLoopV2.version
+        : 'none',
+      qualityLoopV2CriticalSliceFailCount: qualityFrameworkSummary.qualityLoopV2 && Array.isArray(qualityFrameworkSummary.qualityLoopV2.criticalSlices)
+        ? qualityFrameworkSummary.qualityLoopV2.criticalSlices.filter((row) => row && row.status === 'fail').length
+        : 0,
+      qualityLoopV2MissingJoinCount: qualityFrameworkSummary.qualityLoopV2 && Array.isArray(qualityFrameworkSummary.qualityLoopV2.missingJoins)
+        ? qualityFrameworkSummary.qualityLoopV2.missingJoins.length
+        : 0,
+      contractRegistryVersion: qualityFrameworkSummary.contractFreeze && qualityFrameworkSummary.contractFreeze.registryVersion
+        ? qualityFrameworkSummary.contractFreeze.registryVersion
+        : 'unknown',
         contractRegistryHash: qualityFrameworkSummary.contractFreeze && qualityFrameworkSummary.contractFreeze.registryHash
           ? qualityFrameworkSummary.contractFreeze.registryHash
           : 'unknown',
@@ -1761,6 +2066,7 @@ module.exports = {
   buildConversationQualitySummary,
   buildReleaseReadiness,
   buildQualityFrameworkSummary,
+  buildQualityLoopV2Summary,
   buildContractFreezeSummary,
   buildCounterexampleQueueFromBoards,
   maskLineUserId

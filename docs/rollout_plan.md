@@ -29,3 +29,39 @@
   - `directAnswerMissRate > 0.08`
   - `avgRepeatRiskScore > 0.5`
   - non-hard-gate dimension `score < 0.80`
+
+## Quality Loop v2 staged rollout
+1. `design_only`
+   - PR-1 / PR-4 / PR-6
+   - docs / contract / tooling only
+2. `log_only`
+   - PR-3 / PR-3.5 / PR-7
+   - integration KPI visible, no runtime enforcement
+3. `soft_enforcement`
+   - FAQ / admin / compat first
+4. `hard_enforcement`
+   - paid webhook / FAQ canonical / emergency override / journey blocker / high-risk saved FAQ reuse
+5. `nogo_gate_mandatory`
+   - all critical slices block release
+6. `continuous_improvement_loop_active`
+   - nightly audit / integration audit / top failure register / PR plan generation
+
+## Quality Loop v2 critical slices
+- `emergency_high_risk`
+- `saved_faq_high_risk_reuse`
+- `journey_blocker_conflict`
+- `stale_city_pack_required_source`
+- `compat_spike`
+- `trace_join_incomplete`
+- `direct_url_leakage`
+- `official_source_missing_on_high_risk`
+
+## Quality Loop v2 integration gates
+- `cityPackGroundingRate >= 0.90`
+- `staleSourceBlockRate >= 0.95`（high-risk）
+- `emergencyOfficialSourceRate = 1.00`
+- `journeyAlignedActionRate >= 0.85`
+- `taskBlockerConflictRate <= 0.02`
+- `savedFaqReusePassRate >= 0.90`
+- `traceJoinCompleteness >= 0.90`
+- `adminTraceResolutionTime <= 15m` on stg p50, `<= 30m` on prod p50

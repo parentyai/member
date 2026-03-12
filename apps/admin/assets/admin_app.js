@@ -17975,6 +17975,10 @@ function renderLlmQualityFrameworkDashboard(summary) {
     renderLlmResult('llm-quality-top-failures', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-counterexamples', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-top-patterns', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-v2-overview', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-v2-readiness', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-v2-integration', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-v2-critical-slices', { ok: false, error: 'no_quality_framework' });
     return;
   }
 
@@ -17986,6 +17990,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
   const contractFreeze = quality.contractFreeze && typeof quality.contractFreeze === 'object' ? quality.contractFreeze : {};
   const replay = quality.replay && typeof quality.replay === 'object' ? quality.replay : {};
   const frontier = quality.frontier && typeof quality.frontier === 'object' ? quality.frontier : {};
+  const qualityLoopV2 = quality.qualityLoopV2 && typeof quality.qualityLoopV2 === 'object' ? quality.qualityLoopV2 : {};
   const topQualityFailures = Array.isArray(quality.top_10_quality_failures) ? quality.top_10_quality_failures : [];
   const counterexampleQueue = Array.isArray(quality.counterexampleQueue) ? quality.counterexampleQueue : [];
   const topLoopCases = Array.isArray(quality.top_10_loop_cases) ? quality.top_10_loop_cases : [];
@@ -18067,6 +18072,31 @@ function renderLlmQualityFrameworkDashboard(summary) {
     top_10_context_loss_cases: topContextLossCases,
     top_10_japanese_service_failures: topJapaneseServiceFailures,
     top_10_line_fit_failures: topLineFitFailures
+  });
+  renderLlmResult('llm-quality-v2-overview', {
+    ok: true,
+    version: qualityLoopV2.version || 'v2-foundation',
+    rolloutStage: qualityLoopV2.rolloutStage || 'log_only',
+    crossSystemPriorityOrder: Array.isArray(qualityLoopV2.crossSystemPriorityOrder) ? qualityLoopV2.crossSystemPriorityOrder : [],
+    criticalSliceKeys: Array.isArray(qualityLoopV2.criticalSliceKeys) ? qualityLoopV2.criticalSliceKeys : [],
+    missingJoins: Array.isArray(qualityLoopV2.missingJoins) ? qualityLoopV2.missingJoins : [],
+    reservations: Array.isArray(qualityLoopV2.reservations) ? qualityLoopV2.reservations : []
+  });
+  renderLlmResult('llm-quality-v2-readiness', {
+    ok: true,
+    readinessV2: qualityLoopV2.readinessV2 && typeof qualityLoopV2.readinessV2 === 'object'
+      ? qualityLoopV2.readinessV2
+      : {}
+  });
+  renderLlmResult('llm-quality-v2-integration', {
+    ok: true,
+    integrationKpis: qualityLoopV2.integrationKpis && typeof qualityLoopV2.integrationKpis === 'object'
+      ? qualityLoopV2.integrationKpis
+      : {}
+  });
+  renderLlmResult('llm-quality-v2-critical-slices', {
+    ok: true,
+    criticalSlices: Array.isArray(qualityLoopV2.criticalSlices) ? qualityLoopV2.criticalSlices : []
   });
 }
 
