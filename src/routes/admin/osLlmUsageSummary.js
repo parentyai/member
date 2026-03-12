@@ -4,6 +4,7 @@ const llmUsageLogsRepo = require('../../repos/firestore/llmUsageLogsRepo');
 const llmActionLogsRepo = require('../../repos/firestore/llmActionLogsRepo');
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const specContractRegistry = require('../../../contracts/llm_spec_contract_registry.v2.json');
+const { buildBacklogRowsFromSignals } = require('../../../tools/generate_llm_improvement_plan');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 const { buildCounterexampleQueueFromSignalEntries } = require('../../domain/llm/quality/counterexampleQueue');
@@ -1479,6 +1480,98 @@ function buildQualityLoopV2Summary(data) {
   };
 }
 
+function buildImprovementLoopSummary(payload) {
+  const data = payload && typeof payload === 'object' ? payload : {};
+  const qualityLoopV2 = data.qualityLoopV2 && typeof data.qualityLoopV2 === 'object' ? data.qualityLoopV2 : {};
+  const actionRows = Array.isArray(data.actionRows) ? data.actionRows : [];
+  const traceSearchAuditRows = Array.isArray(data.traceSearchAuditRows) ? data.traceSearchAuditRows : [];
+  const hardFailures = Array.isArray(data.hardFailures) ? data.hardFailures : [];
+  const topQualityFailures = Array.isArray(data.topQualityFailures) ? data.topQualityFailures : [];
+  const topLoopCases = Array.isArray(data.topLoopCases) ? data.topLoopCases : [];
+  const topContextLossCases = Array.isArray(data.topContextLossCases) ? data.topContextLossCases : [];
+
+  const signalEntries = [];
+  const integrationKpis = qualityLoopV2.integrationKpis && typeof qualityLoopV2.integrationKpis === 'object'
+    ? qualityLoopV2.integrationKpis
+    : {};
+  const criticalSlices = Array.isArray(qualityLoopV2.criticalSlices) ? qualityLoopV2.criticalSlices : [];
+  const missingMeasurements = Array.isArray(qualityLoopV2.missingJoins) ? qualityLoopV2.missingJoins : [];
+
+  const pushSignal = (category, severity, signal) => {
+    if (!signal) return;
+    signalEntries.push({
+      category,
+      severity,
+      signals: [{ signal }]
+    });
+  };
+
+  criticalSlices
+    .filter((row) => row && row.status !== 'pass')
+    .forEach((row) => {
+      const signal = row && row.sourceMetric ? row.sourceMetric : row.sliceKey;
+      if (signal === 'compatShareWindow') pushSignal('router', 'high', signal);
+      else if (signal === 'traceJoinCompleteness' || signal === 'adminTraceResolutionTime') pushSignal('telemetry', 'high', signal);
+      else if (['cityPackGroundingRate', 'staleSourceBlockRate', 'savedFaqReusePassRate'].includes(signal)) pushSignal('knowledge', 'high', signal);
+      else if (['emergencyOfficialSourceRate', 'emergencyOverrideAppliedRate', 'journeyAlignedActionRate', 'taskBlockerConflictRate'].includes(signal)) pushSignal('integration', 'high', signal);
+      else if (signal === 'officialSourceUsageRateHighRisk') pushSignal('policy', 'high', 'officialSourceUsageRate');
+    });
+
+  missingMeasurements.forEach((signal) => {
+    if (signal === 'traceJoinCompleteness' || signal === 'adminTraceResolutionTime') pushSignal('telemetry', 'medium', signal);
+    else if (['cityPackGroundingRate', 'savedFaqReusePassRate', 'staleSourceBlockRate'].includes(signal)) pushSignal('knowledge', 'medium', signal);
+    else if (signal === 'compatShareWindow') pushSignal('router', 'medium', signal);
+    else pushSignal('integration', 'medium', signal);
+  });
+
+  Object.entries(integrationKpis).forEach(([key, row]) => {
+    if (!row || row.status === 'pass' || row.status === 'missing') return;
+    const severity = row.status === 'fail' ? 'high' : 'medium';
+    if (key === 'compatShareWindow') pushSignal('router', severity, key);
+    else if (key === 'officialSourceUsageRateHighRisk') pushSignal('policy', severity, 'officialSourceUsageRate');
+    else if (key === 'traceJoinCompleteness' || key === 'adminTraceResolutionTime') pushSignal('telemetry', severity, key);
+    else if (['cityPackGroundingRate', 'savedFaqReusePassRate', 'staleSourceBlockRate'].includes(key)) pushSignal('knowledge', severity, key);
+    else pushSignal('integration', severity, key);
+  });
+
+  hardFailures.forEach((failure) => {
+    const text = normalizeReason(failure);
+    if (text.includes('contradiction') || text.includes('unsupported') || text.includes('readiness')) pushSignal('readiness', 'high', text);
+    else if (text.includes('compat')) pushSignal('router', 'high', text);
+    else if (text.includes('policy') || text.includes('official')) pushSignal('policy', 'high', text);
+  });
+
+  topLoopCases.slice(0, 2).forEach((row) => pushSignal('router', 'medium', row && row.signal));
+  topContextLossCases.slice(0, 2).forEach((row) => pushSignal('integration', 'medium', row && row.signal));
+  topQualityFailures.slice(0, 2).forEach((row) => pushSignal('readiness', 'medium', row && row.failure));
+
+  const improvementBacklog = buildBacklogRowsFromSignals(signalEntries, { limit: 5 });
+  const topFailures = Array.from(new Set(signalEntries.flatMap((row) => (Array.isArray(row.signals) ? row.signals.map((item) => item && item.signal).filter(Boolean) : []))))
+    .slice(0, 5)
+    .map((signal) => ({ signal }));
+
+  const sampleCount = actionRows.length + traceSearchAuditRows.length;
+  let qualityLoopStatus = 'ok';
+  if (sampleCount <= 0) qualityLoopStatus = 'missing';
+  else if ((qualityLoopV2.criticalSliceFailCount || 0) > 0 || hardFailures.length > 0) qualityLoopStatus = 'action_required';
+  else if (missingMeasurements.length > 0 || topFailures.length > 0) qualityLoopStatus = 'warning';
+
+  const lastAuditAt = [actionRows, traceSearchAuditRows]
+    .flat()
+    .reduce((latest, row) => {
+      const value = toMillis(row && row.createdAt ? row.createdAt : null);
+      if (!Number.isFinite(value)) return latest;
+      return latest === null || value > latest ? value : latest;
+    }, null);
+
+  return {
+    qualityLoopStatus,
+    lastAuditAt: lastAuditAt === null ? null : new Date(lastAuditAt).toISOString(),
+    topFailures: topFailures.slice(0, 5),
+    improvementBacklog: improvementBacklog.slice(0, 5)
+  };
+}
+
 function buildTraceSearchAuditRows(auditRows) {
   return (Array.isArray(auditRows) ? auditRows : []).map((row) => {
     const summary = row && row.payloadSummary && typeof row.payloadSummary === 'object' ? row.payloadSummary : {};
@@ -1838,6 +1931,15 @@ function buildQualityFrameworkSummary(payload) {
   });
   const boards = buildTopQualityBoards(actionRows, hardFailures);
   const counterexampleQueue = buildCounterexampleQueueFromBoards(boards);
+  qualityLoopV2.improvementLoop = buildImprovementLoopSummary({
+    qualityLoopV2,
+    actionRows,
+    traceSearchAuditRows: Array.isArray(data.traceSearchAuditRows) ? data.traceSearchAuditRows : [],
+    hardFailures,
+    topQualityFailures: boards.topQualityFailures,
+    topLoopCases: boards.topLoopCases,
+    topContextLossCases: boards.topContextLossCases
+  });
 
   return {
     frameworkVersion: 'v1',
@@ -2135,6 +2237,7 @@ module.exports = {
   buildReleaseReadiness,
   buildQualityFrameworkSummary,
   buildQualityLoopV2Summary,
+  buildImprovementLoopSummary,
   buildTraceSearchAuditRows,
   buildContractFreezeSummary,
   buildCounterexampleQueueFromBoards,
