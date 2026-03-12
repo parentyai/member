@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-12T00:36:35-04:00",
-  "gitCommit": "f028b57a9ec68a0ad4348314b9729f0ece14c743",
-  "branch": "codex/admin-ui-pr5-data-relations",
-  "sourceDigest": "8cbc07547e30b5d4f76697af9851fa412f14ad692a9f6943ee6f9239c5b8ca56",
+  "generatedAt": "2026-03-12T01:02:22-04:00",
+  "gitCommit": "8e9e319650dcbf6957f3f73fa8e730735912de7f",
+  "branch": "codex/admin-ui-pr6-system-isolation",
+  "sourceDigest": "d431b2fcd9a0d7f9d36ee4506a440fe659ff33fab4037293a1475b6fbd48c335",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
