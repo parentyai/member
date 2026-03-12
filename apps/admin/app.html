@@ -712,7 +712,8 @@
                       </div>
                       <ul id="composer-safety-reasons" class="composer-safety-reasons"></ul>
                       <div id="composer-fix-guidance" class="composer-fix-guidance"></div>
-                      <div class="composer-evidence-links">
+                      <div class="note">証跡確認は Evidence 画面で行います（監査ログ / 配信結果）。</div>
+                      <div class="composer-evidence-links" data-ui="composer-evidence-nav">
                         <button id="composer-open-audit" type="button" class="button-subtle">監査ログを開く</button>
                         <button id="composer-open-trace-monitor" type="button" class="button-subtle">traceで配信結果へ</button>
                       </div>
@@ -1015,9 +1016,10 @@
                 </div>
               </div>
 
-              <details class="panel">
+              <details id="composer-evidence-inline" class="panel is-hidden" hidden aria-hidden="true">
                 <summary data-dict-key="ui.label.composer.details">詳細（内部キー）</summary>
                 <div class="panel-body">
+                  <div class="note">証跡メタは Evidence 画面へ分離済みです。この領域は内部保持のみ行います。</div>
                   <div class="note"><span data-dict-key="ui.label.composer.notificationId">通知ID</span>: <span id="notificationId">-</span></div>
                   <div class="note"><span data-dict-key="ui.label.composer.planHash">計画ハッシュ</span>: <span id="planHash">-</span></div>
                   <div class="note"><span data-dict-key="ui.label.composer.confirmToken">確認トークン</span>: <span id="confirmToken">-</span></div>
@@ -2159,6 +2161,10 @@
                 <div class="panel-body">
                   <div id="monitor-detail" class="note">行を選択すると詳細を表示します。</div>
                   <div id="monitor-safe-next-step" class="safe-next-step" data-dict-key="ui.desc.monitor.safeNextStep">次の安全な一手: 反応率が低い通知の詳細を確認する</div>
+                  <div class="note">配信状況の確認はこの画面、trace/auditの証跡追跡は監査ログ画面で行います。</div>
+                  <div class="row row-top">
+                    <button id="monitor-open-audit-from-detail" type="button" class="button-subtle">監査ログへ（trace）</button>
+                  </div>
                   <details>
                     <summary data-dict-key="ui.label.monitor.raw">RAW JSON</summary>
                     <pre id="monitor-raw">-</pre>
@@ -3888,6 +3894,18 @@
         <section id="pane-audit" class="app-pane" data-pane="audit">
           <div class="pane-grid">
             <div class="pane-main">
+              <div class="panel" data-ui="evidence-scope-panel">
+                <div class="panel-title">Evidence Hub（trace / audit / decision timeline）</div>
+                <div class="panel-body">
+                  <div class="note">Audit: traceIdで証跡JSONと判断ログを追跡します。</div>
+                  <div class="note">Monitor: 配信結果と運用状態を確認します。</div>
+                  <div class="note">Decision timeline: 監査詳細で判断履歴を時系列に確認します。</div>
+                  <div class="row row-top">
+                    <button id="audit-open-monitor" type="button" class="button-subtle">配信結果へ（trace）</button>
+                    <button id="audit-open-composer" type="button" class="button-subtle">通知作成へ戻る</button>
+                  </div>
+                </div>
+              </div>
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.audit.search">監査検索</div>
                 <div class="panel-body">
@@ -3903,7 +3921,7 @@
             </div>
             <div class="pane-detail">
               <div class="panel">
-                <div class="panel-title" data-dict-key="ui.label.audit.detail">詳細</div>
+                <div class="panel-title">Decision Timeline / 詳細</div>
                 <div class="panel-body">
                   <pre id="audit-detail">-</pre>
                 </div>
