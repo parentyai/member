@@ -1435,24 +1435,33 @@ function buildQualityLoopV2Summary(data) {
     incrementCount(readinessModeBreakdown, row && row.answerReadinessV2Mode ? row.answerReadinessV2Mode : 'unknown');
     incrementCount(readinessStageBreakdown, row && row.answerReadinessV2Stage ? row.answerReadinessV2Stage : 'unknown');
   });
-  const hardEnforcedCount = countWhere(readinessV2Rows, (row) => row && row.answerReadinessV2Stage === 'hard_enforcement');
+  const nogoGateMandatoryCount = countWhere(readinessV2Rows, (row) => row && row.answerReadinessV2Stage === 'nogo_gate_mandatory');
+  const hardEnforcedCount = countWhere(
+    readinessV2Rows,
+    (row) => row && (row.answerReadinessV2Stage === 'hard_enforcement' || row.answerReadinessV2Stage === 'nogo_gate_mandatory')
+  );
   const softEnforcedCount = countWhere(readinessV2Rows, (row) => row && row.answerReadinessEnforcedV2 === true && row.answerReadinessV2Stage === 'soft_enforcement');
   const logOnlyCount = countWhere(readinessV2Rows, (row) => row && row.answerReadinessLogOnlyV2 === true);
   let rolloutStage = 'design_only';
-  if (hardEnforcedCount > 0) {
+  if (nogoGateMandatoryCount > 0) {
+    rolloutStage = 'nogo_gate_mandatory';
+  } else if (hardEnforcedCount > 0) {
     rolloutStage = 'hard_enforcement';
   } else if (softEnforcedCount > 0) {
     rolloutStage = 'soft_enforcement';
   } else if (readinessV2Rows.length > 0) {
     rolloutStage = 'log_only';
   }
+  const criticalSliceFailCount = criticalSlices.filter((row) => row && row.status !== 'pass').length;
 
   return {
     version: 'v2-foundation',
     rolloutStage,
+    nogoGateMandatoryActive: rolloutStage === 'nogo_gate_mandatory',
     crossSystemPriorityOrder: QUALITY_LOOP_V2_PRIORITY_ORDER.slice(),
     criticalSliceKeys: QUALITY_LOOP_V2_CRITICAL_SLICES.slice(),
     criticalSlices,
+    criticalSliceFailCount,
     integrationKpis,
     readinessV2: {
       sampleCount: readinessV2Rows.length,
@@ -1462,7 +1471,8 @@ function buildQualityLoopV2Summary(data) {
       stageBreakdown: sortCountEntries(readinessStageBreakdown, 'stage', 10),
       hardEnforcedCount,
       softEnforcedCount,
-      logOnlyCount
+      logOnlyCount,
+      nogoGateMandatoryCount
     },
     missingJoins: missingMeasurements.slice(),
     reservations: QUALITY_LOOP_V2_RESERVATIONS.slice()
@@ -1816,14 +1826,18 @@ function buildQualityFrameworkSummary(payload) {
   }
   frontierFailures.forEach((item) => hardFailures.push(`frontier:${item}`));
 
-  const boards = buildTopQualityBoards(actionRows, hardFailures);
-  const counterexampleQueue = buildCounterexampleQueueFromBoards(boards);
   const qualityLoopV2 = buildQualityLoopV2Summary({
     actionRows,
     traceSearchAuditRows: Array.isArray(data.traceSearchAuditRows) ? data.traceSearchAuditRows : [],
     conversationQuality: conversation,
     optimization: data.optimization
   });
+  qualityLoopV2.criticalSlices.forEach((row) => {
+    if (!row || row.status === 'pass') return;
+    hardFailures.push(`quality_loop_v2_critical_slice_fail:${row.sliceKey}`);
+  });
+  const boards = buildTopQualityBoards(actionRows, hardFailures);
+  const counterexampleQueue = buildCounterexampleQueueFromBoards(boards);
 
   return {
     frameworkVersion: 'v1',

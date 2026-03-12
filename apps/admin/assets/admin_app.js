@@ -18104,8 +18104,12 @@ function renderLlmQualityFrameworkDashboard(summary) {
     ok: true,
     version: qualityLoopV2.version || 'v2-foundation',
     rolloutStage: qualityLoopV2.rolloutStage || 'log_only',
+    nogoGateMandatoryActive: qualityLoopV2.nogoGateMandatoryActive === true,
     crossSystemPriorityOrder: Array.isArray(qualityLoopV2.crossSystemPriorityOrder) ? qualityLoopV2.crossSystemPriorityOrder : [],
     criticalSliceKeys: Array.isArray(qualityLoopV2.criticalSliceKeys) ? qualityLoopV2.criticalSliceKeys : [],
+    criticalSliceFailCount: Number.isFinite(Number(qualityLoopV2.criticalSliceFailCount))
+      ? Number(qualityLoopV2.criticalSliceFailCount)
+      : 0,
     missingJoins: Array.isArray(qualityLoopV2.missingJoins) ? qualityLoopV2.missingJoins : [],
     reservations: Array.isArray(qualityLoopV2.reservations) ? qualityLoopV2.reservations : []
   });

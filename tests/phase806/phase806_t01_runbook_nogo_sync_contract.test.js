@@ -36,8 +36,14 @@ test('phase806: docs include quality loop v2 critical slices and rollout stages'
     'soft_enforcement',
     'hard_enforcement',
     'nogo_gate_mandatory',
-    'continuous_improvement_loop_active'
+    'continuous_improvement_loop_active',
+    'ENABLE_LLM_QUALITY_LOOP_V2_NOGO_GATE'
   ].forEach((token) => {
+    if (token.startsWith('ENABLE_')) {
+      assert.ok(runbook.includes(token));
+      assert.ok(loopV2.includes(token));
+      return;
+    }
     assert.ok(rollout.includes(token));
     assert.ok(loopV2.includes(token));
   });

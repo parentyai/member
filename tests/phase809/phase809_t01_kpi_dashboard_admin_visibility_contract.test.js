@@ -71,6 +71,8 @@ test('phase809: usage summary exposes quality loop v2 integration KPIs and criti
   assert.ok(quality.qualityLoopV2.integrationKpis.journeyAlignedActionRate);
   assert.ok(Array.isArray(quality.qualityLoopV2.criticalSlices));
   assert.ok(quality.qualityLoopV2.criticalSlices.some((row) => row.sliceKey === 'journey_blocker_conflict'));
+  assert.equal(typeof quality.qualityLoopV2.nogoGateMandatoryActive, 'boolean');
+  assert.equal(typeof quality.qualityLoopV2.criticalSliceFailCount, 'number');
 });
 
 test('phase809: admin llm pane includes v2 integration sections and renderer hooks', () => {

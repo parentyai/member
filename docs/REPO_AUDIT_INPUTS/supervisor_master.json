@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-12T13:28:23-04:00",
-  "gitCommit": "2854b51ee6a8923b58f1dafebeef3594ffd7b7f4",
-  "branch": "codex/llm-quality-loop-v2-soft-enforce",
-  "sourceDigest": "1a88519e28103ee48be3a4c7ecf60c4afdcb35e5c3826eb7af536b9a51f3020e",
+  "generatedAt": "2026-03-12T14:00:03-04:00",
+  "gitCommit": "ec1f51222ab11af08cb3a8c775d89b49283619cf",
+  "branch": "codex/llm-quality-loop-v2-hard-enforce",
+  "sourceDigest": "d369350da98c836e2dd78432b9fc5253b90b7a15643835b6cc98e0270e323596",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

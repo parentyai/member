@@ -256,6 +256,18 @@ function normalizeRuntimeSummarySource(value) {
   return value.trim().toLowerCase();
 }
 
+function extractQualityLoopV2(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+  const summaryNode = payload.summary && typeof payload.summary === 'object' ? payload.summary : payload;
+  const qualityFramework = summaryNode.qualityFramework && typeof summaryNode.qualityFramework === 'object'
+    ? summaryNode.qualityFramework
+    : null;
+  if (!qualityFramework || !qualityFramework.qualityLoopV2 || typeof qualityFramework.qualityLoopV2 !== 'object') {
+    return null;
+  }
+  return qualityFramework.qualityLoopV2;
+}
+
 function isRuntimeSummaryProvenanceAccepted(value) {
   const source = normalizeRuntimeSummarySource(value);
   if (!source) return false;
@@ -322,6 +334,10 @@ function main(argv) {
     args.requireCompatGovernance,
     toBool(process.env.LLM_QUALITY_REQUIRE_COMPAT_GOVERNANCE, false)
   );
+  const requireNoGoGateMandatory = toBool(
+    args.requireNoGoGateMandatory,
+    toBool(process.env.LLM_QUALITY_REQUIRE_NOGO_GATE_MANDATORY, false)
+  );
   const maxCompatShare = parseRate(
     args.maxCompatShare,
     parseRate(process.env.LLM_QUALITY_MAX_COMPAT_SHARE, 0.15)
@@ -338,6 +354,7 @@ function main(argv) {
   const candidateSourceType = candidateResolved.sourceType || 'candidate_metrics_fallback';
   const runtimeSummarySource = candidateResolved.runtimeSummarySource;
   const sourceSummary = candidateResolved.summary;
+  const qualityLoopV2 = extractQualityLoopV2(sourceSummary);
   const compatShareWindow = resolveCompatShareWindow(sourceSummary);
   const runtimeSummaryReadable = candidateResolved.runtimeSummaryReadable === true;
   const runtimeSummaryConverted = candidateResolved.runtimeSummaryConverted === true;
@@ -412,6 +429,24 @@ function main(argv) {
       : null;
     if (!compatSlice || compatSlice.status !== 'pass') failures.push('compat_slice_not_pass');
   }
+  if (requireNoGoGateMandatory === true) {
+    if (!qualityLoopV2) {
+      failures.push('quality_loop_v2_missing');
+    } else {
+      if (String(qualityLoopV2.rolloutStage || '') !== 'nogo_gate_mandatory') {
+        failures.push(`quality_loop_v2_rollout_stage_not_mandatory:${String(qualityLoopV2.rolloutStage || 'missing')}`);
+      }
+      const criticalSlices = Array.isArray(qualityLoopV2.criticalSlices) ? qualityLoopV2.criticalSlices : [];
+      if (criticalSlices.length === 0) {
+        failures.push('quality_loop_v2_critical_slices_missing');
+      } else {
+        criticalSlices.forEach((row) => {
+          if (!row || typeof row !== 'object') return;
+          if (row.status !== 'pass') failures.push(`quality_loop_v2_critical_slice_fail:${String(row.sliceKey || 'unknown')}`);
+        });
+      }
+    }
+  }
 
   warnings.push(...candidateScorecard.hardGate.warnings);
   warnings.push(...sliceGate.warnings);
@@ -429,6 +464,7 @@ function main(argv) {
     requireRuntimeProvenance,
     runtimeSummarySource,
     requireCompatGovernance,
+    requireNoGoGateMandatory,
     maxCompatShare,
     compatShareWindow,
     runtimeSummaryReadable,
@@ -437,6 +473,7 @@ function main(argv) {
     adjudicationPath,
     manifestPath,
     candidateSourceType,
+    qualityLoopV2,
     benchmarkRegistry,
     contamination,
     judgeCalibration,

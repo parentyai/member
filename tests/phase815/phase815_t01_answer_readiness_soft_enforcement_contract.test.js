@@ -76,3 +76,21 @@ test('phase815: hard enforcement applies to webhook routes when dedicated flag i
   assert.equal(mode.answerReadinessEnforcedV2, true);
   assert.equal(mode.answerReadinessLogOnlyV2, false);
 });
+
+test('phase815: no-go mandatory stage supersedes hard enforcement when explicit gate flag is enabled', () => {
+  const mode = resolveAnswerReadinessV2Mode({
+    entryType: 'webhook',
+    readinessLegacy: { decision: 'allow', reasonCodes: [] },
+    readinessV2: { decision: 'refuse', reasonCodes: ['official_only_not_satisfied'] }
+  }, {
+    ENABLE_ANSWER_READINESS_V2_LOG_ONLY: 'true',
+    ENABLE_ANSWER_READINESS_V2_ENFORCE: 'true',
+    ENABLE_ANSWER_READINESS_V2_ENFORCE_WEBHOOK: 'true',
+    ENABLE_LLM_QUALITY_LOOP_V2_NOGO_GATE: 'true'
+  });
+
+  assert.equal(mode.stage, 'nogo_gate_mandatory');
+  assert.equal(mode.mode, 'hard_enforced_v2');
+  assert.equal(mode.enforceV2, true);
+  assert.equal(mode.answerReadinessEnforcedV2, true);
+});
