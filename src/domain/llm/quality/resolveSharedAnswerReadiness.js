@@ -83,6 +83,7 @@ function resolveSharedAnswerReadiness(params) {
   const explicitSafeResponseMode = normalizeText(payload.readinessSafeResponseMode).toLowerCase() || null;
 
   const evaluatedGate = runAnswerReadinessGateV2({
+    entryType: normalizeText(payload.entryType) || 'admin',
     lawfulBasis: normalizeText(payload.lawfulBasis) || 'consent',
     consentVerified: payload.consentVerified !== false,
     crossBorder: payload.crossBorder === true,
@@ -119,8 +120,7 @@ function resolveSharedAnswerReadiness(params) {
     savedFaqAuthorityScore: payload.savedFaqAuthorityScore,
     savedFaqReuseReasonCodes: payload.savedFaqReuseReasonCodes,
     sourceSnapshotRefs: payload.sourceSnapshotRefs,
-    crossSystemConflictDetected: payload.crossSystemConflictDetected === true,
-    enforceV2: false
+    crossSystemConflictDetected: payload.crossSystemConflictDetected === true
   });
   const evaluated = evaluatedGate.readiness;
 
@@ -168,6 +168,9 @@ function resolveSharedAnswerReadiness(params) {
     answerReadinessVersion: evaluatedGate.answerReadinessVersion,
     answerReadinessLogOnlyV2: evaluatedGate.answerReadinessLogOnlyV2,
     answerReadinessEnforcedV2: evaluatedGate.answerReadinessEnforcedV2,
+    answerReadinessV2Mode: evaluatedGate.mode ? evaluatedGate.mode.mode : 'log_only_v2',
+    answerReadinessV2Stage: evaluatedGate.mode ? evaluatedGate.mode.stage : 'log_only',
+    answerReadinessV2EnforcementReason: evaluatedGate.mode ? evaluatedGate.mode.enforcementReason : 'log_only_default',
     readinessTelemetryV2: evaluatedGate.telemetry
   };
 }

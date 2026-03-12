@@ -66,6 +66,7 @@ async function handleFaqAnswer(req, res, body) {
       intent: payload.intent,
       guideMode: payload.guideMode,
       personalization: payload.personalization,
+      entryType: 'faq',
       traceId,
       actor,
       requestId
@@ -114,6 +115,20 @@ async function handleFaqAnswer(req, res, body) {
         ? result.readinessReasonCodes
         : [],
       readinessSafeResponseMode: result && result.readinessSafeResponseMode ? result.readinessSafeResponseMode : null,
+      answerReadinessLogOnly: result ? result.answerReadinessLogOnly === true : false,
+      answerReadinessVersion: result && result.answerReadinessVersion ? result.answerReadinessVersion : null,
+      answerReadinessLogOnlyV2: result ? result.answerReadinessLogOnlyV2 === true : false,
+      answerReadinessEnforcedV2: result ? result.answerReadinessEnforcedV2 === true : false,
+      answerReadinessV2Mode: result && result.answerReadinessV2Mode ? result.answerReadinessV2Mode : null,
+      answerReadinessV2Stage: result && result.answerReadinessV2Stage ? result.answerReadinessV2Stage : null,
+      answerReadinessV2EnforcementReason: result && result.answerReadinessV2EnforcementReason
+        ? result.answerReadinessV2EnforcementReason
+        : null,
+      readinessDecisionV2: result && result.readinessDecisionV2 ? result.readinessDecisionV2 : null,
+      readinessReasonCodesV2: result && Array.isArray(result.readinessReasonCodesV2)
+        ? result.readinessReasonCodesV2
+        : [],
+      readinessSafeResponseModeV2: result && result.readinessSafeResponseModeV2 ? result.readinessSafeResponseModeV2 : null,
       savedFaqReused: result ? result.savedFaqReused === true : false,
       savedFaqReusePass: result ? result.savedFaqReusePass === true : false,
       savedFaqReuseReasonCodes: result && Array.isArray(result.savedFaqReuseReasonCodes)

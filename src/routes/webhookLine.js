@@ -1112,6 +1112,7 @@ function resolveAnswerReadinessTelemetry(params) {
     ? Number(payload.sourceFreshnessScore)
     : evidenceCoverage;
   const readinessGate = runAnswerReadinessGateV2({
+    entryType: normalizeReplyText(payload.entryType) || 'webhook',
     lawfulBasis: payload.legalSnapshot && payload.legalSnapshot.lawfulBasis,
     consentVerified: payload.legalSnapshot && payload.legalSnapshot.consentVerified === true,
     crossBorder: payload.legalSnapshot && payload.legalSnapshot.crossBorder === true,
@@ -1145,8 +1146,7 @@ function resolveAnswerReadinessTelemetry(params) {
     savedFaqAuthorityScore: payload.savedFaqAuthorityScore,
     savedFaqReuseReasonCodes: payload.savedFaqReuseReasonCodes,
     sourceSnapshotRefs: payload.sourceSnapshotRefs,
-    crossSystemConflictDetected: payload.crossSystemConflictDetected === true,
-    enforceV2: false
+    crossSystemConflictDetected: payload.crossSystemConflictDetected === true
   });
   const explicitDecision = normalizeReplyText(payload.readinessDecision).toLowerCase();
   const hasExplicitDecision = explicitDecision === 'allow'
@@ -1186,6 +1186,10 @@ function resolveAnswerReadinessTelemetry(params) {
     readinessV2: readinessGate.readinessV2,
     answerReadinessVersion: readinessGate.answerReadinessVersion,
     answerReadinessLogOnlyV2: readinessGate.answerReadinessLogOnlyV2,
+    answerReadinessEnforcedV2: readinessGate.answerReadinessEnforcedV2,
+    answerReadinessV2Mode: readinessGate.mode ? readinessGate.mode.mode : null,
+    answerReadinessV2Stage: readinessGate.mode ? readinessGate.mode.stage : null,
+    answerReadinessV2EnforcementReason: readinessGate.mode ? readinessGate.mode.enforcementReason : null,
     readinessTelemetryV2: readinessGate.telemetry,
     unsupportedClaimCount,
     contradictionDetected
@@ -1239,7 +1243,7 @@ async function appendLlmGateDecisionBestEffort(data) {
     || (conciergeMeta && conciergeMeta.officialOnlySatisfied === true);
   const answerReadinessLogOnly = typeof payload.answerReadinessLogOnly === 'boolean'
     ? payload.answerReadinessLogOnly
-    : (conciergeMeta ? conciergeMeta.answerReadinessLogOnly !== false : true);
+    : false;
   const readinessTelemetry = resolveAnswerReadinessTelemetry({
     legalSnapshot,
     riskSnapshot,
@@ -1382,6 +1386,11 @@ async function appendLlmGateDecisionBestEffort(data) {
         readinessReasonCodes: readinessTelemetry.readiness.reasonCodes,
         readinessSafeResponseMode: readinessTelemetry.readiness.safeResponseMode,
         answerReadinessVersion: readinessTelemetry.answerReadinessVersion,
+        answerReadinessLogOnlyV2: readinessTelemetry.answerReadinessLogOnlyV2 === true,
+        answerReadinessEnforcedV2: readinessTelemetry.answerReadinessEnforcedV2 === true,
+        answerReadinessV2Mode: readinessTelemetry.answerReadinessV2Mode || null,
+        answerReadinessV2Stage: readinessTelemetry.answerReadinessV2Stage || null,
+        answerReadinessV2EnforcementReason: readinessTelemetry.answerReadinessV2EnforcementReason || null,
         readinessDecisionV2: readinessTelemetry.readinessV2.decision,
         readinessReasonCodesV2: readinessTelemetry.readinessV2.reasonCodes,
         readinessSafeResponseModeV2: readinessTelemetry.readinessV2.safeResponseMode,
@@ -1582,7 +1591,7 @@ async function appendLlmActionLogBestEffort(data) {
     || (conciergeMeta && conciergeMeta.officialOnlySatisfied === true);
   const answerReadinessLogOnly = typeof payload.answerReadinessLogOnly === 'boolean'
     ? payload.answerReadinessLogOnly
-    : (conciergeMeta ? conciergeMeta.answerReadinessLogOnly !== false : true);
+    : false;
   const assistantQualityForReadiness = normalizeAssistantQuality(payload.assistantQuality, {
     intentResolved: payload.intent || 'faq_search',
     blockedStage: payload.decision === 'allow' ? null : 'route_gate',
@@ -1758,6 +1767,11 @@ async function appendLlmActionLogBestEffort(data) {
       readinessReasonCodes: readinessTelemetry.readiness.reasonCodes,
       readinessSafeResponseMode: readinessTelemetry.readiness.safeResponseMode,
       answerReadinessVersion: readinessTelemetry.answerReadinessVersion,
+      answerReadinessLogOnlyV2: readinessTelemetry.answerReadinessLogOnlyV2 === true,
+      answerReadinessEnforcedV2: readinessTelemetry.answerReadinessEnforcedV2 === true,
+      answerReadinessV2Mode: readinessTelemetry.answerReadinessV2Mode || null,
+      answerReadinessV2Stage: readinessTelemetry.answerReadinessV2Stage || null,
+      answerReadinessV2EnforcementReason: readinessTelemetry.answerReadinessV2EnforcementReason || null,
       readinessDecisionV2: readinessTelemetry.readinessV2.decision,
       readinessReasonCodesV2: readinessTelemetry.readinessV2.reasonCodes,
       readinessSafeResponseModeV2: readinessTelemetry.readinessV2.safeResponseMode,
@@ -2114,6 +2128,13 @@ async function tryHandlePaidOrchestratorV2(params) {
     unsupportedClaimCount: orchestrated.telemetry ? orchestrated.telemetry.unsupportedClaimCount : 0,
     contradictionDetected: orchestrated.telemetry ? orchestrated.telemetry.contradictionDetected === true : false,
     answerReadinessLogOnly: false,
+    answerReadinessLogOnlyV2: orchestrated.telemetry ? orchestrated.telemetry.answerReadinessLogOnlyV2 === true : true,
+    answerReadinessEnforcedV2: orchestrated.telemetry ? orchestrated.telemetry.answerReadinessEnforcedV2 === true : false,
+    answerReadinessV2Mode: orchestrated.telemetry ? orchestrated.telemetry.answerReadinessV2Mode : null,
+    answerReadinessV2Stage: orchestrated.telemetry ? orchestrated.telemetry.answerReadinessV2Stage : null,
+    answerReadinessV2EnforcementReason: orchestrated.telemetry
+      ? orchestrated.telemetry.answerReadinessV2EnforcementReason
+      : null,
     orchestratorPathUsed: orchestrated.telemetry ? orchestrated.telemetry.orchestratorPathUsed === true : true,
     contextResumeDomain: orchestrated.telemetry ? orchestrated.telemetry.contextResumeDomain : null,
     loopBreakApplied: orchestrated.telemetry ? orchestrated.telemetry.loopBreakApplied === true : false,
@@ -2181,6 +2202,13 @@ async function tryHandlePaidOrchestratorV2(params) {
     unsupportedClaimCount: orchestrated.telemetry ? orchestrated.telemetry.unsupportedClaimCount : 0,
     contradictionDetected: orchestrated.telemetry ? orchestrated.telemetry.contradictionDetected === true : false,
     answerReadinessLogOnly: false,
+    answerReadinessLogOnlyV2: orchestrated.telemetry ? orchestrated.telemetry.answerReadinessLogOnlyV2 === true : true,
+    answerReadinessEnforcedV2: orchestrated.telemetry ? orchestrated.telemetry.answerReadinessEnforcedV2 === true : false,
+    answerReadinessV2Mode: orchestrated.telemetry ? orchestrated.telemetry.answerReadinessV2Mode : null,
+    answerReadinessV2Stage: orchestrated.telemetry ? orchestrated.telemetry.answerReadinessV2Stage : null,
+    answerReadinessV2EnforcementReason: orchestrated.telemetry
+      ? orchestrated.telemetry.answerReadinessV2EnforcementReason
+      : null,
     orchestratorPathUsed: orchestrated.telemetry ? orchestrated.telemetry.orchestratorPathUsed === true : true,
     contextResumeDomain: orchestrated.telemetry ? orchestrated.telemetry.contextResumeDomain : null,
     loopBreakApplied: orchestrated.telemetry ? orchestrated.telemetry.loopBreakApplied === true : false,
@@ -3746,6 +3774,11 @@ async function handleAssistantMessage(params) {
     unsupportedClaimCount: readinessTelemetry.unsupportedClaimCount,
     contradictionDetected: readinessTelemetry.contradictionDetected,
     answerReadinessLogOnly: false,
+    answerReadinessLogOnlyV2: readinessTelemetry.answerReadinessLogOnlyV2 === true,
+    answerReadinessEnforcedV2: readinessTelemetry.answerReadinessEnforcedV2 === true,
+    answerReadinessV2Mode: readinessTelemetry.answerReadinessV2Mode || null,
+    answerReadinessV2Stage: readinessTelemetry.answerReadinessV2Stage || null,
+    answerReadinessV2EnforcementReason: readinessTelemetry.answerReadinessV2EnforcementReason || null,
     legalSnapshot,
     responseContractConformance: semanticReplyEnvelope.responseContractConformance
   });
@@ -3776,6 +3809,11 @@ async function handleAssistantMessage(params) {
     unsupportedClaimCount: readinessTelemetry.unsupportedClaimCount,
     contradictionDetected: readinessTelemetry.contradictionDetected,
     answerReadinessLogOnly: false,
+    answerReadinessLogOnlyV2: readinessTelemetry.answerReadinessLogOnlyV2 === true,
+    answerReadinessEnforcedV2: readinessTelemetry.answerReadinessEnforcedV2 === true,
+    answerReadinessV2Mode: readinessTelemetry.answerReadinessV2Mode || null,
+    answerReadinessV2Stage: readinessTelemetry.answerReadinessV2Stage || null,
+    answerReadinessV2EnforcementReason: readinessTelemetry.answerReadinessV2EnforcementReason || null,
     legalSnapshot,
     responseContractConformance: semanticReplyEnvelope.responseContractConformance
   });

@@ -733,6 +733,17 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 5. `nogo_gate_mandatory`
 6. `continuous_improvement_loop_active`
 
+### Readiness v2 enforcement flags
+- `ENABLE_ANSWER_READINESS_V2_LOG_ONLY`
+  - default: `true`
+  - effect: v2 shadow decision and telemetry only
+- `ENABLE_ANSWER_READINESS_V2_ENFORCE`
+  - default: `false`
+  - effect: soft enforcement for `faq` / `admin` / `compat` on critical reason codes only
+- `ENABLE_ANSWER_READINESS_V2_ENFORCE_WEBHOOK`
+  - default: `false`
+  - effect: webhook-family routes may apply v2 directly
+
 ### Operator checks
 - `LLM Quality Loop v2` board is read-only.
 - Existing pane IDs and one-click trace open flow remain unchanged.
