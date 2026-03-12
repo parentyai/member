@@ -2557,6 +2557,10 @@
                       </select>
                     </div>
                     <div class="flex-1">
+                      <label for="city-pack-unified-filter-relation">関係ID</label>
+                      <input id="city-pack-unified-filter-relation" type="text" placeholder="cityPackId / linkRegistryId / requestId" />
+                    </div>
+                    <div class="flex-1">
                       <label for="city-pack-unified-filter-date-from">作成日 from</label>
                       <input id="city-pack-unified-filter-date-from" type="date" />
                     </div>
@@ -2626,6 +2630,12 @@
                 </div>
                 <div id="city-pack-v2-detail-meta" class="note">種別 / 更新日時 / 担当 を表示します。</div>
                 <div id="city-pack-v2-detail-actions" class="city-pack-v2-detail-actions"></div>
+                <div class="city-pack-v2-relation" data-ui="city-pack-relation-view">
+                  <div class="panel-title city-pack-v2-relation-title">関係ビュー</div>
+                  <div id="city-pack-v2-relation-summary" class="note">関連情報は行を選択すると表示されます。</div>
+                  <div id="city-pack-v2-relation-links" class="city-pack-v2-relation-links"></div>
+                  <div id="city-pack-v2-relation-actions" class="city-pack-v2-detail-actions"></div>
+                </div>
                 <details class="section" open>
                   <summary>RAW</summary>
                   <pre id="city-pack-v2-detail-json">-</pre>
@@ -3749,6 +3759,10 @@
                       <label for="vendor-unified-filter-date-to">登録日 to</label>
                       <input id="vendor-unified-filter-date-to" type="date" />
                     </div>
+                    <div class="flex-1">
+                      <label for="vendor-unified-filter-relation">関係ID</label>
+                      <input id="vendor-unified-filter-relation" type="text" placeholder="linkRegistryId / sourceRefId / requestId" />
+                    </div>
                   </div>
                 </div>
                 <div class="row row-top">
@@ -3777,6 +3791,12 @@
                     </thead>
                     <tbody id="vendor-unified-rows"></tbody>
                   </table>
+                </div>
+                <div id="vendor-unified-relation-panel" class="panel section vendor-unified-relation-panel" data-ui="vendor-relation-view">
+                  <div class="panel-title">Vendor関係ビュー</div>
+                  <div id="vendor-unified-relation-summary" class="note">Vendor行を選択すると、City Packとの関係を表示します。</div>
+                  <div id="vendor-unified-relation-links" class="city-pack-v2-relation-links"></div>
+                  <div id="vendor-unified-relation-actions" class="city-pack-v2-detail-actions"></div>
                 </div>
               </div>
             </div>
