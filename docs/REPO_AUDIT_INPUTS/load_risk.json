@@ -1,7 +1,7 @@
 {
   "source": "src/**/*.js, src/index.js, docs/REPO_AUDIT_INPUTS/dependency_graph.json",
-  "generatedAt": "2026-03-12T01:03:51-04:00",
-  "sourceDigest": "5c07f7282c7402a651947aea7c7af907c0c22c7de668915434cec61fb542ace9",
+  "generatedAt": "2026-03-12T10:20:06-04:00",
+  "sourceDigest": "66ad52948cafe37d3fb198ebe1414f132f24fa68245ecdac07f33587d985d6eb",
   "estimated_worst_case_docs_scan": 0,
   "fallback_risk": 0,
   "hotspots_count": 0,
