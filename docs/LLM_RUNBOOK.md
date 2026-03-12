@@ -692,6 +692,51 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 - Quality Risks
 - What Improves / What Might Regress
 
+## LLM Quality Loop v2（Integration Addendum）
+
+### Critical slice blockers
+- `emergency_high_risk`
+- `saved_faq_high_risk_reuse`
+- `journey_blocker_conflict`
+- `stale_city_pack_required_source`
+- `compat_spike`
+- `trace_join_incomplete`
+- `direct_url_leakage`
+- `official_source_missing_on_high_risk`
+
+### Cross-system priority order
+1. Emergency
+2. Legal / Consent
+3. Task Blocker
+4. Journey State
+5. City Pack / Source Refs / Local Guidance
+6. Saved FAQ
+7. Generic LLM reasoning
+
+### Integration KPI / No-Go
+- `cityPackGroundingRate < 0.90`
+- `staleSourceBlockRate < 0.95`（high-risk）
+- `emergencyOfficialSourceRate < 1.00`
+- `journeyAlignedActionRate < 0.85`
+- `taskBlockerConflictRate > 0.02`
+- `savedFaqReusePassRate < 0.90`
+- `traceJoinCompleteness < 0.90`
+- `compatShareWindow > 0.15`
+- `directUrlRate > 0`
+
+### Rollout order
+1. `design_only`
+2. `log_only`
+3. `soft_enforcement`
+4. `hard_enforcement`
+5. `nogo_gate_mandatory`
+6. `continuous_improvement_loop_active`
+
+### Operator checks
+- `LLM Quality Loop v2` board is read-only.
+- Existing pane IDs and one-click trace open flow remain unchanged.
+- `traceJoinCompleteness` / `adminTraceResolutionTime` are warning-only until cross-system trace join ships.
+
 ## Contract Freeze Gate（V2/統合仕様）
 
 ### 実行コマンド

@@ -56,6 +56,43 @@
   - `slice_fail` が1件でも merge block。
   - critical slice（short_followup/domain/group/japanese/minority/cultural）は warning でも block。
 
+## Quality Loop v2 Reservation
+- integration critical slices:
+  - `emergency_high_risk`
+  - `saved_faq_high_risk_reuse`
+  - `journey_blocker_conflict`
+  - `stale_city_pack_required_source`
+  - `compat_spike`
+  - `trace_join_incomplete`
+  - `direct_url_leakage`
+  - `official_source_missing_on_high_risk`
+- cross-system priority order:
+  1. Emergency
+  2. Legal / Consent
+  3. Task Blocker
+  4. Journey State
+  5. City Pack / Source Refs / Local Guidance
+  6. Saved FAQ
+  7. Generic LLM reasoning
+- integration KPI reservation:
+  - `cityPackGroundingRate`
+  - `staleSourceBlockRate`
+  - `emergencyOfficialSourceRate`
+  - `emergencyOverrideAppliedRate`
+  - `journeyAlignedActionRate`
+  - `taskBlockerConflictRate`
+  - `savedFaqReusePassRate`
+  - `crossSystemConflictRate`
+  - `traceJoinCompleteness`
+  - `adminTraceResolutionTime`
+- reservation queues:
+  - `judge_disagreement_queue`
+  - `integration_counterexample_registry`
+  - `replay_slice_registry`
+  - `saved_faq_retirement_review`
+  - `emergency_override_review_queue`
+  - `city_pack_freshness_recertification_report`
+
 ## Judge Calibration Board
 - human adjudication set: `tools/llm_quality/fixtures/human_adjudication_set.v1.json`（120 cases）
 - disagreement report: `tmp/llm_quality_judge_calibration.json`
