@@ -28,7 +28,7 @@ const { buildContextSignature } = require('../../../domain/llm/bandit/contextual
 const { evaluateCounterfactualChoice } = require('../../../domain/llm/bandit/counterfactualEvaluator');
 const { resolveIntentRiskTier } = require('../../../domain/llm/policy/resolveIntentRiskTier');
 const { computeSourceReadiness } = require('../../../domain/llm/knowledge/computeSourceReadiness');
-const { evaluateAnswerReadiness } = require('../../../domain/llm/quality/evaluateAnswerReadiness');
+const { runAnswerReadinessGateV2 } = require('../../../domain/llm/quality/runAnswerReadinessGateV2');
 const { applyAnswerReadinessDecision } = require('../../../domain/llm/quality/applyAnswerReadinessDecision');
 
 const CONTEXT_VERSION = 'concierge_ctx_v1';
@@ -378,7 +378,7 @@ async function composeConciergeReply(params) {
     evidenceDecision.evidenceOutcome = 'BLOCKED';
     blockedReasons.push('source_readiness_refuse');
   }
-  const readinessResult = evaluateAnswerReadiness({
+  const readinessGate = runAnswerReadinessGateV2({
     lawfulBasis: payload && payload.legalSnapshot && typeof payload.legalSnapshot.lawfulBasis === 'string'
       ? payload.legalSnapshot.lawfulBasis
       : 'unspecified',
@@ -397,8 +397,19 @@ async function composeConciergeReply(params) {
     evidenceCoverage: evidenceDecision.evidenceOutcome === 'SUPPORTED'
       ? 1
       : (evidenceDecision.evidenceOutcome === 'INSUFFICIENT' ? 0.35 : 0),
-    fallbackType: blockedReasons.length > 0 ? blockedReasons[0] : null
+    fallbackType: blockedReasons.length > 0 ? blockedReasons[0] : null,
+    journeyContext: Boolean(contextSnapshot),
+    journeyPhase: payload.journeyPhase || (contextSnapshot && contextSnapshot.phase) || null,
+    contextSnapshot,
+    taskBlockerDetected: payload.blockedTaskPresent === true,
+    journeyAlignedAction: true,
+    cityPackContext: false,
+    cityPackGrounded: false,
+    savedFaqContext: false,
+    crossSystemConflictDetected: false,
+    enforceV2: false
   });
+  const readinessResult = readinessGate.readiness;
 
   const baseReplyText = normalizeText(payload.baseReplyText);
   const opportunityHints = payload.opportunityHints && typeof payload.opportunityHints === 'object'
@@ -687,9 +698,27 @@ async function composeConciergeReply(params) {
     readinessDecision: readinessResult.decision,
     readinessReasonCodes: readinessResult.reasonCodes,
     readinessSafeResponseMode: readinessResult.safeResponseMode,
+    answerReadinessVersion: readinessGate.answerReadinessVersion,
+    readinessDecisionV2: readinessGate.readinessV2.decision,
+    readinessReasonCodesV2: readinessGate.readinessV2.reasonCodes,
+    readinessSafeResponseModeV2: readinessGate.readinessV2.safeResponseMode,
     unsupportedClaimCount: readinessResult.qualitySnapshot.unsupportedClaimCount,
     contradictionDetected: readinessResult.qualitySnapshot.contradictionDetected === true,
-    answerReadinessLogOnly: false
+    answerReadinessLogOnly: false,
+    emergencyContextActive: readinessGate.telemetry.emergencyContextActive === true,
+    emergencyOfficialSourceSatisfied: readinessGate.telemetry.emergencyOfficialSourceSatisfied === true,
+    journeyPhase: readinessGate.telemetry.journeyPhase || null,
+    taskBlockerDetected: readinessGate.telemetry.taskBlockerDetected === true,
+    journeyAlignedAction: typeof readinessGate.telemetry.journeyAlignedAction === 'boolean'
+      ? readinessGate.telemetry.journeyAlignedAction
+      : true,
+    cityPackGrounded: readinessGate.telemetry.cityPackGrounded === true,
+    cityPackFreshnessScore: readinessGate.telemetry.cityPackFreshnessScore,
+    cityPackAuthorityScore: readinessGate.telemetry.cityPackAuthorityScore,
+    savedFaqValid: readinessGate.telemetry.savedFaqValid === true,
+    savedFaqAllowedIntent: readinessGate.telemetry.savedFaqAllowedIntent === true,
+    savedFaqAuthorityScore: readinessGate.telemetry.savedFaqAuthorityScore,
+    crossSystemConflictDetected: readinessGate.telemetry.crossSystemConflictDetected === true
   });
 
   return {

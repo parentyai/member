@@ -15,7 +15,7 @@ const { resolveIntentRiskTier } = require('../policy/resolveIntentRiskTier');
 const { evaluateParentYamlRoutingInvariant } = require('../policy/parentYamlRoutingContract');
 const { evaluateRequiredCoreFactsGate } = require('../policy/evaluateRequiredCoreFactsGate');
 const { computeSourceReadiness } = require('../knowledge/computeSourceReadiness');
-const { evaluateAnswerReadiness } = require('../quality/evaluateAnswerReadiness');
+const { runAnswerReadinessGateV2 } = require('../quality/runAnswerReadinessGateV2');
 const { enforceActionGateway } = require('../../../v1/action_gateway/actionGateway');
 const { resolveActionClass } = require('../../../v1/policy_graph/resolveActionClass');
 
@@ -682,7 +682,7 @@ async function runPaidConversationOrchestrator(params) {
     actionClass,
     followupIntent: packet.followupIntent
   });
-  const readinessResult = evaluateAnswerReadiness({
+  const readinessGate = runAnswerReadinessGateV2({
     lawfulBasis: legalSnapshot.lawfulBasis,
     consentVerified: legalSnapshot.consentVerified,
     crossBorder: legalSnapshot.crossBorder,
@@ -702,8 +702,21 @@ async function runPaidConversationOrchestrator(params) {
     requiredCoreFactsLogOnly: requiredCoreFacts.logOnly === true,
     fallbackType: groundedResult && groundedResult.ok !== true && groundedResult.blockedReason
       ? groundedResult.blockedReason
-      : null
+      : null,
+    journeyContext: Boolean(packet.contextSnapshot),
+    journeyPhase: packet.contextSnapshot && (packet.contextSnapshot.phase || packet.contextSnapshot.journeyPhase)
+      ? String(packet.contextSnapshot.phase || packet.contextSnapshot.journeyPhase)
+      : null,
+    contextSnapshot: packet.contextSnapshot || null,
+    taskBlockerDetected: false,
+    journeyAlignedAction: true,
+    cityPackContext: false,
+    cityPackGrounded: false,
+    savedFaqContext: false,
+    crossSystemConflictDetected: false,
+    enforceV2: false
   });
+  const readinessResult = readinessGate.readiness;
   const actionGatewayEnabled = payload.llmFlags && payload.llmFlags.actionGatewayEnabled === true;
   const actionToolName = resolveActionToolName(actionClass, payload);
   const actionGatewayDecision = enforceActionGateway({
@@ -808,9 +821,27 @@ async function runPaidConversationOrchestrator(params) {
       readinessDecision: effectiveReadiness.decision,
       readinessReasonCodes: effectiveReadiness.reasonCodes,
       readinessSafeResponseMode: effectiveReadiness.safeResponseMode,
+      answerReadinessVersion: readinessGate.answerReadinessVersion,
+      readinessDecisionV2: readinessGate.readinessV2.decision,
+      readinessReasonCodesV2: readinessGate.readinessV2.reasonCodes,
+      readinessSafeResponseModeV2: readinessGate.readinessV2.safeResponseMode,
       unsupportedClaimCount,
       contradictionDetected: Array.isArray(verified.contradictionFlags) && verified.contradictionFlags.length > 0,
       answerReadinessLogOnly: false,
+      emergencyContextActive: readinessGate.telemetry.emergencyContextActive === true,
+      emergencyOfficialSourceSatisfied: readinessGate.telemetry.emergencyOfficialSourceSatisfied === true,
+      journeyPhase: readinessGate.telemetry.journeyPhase || null,
+      taskBlockerDetected: readinessGate.telemetry.taskBlockerDetected === true,
+      journeyAlignedAction: typeof readinessGate.telemetry.journeyAlignedAction === 'boolean'
+        ? readinessGate.telemetry.journeyAlignedAction
+        : true,
+      cityPackGrounded: readinessGate.telemetry.cityPackGrounded === true,
+      cityPackFreshnessScore: readinessGate.telemetry.cityPackFreshnessScore,
+      cityPackAuthorityScore: readinessGate.telemetry.cityPackAuthorityScore,
+      savedFaqValid: readinessGate.telemetry.savedFaqValid === true,
+      savedFaqAllowedIntent: readinessGate.telemetry.savedFaqAllowedIntent === true,
+      savedFaqAuthorityScore: readinessGate.telemetry.savedFaqAuthorityScore,
+      crossSystemConflictDetected: readinessGate.telemetry.crossSystemConflictDetected === true,
       actionClass,
       actionGatewayEnabled,
       actionGatewayEnforced: actionGatewayEnabled,

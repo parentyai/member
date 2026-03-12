@@ -99,16 +99,50 @@ function evaluateAnswerReadiness(params) {
   const requiredCoreFactsLogOnly = payload.requiredCoreFactsLogOnly === true;
   const fallbackType = normalizeText(payload.fallbackType).toLowerCase() || null;
   const reasonCodes = normalizeReasonCodes(payload.reasonCodes);
+  const emergencyContextActive = payload.emergencyContextActive === true || payload.emergencyContext === true;
+  const emergencySeverity = normalizeText(payload.emergencySeverity).toLowerCase() || null;
+  const emergencyOfficialSourceSatisfied = payload.emergencyOfficialSourceSatisfied === true;
+  const journeyContextActive = payload.journeyContextActive === true || payload.journeyContext === true;
+  const journeyPhase = normalizeText(payload.journeyPhase).toLowerCase() || null;
+  const taskBlockerDetected = payload.taskBlockerDetected === true || payload.taskBlockerContext === true;
+  const journeyAlignedAction = typeof payload.journeyAlignedAction === 'boolean' ? payload.journeyAlignedAction : true;
+  const cityPackGrounded = payload.cityPackGrounded === true;
+  const cityPackAuthorityScore = clamp01(payload.cityPackAuthorityScore);
+  const cityPackFreshnessScore = clamp01(payload.cityPackFreshnessScore);
+  const savedFaqReused = payload.savedFaqReused === true;
+  const savedFaqReusePass = payload.savedFaqReusePass === true;
+  const savedFaqValid = typeof payload.savedFaqValid === 'boolean' ? payload.savedFaqValid : true;
+  const savedFaqAllowedIntent = typeof payload.savedFaqAllowedIntent === 'boolean' ? payload.savedFaqAllowedIntent : true;
+  const savedFaqAuthorityScore = clamp01(payload.savedFaqAuthorityScore);
+  const crossSystemConflictDetected = payload.crossSystemConflictDetected === true;
   const thresholds = resolveThresholds(intentRiskTier);
 
   let decision = 'allow';
+  const hasCityPackSignals = cityPackGrounded || cityPackAuthorityScore > 0 || cityPackFreshnessScore > 0;
+  const optionalCityPackHedge = reasonCodes.includes('city_pack_optional_source_stale');
+  const requiredCityPackBlocked = reasonCodes.includes('city_pack_required_source_blocked');
+  const savedFaqHighRiskBlocked = savedFaqReused && intentRiskTier === 'high' && (
+    savedFaqReusePass !== true
+    || savedFaqValid !== true
+    || savedFaqAllowedIntent !== true
+    || (savedFaqAuthorityScore > 0 && savedFaqAuthorityScore < thresholds.minAuthorityAllow)
+  );
 
   if (legalDecision === 'blocked' || (lawfulBasis === 'consent' && !consentVerified)) {
     decision = 'refuse';
     reasonCodes.push('legal_blocked');
+  } else if (emergencyContextActive && emergencyOfficialSourceSatisfied !== true) {
+    decision = 'refuse';
+    reasonCodes.push('emergency_official_source_missing');
+  } else if (requiredCityPackBlocked) {
+    decision = 'refuse';
+    reasonCodes.push('city_pack_required_source_blocked');
   } else if (intentRiskTier === 'high' && officialOnlySatisfied !== true) {
     decision = 'refuse';
     reasonCodes.push('official_only_not_satisfied');
+  } else if (savedFaqHighRiskBlocked) {
+    decision = 'refuse';
+    reasonCodes.push('saved_faq_high_risk_not_ready');
   } else if (sourceReadinessDecision === 'refuse') {
     decision = 'refuse';
     reasonCodes.push('source_readiness_refuse');
@@ -121,6 +155,12 @@ function evaluateAnswerReadiness(params) {
   } else if (requiredCoreFactsLogOnly !== true && requiredCoreFactsComplete !== true && missingRequiredCoreFactsCount >= 7) {
     decision = 'clarify';
     reasonCodes.push('missing_required_core_facts');
+  } else if (taskBlockerDetected && journeyAlignedAction !== true) {
+    decision = 'clarify';
+    reasonCodes.push('journey_task_conflict');
+  } else if (crossSystemConflictDetected) {
+    decision = 'clarify';
+    reasonCodes.push('cross_system_conflict_detected');
   } else if (contradictionDetected) {
     if (
       evidenceCoverage >= thresholds.minEvidenceAllow
@@ -162,8 +202,29 @@ function evaluateAnswerReadiness(params) {
     }
   }
 
+  if (optionalCityPackHedge && decision === 'allow') {
+    decision = 'hedged';
+    reasonCodes.push('city_pack_optional_source_stale');
+  }
+  if (
+    decision === 'allow'
+    && hasCityPackSignals
+    && (
+      cityPackAuthorityScore > 0 && cityPackAuthorityScore < thresholds.minAuthorityHedge
+      || cityPackFreshnessScore > 0 && cityPackFreshnessScore < thresholds.minFreshnessHedge
+    )
+  ) {
+    decision = 'hedged';
+    reasonCodes.push('city_pack_signal_hedged');
+  }
+  if (decision === 'allow' && savedFaqReused && savedFaqReusePass !== true && intentRiskTier !== 'high') {
+    decision = 'hedged';
+    reasonCodes.push('saved_faq_reuse_hedged');
+  }
   if (crossBorder) reasonCodes.push('cross_border_enabled');
   if (fallbackType) reasonCodes.push('fallback_applied');
+  if (emergencyContextActive) reasonCodes.push('emergency_context_active');
+  if (journeyContextActive) reasonCodes.push('journey_context_active');
 
   const normalizedReasonCodes = normalizeReasonCodes(reasonCodes);
   return {
@@ -187,7 +248,23 @@ function evaluateAnswerReadiness(params) {
       unsupportedClaimCount,
       contradictionDetected,
       evidenceCoverage,
-      fallbackType
+      fallbackType,
+      emergencyContextActive,
+      emergencySeverity,
+      emergencyOfficialSourceSatisfied,
+      journeyContextActive,
+      journeyPhase,
+      taskBlockerDetected,
+      journeyAlignedAction,
+      cityPackGrounded,
+      cityPackAuthorityScore,
+      cityPackFreshnessScore,
+      savedFaqReused,
+      savedFaqReusePass,
+      savedFaqValid,
+      savedFaqAllowedIntent,
+      savedFaqAuthorityScore,
+      crossSystemConflictDetected
     },
     safeResponseMode: resolveSafeResponseMode(decision)
   };
