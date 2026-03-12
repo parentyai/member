@@ -747,6 +747,26 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
   - default: `false`
   - effect: strict quality gate / release policy require `qualityLoopV2.rolloutStage=nogo_gate_mandatory`
 
+### Live telemetry restoration（P0）
+- `runtimeAuditUnavailable` は release blocker として扱う。
+- frozen-only pass は `provisional verdict` であり、release verdict には使わない。
+- local 復旧確認コマンド:
+  - `gcloud auth application-default login`
+  - `gcloud auth application-default print-access-token`
+  - `gcloud auth list`
+  - `gcloud config get-value account`
+  - `gcloud config get-value project`
+  - `gcloud config get-value billing/quota_project`
+  - `echo "$GOOGLE_APPLICATION_CREDENTIALS"`
+  - `echo "$GOOGLE_IMPERSONATE_SERVICE_ACCOUNT"`
+  - `echo "$FIRESTORE_IMPERSONATE_SERVICE_ACCOUNT"`
+- external IdP 利用時は `gcloud auth login` の sign-in state を先に確認し、その後で ADC を再取得する。
+- service account impersonation は local fallback 候補として扱うが、上流の user auth が `invalid_rapt` の場合は impersonation も失敗しうる。
+- strict gate 条件:
+  - `llm:quality:gate:strict`
+  - `llm:quality:release-policy:strict`
+  は live runtime audit unavailable のとき green にしない。
+
 ### Operator checks
 - `LLM Quality Loop v2` board is read-only.
 - Existing pane IDs and one-click trace open flow remain unchanged.

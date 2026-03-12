@@ -18006,6 +18006,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
     renderLlmResult('llm-quality-v2-readiness', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-v2-integration', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-v2-critical-slices', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-v3-improvement-loop', { ok: false, error: 'no_quality_framework' });
     return;
   }
 
@@ -18128,6 +18129,15 @@ function renderLlmQualityFrameworkDashboard(summary) {
   renderLlmResult('llm-quality-v2-critical-slices', {
     ok: true,
     criticalSlices: Array.isArray(qualityLoopV2.criticalSlices) ? qualityLoopV2.criticalSlices : []
+  });
+  renderLlmResult('llm-quality-v3-improvement-loop', {
+    ok: true,
+    improvementLoop: qualityLoopV2.improvementLoop && typeof qualityLoopV2.improvementLoop === 'object'
+      ? qualityLoopV2.improvementLoop
+      : {},
+    runtimeAudit: qualityLoopV2.runtimeAudit && typeof qualityLoopV2.runtimeAudit === 'object'
+      ? qualityLoopV2.runtimeAudit
+      : {}
   });
 }
 

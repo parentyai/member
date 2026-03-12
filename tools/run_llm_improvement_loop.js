@@ -3,7 +3,7 @@
 const path = require('node:path');
 const { parseArgs, writeJson } = require('./llm_quality/lib');
 const { buildRepoScanReport } = require('./run_llm_repo_scan');
-const { loadRuntimeAuditInputs, buildRuntimeAuditReport, buildUnavailableAuditReport } = require('./run_llm_runtime_audit');
+const { runRuntimeAudit, loadRuntimeAuditInputs, buildRuntimeAuditReport, buildUnavailableAuditReport } = require('./run_llm_runtime_audit');
 const { buildFailureClusters } = require('./run_llm_failure_cluster');
 const { buildPlanFromClusters } = require('./generate_llm_improvement_plan');
 
@@ -11,8 +11,10 @@ async function runImprovementLoop(options, deps) {
   const payload = options && typeof options === 'object' ? options : {};
   const rootDir = payload.rootDir ? path.resolve(payload.rootDir) : process.cwd();
   const outputDir = payload.outputDir ? path.resolve(rootDir, payload.outputDir) : path.join(rootDir, 'tmp');
+  const explicitDeps = deps && typeof deps === 'object' ? deps : {};
   const resolvedDeps = Object.assign({
     buildRepoScanReport,
+    runRuntimeAudit,
     loadRuntimeAuditInputs,
     buildRuntimeAuditReport,
     buildUnavailableAuditReport,
@@ -22,24 +24,33 @@ async function runImprovementLoop(options, deps) {
 
   const repoScanReport = resolvedDeps.buildRepoScanReport({ rootDir, baselineRef: payload.baselineRef || null });
   let qualityAuditReport;
-  try {
-    const runtimeInputs = await resolvedDeps.loadRuntimeAuditInputs({
+  const useUnifiedRuntimeAudit = typeof explicitDeps.runRuntimeAudit === 'function' || payload.useUnifiedRuntimeAudit === true;
+  if (useUnifiedRuntimeAudit && typeof resolvedDeps.runRuntimeAudit === 'function') {
+    qualityAuditReport = await resolvedDeps.runRuntimeAudit({
       fromAt: payload.fromAt || null,
       toAt: payload.toAt || null,
       limit: payload.limit || null
     });
-    qualityAuditReport = resolvedDeps.buildRuntimeAuditReport(Object.assign({}, runtimeInputs, {
-      fromAt: payload.fromAt || null,
-      toAt: payload.toAt || null,
-      limit: payload.limit || null
-    }));
-  } catch (error) {
-    qualityAuditReport = resolvedDeps.buildUnavailableAuditReport({
-      fromAt: payload.fromAt || null,
-      toAt: payload.toAt || null,
-      limit: payload.limit || null,
-      error
-    });
+  } else {
+    try {
+      const runtimeInputs = await resolvedDeps.loadRuntimeAuditInputs({
+        fromAt: payload.fromAt || null,
+        toAt: payload.toAt || null,
+        limit: payload.limit || null
+      });
+      qualityAuditReport = resolvedDeps.buildRuntimeAuditReport(Object.assign({}, runtimeInputs, {
+        fromAt: payload.fromAt || null,
+        toAt: payload.toAt || null,
+        limit: payload.limit || null
+      }));
+    } catch (error) {
+      qualityAuditReport = resolvedDeps.buildUnavailableAuditReport({
+        fromAt: payload.fromAt || null,
+        toAt: payload.toAt || null,
+        limit: payload.limit || null,
+        error
+      });
+    }
   }
   const failureClusters = resolvedDeps.buildFailureClusters({
     rootDir,

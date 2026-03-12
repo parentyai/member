@@ -2,6 +2,7 @@
 
 const path = require('node:path');
 const { parseArgs, writeJson } = require('./llm_quality/lib');
+const { resolveRuntimeAuditAuth } = require('./lib_runtime_audit_auth');
 const llmActionLogsRepo = require('../src/repos/firestore/llmActionLogsRepo');
 const llmQualityLogsRepo = require('../src/repos/firestore/llmQualityLogsRepo');
 const faqAnswerLogsRepo = require('../src/repos/firestore/faqAnswerLogsRepo');
@@ -337,10 +338,19 @@ function buildRuntimeAuditReport(input) {
       faqLogSampleCount: faqRows.length,
       runtimeFetchStatus: payload.runtimeFetchStatus || 'ok',
       runtimeFetchErrorCode: payload.runtimeFetchErrorCode || null,
-      runtimeFetchErrorMessage: payload.runtimeFetchErrorMessage || null
+      runtimeFetchErrorMessage: payload.runtimeFetchErrorMessage || null,
+      runtimeAuditUnavailable: payload.runtimeFetchStatus === 'unavailable',
+      authMode: payload.authMode || null,
+      authPathMap: payload.authPathMap && typeof payload.authPathMap === 'object'
+        ? Object.assign({}, payload.authPathMap)
+        : null,
+      recoveryActionCode: payload.recoveryActionCode || null,
+      recoveryCommands: Array.isArray(payload.recoveryCommands) ? payload.recoveryCommands.slice() : []
     },
     kpis,
-    topFailures: buildTopFailures(kpis),
+    topFailures: (payload.runtimeFetchStatus === 'unavailable')
+      ? [{ key: 'runtimeAuditUnavailable', status: 'fail', sampleCount: 0, value: null }].concat(buildTopFailures(kpis)).slice(0, 10)
+      : buildTopFailures(kpis),
     missingMeasurements,
     releaseBlockers: (payload.runtimeFetchStatus === 'unavailable')
       ? Array.from(new Set(['runtimeAuditUnavailable'].concat(releaseBlockers)))
@@ -361,7 +371,11 @@ function buildUnavailableAuditReport(options) {
     faqRows: [],
     runtimeFetchStatus: 'unavailable',
     runtimeFetchErrorCode: normalized.code,
-    runtimeFetchErrorMessage: normalized.message
+    runtimeFetchErrorMessage: normalized.message,
+    authMode: payload.authMode || null,
+    authPathMap: payload.authPathMap || null,
+    recoveryActionCode: payload.recoveryActionCode || null,
+    recoveryCommands: payload.recoveryCommands || []
   });
 }
 
@@ -399,19 +413,69 @@ async function loadRuntimeAuditInputs(params) {
   };
 }
 
+async function runRuntimeAudit(params, deps) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const resolvedDeps = Object.assign({
+    resolveRuntimeAuditAuth,
+    loadRuntimeAuditInputs,
+    buildRuntimeAuditReport,
+    buildUnavailableAuditReport
+  }, deps || {});
+  const fromAt = payload.fromAt || null;
+  const toAt = payload.toAt || null;
+  const limit = payload.limit || 500;
+
+  const authState = await resolvedDeps.resolveRuntimeAuditAuth({
+    env: payload.env || process.env
+  });
+
+  if (!authState || authState.ok !== true) {
+    return resolvedDeps.buildUnavailableAuditReport({
+      fromAt,
+      toAt,
+      limit,
+      error: {
+        code: authState && authState.runtimeFetchErrorCode ? authState.runtimeFetchErrorCode : 'runtime_audit_auth_unavailable',
+        message: authState && authState.runtimeFetchErrorMessage ? authState.runtimeFetchErrorMessage : 'Runtime audit authentication unavailable.'
+      },
+      authMode: authState && authState.authMode ? authState.authMode : null,
+      authPathMap: authState && authState.authPathMap ? authState.authPathMap : null,
+      recoveryActionCode: authState && authState.recoveryActionCode ? authState.recoveryActionCode : null,
+      recoveryCommands: authState && Array.isArray(authState.recoveryCommands) ? authState.recoveryCommands : []
+    });
+  }
+
+  try {
+    const inputs = await resolvedDeps.loadRuntimeAuditInputs({ fromAt, toAt, limit });
+    return resolvedDeps.buildRuntimeAuditReport(Object.assign({}, inputs, {
+      fromAt,
+      toAt,
+      limit,
+      runtimeFetchStatus: 'ok',
+      authMode: authState.authMode || null,
+      authPathMap: authState.authPathMap || null
+    }));
+  } catch (error) {
+    return resolvedDeps.buildUnavailableAuditReport({
+      fromAt,
+      toAt,
+      limit,
+      error,
+      authMode: authState.authMode || null,
+      authPathMap: authState.authPathMap || null,
+      recoveryActionCode: authState.recoveryActionCode || null,
+      recoveryCommands: authState.recoveryCommands || []
+    });
+  }
+}
+
 async function main(argv) {
   const args = parseArgs(argv);
   const outputPath = path.resolve(process.cwd(), args.output || path.join('tmp', 'quality_audit_report.json'));
   const fromAt = args.fromAt || null;
   const toAt = args.toAt || null;
   const limit = args.limit || 500;
-  let report;
-  try {
-    const inputs = await loadRuntimeAuditInputs({ fromAt, toAt, limit });
-    report = buildRuntimeAuditReport(Object.assign({}, inputs, { fromAt, toAt, limit }));
-  } catch (error) {
-    report = buildUnavailableAuditReport({ fromAt, toAt, limit, error });
-  }
+  const report = await runRuntimeAudit({ fromAt, toAt, limit });
   writeJson(outputPath, report);
   process.stdout.write(`${JSON.stringify({
     ok: true,
@@ -437,5 +501,6 @@ module.exports = {
   buildRuntimeAuditReport,
   buildUnavailableAuditReport,
   loadRuntimeAuditInputs,
+  runRuntimeAudit,
   main
 };

@@ -1496,6 +1496,10 @@ function buildImprovementLoopSummary(payload) {
     : {};
   const criticalSlices = Array.isArray(qualityLoopV2.criticalSlices) ? qualityLoopV2.criticalSlices : [];
   const missingMeasurements = Array.isArray(qualityLoopV2.missingJoins) ? qualityLoopV2.missingJoins : [];
+  const runtimeAudit = qualityLoopV2.runtimeAudit && typeof qualityLoopV2.runtimeAudit === 'object'
+    ? qualityLoopV2.runtimeAudit
+    : {};
+  const runtimeAuditUnavailable = runtimeAudit.runtimeAuditUnavailable === true;
 
   const pushSignal = (category, severity, signal) => {
     if (!signal) return;
@@ -1505,6 +1509,10 @@ function buildImprovementLoopSummary(payload) {
       signals: [{ signal }]
     });
   };
+
+  if (runtimeAuditUnavailable) {
+    pushSignal('telemetry', 'high', 'runtimeAuditUnavailable');
+  }
 
   criticalSlices
     .filter((row) => row && row.status !== 'pass')
@@ -1552,7 +1560,8 @@ function buildImprovementLoopSummary(payload) {
 
   const sampleCount = actionRows.length + traceSearchAuditRows.length;
   let qualityLoopStatus = 'ok';
-  if (sampleCount <= 0) qualityLoopStatus = 'missing';
+  if (runtimeAuditUnavailable) qualityLoopStatus = 'action_required';
+  else if (sampleCount <= 0) qualityLoopStatus = 'missing';
   else if ((qualityLoopV2.criticalSliceFailCount || 0) > 0 || hardFailures.length > 0) qualityLoopStatus = 'action_required';
   else if (missingMeasurements.length > 0 || topFailures.length > 0) qualityLoopStatus = 'warning';
 
@@ -1567,6 +1576,13 @@ function buildImprovementLoopSummary(payload) {
   return {
     qualityLoopStatus,
     lastAuditAt: lastAuditAt === null ? null : new Date(lastAuditAt).toISOString(),
+    runtimeAuditUnavailable,
+    runtimeAuditStatus: runtimeAudit.status || (runtimeAuditUnavailable ? 'action_required' : (sampleCount > 0 ? 'ok' : 'missing')),
+    runtimeFetchStatus: runtimeAudit.runtimeFetchStatus || (runtimeAuditUnavailable ? 'unavailable' : (sampleCount > 0 ? 'ok' : 'missing')),
+    runtimeFetchErrorCode: runtimeAudit.runtimeFetchErrorCode || null,
+    runtimeFetchErrorMessage: runtimeAudit.runtimeFetchErrorMessage || null,
+    recoveryActionCode: runtimeAudit.recoveryActionCode || null,
+    recoveryCommands: Array.isArray(runtimeAudit.recoveryCommands) ? runtimeAudit.recoveryCommands.slice(0, 5) : [],
     topFailures: topFailures.slice(0, 5),
     improvementBacklog: improvementBacklog.slice(0, 5)
   };
@@ -1925,6 +1941,30 @@ function buildQualityFrameworkSummary(payload) {
     conversationQuality: conversation,
     optimization: data.optimization
   });
+  const runtimeAuditPayload = data.runtimeAudit && typeof data.runtimeAudit === 'object' ? data.runtimeAudit : null;
+  const inferredRuntimeAuditUnavailable = runtimeAuditPayload
+    ? runtimeAuditPayload.runtimeAuditUnavailable === true
+    : (actionRows.length + (Array.isArray(data.traceSearchAuditRows) ? data.traceSearchAuditRows.length : 0)) <= 0;
+  const inferredRuntimeFetchStatus = runtimeAuditPayload && typeof runtimeAuditPayload.runtimeFetchStatus === 'string'
+    ? runtimeAuditPayload.runtimeFetchStatus
+    : (inferredRuntimeAuditUnavailable ? 'unavailable' : 'ok');
+  qualityLoopV2.runtimeAudit = {
+    status: inferredRuntimeAuditUnavailable ? 'action_required' : 'ok',
+    runtimeAuditUnavailable: inferredRuntimeAuditUnavailable,
+    runtimeFetchStatus: inferredRuntimeFetchStatus,
+    runtimeFetchErrorCode: runtimeAuditPayload && runtimeAuditPayload.runtimeFetchErrorCode
+      ? runtimeAuditPayload.runtimeFetchErrorCode
+      : (inferredRuntimeAuditUnavailable ? 'runtime_audit_unavailable' : null),
+    runtimeFetchErrorMessage: runtimeAuditPayload && runtimeAuditPayload.runtimeFetchErrorMessage
+      ? runtimeAuditPayload.runtimeFetchErrorMessage
+      : (inferredRuntimeAuditUnavailable ? 'Live runtime audit is unavailable.' : null),
+    recoveryActionCode: runtimeAuditPayload && runtimeAuditPayload.recoveryActionCode
+      ? runtimeAuditPayload.recoveryActionCode
+      : null,
+    recoveryCommands: runtimeAuditPayload && Array.isArray(runtimeAuditPayload.recoveryCommands)
+      ? runtimeAuditPayload.recoveryCommands.slice(0, 5)
+      : []
+  };
   qualityLoopV2.criticalSlices.forEach((row) => {
     if (!row || row.status === 'pass') return;
     hardFailures.push(`quality_loop_v2_critical_slice_fail:${row.sliceKey}`);
