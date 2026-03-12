@@ -631,7 +631,7 @@
               <button id="composer-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <details id="composer-pane-details" class="decision-details section" data-workbench-zone="true">
+          <details id="composer-pane-details" class="decision-details section" data-workbench-zone="true" open>
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="composer-workspace">
               <div class="panel composer-header">
@@ -651,6 +651,40 @@
                       <button id="execute" type="button" class="composer-hidden-action" data-workbench-zone="true" data-workbench-action="notifications.send.execute" data-dict-key="ui.label.composer.execute">送信実行</button>
                     </div>
                   </div>
+                  <div class="composer-state-machine" data-ui="composer-workbench-state">
+                    <div class="composer-workbench-title">Notification Workbench</div>
+                    <ol id="composer-state-bar" class="composer-state-bar">
+                      <li class="composer-state-step" data-composer-state-step="draft">Draft</li>
+                      <li class="composer-state-step" data-composer-state-step="approve">Approve</li>
+                      <li class="composer-state-step" data-composer-state-step="plan">Plan</li>
+                      <li class="composer-state-step" data-composer-state-step="execute">Execute</li>
+                      <li class="composer-state-step" data-composer-state-step="sent">Sent</li>
+                    </ol>
+                  </div>
+                  <div class="composer-top-overview">
+                    <div class="composer-overview-card" data-ui="composer-scenario-step-overview">
+                      <div class="composer-overview-title">シナリオ / ステップ全体像</div>
+                      <div id="composer-flow-current" class="note">-</div>
+                      <div class="composer-overview-subtitle">Scenario</div>
+                      <div id="composer-flow-scenarios" class="composer-chip-row"></div>
+                      <div class="composer-overview-subtitle">Step</div>
+                      <div id="composer-flow-steps" class="composer-chip-row"></div>
+                    </div>
+                    <div class="composer-overview-card" data-ui="composer-type-schema-overview">
+                      <div class="composer-overview-title">タイプ別入力スキーマ</div>
+                      <div id="composer-schema-selected" class="note">-</div>
+                      <div class="composer-schema-columns">
+                        <div>
+                          <div class="composer-overview-subtitle">必須</div>
+                          <ul id="composer-schema-required" class="composer-schema-list"></ul>
+                        </div>
+                        <div>
+                          <div class="composer-overview-subtitle">任意</div>
+                          <ul id="composer-schema-optional" class="composer-schema-list"></ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -659,6 +693,7 @@
                   <div id="composer-card-preview" class="composer-preview-top panel composer-preview-panel">
                     <div class="panel-title" data-dict-key="ui.label.composer.livePreview">ライブプレビュー</div>
                     <div class="panel-body">
+                      <div class="note">プレビュー / 検証 / 修正ガイド</div>
                       <div class="composer-preview-fixed-wrap">
                         <div class="line-preview-phone">
                           <div class="line-preview-header">LINE</div>
@@ -676,6 +711,11 @@
                         <span data-dict-key="ui.label.composer.safety">送信前安全チェック</span>
                       </div>
                       <ul id="composer-safety-reasons" class="composer-safety-reasons"></ul>
+                      <div id="composer-fix-guidance" class="composer-fix-guidance"></div>
+                      <div class="composer-evidence-links">
+                        <button id="composer-open-audit" type="button" class="button-subtle">監査ログを開く</button>
+                        <button id="composer-open-trace-monitor" type="button" class="button-subtle">traceで配信結果へ</button>
+                      </div>
                     </div>
                   </div>
 
