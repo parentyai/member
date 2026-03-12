@@ -2077,6 +2077,15 @@ details[data-json-collapsible="true"].json-collapsed > summary {
   font-weight: 600;
 }
 
+.nav-layer-label {
+  padding: 2px var(--space-2);
+  margin-top: 2px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-soft);
+  text-transform: uppercase;
+}
+
 .legacy-nav {
   display: none;
 }
