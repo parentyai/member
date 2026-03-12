@@ -2867,6 +2867,10 @@ details:not([open]) > *:not(summary) {
   margin-top: var(--space-2);
 }
 
+.admin-local-preflight-banner.is-scoped-hidden {
+  display: none !important;
+}
+
 .admin-local-preflight-banner.is-danger {
   border-left-color: var(--status-danger);
 }
@@ -2907,6 +2911,13 @@ details:not([open]) > *:not(summary) {
 
 .admin-local-preflight-detail.is-collapsed {
   display: none;
+}
+
+.monitor-system-diagnostics-handoff {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
 }
 
 .admin-local-preflight-commands {

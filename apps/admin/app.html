@@ -206,7 +206,7 @@
           <div class="admin-local-preflight-actions">
             <button id="local-preflight-recheck" type="button" class="secondary-btn" data-dict-key="ui.label.admin.localPreflight.recheck">再診断</button>
             <button id="local-preflight-copy-commands" type="button" class="secondary-btn" data-dict-key="ui.label.admin.localPreflight.copyCommands">コマンドコピー</button>
-            <button id="local-preflight-open-audit" type="button" class="secondary-btn" data-dict-key="ui.label.admin.localPreflight.openAudit">監査ログへ移動</button>
+            <button id="local-preflight-open-audit" type="button" class="secondary-btn" data-dict-key="ui.label.admin.localPreflight.openAudit">System状態へ移動</button>
             <button id="local-preflight-toggle-detail" type="button" class="secondary-btn" aria-expanded="false" aria-controls="local-preflight-detail-panel">詳細を開く</button>
           </div>
           <div id="local-preflight-detail-panel" class="admin-local-preflight-detail is-collapsed" data-local-preflight-detail="collapsed">
@@ -2069,7 +2069,11 @@
 	                      </div>
 	                    </details>
 	                  </div>
-                  <div class="panel">
+                  <div id="monitor-insights-system-handoff" class="note monitor-system-diagnostics-handoff">
+                    診断情報はSystemレイヤーで確認します。
+                    <button id="monitor-open-system-diagnostics" type="button" class="secondary-btn">System状態へ</button>
+                  </div>
+                  <div id="monitor-insights-diagnostics-panel" class="panel is-hidden">
                     <div class="panel-title" data-dict-key="ui.label.monitor.insightsDiagnostics">診断情報</div>
                     <div class="panel-body">
                       <div id="monitor-insights-diagnostics" class="note">-</div>
