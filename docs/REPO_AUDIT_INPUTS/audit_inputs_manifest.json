@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-12T05:03:18.508Z",
-  "gitCommit": "8e9e319650dcbf6957f3f73fa8e730735912de7f",
-  "branch": "codex/admin-ui-pr6-system-isolation",
-  "sourceDigest": "9467d60a7169c564646063ef80875f88cdb95265a75d7e356f7d1d38be8ee4e6",
+  "generatedAt": "2026-03-12T10:56:33.645Z",
+  "gitCommit": "5d168a19a7b02e964a113f7616bcf6678bd9ad50",
+  "branch": "codex/admin-ui-pr7-visual-system-cleanup",
+  "sourceDigest": "66c8cb6d510b9108220b6158fd40bdac338576e891e7cc6dc331fcc0cfb30ec3",
   "counts": {
     "endpoints": 291,
     "routes": 130,
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "51adaf11e4211c173422144a03fa09c02101af5a7b72b9f06f867fbef3418533",
+      "sha256": "1e46eba4228c9268d5f8a0ccd00f1883bf2aa3f3e4be47f2511f02d28eab17d6",
       "bytes": 449967
     },
     {

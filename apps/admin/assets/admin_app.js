@@ -3054,11 +3054,96 @@ function updatePageHeader(paneKey) {
   }
 }
 
+function isJsonCollapsibleDetail(el) {
+  return !!(el && el.dataset && el.dataset.jsonCollapsible === 'true');
+}
+
+function bindJsonCollapsibleDetail(el) {
+  if (!el || el.dataset.jsonCollapseBound === '1') return;
+  el.dataset.jsonCollapseBound = '1';
+  el.addEventListener('toggle', () => {
+    if (el.open) el.classList.remove('json-collapsed');
+    else el.classList.add('json-collapsed');
+  });
+}
+
+const EVIDENCE_PLACEHOLDER_PRE_IDS = [
+  'monitor-raw',
+  'audit-result',
+  'audit-detail',
+  'struct-drift-result',
+  'llm-ops-explain-result',
+  'llm-next-actions-result',
+  'llm-faq-result',
+  'llm-route-trace-result',
+  'llm-config-status',
+  'llm-config-plan-result',
+  'llm-config-set-result',
+  'llm-policy-status',
+  'llm-policy-plan-result',
+  'llm-policy-set-result',
+  'llm-policy-history-result',
+  'llm-usage-summary-result',
+  'llm-entry-control-dashboard',
+  'llm-quality-scorecard',
+  'llm-quality-slices',
+  'llm-quality-judge',
+  'llm-quality-benchmark',
+  'llm-quality-replay',
+  'llm-quality-frontier',
+  'llm-quality-top-failures',
+  'llm-quality-counterexamples',
+  'llm-quality-top-patterns',
+  'ux-policy-journey-status',
+  'ux-policy-task-rules-status',
+  'ux-policy-llm-policy-status',
+  'ux-policy-next-best-action',
+  'ux-policy-fatigue-warning'
+];
+
+function syncEvidencePlaceholderPre(el) {
+  if (!el || el.tagName !== 'PRE') return;
+  const text = String(el.textContent || '').trim();
+  const isPlaceholder = text === '' || text === '-' || text === '情報なし';
+  if (isPlaceholder) {
+    el.setAttribute('data-visual-noise', 'evidence-placeholder');
+  } else {
+    el.removeAttribute('data-visual-noise');
+  }
+}
+
+function syncEvidencePlaceholderNoise(root = document) {
+  EVIDENCE_PLACEHOLDER_PRE_IDS.forEach((id) => {
+    const el = root.getElementById ? root.getElementById(id) : document.getElementById(id);
+    if (!el) return;
+    syncEvidencePlaceholderPre(el);
+  });
+}
+
+function bindEvidencePlaceholderNoiseObservers() {
+  EVIDENCE_PLACEHOLDER_PRE_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el || el.dataset.visualNoiseBound === '1') return;
+    el.dataset.visualNoiseBound = '1';
+    syncEvidencePlaceholderPre(el);
+    const observer = new MutationObserver(() => {
+      syncEvidencePlaceholderPre(el);
+    });
+    observer.observe(el, { childList: true, characterData: true, subtree: true });
+  });
+}
+
 function expandPaneDetails(paneKey) {
   if (!paneKey) return;
   const paneEl = document.querySelector(`.app-pane[data-pane="${paneKey}"]`);
   if (!paneEl) return;
   paneEl.querySelectorAll('details').forEach((el) => {
+    bindJsonCollapsibleDetail(el);
+    if (isJsonCollapsibleDetail(el)) {
+      el.open = false;
+      el.classList.add('json-collapsed');
+      return;
+    }
     el.open = true;
   });
 }
@@ -3074,13 +3159,23 @@ function enforceNoCollapseUi() {
   if (typeof document === 'undefined' || !document.documentElement) return;
   document.documentElement.classList.add('admin-no-collapse-v1');
   document.querySelectorAll('details').forEach((el) => {
+    const summaryEl = el.querySelector('summary');
+    if (isJsonCollapsibleDetail(el)) {
+      bindJsonCollapsibleDetail(el);
+      el.open = false;
+      el.classList.add('json-collapsed');
+      if (summaryEl) {
+        summaryEl.removeAttribute('aria-disabled');
+        summaryEl.removeAttribute('tabindex');
+      }
+      return;
+    }
     el.open = true;
     if (el.dataset.noCollapseBound === '1') return;
     el.dataset.noCollapseBound = '1';
     el.addEventListener('toggle', () => {
       if (!el.open) el.open = true;
     });
-    const summaryEl = el.querySelector('summary');
     if (summaryEl) {
       summaryEl.setAttribute('aria-disabled', 'true');
       summaryEl.setAttribute('tabindex', '-1');
@@ -3089,11 +3184,12 @@ function enforceNoCollapseUi() {
 }
 
 function collapseManagedJsonPanels() {
-  if (ADMIN_NO_COLLAPSE_V1) return;
   document.querySelectorAll('details[data-json-collapsible="true"]').forEach((el) => {
+    bindJsonCollapsibleDetail(el);
     el.open = false;
     el.classList.add('json-collapsed');
   });
+  syncEvidencePlaceholderNoise();
 }
 
 function applyTopSummaryVisibility() {
@@ -18730,6 +18826,7 @@ function setupLlmControls() {
   setupDecisionActions();
   setupAudit();
   setupLlmControls();
+  bindEvidencePlaceholderNoiseObservers();
   setRole(state.role, { historyMode: 'replace', syncHistory: false });
   expandAllDetails();
   enforceNoCollapseUi();
