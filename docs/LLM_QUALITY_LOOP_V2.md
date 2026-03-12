@@ -87,6 +87,18 @@ The following slices are release blockers even if global quality remains `pass`.
   - strict quality gate / release policy require `qualityLoopV2.rolloutStage=nogo_gate_mandatory`
   - critical slices must all remain `pass`
 
+## Live runtime audit policy
+- `runtimeAuditUnavailable` is a release blocker.
+- frozen-only pass is a `provisional verdict`, not a release verdict.
+- preferred recovery order:
+  1. `gcloud auth application-default login`
+  2. confirm external IdP sign-in state
+  3. confirm service account impersonation target
+  4. confirm quota project
+- strict gates must require:
+  - live runtime summary provenance
+  - `qualityLoopV2.improvementLoop.runtimeAuditUnavailable=false`
+
 ## Replay / Golden Coverage
 - `city-pack-informed answer`
 - `emergency influenced answer`

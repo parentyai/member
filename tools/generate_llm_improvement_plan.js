@@ -4,6 +4,7 @@ const path = require('node:path');
 const { parseArgs, readJson, writeJson } = require('./llm_quality/lib');
 
 const BACKLOG_BY_SIGNAL = Object.freeze({
+  runtimeAuditUnavailable: { pr: 'PR-telemetry-live-audit-restoration', title: 'Live telemetry audit restoration' },
   cityPackGroundingRate: { pr: 'PR-8', title: 'City Pack / Source Refs Integration Hardening' },
   staleSourceBlockRate: { pr: 'PR-8', title: 'City Pack / Source Refs Integration Hardening' },
   emergencyOfficialSourceRate: { pr: 'PR-9', title: 'Emergency Layer Quality Override' },
@@ -96,20 +97,27 @@ const BACKLOG_BY_CLUSTER = Object.freeze({
     rollback: 'Disable integration feature flags and revert the integration PR.'
   },
   telemetry: {
-    PR: 'PR-telemetry-visibility',
-    objective: 'Close logging, trace-join, and admin visibility gaps that prevent reliable diagnosis.',
+    PR: 'PR-telemetry-live-audit-restoration',
+    objective: 'Restore live runtime audit access, surface auth recovery guidance, and close logging/trace visibility gaps.',
     files: [
+      'tools/run_llm_runtime_audit.js',
+      'tools/run_llm_improvement_loop.js',
+      'tools/llm_quality/run_quality_gate.js',
+      'tools/llm_quality/enforce_release_policy.js',
       'src/routes/admin/osLlmUsageSummary.js',
       'src/usecases/admin/getTraceBundle.js',
-      'src/repos/firestore/llmActionLogsRepo.js'
+      'docs/LLM_RUNBOOK.md'
     ],
     tests: [
+      'tests/phase821/*.test.js',
+      'tests/phase824/*.test.js',
+      'tests/phase825/*.test.js',
       'tests/phase807/*.test.js',
       'tests/phase809/*.test.js',
       'tests/phase814/*.test.js'
     ],
-    risk: 'Additional telemetry can increase payload size if not kept capped and masked.',
-    rollback: 'Hide the add-only summary fields and revert the telemetry PR.'
+    risk: 'Auth-path changes can hide real runtime failures if degraded and live modes are not kept distinct.',
+    rollback: 'Keep degraded mode active, disable live-runtime requirements, and revert the telemetry restoration PR.'
   }
 });
 
@@ -145,6 +153,30 @@ function buildBacklogRowsFromSignals(signalEntries, options) {
   const payload = options && typeof options === 'object' ? options : {};
   const rows = [];
   const seen = new Set();
+
+  const telemetryRestorationEntry = (Array.isArray(signalEntries) ? signalEntries : []).find((entry) => (
+    entry
+    && entry.category === 'telemetry'
+    && Array.isArray(entry.signals)
+    && entry.signals.some((row) => row && row.signal === 'runtimeAuditUnavailable')
+  ));
+  if (telemetryRestorationEntry) {
+    const mapping = BACKLOG_BY_CLUSTER.telemetry;
+    seen.add('telemetry');
+    rows.push({
+      priority: telemetryRestorationEntry && typeof telemetryRestorationEntry.severity === 'string'
+        ? telemetryRestorationEntry.severity
+        : 'high',
+      category: 'telemetry',
+      signals: ['runtimeAuditUnavailable'],
+      PR: mapping.PR,
+      objective: mapping.objective,
+      files: mapping.files.slice(),
+      tests: mapping.tests.slice(),
+      risk: mapping.risk,
+      rollback: mapping.rollback
+    });
+  }
 
   (Array.isArray(signalEntries) ? signalEntries : []).forEach((entry) => {
     const category = entry && typeof entry.category === 'string' ? entry.category.trim() : '';

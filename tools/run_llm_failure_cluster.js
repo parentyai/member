@@ -79,9 +79,10 @@ const CATEGORY_MAP = Object.freeze({
     ]
   },
   telemetry: {
-    signals: ['traceJoinCompleteness', 'adminTraceResolutionTime'],
+    signals: ['traceJoinCompleteness', 'adminTraceResolutionTime', 'runtimeAuditUnavailable'],
     repoDimensions: ['telemetryCoverage', 'traceJoinCoverage'],
     candidateFiles: [
+      'tools/run_llm_runtime_audit.js',
       'src/routes/admin/osLlmUsageSummary.js',
       'src/usecases/admin/getTraceBundle.js',
       'src/repos/firestore/llmActionLogsRepo.js'
@@ -125,6 +126,18 @@ function buildFailureClusters(input) {
   Object.entries(CATEGORY_MAP).forEach(([category, config], index) => {
     const signalRows = [];
     (config.signals || []).forEach((signal) => {
+      if (signal === 'runtimeAuditUnavailable') {
+        const unavailable = audit.source && audit.source.runtimeAuditUnavailable === true;
+        const blocked = Array.isArray(audit.releaseBlockers) && audit.releaseBlockers.includes('runtimeAuditUnavailable');
+        if (unavailable || blocked) {
+          signalRows.push({
+            signal,
+            status: 'fail',
+            sampleCount: 0
+          });
+        }
+        return;
+      }
       if (Object.prototype.hasOwnProperty.call(kpis, signal)) {
         const row = kpis[signal];
         if (row && row.status && row.status !== 'pass') {

@@ -268,16 +268,36 @@ function extractQualityLoopV2(payload) {
   return qualityFramework.qualityLoopV2;
 }
 
+function extractImprovementLoop(payload) {
+  const qualityLoopV2 = extractQualityLoopV2(payload);
+  if (!qualityLoopV2 || !qualityLoopV2.improvementLoop || typeof qualityLoopV2.improvementLoop !== 'object') {
+    return null;
+  }
+  return qualityLoopV2.improvementLoop;
+}
+
 function isRuntimeSummaryProvenanceAccepted(value) {
+  const source = normalizeRuntimeSummarySource(value);
+  if (!source) return false;
+  return [
+    'seeded_from_frozen_runtime_snapshot',
+    'forced_refresh_from_frozen_runtime_snapshot',
+    'frozen_summary_fallback',
+    'runtime_live',
+    'runtime_summary_live',
+    'runtime_collected',
+    'existing_runtime_summary_kept'
+  ].includes(source);
+}
+
+function isLiveRuntimeSummaryProvenance(value) {
   const source = normalizeRuntimeSummarySource(value);
   if (!source) return false;
   return [
     'runtime_live',
     'runtime_summary_live',
     'runtime_collected',
-    'existing_runtime_summary_kept',
-    'seeded_from_frozen_runtime_snapshot',
-    'forced_refresh_from_frozen_runtime_snapshot'
+    'existing_runtime_summary_kept'
   ].includes(source);
 }
 
@@ -334,6 +354,10 @@ function main(argv) {
     args.requireCompatGovernance,
     toBool(process.env.LLM_QUALITY_REQUIRE_COMPAT_GOVERNANCE, false)
   );
+  const requireLiveRuntimeAudit = toBool(
+    args.requireLiveRuntimeAudit,
+    toBool(process.env.LLM_QUALITY_REQUIRE_LIVE_RUNTIME_AUDIT, false)
+  );
   const requireNoGoGateMandatory = toBool(
     args.requireNoGoGateMandatory,
     toBool(process.env.LLM_QUALITY_REQUIRE_NOGO_GATE_MANDATORY, false)
@@ -355,6 +379,7 @@ function main(argv) {
   const runtimeSummarySource = candidateResolved.runtimeSummarySource;
   const sourceSummary = candidateResolved.summary;
   const qualityLoopV2 = extractQualityLoopV2(sourceSummary);
+  const improvementLoop = extractImprovementLoop(sourceSummary);
   const compatShareWindow = resolveCompatShareWindow(sourceSummary);
   const runtimeSummaryReadable = candidateResolved.runtimeSummaryReadable === true;
   const runtimeSummaryConverted = candidateResolved.runtimeSummaryConverted === true;
@@ -418,6 +443,18 @@ function main(argv) {
       failures.push(`runtime_summary_provenance_invalid:${normalizeRuntimeSummarySource(runtimeSummarySource) || 'unknown'}`);
     }
   }
+  if (requireLiveRuntimeAudit === true) {
+    if (candidateSourceType !== 'runtime_summary') {
+      failures.push('live_runtime_audit_required_but_runtime_summary_missing');
+    } else if (!isLiveRuntimeSummaryProvenance(runtimeSummarySource)) {
+      failures.push(`live_runtime_audit_provenance_invalid:${normalizeRuntimeSummarySource(runtimeSummarySource) || 'unknown'}`);
+    }
+    if (!improvementLoop) {
+      failures.push('quality_loop_v2_improvement_loop_missing');
+    } else if (improvementLoop.runtimeAuditUnavailable === true) {
+      failures.push('runtime_audit_unavailable');
+    }
+  }
   if (requireCompatGovernance === true) {
     if (!Number.isFinite(Number(compatShareWindow))) {
       failures.push('compat_share_window_missing');
@@ -462,6 +499,7 @@ function main(argv) {
     summaryFallbackPath,
     requireRuntimeSummary,
     requireRuntimeProvenance,
+    requireLiveRuntimeAudit,
     runtimeSummarySource,
     requireCompatGovernance,
     requireNoGoGateMandatory,
@@ -474,6 +512,7 @@ function main(argv) {
     manifestPath,
     candidateSourceType,
     qualityLoopV2,
+    improvementLoop,
     benchmarkRegistry,
     contamination,
     judgeCalibration,

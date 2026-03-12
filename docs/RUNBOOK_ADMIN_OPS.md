@@ -227,7 +227,22 @@ internal token matrix（routeごとの既定ヘッダー）:
 - 前提: 組織ポリシーによりローカルSA鍵の新規発行が不可。
 - local 実行時は `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=0` を既定運用とし、ADCで preflight probe を継続する。
 - 実行例:
-  - `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=0 npm run admin:preflight`
+- `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=0 npm run admin:preflight`
+
+### runtime audit unavailable の復旧
+- `runtimeAuditUnavailable=true` は quality loop / release gate の blocker として扱う。
+- 復旧順:
+  1. `gcloud auth application-default login`
+  2. `gcloud auth application-default print-access-token`
+  3. `gcloud auth list`
+  4. `gcloud config get-value account`
+  5. `gcloud config get-value project`
+  6. `gcloud config get-value billing/quota_project`
+  7. impersonation 利用時は `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` または `FIRESTORE_IMPERSONATE_SERVICE_ACCOUNT` を確認
+- 期待結果:
+  - local preflight が `ready=true`
+  - runtime audit が `runtimeFetchStatus=ok`
+  - frozen-only quality pass を release verdict に使わない
   - `unset GOOGLE_APPLICATION_CREDENTIALS`
   - `gcloud auth application-default login`
   - `gcloud auth application-default print-access-token`
