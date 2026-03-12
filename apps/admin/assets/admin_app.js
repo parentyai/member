@@ -336,6 +336,12 @@ const MONITOR_WORKSPACE_VIEW_SUMMARY = 'summary';
 const MONITOR_WORKSPACE_VIEW_CONFIGURATION = 'configuration';
 const CITY_PACK_WORKSPACE_VIEW_WORKBENCH = 'workbench';
 const CITY_PACK_WORKSPACE_VIEW_DETAIL = 'detail';
+const SYSTEM_DIAGNOSTIC_PANES = new Set([
+  'settings',
+  'ops-feature-catalog',
+  'ops-system-health',
+  'maintenance'
+]);
 
 function normalizeCopyForRole(text, role) {
   const value = String(text || '');
@@ -1464,6 +1470,31 @@ function renderGuardBanner(rawError) {
   state.recoveryUx = Object.assign({}, state.recoveryUx, { suppressedGuard: false });
 }
 
+function isSystemDiagnosticsPane(paneKey) {
+  const pane = String(paneKey || state.activePane || '').trim();
+  return SYSTEM_DIAGNOSTIC_PANES.has(pane);
+}
+
+function syncSystemDiagnosticsVisibility() {
+  const preflightBanner = document.getElementById('admin-local-preflight-banner');
+  if (preflightBanner) {
+    const isVisible = preflightBanner.getAttribute('data-admin-local-preflight') === 'visible';
+    const shouldShow = isVisible && isSystemDiagnosticsPane(state.activePane);
+    preflightBanner.classList.toggle('is-scoped-hidden', !shouldShow);
+    preflightBanner.setAttribute('data-system-scope', shouldShow ? 'visible' : 'hidden');
+  }
+
+  const monitorHandoff = document.getElementById('monitor-insights-system-handoff');
+  if (monitorHandoff) {
+    monitorHandoff.classList.toggle('is-hidden', state.activePane !== 'monitor');
+  }
+
+  const monitorDiagnosticsPanel = document.getElementById('monitor-insights-diagnostics-panel');
+  if (monitorDiagnosticsPanel) {
+    monitorDiagnosticsPanel.classList.add('is-hidden');
+  }
+}
+
 function resolveLocalPreflightBannerElement() {
   return document.getElementById('admin-local-preflight-banner');
 }
@@ -1492,10 +1523,11 @@ function setLocalPreflightDetailExpanded(expanded) {
 function clearLocalPreflightBanner() {
   const el = resolveLocalPreflightBannerElement();
   if (!el) return;
-  el.classList.remove('is-visible', 'is-danger', 'is-warn', 'is-ok');
+  el.classList.remove('is-visible', 'is-danger', 'is-warn', 'is-ok', 'is-scoped-hidden');
   el.setAttribute('data-admin-local-preflight', 'hidden');
   el.setAttribute('data-ui-state', 'unset');
   el.setAttribute('data-ui-message-level', 'system');
+  el.setAttribute('data-system-scope', 'hidden');
   const cause = el.querySelector('[data-local-preflight-field="cause"]');
   const impact = el.querySelector('[data-local-preflight-field="impact"]');
   const action = el.querySelector('[data-local-preflight-field="action"]');
@@ -1517,6 +1549,7 @@ function clearLocalPreflightBanner() {
   if (checksJson) checksJson.textContent = '-';
   if (checksDetails) checksDetails.open = false;
   if (copyBtn) copyBtn.disabled = true;
+  syncSystemDiagnosticsVisibility();
 }
 
 function normalizeLocalPreflightPayload(payload) {
@@ -1574,6 +1607,7 @@ function renderLocalPreflightBanner(payload) {
   el.classList.add('is-visible');
   applyBannerState(el, normalized.tone, 'system');
   el.setAttribute('data-admin-local-preflight', 'visible');
+  syncSystemDiagnosticsVisibility();
   applyRecoveryUxFromPreflight(payload);
 }
 
@@ -1671,12 +1705,7 @@ async function copyLocalPreflightCommands() {
 }
 
 function openLocalPreflightAuditPane() {
-  const traceId = ensureTraceInput('traceId') || newTraceId();
-  const auditTrace = document.getElementById('audit-trace');
-  if (auditTrace && typeof auditTrace.value === 'string' && !auditTrace.value.trim()) {
-    auditTrace.value = traceId;
-  }
-  activatePane('audit', { historyMode: 'push', syncHistory: true });
+  activatePane('ops-system-health', { historyMode: 'push', syncHistory: true });
 }
 
 async function rerunLocalPreflightFromUi() {
@@ -4200,6 +4229,7 @@ function activatePane(target, options) {
     pane.classList.toggle('is-active', pane.dataset.pane === nextPane);
   });
   state.activePane = nextPane;
+  syncSystemDiagnosticsVisibility();
   if (appShell) appShell.setAttribute('data-view-pane', nextPane);
   if (!state.paneUpdatedAt[nextPane]) {
     setPaneUpdatedAt(nextPane);
@@ -16142,6 +16172,9 @@ function setupMonitorControls() {
   });
   document.getElementById('monitor-open-read-model')?.addEventListener('click', () => {
     activatePane('read-model', { historyMode: 'push' });
+  });
+  document.getElementById('monitor-open-system-diagnostics')?.addEventListener('click', () => {
+    activatePane('ops-system-health', { historyMode: 'push' });
   });
   document.getElementById('monitor-global-reload')?.addEventListener('click', () => {
     loadMonitorData({ notify: true });
