@@ -3058,6 +3058,17 @@ details:not([open]) > *:not(summary) {
   color: var(--status-ok);
 }
 
+.dashboard-summary-panel {
+  margin-bottom: var(--space-3);
+}
+
+.dashboard-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
 .dashboard-journey-panel {
   margin-top: var(--space-3);
 }
@@ -3178,6 +3189,10 @@ details:not([open]) > *:not(summary) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .dashboard-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .dashboard-journey-grid {
     grid-template-columns: 1fr;
   }
@@ -3189,6 +3204,10 @@ details:not([open]) > *:not(summary) {
 
 @media (max-width: 760px) {
   .dashboard-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-summary-grid {
     grid-template-columns: 1fr;
   }
 
@@ -3320,5 +3339,9 @@ details:not([open]) > *:not(summary) {
 .app-shell.home-clean-surface-v1 #ops-home-dashboard,
 .app-shell.home-clean-surface-v1 #home-decision-card .decision-actions,
 .app-shell.home-clean-surface-v1 .dashboard-journey-panel {
+  display: none !important;
+}
+
+.app-shell.home-clean-surface-v1[data-view-pane="home"] #managed-action-evidence {
   display: none !important;
 }

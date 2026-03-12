@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-12T02:40:04.238Z",
-  "gitCommit": "40024b87f2a20bc43a1ccd1dea5b61fe6517918d",
-  "branch": "codex/admin-ui-pr1-nav-ia",
-  "sourceDigest": "1d7e7c702ddbd1edc19a2b6ea25f61a32cfa2deda60b626ac596c5e12df992e2",
+  "generatedAt": "2026-03-12T02:55:06.160Z",
+  "gitCommit": "9fe33ec214ac3656c7fa6ab8f603783ce37afd8c",
+  "branch": "codex/admin-ui-pr2-dashboard",
+  "sourceDigest": "a285822c49633410f95264295321f1c31c5ab491dc34d0605d31d693b5609568",
   "counts": {
     "endpoints": 291,
     "routes": 130,
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "fc08f651651919e0eb1bc0fe88ea2209bca5acddeeddafea154894c172f1e473",
+      "sha256": "77ad4b03ec314ab102d5ff4bc7a252f8553f0aa419a2c606397f0f0658bd66ef",
       "bytes": 449967
     },
     {

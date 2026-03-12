@@ -193,14 +193,16 @@ test('phase653: journey kpi aggregate computes retention/ltv metrics and pro cou
   }
 });
 
-test('phase653: dashboard and admin ui include pro_active card and journey kpi surfaces', () => {
+test('phase653: dashboard keeps pro_active KPI and removes journey detail surface from home', () => {
   const html = require('node:fs').readFileSync('apps/admin/app.html', 'utf8');
   const js = require('node:fs').readFileSync('apps/admin/assets/admin_app.js', 'utf8');
 
   assert.ok(html.includes('data-dashboard-card="proActive"'));
-  assert.ok(html.includes('id="dashboard-journey-kpi-reload"'));
-  assert.ok(html.includes('id="dashboard-journey-kpi-result"'));
+  assert.ok(html.includes('id="dashboard-summary-open-alerts"'));
+  assert.ok(!html.includes('id="dashboard-journey-kpi-reload"'));
+  assert.ok(!html.includes('id="dashboard-journey-kpi-result"'));
   assert.ok(js.includes('proActive: { kpiKeys: [\'pro_active_count\']'));
-  assert.ok(js.includes('loadDashboardJourneyKpi('));
+  assert.ok(js.includes('function loadDashboardJourneyKpi(options)'));
+  assert.ok(!js.includes('await loadDashboardJourneyKpi({ notify: false });'));
   assert.ok(js.includes('/api/admin/os/journey-kpi'));
 });

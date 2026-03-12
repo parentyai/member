@@ -757,9 +757,14 @@ const PANE_HEADER_MAP = Object.freeze({
 const PAGE_HEADER_ACTION_MAP = Object.freeze({
   home: Object.freeze({
     primary: Object.freeze({
-      labelKey: 'ui.label.decision.action.createEdit',
-      fallback: '作成・編集',
-      paneTarget: 'composer'
+      labelKey: 'ui.label.alerts.title',
+      fallback: '要対応',
+      paneTarget: 'alerts'
+    }),
+    secondary: Object.freeze({
+      labelKey: 'ui.label.home.task.monitor',
+      fallback: '配信結果を確認',
+      paneTarget: 'monitor'
     })
   }),
   'city-pack': Object.freeze({
@@ -1709,7 +1714,6 @@ async function runInitialDataLoads(options) {
   loadDashboardKpis({ notify: false });
   loadAlertsSummary({ notify: false });
   loadRepoMap({ notify: false });
-  loadOpsSnapshotBundle({ notify: false });
   renderAllDecisionCards();
 }
 
@@ -3147,9 +3151,6 @@ function setupHomeControls() {
   document.getElementById('dashboard-reload')?.addEventListener('click', () => {
     void loadDashboardKpis({ notify: true, forceRefresh: true });
   });
-  document.getElementById('dashboard-journey-kpi-reload')?.addEventListener('click', () => {
-    void loadDashboardJourneyKpi({ notify: true });
-  });
   document.querySelectorAll('.dashboard-window-select').forEach((el) => {
     el.addEventListener('change', () => {
       void loadDashboardKpis({ notify: false });
@@ -3160,16 +3161,6 @@ function setupHomeControls() {
   });
   document.getElementById('alerts-reload')?.addEventListener('click', () => {
     void loadAlertsSummary({ notify: true });
-  });
-  document.getElementById('ops-home-reload')?.addEventListener('click', () => {
-    void loadOpsSnapshotBundle({ notify: true });
-  });
-  document.getElementById('ops-home-rebuild')?.addEventListener('click', () => {
-    void rebuildOpsSystemSnapshot();
-  });
-  document.getElementById('ops-home-open-catalog')?.addEventListener('click', () => {
-    activatePane('ops-feature-catalog', { historyMode: 'push' });
-    void loadOpsFeatureCatalogStatus({ notify: false });
   });
   document.getElementById('ops-feature-catalog-reload')?.addEventListener('click', () => {
     void loadOpsFeatureCatalogStatus({ notify: true });
@@ -4192,9 +4183,6 @@ function activatePane(target, options) {
   }
   if (paneBlocked) renderGuardBanner({ error: guardReason, recommendedPane: nextPane });
   updatePageHeader(nextPane);
-  if (nextPane === 'home' && isOpsRealtimeSnapshotEnabled() && !state.opsSystemSnapshot) {
-    void loadOpsSnapshotBundle({ notify: false });
-  }
   if (nextPane === 'ops-feature-catalog' && isOpsRealtimeSnapshotEnabled() && (!Array.isArray(state.opsFeatureRows) || state.opsFeatureRows.length === 0)) {
     void loadOpsFeatureCatalogStatus({ notify: false });
   }
@@ -4694,9 +4682,21 @@ function resolveTopbarStatusFromState() {
   };
 }
 
+function renderHomeDecisionSummary() {
+  const openAlertsEl = document.getElementById('dashboard-summary-open-alerts');
+  const scheduledTodayEl = document.getElementById('dashboard-summary-scheduled-today');
+  const registeredCountEl = document.getElementById('dashboard-summary-registered-count');
+  if (!openAlertsEl && !scheduledTodayEl && !registeredCountEl) return;
+  const summary = state.topbarStatus && typeof state.topbarStatus === 'object' ? state.topbarStatus : {};
+  if (openAlertsEl) openAlertsEl.textContent = summary.openAlertsLabel || '-';
+  if (scheduledTodayEl) scheduledTodayEl.textContent = summary.scheduledTodayCountLabel || '-';
+  if (registeredCountEl) registeredCountEl.textContent = summary.registeredCountLabel || '-';
+}
+
 async function loadTopbarStatus() {
   resolveTopbarStatusFromState();
   updateTopBar();
+  renderHomeDecisionSummary();
 }
 
 function renderDashboardKpis() {
@@ -4932,7 +4932,6 @@ async function loadDashboardKpis(options) {
     return;
   }
   const traceId = ensureTraceInput('traceId') || newTraceId();
-  await loadDashboardJourneyKpi({ notify: false });
   const monthsNeeded = Array.from(new Set(Object.keys(DASHBOARD_CARD_CONFIG).map((metricKey) => getDashboardWindowMonths(metricKey))));
   if (forceRefresh) {
     state.dashboardCacheByMonths = {};
