@@ -32,6 +32,9 @@ const {
 const { resolveIntentRiskTier } = require('../domain/llm/policy/resolveIntentRiskTier');
 const { runAnswerReadinessGateV2 } = require('../domain/llm/quality/runAnswerReadinessGateV2');
 const { applyAnswerReadinessDecision } = require('../domain/llm/quality/applyAnswerReadinessDecision');
+const { resolveJourneyActionSignals } = require('../domain/llm/quality/resolveJourneyActionSignals');
+const { resolveRuntimeCityPackSignals } = require('../domain/llm/quality/resolveRuntimeCityPackSignals');
+const { resolveRuntimeEmergencySignals } = require('../domain/llm/quality/resolveRuntimeEmergencySignals');
 const { generatePaidDomainConciergeReply, FORBIDDEN_REPLY_PATTERN } = require('../usecases/assistant/generatePaidDomainConciergeReply');
 const { generatePaidHousingConciergeReply } = require('../usecases/assistant/generatePaidHousingConciergeReply');
 const { runPaidConversationOrchestrator } = require('../domain/llm/orchestrator/runPaidConversationOrchestrator');
@@ -71,6 +74,7 @@ const { composeConversationDraftFromSignals } = require('../domain/llm/conversat
 const { humanizeConversationMessage } = require('../domain/llm/conversation/styleHumanizer');
 const { sanitizePaidMainReply, containsLegacyTemplateTerms } = require('../domain/llm/conversation/paidReplyGuard');
 const { resolveFreeContextualFollowup } = require('../domain/llm/conversation/freeContextualFollowup');
+const { searchCityPackCandidates } = require('../usecases/assistant/retrieval/searchCityPackCandidates');
 const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
 const { handleJourneyPostback } = require('../usecases/journey/handleJourneyPostback');
 const { evaluateResponseContractConformance } = require('../v1/semantic/responseContractConformance');
@@ -689,6 +693,25 @@ async function buildPaidDomainConciergeResult(params) {
   const domainAtoms = domainReply && domainReply.atoms && typeof domainReply.atoms === 'object'
     ? domainReply.atoms
     : null;
+  const conciergeContext = buildConciergeContextSnapshot(contextSnapshot);
+  const journeySignals = resolveJourneyActionSignals({
+    contextSnapshot,
+    blockedTask: conciergeContext && conciergeContext.blockedTask ? conciergeContext.blockedTask : null,
+    journeyPhase: conciergeContext && conciergeContext.phase ? conciergeContext.phase : null,
+    nextActions: domainAtoms && Array.isArray(domainAtoms.nextActions) ? domainAtoms.nextActions : []
+  });
+  const [cityPackSignals, emergencySignals] = await Promise.all([
+    resolveRuntimeCityPackSignals({
+      lineUserId,
+      locale: 'ja',
+      domainIntent,
+      intentRiskTier: resolveIntentRiskTier({ domainIntent }).intentRiskTier
+    }),
+    resolveRuntimeEmergencySignals({
+      lineUserId,
+      contextSnapshot
+    })
+  ]);
   const fallbackReplyText = '状況を整理しながら進めましょう。まずは優先する手続きを3つ以内に絞るのがおすすめです。';
   const rawReplyText = domainReply && domainReply.replyText ? domainReply.replyText : fallbackReplyText;
   const guardedReply = guardPaidMainReplyText(rawReplyText, {
@@ -740,7 +763,12 @@ async function buildPaidDomainConciergeResult(params) {
     conversationQuality,
     atoms: domainAtoms,
     followupIntent: domainReply && typeof domainReply.followupIntent === 'string' ? domainReply.followupIntent : null,
-    conciseModeApplied: domainReply && domainReply.conciseModeApplied === true
+    conciseModeApplied: domainReply && domainReply.conciseModeApplied === true,
+    integrationSignals: Object.assign({}, journeySignals, cityPackSignals, emergencySignals, {
+      savedFaqReused: false,
+      savedFaqReusePass: false,
+      crossSystemConflictDetected: false
+    })
   };
 }
 
@@ -899,6 +927,10 @@ async function resolveCityPackStoredCandidatesFromRetrieval(retrieval) {
         url: sourceRef.url.trim(),
         source: 'city_pack_source_ref',
         sourceType: sourceRef.sourceType || 'other',
+        authorityLevel: sourceRef.authorityLevel || 'other',
+        requiredLevel: sourceRef.requiredLevel || 'required',
+        validUntil: sourceRef.validUntil || null,
+        status: sourceRef.status || 'active',
         domainClass: sourceRef.domainClass || 'unknown',
         title: sourceRefId,
         snippet: '',
@@ -911,22 +943,35 @@ async function resolveCityPackStoredCandidatesFromRetrieval(retrieval) {
   return rows.filter(Boolean);
 }
 
-async function resolveStoredCandidatesForPaid(paid) {
+async function resolveStoredCandidatesForPaid(paid, options) {
+  const payload = options && typeof options === 'object' ? options : {};
   const evidenceKeys = uniqueStringList([]
     .concat(Array.isArray(paid && paid.citations) ? paid.citations : [])
     .concat(Array.isArray(paid && paid.output && paid.output.evidenceKeys) ? paid.output.evidenceKeys : []));
-  if (!evidenceKeys.length) return [];
-  const articleRows = await Promise.all(evidenceKeys.slice(0, 8).map(async (articleId) => {
-    try {
-      return await faqArticlesRepo.getArticle(articleId);
-    } catch (_err) {
-      return null;
-    }
-  }));
-  const sourceIds = articleRows
-    .filter(Boolean)
+  const articleRows = evidenceKeys.length
+    ? await Promise.all(evidenceKeys.slice(0, 8).map(async (articleId) => {
+      try {
+        return await faqArticlesRepo.getArticle(articleId);
+      } catch (_err) {
+        return null;
+      }
+    }))
+    : [];
+  const sourceIds = articleRows.filter(Boolean)
     .flatMap((row) => (Array.isArray(row.linkRegistryIds) ? row.linkRegistryIds : []));
-  return resolveLinkRegistryCandidatesFromSourceIds(sourceIds, 'faq_link_registry');
+  const [faqStored, cityPackStored] = await Promise.all([
+    resolveLinkRegistryCandidatesFromSourceIds(sourceIds, 'faq_link_registry'),
+    payload.lineUserId
+      ? searchCityPackCandidates({
+        lineUserId: payload.lineUserId,
+        locale: payload.locale || 'ja',
+        limit: 3
+      }).then((result) => resolveCityPackStoredCandidatesFromRetrieval({
+        cityPackCandidates: Array.isArray(result && result.candidates) ? result.candidates : []
+      })).catch(() => [])
+      : []
+  ]);
+  return faqStored.concat(cityPackStored);
 }
 
 function normalizeAssistantQuality(input, defaults) {
@@ -1897,7 +1942,14 @@ async function tryHandlePaidOrchestratorV2(params) {
   });
   const composeCandidateFactory = async ({ groundedResult, packet }) => {
     if (!groundedResult || groundedResult.ok !== true || payload.llmConciergeEnabled !== true) return null;
-    const storedCandidates = await resolveStoredCandidatesForPaid(groundedResult);
+      const storedCandidates = await resolveStoredCandidatesForPaid(groundedResult, {
+        lineUserId: payload.lineUserId,
+        locale: 'ja',
+        domainIntent: packet.normalizedConversationIntent || 'general',
+        intentRiskTier: resolveIntentRiskTier({
+          domainIntent: packet.normalizedConversationIntent || 'general'
+        }).intentRiskTier
+      });
     return composeConciergeReply({
       question: packet.messageText,
       baseReplyText: groundedResult.replyText,
@@ -3205,6 +3257,42 @@ async function handleAssistantMessage(params) {
       followupIntent: domainConcierge && typeof domainConcierge.followupIntent === 'string' ? domainConcierge.followupIntent : null,
       conciseModeApplied: domainConcierge ? domainConcierge.conciseModeApplied === true : false,
       repetitionPrevented: false,
+      emergencyContext: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.emergencyContext === true
+        : false,
+      emergencySeverity: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.emergencySeverity || null
+        : null,
+      emergencyOfficialSourceSatisfied: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.emergencyOfficialSourceSatisfied === true
+        : false,
+      journeyContext: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.journeyContext === true
+        : false,
+      journeyPhase: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.journeyPhase || null
+        : null,
+      taskBlockerDetected: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.taskBlockerDetected === true
+        : false,
+      journeyAlignedAction: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.journeyAlignedAction !== false
+        : true,
+      cityPackContext: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.cityPackContext === true
+        : false,
+      cityPackGrounded: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.cityPackGrounded === true
+        : false,
+      cityPackFreshnessScore: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.cityPackFreshnessScore
+        : null,
+      cityPackAuthorityScore: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.cityPackAuthorityScore
+        : null,
+      crossSystemConflictDetected: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.crossSystemConflictDetected === true
+        : false,
       domainIntent: normalizedConversationIntent,
       conversationQuality: domainConcierge && domainConcierge.conversationQuality
         ? domainConcierge.conversationQuality
@@ -3230,6 +3318,42 @@ async function handleAssistantMessage(params) {
       followupIntent: domainConcierge && typeof domainConcierge.followupIntent === 'string' ? domainConcierge.followupIntent : null,
       conciseModeApplied: domainConcierge ? domainConcierge.conciseModeApplied === true : false,
       repetitionPrevented: false,
+      emergencyContext: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.emergencyContext === true
+        : false,
+      emergencySeverity: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.emergencySeverity || null
+        : null,
+      emergencyOfficialSourceSatisfied: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.emergencyOfficialSourceSatisfied === true
+        : false,
+      journeyContext: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.journeyContext === true
+        : false,
+      journeyPhase: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.journeyPhase || null
+        : null,
+      taskBlockerDetected: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.taskBlockerDetected === true
+        : false,
+      journeyAlignedAction: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.journeyAlignedAction !== false
+        : true,
+      cityPackContext: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.cityPackContext === true
+        : false,
+      cityPackGrounded: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.cityPackGrounded === true
+        : false,
+      cityPackFreshnessScore: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.cityPackFreshnessScore
+        : null,
+      cityPackAuthorityScore: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.cityPackAuthorityScore
+        : null,
+      crossSystemConflictDetected: domainConcierge && domainConcierge.integrationSignals
+        ? domainConcierge.integrationSignals.crossSystemConflictDetected === true
+        : false,
       domainIntent: normalizedConversationIntent,
       conversationQuality: domainConcierge && domainConcierge.conversationQuality
         ? domainConcierge.conversationQuality
@@ -3388,7 +3512,12 @@ async function handleAssistantMessage(params) {
     && (!opportunityEngineEnabled || opportunityDecision.conversationMode === 'concierge')
   ) {
     try {
-      const storedCandidates = await resolveStoredCandidatesForPaid(paid);
+      const storedCandidates = await resolveStoredCandidatesForPaid(paid, {
+        lineUserId,
+        locale: 'ja',
+        domainIntent: normalizedConversationIntent,
+        intentRiskTier: riskSnapshot.intentRiskTier
+      });
       const concierge = await composeConciergeReply({
         question: text,
         baseReplyText: replyText,
@@ -3476,6 +3605,25 @@ async function handleAssistantMessage(params) {
   });
   const legalSnapshot = resolveLlmLegalPolicySnapshot({ policy: budget.policy || null });
   const riskSnapshot = resolveIntentRiskTier({ domainIntent: normalizedConversationIntent });
+  const journeySignals = resolveJourneyActionSignals({
+    contextSnapshot,
+    journeyPhase: contextSnapshot && (contextSnapshot.phase || contextSnapshot.journeyPhase)
+      ? String(contextSnapshot.phase || contextSnapshot.journeyPhase)
+      : null,
+    nextActions: paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : []
+  });
+  const [cityPackSignals, emergencySignals] = await Promise.all([
+    resolveRuntimeCityPackSignals({
+      lineUserId,
+      locale: 'ja',
+      domainIntent: normalizedConversationIntent,
+      intentRiskTier: riskSnapshot.intentRiskTier
+    }),
+    resolveRuntimeEmergencySignals({
+      lineUserId,
+      contextSnapshot
+    })
+  ]);
   const readinessTelemetry = resolveAnswerReadinessTelemetry({
     legalSnapshot,
     riskSnapshot,
@@ -3496,7 +3644,21 @@ async function handleAssistantMessage(params) {
     fallbackType: null,
     contradictionFlags: [],
     unsupportedClaimCount: 0,
-    contradictionDetected: false
+    contradictionDetected: false,
+    emergencyContext: emergencySignals.emergencyContext === true,
+    emergencySeverity: emergencySignals.emergencySeverity || null,
+    emergencyOfficialSourceSatisfied: emergencySignals.emergencyOfficialSourceSatisfied === true,
+    journeyContext: journeySignals.journeyContext === true,
+    journeyPhase: journeySignals.journeyPhase || null,
+    contextSnapshot,
+    taskBlockerDetected: journeySignals.taskBlockerDetected === true,
+    journeyAlignedAction: journeySignals.journeyAlignedAction !== false,
+    cityPackContext: cityPackSignals.cityPackContext === true,
+    cityPackGrounded: cityPackSignals.cityPackGrounded === true,
+    cityPackFreshnessScore: cityPackSignals.cityPackFreshnessScore,
+    cityPackAuthorityScore: cityPackSignals.cityPackAuthorityScore,
+    cityPackValidation: cityPackSignals.cityPackValidation,
+    crossSystemConflictDetected: false
   });
   const readinessApplied = applyAnswerReadinessDecision({
     decision: readinessTelemetry.readiness.decision,

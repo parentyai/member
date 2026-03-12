@@ -18,6 +18,7 @@ const { resolveLlmLegalPolicySnapshot } = require('../../domain/llm/policy/resol
 const { resolveIntentRiskTier } = require('../../domain/llm/policy/resolveIntentRiskTier');
 const { computeSourceReadiness } = require('../../domain/llm/knowledge/computeSourceReadiness');
 const { runAnswerReadinessGateV2 } = require('../../domain/llm/quality/runAnswerReadinessGateV2');
+const { refineSavedFaqReuseSignals } = require('./refineSavedFaqReuseSignals');
 
 const DEFAULT_TIMEOUT_MS = 2500;
 const PROMPT_VERSION = 'faq_answer_v2_kb_only';
@@ -719,7 +720,7 @@ async function answerFaqFromKb(params, deps) {
     domainIntent: intent || 'general',
     savedFaqContext: candidates.length > 0
   });
-  const savedFaqSignals = buildSavedFaqReuseSignals({
+  const rawSavedFaqSignals = buildSavedFaqReuseSignals({
     candidates,
     intent,
     intentRiskTier: riskSnapshot.intentRiskTier,
@@ -741,6 +742,11 @@ async function answerFaqFromKb(params, deps) {
     evidenceCoverage: confidence.top1Score !== null && confidence.top1Score !== undefined
       ? Math.max(0, Math.min(1, Number(confidence.top1Score)))
       : 0
+  });
+  const savedFaqSignals = refineSavedFaqReuseSignals({
+    savedFaqSignals: rawSavedFaqSignals,
+    sourceReadiness,
+    intentRiskTier: riskSnapshot.intentRiskTier
   });
   const answerReadinessGate = runAnswerReadinessGateV2({
     lawfulBasis: legalSnapshot.lawfulBasis,

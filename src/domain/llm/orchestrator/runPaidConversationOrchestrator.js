@@ -16,6 +16,9 @@ const { evaluateParentYamlRoutingInvariant } = require('../policy/parentYamlRout
 const { evaluateRequiredCoreFactsGate } = require('../policy/evaluateRequiredCoreFactsGate');
 const { computeSourceReadiness } = require('../knowledge/computeSourceReadiness');
 const { runAnswerReadinessGateV2 } = require('../quality/runAnswerReadinessGateV2');
+const { resolveJourneyActionSignals } = require('../quality/resolveJourneyActionSignals');
+const { resolveRuntimeCityPackSignals } = require('../quality/resolveRuntimeCityPackSignals');
+const { resolveRuntimeEmergencySignals } = require('../quality/resolveRuntimeEmergencySignals');
 const { enforceActionGateway } = require('../../../v1/action_gateway/actionGateway');
 const { resolveActionClass } = require('../../../v1/policy_graph/resolveActionClass');
 
@@ -682,6 +685,27 @@ async function runPaidConversationOrchestrator(params) {
     actionClass,
     followupIntent: packet.followupIntent
   });
+  const journeySignals = resolveJourneyActionSignals({
+    contextSnapshot: packet.contextSnapshot,
+    journeyPhase: packet.contextSnapshot && (packet.contextSnapshot.phase || packet.contextSnapshot.journeyPhase)
+      ? String(packet.contextSnapshot.phase || packet.contextSnapshot.journeyPhase)
+      : null,
+    nextActions: verified.selected && verified.selected.atoms && Array.isArray(verified.selected.atoms.nextActions)
+      ? verified.selected.atoms.nextActions
+      : []
+  });
+  const [cityPackSignals, emergencySignals] = await Promise.all([
+    resolveRuntimeCityPackSignals({
+      lineUserId: packet.lineUserId,
+      locale: 'ja',
+      domainIntent: packet.normalizedConversationIntent,
+      intentRiskTier: riskSnapshot.intentRiskTier
+    }),
+    resolveRuntimeEmergencySignals({
+      lineUserId: packet.lineUserId,
+      contextSnapshot: packet.contextSnapshot
+    })
+  ]);
   const readinessGate = runAnswerReadinessGateV2({
     lawfulBasis: legalSnapshot.lawfulBasis,
     consentVerified: legalSnapshot.consentVerified,
@@ -703,15 +727,19 @@ async function runPaidConversationOrchestrator(params) {
     fallbackType: groundedResult && groundedResult.ok !== true && groundedResult.blockedReason
       ? groundedResult.blockedReason
       : null,
-    journeyContext: Boolean(packet.contextSnapshot),
-    journeyPhase: packet.contextSnapshot && (packet.contextSnapshot.phase || packet.contextSnapshot.journeyPhase)
-      ? String(packet.contextSnapshot.phase || packet.contextSnapshot.journeyPhase)
-      : null,
+    emergencyContext: emergencySignals.emergencyContext === true,
+    emergencySeverity: emergencySignals.emergencySeverity || null,
+    emergencyOfficialSourceSatisfied: emergencySignals.emergencyOfficialSourceSatisfied === true,
+    journeyContext: journeySignals.journeyContext === true,
+    journeyPhase: journeySignals.journeyPhase || null,
     contextSnapshot: packet.contextSnapshot || null,
-    taskBlockerDetected: false,
-    journeyAlignedAction: true,
-    cityPackContext: false,
-    cityPackGrounded: false,
+    taskBlockerDetected: journeySignals.taskBlockerDetected === true,
+    journeyAlignedAction: journeySignals.journeyAlignedAction !== false,
+    cityPackContext: cityPackSignals.cityPackContext === true,
+    cityPackGrounded: cityPackSignals.cityPackGrounded === true,
+    cityPackFreshnessScore: cityPackSignals.cityPackFreshnessScore,
+    cityPackAuthorityScore: cityPackSignals.cityPackAuthorityScore,
+    cityPackValidation: cityPackSignals.cityPackValidation,
     savedFaqContext: false,
     crossSystemConflictDetected: false,
     enforceV2: false

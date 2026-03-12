@@ -62,8 +62,17 @@ async function listEventsByProvider(providerKey, limit) {
   return sortByUpdatedAtDesc(snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()))).slice(0, max);
 }
 
+async function listEventsByRegion(regionKey, limit) {
+  const key = typeof regionKey === 'string' && regionKey.trim() ? regionKey.trim().toLowerCase() : null;
+  if (!key) throw new Error('regionKey required');
+  const max = Number.isFinite(Number(limit)) ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 100;
+  const snap = await getDb().collection(COLLECTION).where('regionKey', '==', key).limit(max).get();
+  return sortByUpdatedAtDesc(snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()))).slice(0, max);
+}
+
 module.exports = {
   upsertEvent,
   getEvent,
-  listEventsByProvider
+  listEventsByProvider,
+  listEventsByRegion
 };
