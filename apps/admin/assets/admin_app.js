@@ -2340,6 +2340,7 @@ function readCityPackUnifiedListState() {
     idKeyword: getInputValue('city-pack-unified-filter-id'),
     userKeyword: getInputValue('city-pack-unified-filter-user-id'),
     cityKeyword: getInputValue('city-pack-unified-filter-city'),
+    relationKeyword: getInputValue('city-pack-unified-filter-relation'),
     status: getSelectValue('city-pack-unified-filter-status'),
     recordType: getSelectValue('city-pack-unified-filter-type'),
     createdFrom: getInputValue('city-pack-unified-filter-date-from'),
@@ -2355,6 +2356,7 @@ function readVendorUnifiedListState() {
     nameKeyword: getInputValue('vendor-unified-filter-name'),
     status: getSelectValue('vendor-unified-filter-status'),
     categoryKeyword: getInputValue('vendor-unified-filter-category'),
+    relationKeyword: getInputValue('vendor-unified-filter-relation'),
     createdFrom: getInputValue('vendor-unified-filter-date-from'),
     createdTo: getInputValue('vendor-unified-filter-date-to'),
     sortKey: state.vendorSortKey,
@@ -2429,6 +2431,7 @@ function applyCityPackUnifiedListState(snapshot) {
   setInputValue('city-pack-unified-filter-id', snapshot.idKeyword || '');
   setInputValue('city-pack-unified-filter-user-id', snapshot.userKeyword || '');
   setInputValue('city-pack-unified-filter-city', snapshot.cityKeyword || '');
+  setInputValue('city-pack-unified-filter-relation', snapshot.relationKeyword || '');
   setSelectValue('city-pack-unified-filter-status', snapshot.status || '');
   setSelectValue('city-pack-unified-filter-type', snapshot.recordType || '');
   setInputValue('city-pack-unified-filter-date-from', snapshot.createdFrom || '');
@@ -2447,6 +2450,7 @@ function applyVendorUnifiedListState(snapshot) {
   setInputValue('vendor-unified-filter-name', snapshot.nameKeyword || '');
   setSelectValue('vendor-unified-filter-status', snapshot.status || '');
   setInputValue('vendor-unified-filter-category', snapshot.categoryKeyword || '');
+  setInputValue('vendor-unified-filter-relation', snapshot.relationKeyword || '');
   setInputValue('vendor-unified-filter-date-from', snapshot.createdFrom || '');
   setInputValue('vendor-unified-filter-date-to', snapshot.createdTo || '');
 }
@@ -5874,6 +5878,307 @@ function sortCityPackUnifiedItems(items) {
   });
 }
 
+function normalizeRelationId(value) {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed || null;
+  }
+  if (Number.isFinite(value)) return String(value);
+  return null;
+}
+
+function addRelationId(target, value) {
+  if (!(target instanceof Set)) return;
+  const id = normalizeRelationId(value);
+  if (id) target.add(id);
+}
+
+function addRelationIds(target, values) {
+  if (!(target instanceof Set)) return;
+  if (Array.isArray(values)) {
+    values.forEach((value) => addRelationId(target, value));
+    return;
+  }
+  addRelationId(target, values);
+}
+
+function toSortedRelationList(setValue) {
+  return Array.from(setValue instanceof Set ? setValue : [])
+    .filter(Boolean)
+    .sort((a, b) => String(a).localeCompare(String(b), 'ja'));
+}
+
+function hasSetIntersection(setValue, values) {
+  if (!(setValue instanceof Set) || !setValue.size) return false;
+  if (!Array.isArray(values) || !values.length) return false;
+  return values.some((value) => {
+    const id = normalizeRelationId(value);
+    return Boolean(id && setValue.has(id));
+  });
+}
+
+function collectSlotContentLinkIds(slotContents) {
+  const ids = [];
+  if (!slotContents || typeof slotContents !== 'object' || Array.isArray(slotContents)) return ids;
+  Object.values(slotContents).forEach((slot) => {
+    if (!slot || typeof slot !== 'object') return;
+    const id = normalizeRelationId(slot.linkRegistryId);
+    if (id && !ids.includes(id)) ids.push(id);
+  });
+  return ids;
+}
+
+function buildCityPackRelationSearchText(item) {
+  const row = item && item.raw && typeof item.raw === 'object' ? item.raw : {};
+  const bag = new Set();
+  addRelationId(bag, item && item.itemId);
+  addRelationId(bag, row.requestId);
+  addRelationId(bag, row.feedbackId);
+  addRelationId(bag, row.bulletinId);
+  addRelationId(bag, row.cityPackId);
+  addRelationId(bag, row.sourceRefId);
+  addRelationId(bag, row.linkRegistryId);
+  addRelationIds(bag, row.draftCityPackIds);
+  addRelationIds(bag, row.draftSourceRefIds);
+  addRelationIds(bag, row.draftLinkRegistryIds);
+  addRelationIds(bag, row.sourceRefs);
+  addRelationIds(bag, row.linkRegistryIds);
+  addRelationIds(bag, row.usedByCityPackIds);
+  return Array.from(bag).join(' ').toLowerCase();
+}
+
+function buildCityPackUnifiedRelationSnapshot(item) {
+  const row = item && item.raw && typeof item.raw === 'object' ? item.raw : {};
+  const requestIds = new Set();
+  const feedbackIds = new Set();
+  const bulletinIds = new Set();
+  const sourceRefIds = new Set();
+  const vendorIds = new Set();
+  const cityPackIds = new Set();
+
+  const recordType = String(item && item.recordType ? item.recordType : '').trim().toLowerCase();
+  if (recordType === 'request') addRelationId(requestIds, item && item.itemId);
+  if (recordType === 'feedback') addRelationId(feedbackIds, item && item.itemId);
+  if (recordType === 'bulletin') addRelationId(bulletinIds, item && item.itemId);
+  if (recordType === 'review' || recordType === 'calendar_review') addRelationId(sourceRefIds, item && item.itemId);
+
+  addRelationId(requestIds, row.requestId);
+  addRelationId(feedbackIds, row.feedbackId);
+  addRelationId(bulletinIds, row.bulletinId);
+  addRelationId(sourceRefIds, row.sourceRefId);
+  addRelationId(vendorIds, row.linkRegistryId);
+  addRelationId(cityPackIds, row.cityPackId);
+  addRelationIds(sourceRefIds, row.draftSourceRefIds);
+  addRelationIds(vendorIds, row.draftLinkRegistryIds);
+  addRelationIds(cityPackIds, row.draftCityPackIds);
+  addRelationIds(sourceRefIds, row.sourceRefs);
+  addRelationIds(vendorIds, row.linkRegistryIds);
+  addRelationIds(cityPackIds, row.usedByCityPackIds);
+
+  state.cityPackFeedbackItems.forEach((feedbackRow) => {
+    const requestId = normalizeRelationId(feedbackRow && feedbackRow.requestId);
+    if (!requestId || !requestIds.has(requestId)) return;
+    addRelationId(feedbackIds, feedbackRow.feedbackId || feedbackRow.id);
+  });
+
+  state.cityPackRequestItems.forEach((requestRow) => {
+    if (!requestRow || typeof requestRow !== 'object') return;
+    const requestId = normalizeRelationId(requestRow.requestId || requestRow.id);
+    if (requestId && requestIds.has(requestId)) {
+      addRelationIds(sourceRefIds, requestRow.draftSourceRefIds);
+      addRelationIds(vendorIds, requestRow.draftLinkRegistryIds);
+      addRelationIds(cityPackIds, requestRow.draftCityPackIds);
+    }
+    const draftCityPackIds = Array.isArray(requestRow.draftCityPackIds) ? requestRow.draftCityPackIds : [];
+    if (hasSetIntersection(cityPackIds, draftCityPackIds)) {
+      addRelationId(requestIds, requestId);
+      addRelationIds(sourceRefIds, requestRow.draftSourceRefIds);
+      addRelationIds(vendorIds, requestRow.draftLinkRegistryIds);
+    }
+  });
+
+  state.cityPackEducationLinkItems.forEach((eduRow) => {
+    if (!eduRow || typeof eduRow !== 'object') return;
+    const sourceRefId = normalizeRelationId(eduRow.sourceRefId);
+    const linkRegistryId = normalizeRelationId(eduRow.linkRegistryId);
+    const usedByCityPackIds = Array.isArray(eduRow.usedByCityPackIds) ? eduRow.usedByCityPackIds : [];
+    const matches = Boolean(
+      (sourceRefId && sourceRefIds.has(sourceRefId))
+      || (linkRegistryId && vendorIds.has(linkRegistryId))
+      || hasSetIntersection(cityPackIds, usedByCityPackIds)
+    );
+    if (!matches) return;
+    addRelationId(sourceRefIds, sourceRefId);
+    addRelationId(vendorIds, linkRegistryId);
+    addRelationIds(cityPackIds, usedByCityPackIds);
+  });
+
+  state.cityPackBulletinItems.forEach((bulletinRow) => {
+    if (!bulletinRow || typeof bulletinRow !== 'object') return;
+    const requestId = normalizeRelationId(bulletinRow.requestId);
+    const cityPackId = normalizeRelationId(bulletinRow.cityPackId);
+    if ((requestId && requestIds.has(requestId)) || (cityPackId && cityPackIds.has(cityPackId))) {
+      addRelationId(bulletinIds, bulletinRow.bulletinId || bulletinRow.id);
+      addRelationId(cityPackIds, cityPackId);
+      addRelationId(requestIds, requestId);
+    }
+  });
+
+  state.cityPackProposalItems.forEach((proposalRow) => {
+    if (!proposalRow || typeof proposalRow !== 'object') return;
+    const cityPackId = normalizeRelationId(proposalRow.cityPackId);
+    if (!cityPackId || !cityPackIds.has(cityPackId)) return;
+    addRelationId(cityPackIds, cityPackId);
+  });
+
+  return {
+    requestIds: toSortedRelationList(requestIds),
+    feedbackIds: toSortedRelationList(feedbackIds),
+    bulletinIds: toSortedRelationList(bulletinIds),
+    sourceRefIds: toSortedRelationList(sourceRefIds),
+    vendorIds: toSortedRelationList(vendorIds),
+    cityPackIds: toSortedRelationList(cityPackIds)
+  };
+}
+
+function buildVendorRelationSnapshot(item) {
+  const linkId = normalizeRelationId(item && item.linkId);
+  const requestIds = new Set();
+  const feedbackIds = new Set();
+  const bulletinIds = new Set();
+  const sourceRefIds = new Set();
+  const cityPackIds = new Set();
+
+  if (!linkId) {
+    return {
+      requestIds: [],
+      feedbackIds: [],
+      bulletinIds: [],
+      sourceRefIds: [],
+      cityPackIds: []
+    };
+  }
+
+  state.cityPackRequestItems.forEach((requestRow) => {
+    const linkIds = Array.isArray(requestRow && requestRow.draftLinkRegistryIds) ? requestRow.draftLinkRegistryIds : [];
+    if (!linkIds.some((id) => normalizeRelationId(id) === linkId)) return;
+    addRelationId(requestIds, requestRow.requestId || requestRow.id);
+    addRelationIds(sourceRefIds, requestRow.draftSourceRefIds);
+    addRelationIds(cityPackIds, requestRow.draftCityPackIds);
+  });
+
+  state.cityPackEducationLinkItems.forEach((eduRow) => {
+    const rowLinkId = normalizeRelationId(eduRow && eduRow.linkRegistryId);
+    if (rowLinkId !== linkId) return;
+    addRelationId(sourceRefIds, eduRow.sourceRefId);
+    addRelationIds(cityPackIds, eduRow.usedByCityPackIds);
+  });
+
+  state.cityPackFeedbackItems.forEach((feedbackRow) => {
+    const requestId = normalizeRelationId(feedbackRow && feedbackRow.requestId);
+    if (!requestId || !requestIds.has(requestId)) return;
+    addRelationId(feedbackIds, feedbackRow.feedbackId || feedbackRow.id);
+  });
+
+  state.cityPackBulletinItems.forEach((bulletinRow) => {
+    const requestId = normalizeRelationId(bulletinRow && bulletinRow.requestId);
+    const cityPackId = normalizeRelationId(bulletinRow && bulletinRow.cityPackId);
+    if ((requestId && requestIds.has(requestId)) || (cityPackId && cityPackIds.has(cityPackId))) {
+      addRelationId(bulletinIds, bulletinRow.bulletinId || bulletinRow.id);
+      addRelationId(cityPackIds, cityPackId);
+    }
+  });
+
+  state.cityPackManageItems.forEach((pack) => {
+    const linkIds = collectSlotContentLinkIds(pack && pack.slotContents);
+    if (!linkIds.some((id) => id === linkId)) return;
+    addRelationId(cityPackIds, pack && pack.id);
+  });
+
+  return {
+    requestIds: toSortedRelationList(requestIds),
+    feedbackIds: toSortedRelationList(feedbackIds),
+    bulletinIds: toSortedRelationList(bulletinIds),
+    sourceRefIds: toSortedRelationList(sourceRefIds),
+    cityPackIds: toSortedRelationList(cityPackIds)
+  };
+}
+
+function buildVendorRelationSearchText(item) {
+  const snapshot = buildVendorRelationSnapshot(item);
+  const bag = new Set([
+    normalizeRelationId(item && item.linkId),
+    normalizeRelationId(item && item.vendorKey),
+    normalizeRelationId(item && item.vendorLabel)
+  ]);
+  snapshot.requestIds.forEach((id) => bag.add(id));
+  snapshot.feedbackIds.forEach((id) => bag.add(id));
+  snapshot.bulletinIds.forEach((id) => bag.add(id));
+  snapshot.sourceRefIds.forEach((id) => bag.add(id));
+  snapshot.cityPackIds.forEach((id) => bag.add(id));
+  const raw = item && item.raw && typeof item.raw === 'object' ? item.raw : {};
+  addRelationId(bag, raw.requestId);
+  addRelationId(bag, raw.sourceRefId);
+  addRelationId(bag, raw.linkRegistryId);
+  return Array.from(bag).filter(Boolean).join(' ').toLowerCase();
+}
+
+function renderRelationChips(containerId, entries) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  const chips = Array.isArray(entries) ? entries.slice(0, 12) : [];
+  if (!chips.length) return;
+  chips.forEach((entry) => {
+    const chip = document.createElement('span');
+    chip.className = 'city-pack-v2-relation-chip';
+    chip.textContent = `${entry.label}: ${entry.value}`;
+    container.appendChild(chip);
+  });
+}
+
+function createRelationDrillDownButton(label, onClick) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'button-subtle';
+  button.textContent = label;
+  button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    onClick();
+  });
+  return button;
+}
+
+function applyCityPackUnifiedRelationFilter(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  setInputValue('city-pack-unified-filter-id', opts.idKeyword || '');
+  setInputValue('city-pack-unified-filter-user-id', opts.userKeyword || '');
+  setInputValue('city-pack-unified-filter-city', opts.cityKeyword || '');
+  setInputValue('city-pack-unified-filter-relation', opts.relationKeyword || '');
+  setSelectValue('city-pack-unified-filter-status', opts.status || '');
+  setSelectValue('city-pack-unified-filter-type', opts.recordType || '');
+  setInputValue('city-pack-unified-filter-date-from', '');
+  setInputValue('city-pack-unified-filter-date-to', '');
+  state.selectedCityPackUnifiedItemKey = null;
+  applyCityPackWorkspaceView(CITY_PACK_WORKSPACE_VIEW_WORKBENCH, { persist: true });
+  renderCityPackUnifiedRows();
+}
+
+function openVendorRelationDrillDown(linkId) {
+  const normalized = normalizeRelationId(linkId);
+  if (!normalized) return;
+  activatePane('vendors');
+  setInputValue('vendor-unified-filter-id', normalized);
+  setInputValue('vendor-unified-filter-name', '');
+  setInputValue('vendor-unified-filter-category', '');
+  setSelectValue('vendor-unified-filter-status', '');
+  setInputValue('vendor-unified-filter-relation', normalized);
+  setInputValue('vendor-unified-filter-date-from', '');
+  setInputValue('vendor-unified-filter-date-to', '');
+  state.selectedVendorLinkId = normalized;
+  renderVendorUnifiedRows();
+}
+
 function buildCityPackUnifiedItems() {
   const rows = [];
   const addRow = (item) => {
@@ -5892,6 +6197,7 @@ function buildCityPackUnifiedItems() {
       updatedAt: item.updatedAt || null,
       kpiText: item.kpiText || '-',
       kpiScore: Number.isFinite(Number(item.kpiScore)) ? Number(item.kpiScore) : null,
+      relationSearchText: buildCityPackRelationSearchText(item),
       raw: item.raw || null
     });
   };
@@ -6090,6 +6396,7 @@ function applyCityPackUnifiedFilters() {
   const idKeyword = (document.getElementById('city-pack-unified-filter-id')?.value || '').trim().toLowerCase();
   const userKeyword = (document.getElementById('city-pack-unified-filter-user-id')?.value || '').trim().toLowerCase();
   const cityKeyword = (document.getElementById('city-pack-unified-filter-city')?.value || '').trim().toLowerCase();
+  const relationKeyword = (document.getElementById('city-pack-unified-filter-relation')?.value || '').trim().toLowerCase();
   const status = (document.getElementById('city-pack-unified-filter-status')?.value || '').trim().toLowerCase();
   const recordType = (document.getElementById('city-pack-unified-filter-type')?.value || '').trim().toLowerCase();
   const createdFromMs = parseDateInputMs(document.getElementById('city-pack-unified-filter-date-from')?.value || '', false);
@@ -6100,6 +6407,7 @@ function applyCityPackUnifiedFilters() {
         { type: 'includes', value: idKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.itemId },
         { type: 'includes', value: userKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.lineUserId },
         { type: 'includes', value: cityKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.cityLabel },
+        { type: 'includes', value: relationKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.relationSearchText },
         { type: 'equals', value: status, normalize: { trim: true, lower: true }, getValue: (item) => item && item.status },
         { type: 'equals', value: recordType, normalize: { trim: true, lower: true }, getValue: (item) => item && item.recordType },
         {
@@ -6127,11 +6435,13 @@ function applyCityPackUnifiedFilters() {
       const itemId = String(item && item.itemId ? item.itemId : '').toLowerCase();
       const lineUserId = String(item && item.lineUserId ? item.lineUserId : '').toLowerCase();
       const cityLabel = String(item && item.cityLabel ? item.cityLabel : '').toLowerCase();
+      const relationSearchText = String(item && item.relationSearchText ? item.relationSearchText : '').toLowerCase();
       const itemStatus = String(item && item.status ? item.status : '').toLowerCase();
       const itemType = String(item && item.recordType ? item.recordType : '').toLowerCase();
       if (idKeyword && !itemId.includes(idKeyword)) return false;
       if (userKeyword && !lineUserId.includes(userKeyword)) return false;
       if (cityKeyword && !cityLabel.includes(cityKeyword)) return false;
+      if (relationKeyword && !relationSearchText.includes(relationKeyword)) return false;
       if (status && itemStatus !== status) return false;
       if (recordType && itemType !== recordType) return false;
       const createdAtMs = toSortMillis(item && item.createdAt);
@@ -6147,6 +6457,7 @@ function buildCityPackUnifiedFilterChips() {
   const idValue = getInputValue('city-pack-unified-filter-id');
   const userValue = getInputValue('city-pack-unified-filter-user-id');
   const cityValue = getInputValue('city-pack-unified-filter-city');
+  const relationValue = getInputValue('city-pack-unified-filter-relation');
   const statusValue = getSelectValue('city-pack-unified-filter-status');
   const typeValue = getSelectValue('city-pack-unified-filter-type');
   const createdFrom = getInputValue('city-pack-unified-filter-date-from');
@@ -6154,6 +6465,7 @@ function buildCityPackUnifiedFilterChips() {
   pushFilterChip(chips, 'ID', idValue);
   pushFilterChip(chips, 'ユーザーID', userValue);
   pushFilterChip(chips, '都市', cityValue);
+  pushFilterChip(chips, '関係ID', relationValue);
   if (statusValue) pushFilterChip(chips, '状態', getSelectLabel('city-pack-unified-filter-status'));
   if (typeValue) pushFilterChip(chips, '種別', getSelectLabel('city-pack-unified-filter-type'));
   pushFilterChip(chips, '作成日 from', createdFrom);
@@ -6165,6 +6477,7 @@ function clearCityPackUnifiedFilters() {
   setInputValue('city-pack-unified-filter-id', '');
   setInputValue('city-pack-unified-filter-user-id', '');
   setInputValue('city-pack-unified-filter-city', '');
+  setInputValue('city-pack-unified-filter-relation', '');
   setSelectValue('city-pack-unified-filter-status', '');
   setSelectValue('city-pack-unified-filter-type', '');
   setInputValue('city-pack-unified-filter-date-from', '');
@@ -6289,8 +6602,10 @@ function renderCityPackV2DetailPanel() {
   const titleEl = document.getElementById('city-pack-v2-detail-title');
   const metaEl = document.getElementById('city-pack-v2-detail-meta');
   const actionsEl = document.getElementById('city-pack-v2-detail-actions');
+  const relationSummaryEl = document.getElementById('city-pack-v2-relation-summary');
+  const relationActionsEl = document.getElementById('city-pack-v2-relation-actions');
   const jsonEl = document.getElementById('city-pack-v2-detail-json');
-  if (!statusEl || !titleEl || !metaEl || !actionsEl || !jsonEl) return;
+  if (!statusEl || !titleEl || !metaEl || !actionsEl || !relationSummaryEl || !relationActionsEl || !jsonEl) return;
   const item = findCityPackUnifiedItemByKey(state.selectedCityPackUnifiedItemKey);
   if (!item) {
     statusEl.className = 'city-pack-v2-status-badge is-default';
@@ -6298,6 +6613,9 @@ function renderCityPackV2DetailPanel() {
     titleEl.textContent = '行を選択してください';
     metaEl.textContent = '種別 / 更新日時 / 担当 を表示します。';
     actionsEl.innerHTML = '';
+    relationSummaryEl.textContent = '関連情報は行を選択すると表示されます。';
+    relationActionsEl.innerHTML = '';
+    renderRelationChips('city-pack-v2-relation-links', []);
     jsonEl.textContent = '-';
     return;
   }
@@ -6313,6 +6631,73 @@ function renderCityPackV2DetailPanel() {
       className: idx < 2 ? 'unified-action-primary' : ''
     }));
   });
+  const relations = buildCityPackUnifiedRelationSnapshot(item);
+  relationSummaryEl.textContent = [
+    `CityPack ${relations.cityPackIds.length}`,
+    `Vendor ${relations.vendorIds.length}`,
+    `Source ${relations.sourceRefIds.length}`,
+    `Request ${relations.requestIds.length}`,
+    `Feedback ${relations.feedbackIds.length}`,
+    `Bulletin ${relations.bulletinIds.length}`
+  ].join(' / ');
+  const relationChips = [];
+  relations.cityPackIds.slice(0, 2).forEach((id) => relationChips.push({ label: 'CityPack', value: id }));
+  relations.vendorIds.slice(0, 2).forEach((id) => relationChips.push({ label: 'Vendor', value: id }));
+  relations.sourceRefIds.slice(0, 2).forEach((id) => relationChips.push({ label: 'Source', value: id }));
+  relations.requestIds.slice(0, 2).forEach((id) => relationChips.push({ label: 'Request', value: id }));
+  relations.feedbackIds.slice(0, 2).forEach((id) => relationChips.push({ label: 'Feedback', value: id }));
+  relations.bulletinIds.slice(0, 2).forEach((id) => relationChips.push({ label: 'Bulletin', value: id }));
+  renderRelationChips('city-pack-v2-relation-links', relationChips);
+  relationActionsEl.innerHTML = '';
+  if (relations.vendorIds.length) {
+    relationActionsEl.appendChild(createRelationDrillDownButton('Vendorへ移動', () => {
+      openVendorRelationDrillDown(relations.vendorIds[0]);
+    }));
+  }
+  if (relations.requestIds.length) {
+    relationActionsEl.appendChild(createRelationDrillDownButton('Requestに絞り込み', () => {
+      applyCityPackUnifiedRelationFilter({
+        recordType: 'request',
+        idKeyword: relations.requestIds[0],
+        relationKeyword: relations.requestIds[0]
+      });
+    }));
+  }
+  if (relations.feedbackIds.length) {
+    relationActionsEl.appendChild(createRelationDrillDownButton('Feedbackに絞り込み', () => {
+      applyCityPackUnifiedRelationFilter({
+        recordType: 'feedback',
+        idKeyword: relations.feedbackIds[0],
+        relationKeyword: relations.feedbackIds[0]
+      });
+    }));
+  }
+  if (relations.bulletinIds.length) {
+    relationActionsEl.appendChild(createRelationDrillDownButton('Bulletinに絞り込み', () => {
+      applyCityPackUnifiedRelationFilter({
+        recordType: 'bulletin',
+        idKeyword: relations.bulletinIds[0],
+        relationKeyword: relations.bulletinIds[0]
+      });
+    }));
+  }
+  if (relations.sourceRefIds.length) {
+    relationActionsEl.appendChild(createRelationDrillDownButton('Sourceに絞り込み', () => {
+      applyCityPackUnifiedRelationFilter({
+        recordType: 'review',
+        idKeyword: relations.sourceRefIds[0],
+        relationKeyword: relations.sourceRefIds[0]
+      });
+    }));
+  }
+  if (relations.cityPackIds.length) {
+    relationActionsEl.appendChild(createRelationDrillDownButton('City Pack IDで絞り込み', () => {
+      applyCityPackUnifiedRelationFilter({
+        cityKeyword: relations.cityPackIds[0],
+        relationKeyword: relations.cityPackIds[0]
+      });
+    }));
+  }
   jsonEl.textContent = JSON.stringify(item.raw || {}, null, 2);
 }
 
@@ -6451,6 +6836,7 @@ function applyVendorUnifiedFilters() {
   const nameKeyword = (document.getElementById('vendor-unified-filter-name')?.value || '').trim().toLowerCase();
   const status = (document.getElementById('vendor-unified-filter-status')?.value || '').trim().toUpperCase();
   const categoryKeyword = (document.getElementById('vendor-unified-filter-category')?.value || '').trim().toLowerCase();
+  const relationKeyword = (document.getElementById('vendor-unified-filter-relation')?.value || '').trim().toLowerCase();
   const createdFromMs = parseDateInputMs(document.getElementById('vendor-unified-filter-date-from')?.value || '', false);
   const createdToMs = parseDateInputMs(document.getElementById('vendor-unified-filter-date-to')?.value || '', true);
   const filterCore = resolveCoreSlice('filterCore');
@@ -6460,6 +6846,15 @@ function applyVendorUnifiedFilters() {
         { type: 'includes', value: nameKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.vendorLabel },
         { type: 'equals', value: status, normalize: { trim: true, upper: true }, getValue: (item) => item && item.status },
         { type: 'includes', value: categoryKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.category },
+        {
+          type: 'predicate',
+          value: relationKeyword,
+          predicate: (item, needle) => {
+            const keyword = typeof needle === 'string' ? needle.trim().toLowerCase() : '';
+            if (!keyword) return true;
+            return buildVendorRelationSearchText(item).includes(keyword);
+          }
+        },
         {
           type: 'predicate',
           value: createdFromMs == null ? '' : String(createdFromMs),
@@ -6486,10 +6881,12 @@ function applyVendorUnifiedFilters() {
       const vendorLabel = String(item && item.vendorLabel ? item.vendorLabel : '').toLowerCase();
       const category = String(item && item.category ? item.category : '').toLowerCase();
       const rowStatus = String(item && item.status ? item.status : '').toUpperCase();
+      const relationSearchText = buildVendorRelationSearchText(item);
       if (idKeyword && !linkId.includes(idKeyword)) return false;
       if (nameKeyword && !vendorLabel.includes(nameKeyword)) return false;
       if (status && rowStatus !== status) return false;
       if (categoryKeyword && !category.includes(categoryKeyword)) return false;
+      if (relationKeyword && !relationSearchText.includes(relationKeyword)) return false;
       const createdAtMs = toSortMillis(item && item.createdAt);
       if (createdFromMs && (!createdAtMs || createdAtMs < createdFromMs)) return false;
       if (createdToMs && (!createdAtMs || createdAtMs > createdToMs)) return false;
@@ -6504,12 +6901,14 @@ function buildVendorUnifiedFilterChips() {
   const nameValue = getInputValue('vendor-unified-filter-name');
   const statusValue = getSelectValue('vendor-unified-filter-status');
   const categoryValue = getInputValue('vendor-unified-filter-category');
+  const relationValue = getInputValue('vendor-unified-filter-relation');
   const createdFrom = getInputValue('vendor-unified-filter-date-from');
   const createdTo = getInputValue('vendor-unified-filter-date-to');
   pushFilterChip(chips, 'Vendor ID', idValue);
   pushFilterChip(chips, '名称', nameValue);
   if (statusValue) pushFilterChip(chips, 'ステータス', getSelectLabel('vendor-unified-filter-status'));
   pushFilterChip(chips, 'カテゴリ', categoryValue);
+  pushFilterChip(chips, '関係ID', relationValue);
   pushFilterChip(chips, '登録日 from', createdFrom);
   pushFilterChip(chips, '登録日 to', createdTo);
   return chips;
@@ -6520,6 +6919,7 @@ function clearVendorUnifiedFilters() {
   setInputValue('vendor-unified-filter-name', '');
   setSelectValue('vendor-unified-filter-status', '');
   setInputValue('vendor-unified-filter-category', '');
+  setInputValue('vendor-unified-filter-relation', '');
   setInputValue('vendor-unified-filter-date-from', '');
   setInputValue('vendor-unified-filter-date-to', '');
 }
@@ -6542,6 +6942,91 @@ function renderVendorUnifiedActionCell(item) {
   return td;
 }
 
+function applyVendorRelationDrillDownToCityPack(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  activatePane('city-pack');
+  applyCityPackUnifiedRelationFilter({
+    idKeyword: opts.idKeyword || '',
+    cityKeyword: opts.cityKeyword || '',
+    relationKeyword: opts.relationKeyword || '',
+    recordType: opts.recordType || ''
+  });
+}
+
+function renderVendorUnifiedRelationPanel() {
+  const summaryEl = document.getElementById('vendor-unified-relation-summary');
+  const actionsEl = document.getElementById('vendor-unified-relation-actions');
+  if (!summaryEl || !actionsEl) return;
+  const selected = resolveSelectedVendor();
+  if (!selected) {
+    summaryEl.textContent = 'Vendor行を選択すると、City Packとの関係を表示します。';
+    actionsEl.innerHTML = '';
+    renderRelationChips('vendor-unified-relation-links', []);
+    return;
+  }
+  const relations = buildVendorRelationSnapshot(selected);
+  summaryEl.textContent = [
+    `CityPack ${relations.cityPackIds.length}`,
+    `Source ${relations.sourceRefIds.length}`,
+    `Request ${relations.requestIds.length}`,
+    `Feedback ${relations.feedbackIds.length}`,
+    `Bulletin ${relations.bulletinIds.length}`
+  ].join(' / ');
+  const relationChips = [];
+  relations.cityPackIds.slice(0, 2).forEach((id) => relationChips.push({ label: 'CityPack', value: id }));
+  relations.sourceRefIds.slice(0, 2).forEach((id) => relationChips.push({ label: 'Source', value: id }));
+  relations.requestIds.slice(0, 2).forEach((id) => relationChips.push({ label: 'Request', value: id }));
+  relations.feedbackIds.slice(0, 2).forEach((id) => relationChips.push({ label: 'Feedback', value: id }));
+  relations.bulletinIds.slice(0, 2).forEach((id) => relationChips.push({ label: 'Bulletin', value: id }));
+  renderRelationChips('vendor-unified-relation-links', relationChips);
+
+  actionsEl.innerHTML = '';
+  if (relations.requestIds.length) {
+    actionsEl.appendChild(createRelationDrillDownButton('Requestへ', () => {
+      applyVendorRelationDrillDownToCityPack({
+        recordType: 'request',
+        idKeyword: relations.requestIds[0],
+        relationKeyword: relations.requestIds[0]
+      });
+    }));
+  }
+  if (relations.feedbackIds.length) {
+    actionsEl.appendChild(createRelationDrillDownButton('Feedbackへ', () => {
+      applyVendorRelationDrillDownToCityPack({
+        recordType: 'feedback',
+        idKeyword: relations.feedbackIds[0],
+        relationKeyword: relations.feedbackIds[0]
+      });
+    }));
+  }
+  if (relations.bulletinIds.length) {
+    actionsEl.appendChild(createRelationDrillDownButton('Bulletinへ', () => {
+      applyVendorRelationDrillDownToCityPack({
+        recordType: 'bulletin',
+        idKeyword: relations.bulletinIds[0],
+        relationKeyword: relations.bulletinIds[0]
+      });
+    }));
+  }
+  if (relations.sourceRefIds.length) {
+    actionsEl.appendChild(createRelationDrillDownButton('Sourceへ', () => {
+      applyVendorRelationDrillDownToCityPack({
+        recordType: 'review',
+        idKeyword: relations.sourceRefIds[0],
+        relationKeyword: relations.sourceRefIds[0]
+      });
+    }));
+  }
+  if (relations.cityPackIds.length) {
+    actionsEl.appendChild(createRelationDrillDownButton('City Packへ', () => {
+      applyVendorRelationDrillDownToCityPack({
+        cityKeyword: relations.cityPackIds[0],
+        relationKeyword: relations.cityPackIds[0]
+      });
+    }));
+  }
+}
+
 function renderVendorUnifiedRows() {
   const tbody = document.getElementById('vendor-unified-rows');
   if (!tbody) return;
@@ -6554,6 +7039,9 @@ function renderVendorUnifiedRows() {
     sortDir: state.vendorSortDir
   });
   const items = state.vendorUnifiedFilteredItems;
+  if (state.selectedVendorLinkId && !items.some((item) => item && item.linkId === state.selectedVendorLinkId)) {
+    state.selectedVendorLinkId = null;
+  }
   const chips = buildVendorUnifiedFilterChips();
   renderFilterChips('vendor-unified-filter-chips', chips);
   updateFilterMeta({
@@ -6571,10 +7059,15 @@ function renderVendorUnifiedRows() {
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
+    renderVendorUnifiedRelationPanel();
     return;
   }
   items.forEach((item) => {
     const tr = document.createElement('tr');
+    const isSelected = item.linkId && item.linkId === state.selectedVendorLinkId;
+    tr.dataset.rowClickable = '1';
+    tr.tabIndex = 0;
+    if (isSelected) tr.classList.add('is-selected');
     const cols = [
       formatTimestampForList(item.createdAt),
       item.linkId || '-',
@@ -6591,11 +7084,24 @@ function renderVendorUnifiedRows() {
       tr.appendChild(td);
     });
     tr.appendChild(renderVendorUnifiedActionCell(item));
-    tr.addEventListener('click', () => {
-      state.selectedVendorLinkId = item.linkId || null;
+    tr.addEventListener('click', (event) => {
+      if (event.target && event.target.closest('button, a, input, select, textarea, summary, details')) return;
+      const nextId = item.linkId || null;
+      if (!nextId || state.selectedVendorLinkId === nextId) return;
+      state.selectedVendorLinkId = nextId;
+      renderVendorUnifiedRows();
+    });
+    tr.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      const nextId = item.linkId || null;
+      if (!nextId || state.selectedVendorLinkId === nextId) return;
+      state.selectedVendorLinkId = nextId;
+      renderVendorUnifiedRows();
     });
     tbody.appendChild(tr);
   });
+  renderVendorUnifiedRelationPanel();
 }
 
 function renderComposerScenarioCompare(items) {
@@ -16550,7 +17056,7 @@ function setupCityPackControls() {
     void loadCityPackManagePacks({ notify: false });
     void loadCityPackReviewInbox({ notify: true });
   });
-  ['city-pack-unified-filter-id', 'city-pack-unified-filter-user-id', 'city-pack-unified-filter-city', 'city-pack-unified-filter-date-from', 'city-pack-unified-filter-date-to'].forEach((id) => {
+  ['city-pack-unified-filter-id', 'city-pack-unified-filter-user-id', 'city-pack-unified-filter-city', 'city-pack-unified-filter-relation', 'city-pack-unified-filter-date-from', 'city-pack-unified-filter-date-to'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener('input', () => {
@@ -16783,7 +17289,7 @@ function setupVendorControls() {
   document.getElementById('vendor-unified-reload')?.addEventListener('click', () => {
     void loadVendors({ notify: true });
   });
-  ['vendor-unified-filter-id', 'vendor-unified-filter-name', 'vendor-unified-filter-category', 'vendor-unified-filter-date-from', 'vendor-unified-filter-date-to'].forEach((id) => {
+  ['vendor-unified-filter-id', 'vendor-unified-filter-name', 'vendor-unified-filter-category', 'vendor-unified-filter-relation', 'vendor-unified-filter-date-from', 'vendor-unified-filter-date-to'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener('input', () => {
