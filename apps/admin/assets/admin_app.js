@@ -13117,10 +13117,25 @@ async function runCityPackAuditJob() {
   }
 }
 
-function navigateToMonitorWithTrace(traceId, lineUserId) {
-  const normalizedTrace = traceId || (resolveCoreSlice('traceCore') && typeof resolveCoreSlice('traceCore').getTraceFromUrl === 'function'
+function resolveEvidenceTraceId(traceId) {
+  if (typeof traceId === 'string' && traceId.trim() && traceId.trim() !== '-') return traceId.trim();
+  const fromUrl = resolveCoreSlice('traceCore') && typeof resolveCoreSlice('traceCore').getTraceFromUrl === 'function'
     ? resolveCoreSlice('traceCore').getTraceFromUrl(globalThis.location.search)
-    : null);
+    : null;
+  if (typeof fromUrl === 'string' && fromUrl.trim() && fromUrl.trim() !== '-') return fromUrl.trim();
+  return null;
+}
+
+async function navigateToAuditWithTrace(traceId, options = {}) {
+  const normalizedTrace = resolveEvidenceTraceId(traceId);
+  const auditTrace = document.getElementById('audit-trace');
+  if (auditTrace && normalizedTrace) auditTrace.value = normalizedTrace;
+  activatePane('audit', { historyMode: options.historyMode || 'push' });
+  await loadAudit();
+}
+
+function navigateToMonitorWithTrace(traceId, lineUserId) {
+  const normalizedTrace = resolveEvidenceTraceId(traceId);
   activatePane('monitor');
   const monitorTrace = document.getElementById('monitor-trace');
   if (monitorTrace && normalizedTrace) monitorTrace.value = normalizedTrace;
@@ -15260,10 +15275,7 @@ function setupComposerActions() {
   applyComposerTypeOptionVisibility();
   document.getElementById('composer-open-audit')?.addEventListener('click', async () => {
     const traceId = ensureTraceInput('traceId') || newTraceId();
-    const auditTrace = document.getElementById('audit-trace');
-    if (auditTrace) auditTrace.value = traceId;
-    activatePane('audit', { historyMode: 'push' });
-    await loadAudit().catch(() => {
+    await navigateToAuditWithTrace(traceId, { historyMode: 'push' }).catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });
@@ -15574,10 +15586,25 @@ function setupAudit() {
   document.getElementById('struct-drift-run-apply')?.addEventListener('click', () => {
     void runStructDriftBackfill('apply');
   });
+  document.getElementById('audit-open-monitor')?.addEventListener('click', () => {
+    const traceId = ensureTraceInput('audit-trace') || newTraceId();
+    navigateToMonitorWithTrace(traceId, null);
+  });
+  document.getElementById('audit-open-composer')?.addEventListener('click', () => {
+    activatePane('composer', { historyMode: 'push' });
+  });
   void loadStructDriftRuns({ notify: false });
 }
 
 function setupMonitorControls() {
+  const openAuditFromMonitor = () => {
+    const traceId = ensureTraceInput('monitor-trace')
+      || (document.getElementById('monitor-insights-trace-id')?.textContent || '').trim()
+      || newTraceId();
+    void navigateToAuditWithTrace(traceId, { historyMode: 'push' }).catch(() => {
+      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+    });
+  };
   document.querySelectorAll('[data-monitor-view-target]').forEach((buttonEl) => {
     buttonEl.addEventListener('click', () => {
       const target = buttonEl.getAttribute('data-monitor-view-target');
@@ -15599,6 +15626,8 @@ function setupMonitorControls() {
     const el = document.getElementById('monitor-trace');
     if (el) el.value = newTraceId();
   });
+  document.getElementById('monitor-open-trace')?.addEventListener('click', openAuditFromMonitor);
+  document.getElementById('monitor-open-audit-from-detail')?.addEventListener('click', openAuditFromMonitor);
   document.getElementById('monitor-reload')?.addEventListener('click', () => {
     loadMonitorData({ notify: true });
   });
