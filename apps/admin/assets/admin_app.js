@@ -3076,6 +3076,7 @@ const EVIDENCE_PLACEHOLDER_PRE_IDS = [
   'llm-next-actions-result',
   'llm-faq-result',
   'llm-route-trace-result',
+  'llm-route-trace-join-summary',
   'llm-config-status',
   'llm-config-plan-result',
   'llm-config-set-result',
@@ -17911,6 +17912,7 @@ async function openLlmRouteTraceFromRoutePanel() {
     return;
   }
   setTextContent('llm-route-trace-result', 'loading...');
+  setTextContent('llm-route-trace-join-summary', 'loading...');
   const auditTrace = document.getElementById('audit-trace');
   if (auditTrace) auditTrace.value = traceId;
   try {
@@ -17924,13 +17926,38 @@ async function openLlmRouteTraceFromRoutePanel() {
     const res = await fetch(`/api/admin/trace?traceId=${encodeURIComponent(traceId)}`, { headers: buildHeaders({}, traceId) });
     const data = await readJsonResponse(res);
     renderLlmResult('llm-route-trace-result', data);
+    renderLlmTraceJoinSummary(data);
     activatePane('audit');
     await loadAudit().catch(() => null);
     showToast(data && data.ok ? 'trace を追跡しました' : 'trace 追跡でエラーが発生しました', data && data.ok ? 'ok' : 'warn');
   } catch (_err) {
     renderLlmResult('llm-route-trace-result', { ok: false, error: 'trace_fetch_error', traceId });
+    renderLlmTraceJoinSummary({ ok: false, error: 'trace_fetch_error', traceId });
     showToast('trace 追跡に失敗しました', 'danger');
   }
+}
+
+function renderLlmTraceJoinSummary(payload) {
+  const data = payload && typeof payload === 'object' ? payload : {};
+  const summary = data.traceJoinSummary && typeof data.traceJoinSummary === 'object' ? data.traceJoinSummary : null;
+  if (!summary) {
+    renderLlmResult('llm-route-trace-join-summary', {
+      ok: false,
+      error: data && data.error ? data.error : 'no_trace_join_summary'
+    });
+    return;
+  }
+  renderLlmResult('llm-route-trace-join-summary', {
+    ok: true,
+    version: summary.version || 'v2',
+    completeness: Number.isFinite(Number(summary.completeness)) ? Number(summary.completeness) : null,
+    expectedDomains: Array.isArray(summary.expectedDomains) ? summary.expectedDomains : [],
+    joinedDomains: Array.isArray(summary.joinedDomains) ? summary.joinedDomains : [],
+    missingDomains: Array.isArray(summary.missingDomains) ? summary.missingDomains : [],
+    criticalMissingDomains: Array.isArray(summary.criticalMissingDomains) ? summary.criticalMissingDomains : [],
+    joinCounts: summary.joinCounts && typeof summary.joinCounts === 'object' ? summary.joinCounts : {},
+    routeHints: summary.routeHints && typeof summary.routeHints === 'object' ? summary.routeHints : {}
+  });
 }
 
 function renderLlmEntryControlDashboard(summary) {

@@ -183,6 +183,23 @@ async function listDispatchReadyJourneyBranches(params) {
   return snap.docs.map((doc) => normalizeQueueItem(doc.id, doc.data()));
 }
 
+async function listJourneyBranchItemsByTraceId(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const traceId = normalizeText(payload.traceId, '');
+  if (!traceId) return [];
+  const limit = resolveLimit(payload.limit, 50, 500);
+  const db = getDb();
+  const snap = await db.collection(COLLECTION).where('traceId', '==', traceId).limit(limit).get();
+  return snap.docs
+    .map((doc) => normalizeQueueItem(doc.id, doc.data()))
+    .sort((a, b) => {
+      const left = Date.parse(a && a.createdAt || '');
+      const right = Date.parse(b && b.createdAt || '');
+      return (Number.isFinite(right) ? right : 0) - (Number.isFinite(left) ? left : 0);
+    })
+    .slice(0, limit);
+}
+
 module.exports = {
   COLLECTION,
   ALLOWED_STATUS,
@@ -191,5 +208,6 @@ module.exports = {
   getJourneyBranchItem,
   patchJourneyBranchItem,
   listJourneyBranchItems,
-  listDispatchReadyJourneyBranches
+  listDispatchReadyJourneyBranches,
+  listJourneyBranchItemsByTraceId
 };

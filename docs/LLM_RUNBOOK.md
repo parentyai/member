@@ -29,6 +29,7 @@ LLM 統合機能を advisory-only のまま安全に運用する。
   - `llm_next_actions_blocked`
   - `llm_disclaimer_rendered`
 - traceId で追跡する場合は `/api/admin/trace?traceId=...` を使用する。
+- `trace_search.view` の payloadSummary では `traceJoinCompleteness` / `joinedDomains` / `missingDomains` / `traceBundleLoadMs` を確認する。
 - `llm_disclaimer_rendered` の payloadSummary で `purpose` / `disclaimerVersion` / `disclaimerShown` を確認する。
 - `llm_disclaimer_rendered` の payloadSummary で `surface`（`api` / `admin_ui`）を確認する。
 - phase234 以降は以下の policy snapshot 項目も追跡する。
@@ -736,6 +737,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 - `LLM Quality Loop v2` board is read-only.
 - Existing pane IDs and one-click trace open flow remain unchanged.
 - `traceJoinCompleteness` / `adminTraceResolutionTime` are warning-only until cross-system trace join ships.
+- `Cross-System Trace Join` board では `expectedDomains` / `joinedDomains` / `criticalMissingDomains` を優先確認する。
 
 ## Contract Freeze Gate（V2/統合仕様）
 

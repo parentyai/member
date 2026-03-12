@@ -34,8 +34,13 @@ async function handleAdminTraceSearch(req, res) {
   const limit = url.searchParams.get('limit');
   const actor = resolveActor(req);
   const requestId = resolveRequestId(req);
+  const startedAt = Date.now();
   try {
     const result = await getTraceBundle({ traceId, limit });
+    const summary = result && result.traceJoinSummary && typeof result.traceJoinSummary === 'object'
+      ? result.traceJoinSummary
+      : {};
+    const completedAt = Date.now();
     try {
       await appendAuditLog({
         actor,
@@ -44,7 +49,16 @@ async function handleAdminTraceSearch(req, res) {
         entityId: traceId || 'unknown',
         traceId,
         requestId,
-        payloadSummary: { traceId, limit: limit || null }
+        payloadSummary: {
+          traceId,
+          limit: limit || null,
+          traceJoinCompleteness: Number.isFinite(Number(summary.completeness)) ? Number(summary.completeness) : null,
+          joinedDomains: Array.isArray(summary.joinedDomains) ? summary.joinedDomains.slice(0, 8) : [],
+          missingDomains: Array.isArray(summary.missingDomains) ? summary.missingDomains.slice(0, 8) : [],
+          joinedDomainCount: Array.isArray(summary.joinedDomains) ? summary.joinedDomains.length : 0,
+          missingDomainCount: Array.isArray(summary.missingDomains) ? summary.missingDomains.length : 0,
+          traceBundleLoadMs: Math.max(0, completedAt - startedAt)
+        }
       });
     } catch (_err) {
       // best-effort only
