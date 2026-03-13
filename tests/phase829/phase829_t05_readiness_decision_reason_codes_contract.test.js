@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const { test } = require('node:test');
 
 const { runAnswerReadinessGateV2 } = require('../../src/domain/llm/quality/runAnswerReadinessGateV2');
@@ -29,11 +30,12 @@ test('phase829: readiness gate telemetry exposes decision source and hardening v
 });
 
 test('phase829: sinks preserve readiness decision source fields additively', () => {
-  const appendGate = fs.readFileSync('/Volumes/Arumamihs/Member-pr5-data-relations/src/usecases/llm/appendLlmGateDecision.js', 'utf8');
-  const llmAuditGuard = fs.readFileSync('/Volumes/Arumamihs/Member-pr5-data-relations/src/domain/audit/llmAuditPayloadGuard.js', 'utf8');
-  const faqAuditGuard = fs.readFileSync('/Volumes/Arumamihs/Member-pr5-data-relations/src/domain/audit/faqAuditPayloadGuard.js', 'utf8');
-  const llmActionRepo = fs.readFileSync('/Volumes/Arumamihs/Member-pr5-data-relations/src/repos/firestore/llmActionLogsRepo.js', 'utf8');
-  const summaryRoute = fs.readFileSync('/Volumes/Arumamihs/Member-pr5-data-relations/src/routes/admin/osLlmUsageSummary.js', 'utf8');
+  const readRepoFile = (...segments) => fs.readFileSync(path.resolve(__dirname, '..', '..', ...segments), 'utf8');
+  const appendGate = readRepoFile('src', 'usecases', 'llm', 'appendLlmGateDecision.js');
+  const llmAuditGuard = readRepoFile('src', 'domain', 'audit', 'llmAuditPayloadGuard.js');
+  const faqAuditGuard = readRepoFile('src', 'domain', 'audit', 'faqAuditPayloadGuard.js');
+  const llmActionRepo = readRepoFile('src', 'repos', 'firestore', 'llmActionLogsRepo.js');
+  const summaryRoute = readRepoFile('src', 'routes', 'admin', 'osLlmUsageSummary.js');
 
   assert.ok(appendGate.includes("'readinessDecisionSource'"));
   assert.ok(appendGate.includes("'readinessDecisionSourceV2'"));
