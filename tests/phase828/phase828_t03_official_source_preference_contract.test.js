@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const { test } = require('node:test');
 
 const { buildKnowledgeReadinessCandidates } = require('../../src/usecases/faq/buildKnowledgeReadinessCandidates');
@@ -35,7 +36,7 @@ test('phase828: knowledge readiness candidates prefer official metadata from rec
 });
 
 test('phase828: FAQ answer path uses knowledge readiness candidates helper', () => {
-  const faqUsecase = read('/Volumes/Arumamihs/Member-pr5-data-relations/src/usecases/faq/answerFaqFromKb.js');
+  const faqUsecase = read(path.join(process.cwd(), 'src/usecases/faq/answerFaqFromKb.js'));
 
   assert.ok(faqUsecase.includes("const { buildKnowledgeReadinessCandidates } = require('./buildKnowledgeReadinessCandidates');"));
   assert.ok(faqUsecase.includes('candidates: buildKnowledgeReadinessCandidates(candidates),'));
