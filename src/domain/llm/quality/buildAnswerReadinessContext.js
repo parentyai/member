@@ -1,7 +1,7 @@
 'use strict';
 
 const { resolveEmergencyQualityContext } = require('./resolveEmergencyQualityContext');
-const { resolveJourneyGroundingContext } = require('./resolveJourneyGroundingContext');
+const { resolveJourneyQualityContext } = require('./resolveJourneyQualityContext');
 const { resolveKnowledgeIntegrationContext } = require('./resolveKnowledgeIntegrationContext');
 
 function normalizeText(value) {
@@ -50,7 +50,7 @@ function buildLegacyInput(payload) {
 function buildAnswerReadinessContext(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const emergency = resolveEmergencyQualityContext(payload);
-  const journey = resolveJourneyGroundingContext(payload);
+  const journey = resolveJourneyQualityContext(payload);
   const knowledge = resolveKnowledgeIntegrationContext(payload);
   const legacyInput = buildLegacyInput(payload);
   const v2ReasonCodes = normalizeReasonCodes([].concat(
@@ -63,13 +63,27 @@ function buildAnswerReadinessContext(params) {
     emergencyContextActive: emergency.active,
     emergencySeverity: emergency.severity,
     emergencyOfficialSourceSatisfied: emergency.officialSourceSatisfied,
+    emergencyOverrideApplied: emergency.overrideApplied,
+    emergencyEventId: emergency.eventId,
+    emergencyRegionKey: emergency.regionKey,
+    emergencySourceSnapshot: emergency.sourceSnapshot,
     journeyContextActive: journey.active,
     journeyPhase: journey.phase,
     taskBlockerDetected: journey.taskBlockerDetected,
     journeyAlignedAction: journey.journeyAlignedAction,
+    blockedTask: journey.blockedTask,
+    taskGraphState: journey.taskGraphState,
+    nextActionCandidates: journey.nextActionCandidates,
+    nextActions: journey.nextActions,
+    cityPackContext: knowledge.cityPackContext,
     cityPackGrounded: knowledge.cityPackGrounded,
+    cityPackGroundingReason: knowledge.cityPackGroundingReason,
     cityPackFreshnessScore: knowledge.cityPackFreshnessScore,
     cityPackAuthorityScore: knowledge.cityPackAuthorityScore,
+    cityPackRequiredSourcesSatisfied: knowledge.cityPackRequiredSourcesSatisfied,
+    cityPackSourceSnapshot: knowledge.cityPackSourceSnapshot,
+    cityPackPackId: knowledge.cityPackPackId,
+    cityPackValidation: knowledge.cityPackValidation,
     savedFaqReused: knowledge.savedFaqReused,
     savedFaqReusePass: knowledge.savedFaqReusePass,
     savedFaqValid: knowledge.savedFaqValid,

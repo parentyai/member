@@ -49,8 +49,12 @@ function buildTraceProbeRow(traceId, bundle, loadMs) {
     cityPackGroundedObserved: observesDomain('cityPack'),
     emergencyOfficialSourceSatisfied: observesDomain('emergency') ? joinedDomain('emergency') : null,
     emergencyOfficialSourceSatisfiedObserved: observesDomain('emergency'),
+    emergencyOverrideApplied: observesDomain('emergency') ? joinedDomain('emergency') : null,
+    emergencyOverrideAppliedObserved: observesDomain('emergency'),
     journeyAlignedAction: observesDomain('journey') ? joinedDomain('journey') : null,
     journeyAlignedActionObserved: observesDomain('journey'),
+    savedFaqReusePass: observesDomain('faq') ? joinedDomain('faq') : null,
+    savedFaqReusePassObserved: observesDomain('faq'),
     provenance: 'trace_bundle_probe'
   };
 }

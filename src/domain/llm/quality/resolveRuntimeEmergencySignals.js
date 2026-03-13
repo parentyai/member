@@ -62,8 +62,12 @@ async function resolveRuntimeEmergencySignals(params, deps) {
       emergencySeverity: normalizeText(payload.emergencySeverity || (nested && nested.severity)).toUpperCase() || 'WARN',
       emergencyOfficialSourceSatisfied: payload.emergencyOfficialSourceSatisfied === true
         || (nested && nested.officialSourceSatisfied === true),
+      emergencyOverrideApplied: payload.emergencyOverrideApplied !== false,
       emergencyRegionKey: normalizeRegionKey(payload.regionKey) || resolveRegionKeyFromSnapshot(payload.contextSnapshot),
-      emergencyEventId: null
+      emergencyEventId: normalizeText(payload.emergencyEventId || (nested && nested.eventId)) || null,
+      emergencySourceSnapshot: payload.emergencySourceSnapshot && typeof payload.emergencySourceSnapshot === 'object'
+        ? Object.assign({}, payload.emergencySourceSnapshot)
+        : null
     };
   }
 
@@ -77,8 +81,10 @@ async function resolveRuntimeEmergencySignals(params, deps) {
       emergencyContext: false,
       emergencySeverity: null,
       emergencyOfficialSourceSatisfied: false,
+      emergencyOverrideApplied: false,
       emergencyRegionKey: null,
-      emergencyEventId: null
+      emergencyEventId: null,
+      emergencySourceSnapshot: null
     };
   }
 
@@ -96,8 +102,10 @@ async function resolveRuntimeEmergencySignals(params, deps) {
       emergencyContext: false,
       emergencySeverity: null,
       emergencyOfficialSourceSatisfied: false,
+      emergencyOverrideApplied: false,
       emergencyRegionKey: regionKey,
-      emergencyEventId: null
+      emergencyEventId: null,
+      emergencySourceSnapshot: null
     };
   }
 
@@ -109,8 +117,16 @@ async function resolveRuntimeEmergencySignals(params, deps) {
     emergencyContext: true,
     emergencySeverity: normalizeText(event.severity).toUpperCase() || 'WARN',
     emergencyOfficialSourceSatisfied: isOfficialLink(link),
+    emergencyOverrideApplied: true,
     emergencyRegionKey: regionKey,
-    emergencyEventId: event.id || null
+    emergencyEventId: event.id || null,
+    emergencySourceSnapshot: {
+      eventId: event.id || null,
+      regionKey,
+      severity: normalizeText(event.severity).toUpperCase() || 'WARN',
+      officialLinkRegistryId: normalizeText(event.officialLinkRegistryId) || null,
+      officialSourceSatisfied: isOfficialLink(link)
+    }
   };
 }
 

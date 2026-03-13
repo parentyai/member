@@ -1,5 +1,7 @@
 'use strict';
 
+const { resolveCityPackQualityContext } = require('./resolveCityPackQualityContext');
+
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
@@ -66,20 +68,13 @@ function resolveKnowledgeIntegrationContext(params) {
   );
   const savedFaqAuthorityScore = clamp01(payload.savedFaqAuthorityScore);
 
+  const cityPack = resolveCityPackQualityContext(payload);
   const requiredInvalidRefs = cityPackValidation && Array.isArray(cityPackValidation.blockingInvalidSourceRefs)
     ? cityPackValidation.blockingInvalidSourceRefs
     : [];
   const optionalInvalidRefs = cityPackValidation && Array.isArray(cityPackValidation.optionalInvalidSourceRefs)
     ? cityPackValidation.optionalInvalidSourceRefs
     : [];
-  const cityPackGrounded = payload.cityPackGrounded === true
-    || payload.cityPackContext === true
-    || requiredInvalidRefs.length > 0
-    || optionalInvalidRefs.length > 0
-    || clamp01(payload.cityPackFreshnessScore) !== null
-    || clamp01(payload.cityPackAuthorityScore) !== null;
-  const cityPackFreshnessScore = clamp01(payload.cityPackFreshnessScore);
-  const cityPackAuthorityScore = clamp01(payload.cityPackAuthorityScore);
   const crossSystemConflictDetected = payload.crossSystemConflictDetected === true;
 
   const reasonCodes = normalizeReasonCodes([].concat(payload.integrationReasonCodes || []));
@@ -99,9 +94,15 @@ function resolveKnowledgeIntegrationContext(params) {
   }
 
   return {
-    cityPackGrounded,
-    cityPackFreshnessScore,
-    cityPackAuthorityScore,
+    cityPackContext: cityPack.context,
+    cityPackGrounded: cityPack.grounded,
+    cityPackGroundingReason: cityPack.groundingReason,
+    cityPackFreshnessScore: cityPack.freshnessScore,
+    cityPackAuthorityScore: cityPack.authorityScore,
+    cityPackRequiredSourcesSatisfied: cityPack.requiredSourcesSatisfied,
+    cityPackSourceSnapshot: cityPack.sourceSnapshot,
+    cityPackPackId: cityPack.packId,
+    cityPackValidation: cityPack.validation,
     savedFaqReused,
     savedFaqReusePass,
     savedFaqValid,
@@ -109,7 +110,7 @@ function resolveKnowledgeIntegrationContext(params) {
     savedFaqAuthorityScore,
     sourceSnapshotRefs,
     crossSystemConflictDetected,
-    reasonCodes: normalizeReasonCodes(reasonCodes)
+    reasonCodes: normalizeReasonCodes(reasonCodes.concat(cityPack.reasonCodes || []))
   };
 }
 

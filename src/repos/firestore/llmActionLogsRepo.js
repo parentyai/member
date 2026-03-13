@@ -122,6 +122,12 @@ function normalizeStringList(value, limit) {
   return out;
 }
 
+function normalizePlainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? Object.assign({}, value)
+    : null;
+}
+
 function normalizeChosenAction(value) {
   const payload = value && typeof value === 'object' ? value : {};
   return {
@@ -492,18 +498,36 @@ async function appendLlmActionLog(params) {
     emergencyOfficialSourceSatisfiedObserved: payload.emergencyOfficialSourceSatisfiedObserved === true
       ? true
       : (payload.emergencyOfficialSourceSatisfiedObserved === false ? false : null),
+    emergencyOverrideApplied: payload.emergencyOverrideApplied === true
+      ? true
+      : (payload.emergencyOverrideApplied === false ? false : null),
+    emergencyEventId: normalizeString(payload.emergencyEventId, null),
+    emergencyRegionKey: normalizeString(payload.emergencyRegionKey, null),
+    emergencySourceSnapshot: normalizePlainObject(payload.emergencySourceSnapshot),
     journeyPhase: normalizeString(payload.journeyPhase, null),
     taskBlockerDetected: payload.taskBlockerDetected === true,
     journeyAlignedAction: typeof payload.journeyAlignedAction === 'boolean' ? payload.journeyAlignedAction : true,
     journeyAlignedActionObserved: payload.journeyAlignedActionObserved === true
       ? true
       : (payload.journeyAlignedActionObserved === false ? false : null),
+    blockedTask: normalizePlainObject(payload.blockedTask),
+    taskGraphState: normalizePlainObject(payload.taskGraphState),
+    nextActionCandidates: normalizeStringList(payload.nextActionCandidates, 8),
+    nextActions: normalizeStringList(payload.nextActions, 8),
+    cityPackContext: payload.cityPackContext === true,
     cityPackGrounded: payload.cityPackGrounded === true,
     cityPackGroundedObserved: payload.cityPackGroundedObserved === true
       ? true
       : (payload.cityPackGroundedObserved === false ? false : null),
+    cityPackGroundingReason: normalizeString(payload.cityPackGroundingReason, null),
     cityPackFreshnessScore: Math.max(0, Math.min(1, normalizeNumber(payload.cityPackFreshnessScore, 0))),
     cityPackAuthorityScore: Math.max(0, Math.min(1, normalizeNumber(payload.cityPackAuthorityScore, 0))),
+    cityPackRequiredSourcesSatisfied: typeof payload.cityPackRequiredSourcesSatisfied === 'boolean'
+      ? payload.cityPackRequiredSourcesSatisfied
+      : null,
+    cityPackSourceSnapshot: normalizePlainObject(payload.cityPackSourceSnapshot),
+    cityPackPackId: normalizeString(payload.cityPackPackId, null),
+    cityPackValidation: normalizePlainObject(payload.cityPackValidation),
     staleSourceBlocked: payload.staleSourceBlocked === true
       ? true
       : (payload.staleSourceBlocked === false ? false : null),

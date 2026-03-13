@@ -81,8 +81,11 @@ async function resolveRuntimeCityPackSignals(params, deps) {
     return {
       cityPackContext: false,
       cityPackGrounded: false,
+      cityPackGroundingReason: null,
       cityPackFreshnessScore: null,
       cityPackAuthorityScore: null,
+      cityPackRequiredSourcesSatisfied: null,
+      cityPackSourceSnapshot: null,
       cityPackValidation: null,
       cityPackSourceReadinessDecision: null,
       cityPackSourceReadinessReasons: [],
@@ -119,8 +122,11 @@ async function resolveRuntimeCityPackSignals(params, deps) {
     return {
       cityPackContext: true,
       cityPackGrounded: false,
+      cityPackGroundingReason: 'candidate_present_without_valid_sources',
       cityPackFreshnessScore: null,
       cityPackAuthorityScore: null,
+      cityPackRequiredSourcesSatisfied: null,
+      cityPackSourceSnapshot: null,
       cityPackValidation: null,
       cityPackSourceReadinessDecision: null,
       cityPackSourceReadinessReasons: [],
@@ -135,12 +141,34 @@ async function resolveRuntimeCityPackSignals(params, deps) {
   return {
     cityPackContext: true,
     cityPackGrounded: selected.validation && selected.validation.blocked !== true,
+    cityPackGroundingReason: selected.validation && selected.validation.blocked === true
+      ? 'required_sources_blocked'
+      : 'validated_sources_available',
     cityPackFreshnessScore: Number.isFinite(Number(selected.readiness.sourceFreshnessScore))
       ? Number(selected.readiness.sourceFreshnessScore)
       : null,
     cityPackAuthorityScore: Number.isFinite(Number(selected.readiness.sourceAuthorityScore))
       ? Number(selected.readiness.sourceAuthorityScore)
       : null,
+    cityPackRequiredSourcesSatisfied: selected.validation
+      ? !(Array.isArray(selected.validation.blockingInvalidSourceRefs) && selected.validation.blockingInvalidSourceRefs.length > 0)
+      : null,
+    cityPackSourceSnapshot: {
+      packId: selected.cityPackId,
+      sourceRefIds: Array.isArray(selected.validation && selected.validation.sourceRefs)
+        ? selected.validation.sourceRefs
+          .map((item) => normalizeText(item && (item.sourceRefId || item.id || item.refId)))
+          .filter(Boolean)
+          .slice(0, 8)
+        : [],
+      blockingInvalidSourceRefs: Array.isArray(selected.validation && selected.validation.blockingInvalidSourceRefs)
+        ? selected.validation.blockingInvalidSourceRefs.slice(0, 8)
+        : [],
+      optionalInvalidSourceRefs: Array.isArray(selected.validation && selected.validation.optionalInvalidSourceRefs)
+        ? selected.validation.optionalInvalidSourceRefs.slice(0, 8)
+        : [],
+      sourceReadinessDecision: selected.readiness.sourceReadinessDecision || null
+    },
     cityPackValidation: selected.validation,
     cityPackSourceReadinessDecision: selected.readiness.sourceReadinessDecision || null,
     cityPackSourceReadinessReasons: Array.isArray(selected.readiness.reasonCodes)

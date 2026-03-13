@@ -437,15 +437,33 @@ async function composeConciergeReply(params) {
       ? 1
       : (evidenceDecision.evidenceOutcome === 'INSUFFICIENT' ? 0.35 : 0),
     fallbackType: blockedReasons.length > 0 ? blockedReasons[0] : null,
+    emergencyContext: payload.emergencyContext === true,
+    emergencySeverity: payload.emergencySeverity || null,
+    emergencyOfficialSourceSatisfied: payload.emergencyOfficialSourceSatisfied === true,
+    emergencyOverrideApplied: payload.emergencyOverrideApplied === true,
+    emergencyEventId: payload.emergencyEventId || null,
+    emergencyRegionKey: payload.emergencyRegionKey || null,
+    emergencySourceSnapshot: payload.emergencySourceSnapshot || null,
     journeyContext: journeySignals.journeyContext === true,
     journeyPhase: journeySignals.journeyPhase || null,
     contextSnapshot,
     taskBlockerDetected: journeySignals.taskBlockerDetected === true,
+    blockedTask: journeySignals.blockedTask || null,
+    taskGraphState: journeySignals.taskGraphState || null,
+    nextActionCandidates: journeySignals.nextActionCandidates,
+    nextActions: journeySignals.nextActions,
     journeyAlignedAction: journeySignals.journeyAlignedAction !== false,
     cityPackContext: cityPackCandidatePresent,
     cityPackGrounded: cityPackCandidatePresent,
+    cityPackGroundingReason: cityPackCandidatePresent ? 'city_pack_source_ref_selected' : null,
     cityPackFreshnessScore: cityPackCandidatePresent ? sourceReadiness.sourceFreshnessScore : null,
     cityPackAuthorityScore: cityPackCandidatePresent ? sourceReadiness.sourceAuthorityScore : null,
+    cityPackRequiredSourcesSatisfied: cityPackCandidatePresent,
+    cityPackSourceSnapshot: cityPackCandidatePresent
+      ? { sourceRefIds: ranked.selected.map((item) => item && item.sourceRefId).filter(Boolean).slice(0, 8) }
+      : null,
+    cityPackPackId: cityPackCandidatePresent ? 'candidate_selected' : null,
+    cityPackValidation: cityPackCandidatePresent ? { blocked: false, sourceRefs: ranked.selected.slice(0, 8) } : null,
     savedFaqContext: false,
     crossSystemConflictDetected: false
   });
@@ -754,15 +772,37 @@ async function composeConciergeReply(params) {
     contradictionDetected: readinessResult.qualitySnapshot.contradictionDetected === true,
     answerReadinessLogOnly: false,
     emergencyContextActive: readinessGate.telemetry.emergencyContextActive === true,
+    emergencyOverrideApplied: readinessGate.telemetry.emergencyOverrideApplied === true,
+    emergencyEventId: readinessGate.telemetry.emergencyEventId || null,
+    emergencyRegionKey: readinessGate.telemetry.emergencyRegionKey || null,
+    emergencySourceSnapshot: readinessGate.telemetry.emergencySourceSnapshot || null,
     emergencyOfficialSourceSatisfied: readinessGate.telemetry.emergencyOfficialSourceSatisfied === true,
     journeyPhase: readinessGate.telemetry.journeyPhase || null,
     taskBlockerDetected: readinessGate.telemetry.taskBlockerDetected === true,
+    blockedTask: readinessGate.telemetry.blockedTask || null,
+    taskGraphState: readinessGate.telemetry.taskGraphState || null,
+    nextActionCandidates: Array.isArray(readinessGate.telemetry.nextActionCandidates)
+      ? readinessGate.telemetry.nextActionCandidates
+      : [],
+    nextActions: Array.isArray(readinessGate.telemetry.nextActions)
+      ? readinessGate.telemetry.nextActions
+      : [],
     journeyAlignedAction: typeof readinessGate.telemetry.journeyAlignedAction === 'boolean'
       ? readinessGate.telemetry.journeyAlignedAction
       : true,
+    cityPackContext: readinessGate.telemetry.cityPackContext === true,
     cityPackGrounded: readinessGate.telemetry.cityPackGrounded === true,
+    cityPackGroundingReason: readinessGate.telemetry.cityPackGroundingReason || null,
     cityPackFreshnessScore: readinessGate.telemetry.cityPackFreshnessScore,
     cityPackAuthorityScore: readinessGate.telemetry.cityPackAuthorityScore,
+    cityPackRequiredSourcesSatisfied: typeof readinessGate.telemetry.cityPackRequiredSourcesSatisfied === 'boolean'
+      ? readinessGate.telemetry.cityPackRequiredSourcesSatisfied
+      : null,
+    cityPackSourceSnapshot: readinessGate.telemetry.cityPackSourceSnapshot || null,
+    cityPackPackId: readinessGate.telemetry.cityPackPackId || null,
+    cityPackValidation: readinessGate.telemetry.cityPackValidation || null,
+    savedFaqReused: readinessGate.telemetry.savedFaqReused === true,
+    savedFaqReusePass: readinessGate.telemetry.savedFaqReusePass === true,
     savedFaqValid: readinessGate.telemetry.savedFaqValid === true,
     savedFaqAllowedIntent: readinessGate.telemetry.savedFaqAllowedIntent === true,
     savedFaqAuthorityScore: readinessGate.telemetry.savedFaqAuthorityScore,

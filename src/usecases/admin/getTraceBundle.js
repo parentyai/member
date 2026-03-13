@@ -222,8 +222,16 @@ async function getTraceBundle(params, deps) {
     decisions,
     timeline,
     joins: {
+      llm: {
+        audits,
+        decisions,
+        timeline,
+        actions: llmActions
+      },
       llmActions,
+      sourceRefs: sourceEvidence,
       sourceEvidence,
+      faq: faqAnswerLogs,
       faqAnswerLogs,
       emergency: {
         events: emergencyEvents,
