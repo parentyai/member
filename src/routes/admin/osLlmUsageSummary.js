@@ -2,12 +2,15 @@
 
 const llmUsageLogsRepo = require('../../repos/firestore/llmUsageLogsRepo');
 const llmActionLogsRepo = require('../../repos/firestore/llmActionLogsRepo');
+const faqAnswerLogsRepo = require('../../repos/firestore/faqAnswerLogsRepo');
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const specContractRegistry = require('../../../contracts/llm_spec_contract_registry.v2.json');
 const { buildBacklogRowsFromSignals } = require('../../../tools/generate_llm_improvement_plan');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 const { buildCounterexampleQueueFromSignalEntries } = require('../../domain/llm/quality/counterexampleQueue');
+const { buildTraceProbeRows } = require('../../usecases/admin/buildTraceProbeRows');
+const { resolveTelemetryCoverageSignals } = require('../../domain/llm/quality/resolveTelemetryCoverageSignals');
 
 function parsePositiveInt(value, fallback, min, max) {
   if (value === null || value === undefined || value === '') return fallback;
@@ -170,6 +173,233 @@ function sumBy(array, selector) {
 function normalizeReason(value) {
   const text = typeof value === 'string' ? value.trim() : '';
   return text || 'none';
+}
+
+function hasOwn(object, key) {
+  return Boolean(object) && Object.prototype.hasOwnProperty.call(object, key);
+}
+
+function normalizeTraceId(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : '';
+}
+
+function toOptionalBoolean(value) {
+  return typeof value === 'boolean' ? value : null;
+}
+
+function toOptionalNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'boolean') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function buildObservedFlag(explicitObserved, inferredObserved) {
+  const explicit = toOptionalBoolean(explicitObserved);
+  if (explicit !== null) return explicit;
+  return inferredObserved === true;
+}
+
+function resolveObservedBoolean(row, valueKey, observedKey, inferredObserved, fallbackValue) {
+  const value = toOptionalBoolean(row && row[valueKey]);
+  const derivedValue = value !== null ? value : toOptionalBoolean(fallbackValue);
+  const observed = buildObservedFlag(row && row[observedKey], inferredObserved || derivedValue !== null);
+  return {
+    value: derivedValue,
+    observed
+  };
+}
+
+function resolveObservedNumber(row, valueKey, observedKey, fallbackValue, fallbackObserved) {
+  const explicitValue = toOptionalNumber(row && row[valueKey]);
+  const value = explicitValue !== null ? explicitValue : toOptionalNumber(fallbackValue);
+  const explicitObserved = toOptionalBoolean(row && row[observedKey]);
+  const observed = explicitObserved !== null ? explicitObserved : (fallbackObserved === true || value !== null);
+  return {
+    value,
+    observed
+  };
+}
+
+function normalizeTelemetryRow(row) {
+  const payload = row && typeof row === 'object' ? row : {};
+  const derived = resolveTelemetryCoverageSignals(payload);
+  const evidence = resolveObservedNumber(
+    payload,
+    'evidenceCoverage',
+    'evidenceCoverageObserved',
+    derived.evidenceCoverage,
+    derived.evidenceCoverageObserved
+  );
+  const officialOnly = resolveObservedBoolean(
+    payload,
+    'officialOnlySatisfied',
+    'officialOnlySatisfiedObserved',
+    derived.officialOnlySatisfiedObserved
+  );
+  const cityPackGrounded = resolveObservedBoolean(
+    payload,
+    'cityPackGrounded',
+    'cityPackGroundedObserved',
+    derived.cityPackGroundedObserved
+  );
+  const staleSourceBlocked = resolveObservedBoolean(
+    payload,
+    'staleSourceBlocked',
+    'staleSourceBlockedObserved',
+    derived.staleSourceBlockedObserved,
+    derived.staleSourceBlocked
+  );
+  const emergencyOfficialSourceSatisfied = resolveObservedBoolean(
+    payload,
+    'emergencyOfficialSourceSatisfied',
+    'emergencyOfficialSourceSatisfiedObserved',
+    derived.emergencyOfficialSourceSatisfiedObserved
+  );
+  const journeyAlignedAction = resolveObservedBoolean(
+    payload,
+    'journeyAlignedAction',
+    'journeyAlignedActionObserved',
+    derived.journeyAlignedActionObserved
+  );
+  const savedFaqReusePass = resolveObservedBoolean(
+    payload,
+    'savedFaqReusePass',
+    'savedFaqReusePassObserved',
+    derived.savedFaqReusePassObserved,
+    derived.savedFaqReusePass
+  );
+
+  return Object.assign({}, payload, {
+    traceId: normalizeTraceId(payload.traceId),
+    evidenceCoverage: evidence.value,
+    evidenceCoverageObserved: evidence.observed,
+    officialOnlySatisfied: officialOnly.value,
+    officialOnlySatisfiedObserved: officialOnly.observed,
+    cityPackGrounded: cityPackGrounded.value,
+    cityPackGroundedObserved: cityPackGrounded.observed,
+    staleSourceBlocked: staleSourceBlocked.value,
+    staleSourceBlockedObserved: staleSourceBlocked.observed,
+    emergencyOfficialSourceSatisfied: emergencyOfficialSourceSatisfied.value,
+    emergencyOfficialSourceSatisfiedObserved: emergencyOfficialSourceSatisfied.observed,
+    journeyAlignedAction: journeyAlignedAction.value,
+    journeyAlignedActionObserved: journeyAlignedAction.observed,
+    savedFaqReusePass: savedFaqReusePass.value,
+    savedFaqReusePassObserved: savedFaqReusePass.observed
+  });
+}
+
+function buildBooleanRateMetric(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const rows = Array.isArray(payload.rows) ? payload.rows : [];
+  const selectValue = typeof payload.selectValue === 'function'
+    ? payload.selectValue
+    : (row) => {
+      if (payload.isTrue(row) === true) return true;
+      if (payload.isFalse && payload.isFalse(row) === true) return false;
+      return null;
+    };
+  const observedRows = rows.filter((row) => row && payload.isObserved(row) === true && toOptionalBoolean(selectValue(row)) !== null);
+  const trueCount = observedRows.filter((row) => selectValue(row) === true).length;
+  return buildRateMetric({
+    key: payload.key,
+    value: observedRows.length > 0 ? trueCount / observedRows.length : null,
+    sampleCount: observedRows.length,
+    missingCount: Math.max(0, rows.length - observedRows.length),
+    threshold: payload.threshold,
+    note: payload.note || null,
+    provenance: payload.provenance || 'live_runtime',
+    sourceCollections: payload.sourceCollections || []
+  });
+}
+
+function mergeTraceAuditRows(traceSearchAuditRows, traceProbeRows) {
+  const merged = new Map();
+  const appendRow = (row, fallbackPrefix) => {
+    if (!row || typeof row !== 'object') return;
+    const key = normalizeTraceId(row.traceId) || `${fallbackPrefix}:${merged.size}`;
+    const existing = merged.get(key) || {
+      traceId: normalizeTraceId(row.traceId) || null,
+      createdAt: row.createdAt || null,
+      traceJoinCompleteness: null,
+      adminTraceResolutionTimeMs: null,
+      traceBundleLoadMs: null,
+      joinedDomains: [],
+      missingDomains: [],
+      expectedDomains: [],
+      criticalMissingDomains: [],
+      joinedDomainCount: null,
+      missingDomainCount: null,
+      cityPackGrounded: null,
+      cityPackGroundedObserved: null,
+      emergencyOfficialSourceSatisfied: null,
+      emergencyOfficialSourceSatisfiedObserved: null,
+      journeyAlignedAction: null,
+      journeyAlignedActionObserved: null,
+      provenance: []
+    };
+    const existingTraceJoinCompleteness = toOptionalNumber(existing.traceJoinCompleteness);
+    const existingResolutionTimeMs = toOptionalNumber(existing.adminTraceResolutionTimeMs);
+    const existingTraceBundleLoadMs = toOptionalNumber(existing.traceBundleLoadMs);
+    const existingJoinedDomainCount = toOptionalNumber(existing.joinedDomainCount);
+    const existingMissingDomainCount = toOptionalNumber(existing.missingDomainCount);
+    const next = Object.assign({}, existing, {
+      traceId: existing.traceId || normalizeTraceId(row.traceId) || null,
+      createdAt: existing.createdAt || row.createdAt || null,
+      traceJoinCompleteness: existingTraceJoinCompleteness !== null
+        ? existingTraceJoinCompleteness
+        : toOptionalNumber(row.traceJoinCompleteness),
+      adminTraceResolutionTimeMs: existingResolutionTimeMs !== null
+        ? existingResolutionTimeMs
+        : toOptionalNumber(row.adminTraceResolutionTimeMs),
+      traceBundleLoadMs: existingTraceBundleLoadMs !== null
+        ? existingTraceBundleLoadMs
+        : toOptionalNumber(row.traceBundleLoadMs),
+      joinedDomains: existing.joinedDomains.length > 0
+        ? existing.joinedDomains.slice()
+        : (Array.isArray(row.joinedDomains) ? row.joinedDomains.slice() : []),
+      missingDomains: existing.missingDomains.length > 0
+        ? existing.missingDomains.slice()
+        : (Array.isArray(row.missingDomains) ? row.missingDomains.slice() : []),
+      expectedDomains: existing.expectedDomains.length > 0
+        ? existing.expectedDomains.slice()
+        : (Array.isArray(row.expectedDomains) ? row.expectedDomains.slice() : []),
+      criticalMissingDomains: existing.criticalMissingDomains.length > 0
+        ? existing.criticalMissingDomains.slice()
+        : (Array.isArray(row.criticalMissingDomains) ? row.criticalMissingDomains.slice() : []),
+      joinedDomainCount: existingJoinedDomainCount !== null
+        ? existingJoinedDomainCount
+        : toOptionalNumber(row.joinedDomainCount),
+      missingDomainCount: existingMissingDomainCount !== null
+        ? existingMissingDomainCount
+        : toOptionalNumber(row.missingDomainCount),
+      cityPackGrounded: toOptionalBoolean(existing.cityPackGrounded) !== null
+        ? toOptionalBoolean(existing.cityPackGrounded)
+        : toOptionalBoolean(row.cityPackGrounded),
+      cityPackGroundedObserved: toOptionalBoolean(existing.cityPackGroundedObserved) !== null
+        ? toOptionalBoolean(existing.cityPackGroundedObserved)
+        : toOptionalBoolean(row.cityPackGroundedObserved),
+      emergencyOfficialSourceSatisfied: toOptionalBoolean(existing.emergencyOfficialSourceSatisfied) !== null
+        ? toOptionalBoolean(existing.emergencyOfficialSourceSatisfied)
+        : toOptionalBoolean(row.emergencyOfficialSourceSatisfied),
+      emergencyOfficialSourceSatisfiedObserved: toOptionalBoolean(existing.emergencyOfficialSourceSatisfiedObserved) !== null
+        ? toOptionalBoolean(existing.emergencyOfficialSourceSatisfiedObserved)
+        : toOptionalBoolean(row.emergencyOfficialSourceSatisfiedObserved),
+      journeyAlignedAction: toOptionalBoolean(existing.journeyAlignedAction) !== null
+        ? toOptionalBoolean(existing.journeyAlignedAction)
+        : toOptionalBoolean(row.journeyAlignedAction),
+      journeyAlignedActionObserved: toOptionalBoolean(existing.journeyAlignedActionObserved) !== null
+        ? toOptionalBoolean(existing.journeyAlignedActionObserved)
+        : toOptionalBoolean(row.journeyAlignedActionObserved),
+      provenance: Array.from(new Set([]
+        .concat(existing.provenance || [])
+        .concat(typeof row.provenance === 'string' && row.provenance.trim() ? [row.provenance.trim()] : [])))
+    });
+    merged.set(key, next);
+  };
+  (Array.isArray(traceSearchAuditRows) ? traceSearchAuditRows : []).forEach((row) => appendRow(row, 'trace-search'));
+  (Array.isArray(traceProbeRows) ? traceProbeRows : []).forEach((row) => appendRow(row, 'trace-probe'));
+  return Array.from(merged.values());
 }
 
 function maskLineUserId(value) {
@@ -1210,6 +1440,7 @@ function countWhere(rows, predicate) {
 function buildRateMetric(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const sampleCount = Number.isFinite(Number(payload.sampleCount)) ? Number(payload.sampleCount) : 0;
+  const missingCount = Number.isFinite(Number(payload.missingCount)) ? Number(payload.missingCount) : 0;
   const rawValue = Number(payload.value);
   const threshold = payload.threshold && typeof payload.threshold === 'object' ? payload.threshold : {};
   if (sampleCount <= 0 || !Number.isFinite(rawValue)) {
@@ -1217,10 +1448,13 @@ function buildRateMetric(params) {
       key: payload.key || 'unknown',
       value: null,
       sampleCount,
+      missingCount,
       status: 'missing',
       operator: threshold.operator || null,
       threshold: threshold.value !== undefined ? threshold.value : null,
-      note: payload.note || 'measurement_missing'
+      note: payload.note || 'measurement_missing',
+      provenance: payload.provenance || 'missing',
+      sourceCollections: Array.isArray(payload.sourceCollections) ? payload.sourceCollections.slice() : []
     };
   }
   let status = 'pass';
@@ -1229,19 +1463,23 @@ function buildRateMetric(params) {
   else if (threshold.operator === 'exact' && rawValue !== Number(threshold.value)) status = 'fail';
   if (status === 'pass' && threshold.warnAbove !== undefined && rawValue > Number(threshold.warnAbove)) status = 'warning';
   return {
-    key: payload.key || 'unknown',
-    value: Math.round(rawValue * 10000) / 10000,
-    sampleCount,
-    status,
-    operator: threshold.operator || null,
-    threshold: threshold.value !== undefined ? threshold.value : null,
-    note: payload.note || null
-  };
+      key: payload.key || 'unknown',
+      value: Math.round(rawValue * 10000) / 10000,
+      sampleCount,
+      missingCount,
+      status,
+      operator: threshold.operator || null,
+      threshold: threshold.value !== undefined ? threshold.value : null,
+      note: payload.note || null,
+      provenance: payload.provenance || 'live_runtime',
+      sourceCollections: Array.isArray(payload.sourceCollections) ? payload.sourceCollections.slice() : []
+    };
 }
 
 function buildDurationMetric(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const sampleCount = Number.isFinite(Number(payload.sampleCount)) ? Number(payload.sampleCount) : 0;
+  const missingCount = Number.isFinite(Number(payload.missingCount)) ? Number(payload.missingCount) : 0;
   const rawValue = Number(payload.value);
   const threshold = payload.threshold && typeof payload.threshold === 'object' ? payload.threshold : {};
   if (sampleCount <= 0 || !Number.isFinite(rawValue)) {
@@ -1249,10 +1487,13 @@ function buildDurationMetric(params) {
       key: payload.key || 'unknown',
       valueMs: null,
       sampleCount,
+      missingCount,
       status: 'missing',
       operator: threshold.operator || null,
       thresholdMs: threshold.value !== undefined ? threshold.value : null,
-      note: payload.note || 'measurement_missing'
+      note: payload.note || 'measurement_missing',
+      provenance: payload.provenance || 'missing',
+      sourceCollections: Array.isArray(payload.sourceCollections) ? payload.sourceCollections.slice() : []
     };
   }
   const status = threshold.operator === 'max' && rawValue > Number(threshold.value) ? 'fail' : 'pass';
@@ -1260,145 +1501,200 @@ function buildDurationMetric(params) {
     key: payload.key || 'unknown',
     valueMs: Math.round(rawValue),
     sampleCount,
+    missingCount,
     status,
     operator: threshold.operator || null,
     thresholdMs: threshold.value !== undefined ? threshold.value : null,
-    note: payload.note || null
+    note: payload.note || null,
+    provenance: payload.provenance || 'live_runtime',
+    sourceCollections: Array.isArray(payload.sourceCollections) ? payload.sourceCollections.slice() : []
   };
 }
 
 function buildQualityLoopV2Summary(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const actionRows = Array.isArray(payload.actionRows) ? payload.actionRows : [];
+  const faqRows = Array.isArray(payload.faqRows) ? payload.faqRows : [];
   const traceSearchAuditRows = Array.isArray(payload.traceSearchAuditRows) ? payload.traceSearchAuditRows : [];
+  const traceProbeRows = Array.isArray(payload.traceProbeRows) ? payload.traceProbeRows : [];
   const conversation = payload.conversationQuality && typeof payload.conversationQuality === 'object' ? payload.conversationQuality : {};
   const optimization = payload.optimization && typeof payload.optimization === 'object' ? payload.optimization : {};
 
-  const cityPackRows = actionRows.filter((row) => row && (
-    row.cityPackGrounded === true
-    || Number(row.cityPackFreshnessScore) > 0
-    || Number(row.cityPackAuthorityScore) > 0
-  ));
-  const staleRows = actionRows.filter((row) => row && (
-    Number(row.cityPackFreshnessScore) > 0 && Number(row.cityPackFreshnessScore) < 0.6
-      || Number(row.sourceFreshnessScore) > 0 && Number(row.sourceFreshnessScore) < 0.6
-  ));
-  const emergencyRows = actionRows.filter((row) => row && row.emergencyContextActive === true);
-  const highRiskRows = actionRows.filter((row) => normalizeReason(row && row.intentRiskTier).toLowerCase() === 'high');
-  const journeyRows = actionRows.filter((row) => row && (
-    row.taskBlockerDetected === true
-    || normalizeReason(row.journeyPhase).toLowerCase() !== 'none'
-  ));
-  const blockerRows = actionRows.filter((row) => row && row.taskBlockerDetected === true);
-  const savedFaqRows = actionRows.filter((row) => row && row.savedFaqReused === true);
-  const crossSystemRows = actionRows.filter((row) => row && Object.prototype.hasOwnProperty.call(row, 'crossSystemConflictDetected'));
-  const readinessV2Rows = actionRows.filter((row) => row && normalizeReason(row.answerReadinessVersion).toLowerCase() === 'v2');
-  const traceJoinRows = traceSearchAuditRows.filter((row) => row && Number.isFinite(Number(row.traceJoinCompleteness)));
-  const traceResolutionRows = traceSearchAuditRows.filter((row) => row && Number.isFinite(Number(row.adminTraceResolutionTimeMs)));
+  const normalizedActionRows = actionRows.map((row) => normalizeTelemetryRow(row));
+  const normalizedFaqRows = faqRows.map((row) => normalizeTelemetryRow(row));
+  const normalizedKnowledgeRows = normalizedActionRows.concat(normalizedFaqRows);
+  const readinessV2Rows = normalizedActionRows.filter((row) => row && normalizeReason(row.answerReadinessVersion).toLowerCase() === 'v2');
+  const mergedTraceRows = mergeTraceAuditRows(traceSearchAuditRows, traceProbeRows);
+  const normalizedTraceRows = mergedTraceRows.map((row) => normalizeTelemetryRow(row));
+  const normalizedIntegrationRows = normalizedKnowledgeRows.concat(normalizedTraceRows);
 
-  const cityPackGroundingRate = buildRateMetric({
+  const cityPackRows = normalizedIntegrationRows.filter((row) => row && row.cityPackGroundedObserved === true);
+  const staleRows = normalizedKnowledgeRows.filter((row) => row && row.staleSourceBlockedObserved === true);
+  const emergencyRows = normalizedIntegrationRows.filter((row) => row && row.emergencyOfficialSourceSatisfiedObserved === true);
+  const highRiskRows = normalizedKnowledgeRows.filter((row) => normalizeReason(row && row.intentRiskTier).toLowerCase() === 'high');
+  const journeyRows = normalizedIntegrationRows.filter((row) => row && row.journeyAlignedActionObserved === true);
+  const blockerRows = normalizedKnowledgeRows.filter((row) => row && row.taskBlockerDetected === true);
+  const savedFaqRows = normalizedKnowledgeRows.filter((row) => row && row.savedFaqReusePassObserved === true);
+  const crossSystemRows = normalizedIntegrationRows.filter((row) => row && (
+    Object.prototype.hasOwnProperty.call(row, 'crossSystemConflictDetected')
+    || row.cityPackGroundedObserved === true
+    || row.emergencyOfficialSourceSatisfiedObserved === true
+    || row.journeyAlignedActionObserved === true
+    || row.savedFaqReusePassObserved === true
+  ));
+  const traceRows = mergedTraceRows.filter((row) => row && (
+    row.traceId
+    || Number.isFinite(Number(row.traceJoinCompleteness))
+    || Number.isFinite(Number(row.adminTraceResolutionTimeMs))
+  ));
+
+  const cityPackGroundingRate = buildBooleanRateMetric({
     key: 'cityPackGroundingRate',
-    value: cityPackRows.length > 0
-      ? countWhere(cityPackRows, (row) => row.cityPackGrounded === true
-        && (Number(row.cityPackFreshnessScore) <= 0 || Number(row.cityPackFreshnessScore) >= 0.6)
-        && (Number(row.cityPackAuthorityScore) <= 0 || Number(row.cityPackAuthorityScore) >= 0.6)) / cityPackRows.length
-      : null,
-    sampleCount: cityPackRows.length,
-    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.cityPackGroundingRate }
+    rows: cityPackRows,
+    isObserved: (row) => row && row.cityPackGroundedObserved === true,
+    selectValue: (row) => toOptionalBoolean(row && row.cityPackGrounded),
+    isTrue: (row) => row && row.cityPackGrounded === true,
+    isFalse: (row) => row && row.cityPackGrounded === false,
+    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.cityPackGroundingRate },
+    sourceCollections: ['llm_action_logs', 'faq_answer_logs']
   });
-  const staleSourceBlockRate = buildRateMetric({
+  const staleSourceBlockRate = buildBooleanRateMetric({
     key: 'staleSourceBlockRate',
-    value: staleRows.length > 0
-      ? countWhere(staleRows, (row) => ['hedged', 'clarify', 'refuse'].includes(normalizeReason(row.readinessDecisionV2 || row.sourceReadinessDecision || row.readinessDecision).toLowerCase())) / staleRows.length
-      : null,
-    sampleCount: staleRows.length,
-    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.staleSourceBlockRate }
+    rows: staleRows,
+    isObserved: (row) => row && row.staleSourceBlockedObserved === true,
+    selectValue: (row) => toOptionalBoolean(row && row.staleSourceBlocked),
+    isTrue: (row) => row && row.staleSourceBlocked === true,
+    isFalse: (row) => row && row.staleSourceBlocked === false,
+    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.staleSourceBlockRate },
+    sourceCollections: ['llm_action_logs', 'faq_answer_logs']
   });
-  const emergencyOfficialSourceRate = buildRateMetric({
+  const emergencyOfficialSourceRate = buildBooleanRateMetric({
     key: 'emergencyOfficialSourceRate',
-    value: emergencyRows.length > 0
-      ? countWhere(emergencyRows, (row) => row.emergencyOfficialSourceSatisfied === true) / emergencyRows.length
-      : null,
-    sampleCount: emergencyRows.length,
-    threshold: { operator: 'exact', value: QUALITY_LOOP_V2_THRESHOLDS.emergencyOfficialSourceRate }
+    rows: emergencyRows,
+    isObserved: (row) => row && row.emergencyOfficialSourceSatisfiedObserved === true,
+    selectValue: (row) => toOptionalBoolean(row && row.emergencyOfficialSourceSatisfied),
+    isTrue: (row) => row && row.emergencyOfficialSourceSatisfied === true,
+    isFalse: (row) => row && row.emergencyOfficialSourceSatisfied === false,
+    threshold: { operator: 'exact', value: QUALITY_LOOP_V2_THRESHOLDS.emergencyOfficialSourceRate },
+    sourceCollections: ['llm_action_logs', 'faq_answer_logs']
   });
-  const journeyAlignedActionRate = buildRateMetric({
+  const journeyAlignedActionRate = buildBooleanRateMetric({
     key: 'journeyAlignedActionRate',
-    value: journeyRows.length > 0
-      ? countWhere(journeyRows, (row) => row.journeyAlignedAction === true) / journeyRows.length
-      : null,
-    sampleCount: journeyRows.length,
-    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.journeyAlignedActionRate }
+    rows: journeyRows,
+    isObserved: (row) => row && row.journeyAlignedActionObserved === true,
+    selectValue: (row) => toOptionalBoolean(row && row.journeyAlignedAction),
+    isTrue: (row) => row && row.journeyAlignedAction === true,
+    isFalse: (row) => row && row.journeyAlignedAction === false,
+    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.journeyAlignedActionRate },
+    sourceCollections: ['llm_action_logs', 'faq_answer_logs']
   });
-  const taskBlockerConflictRate = buildRateMetric({
+  const taskBlockerConflictRate = buildBooleanRateMetric({
     key: 'taskBlockerConflictRate',
-    value: blockerRows.length > 0
-      ? countWhere(blockerRows, (row) => row.journeyAlignedAction !== true) / blockerRows.length
-      : null,
-    sampleCount: blockerRows.length,
-    threshold: { operator: 'max', value: QUALITY_LOOP_V2_THRESHOLDS.taskBlockerConflictRate }
+    rows: blockerRows,
+    isObserved: (row) => row && row.journeyAlignedActionObserved === true,
+    isTrue: (row) => row && row.journeyAlignedAction !== true,
+    threshold: { operator: 'max', value: QUALITY_LOOP_V2_THRESHOLDS.taskBlockerConflictRate },
+    sourceCollections: ['llm_action_logs', 'faq_answer_logs']
   });
-  const savedFaqReusePassRate = buildRateMetric({
+  const savedFaqReusePassRate = buildBooleanRateMetric({
     key: 'savedFaqReusePassRate',
-    value: savedFaqRows.length > 0
-      ? countWhere(savedFaqRows, (row) => row.savedFaqReusePass === true) / savedFaqRows.length
-      : null,
-    sampleCount: savedFaqRows.length,
-    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.savedFaqReusePassRate }
+    rows: savedFaqRows,
+    isObserved: (row) => row && row.savedFaqReusePassObserved === true,
+    selectValue: (row) => toOptionalBoolean(row && row.savedFaqReusePass),
+    isTrue: (row) => row && row.savedFaqReusePass === true,
+    isFalse: (row) => row && row.savedFaqReusePass === false,
+    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.savedFaqReusePassRate },
+    sourceCollections: ['llm_action_logs', 'faq_answer_logs']
   });
-  const crossSystemConflictRate = buildRateMetric({
+  const crossSystemConflictRate = buildBooleanRateMetric({
     key: 'crossSystemConflictRate',
-    value: crossSystemRows.length > 0
-      ? countWhere(crossSystemRows, (row) => row.crossSystemConflictDetected === true) / crossSystemRows.length
-      : null,
-    sampleCount: crossSystemRows.length,
+    rows: crossSystemRows,
+    isObserved: (row) => row && Object.prototype.hasOwnProperty.call(row, 'crossSystemConflictDetected'),
+    isTrue: (row) => row && row.crossSystemConflictDetected === true,
     threshold: { operator: 'max', value: 1, warnAbove: QUALITY_LOOP_V2_THRESHOLDS.crossSystemConflictWarningRate },
-    note: 'review_on_spike'
+    note: 'review_on_spike',
+    sourceCollections: ['llm_action_logs', 'faq_answer_logs']
   });
-  const officialSourceUsageRateHighRisk = buildRateMetric({
-    key: 'officialSourceUsageRateHighRisk',
-    value: highRiskRows.length > 0
-      ? countWhere(highRiskRows, (row) => row.officialOnlySatisfied === true) / highRiskRows.length
-      : null,
-    sampleCount: highRiskRows.length,
-    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.officialSourceUsageRateHighRisk }
+  const officialSourceUsageRate = buildBooleanRateMetric({
+    key: 'officialSourceUsageRate',
+    rows: highRiskRows,
+    isObserved: (row) => row && row.officialOnlySatisfiedObserved === true,
+    selectValue: (row) => toOptionalBoolean(row && row.officialOnlySatisfied),
+    isTrue: (row) => row && row.officialOnlySatisfied === true,
+    isFalse: (row) => row && row.officialOnlySatisfied === false,
+    threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.officialSourceUsageRateHighRisk },
+    sourceCollections: ['llm_action_logs', 'faq_answer_logs']
+  });
+  const officialSourceUsageRateHighRisk = Object.assign({}, officialSourceUsageRate, {
+    key: 'officialSourceUsageRateHighRisk'
   });
   const compatShareWindow = buildRateMetric({
     key: 'compatShareWindow',
     value: Number.isFinite(Number(optimization.compatShareWindow)) ? Number(optimization.compatShareWindow) : null,
     sampleCount: Number(conversation.sampleCount || 0),
-    threshold: { operator: 'max', value: QUALITY_LOOP_V2_THRESHOLDS.compatShareWindow }
+    threshold: { operator: 'max', value: QUALITY_LOOP_V2_THRESHOLDS.compatShareWindow },
+    provenance: 'live_runtime',
+    sourceCollections: ['llm_gate.decision', 'llm_action_logs']
   });
   const emergencyOverrideAppliedRate = buildRateMetric({
     key: 'emergencyOverrideAppliedRate',
     value: null,
     sampleCount: emergencyRows.length,
     threshold: { operator: 'min', value: 0 },
-    note: 'pending_emergency_override_wiring'
+    note: 'pending_emergency_override_wiring',
+    missingCount: emergencyRows.length,
+    provenance: 'pending_runtime_signal',
+    sourceCollections: ['llm_action_logs']
   });
+  const traceJoinObservedRows = traceRows.filter((row) => row && Number.isFinite(Number(row.traceJoinCompleteness)));
   const traceJoinCompleteness = buildRateMetric({
     key: 'traceJoinCompleteness',
-    value: traceJoinRows.length > 0 ? averageFromRows(traceJoinRows, (row) => row && row.traceJoinCompleteness) : null,
-    sampleCount: traceJoinRows.length,
+    value: traceJoinObservedRows.length > 0
+      ? averageFromRows(traceJoinObservedRows, (row) => row && row.traceJoinCompleteness)
+      : null,
+    sampleCount: traceJoinObservedRows.length,
+    missingCount: Math.max(0, traceRows.length - traceJoinObservedRows.length),
     threshold: { operator: 'min', value: QUALITY_LOOP_V2_THRESHOLDS.traceJoinCompleteness },
-    note: traceJoinRows.length > 0 ? null : 'pending_cross_system_trace_join'
+    note: traceRows.length > 0 ? null : 'pending_cross_system_trace_join',
+    provenance: 'trace_bundle_probe',
+    sourceCollections: ['trace_search.view', 'trace_bundle']
   });
+  const traceResolutionObservedRows = traceRows.filter((row) => row && Number.isFinite(Number(row.adminTraceResolutionTimeMs)));
   const adminTraceResolutionTime = buildDurationMetric({
     key: 'adminTraceResolutionTime',
-    value: traceResolutionRows.length > 0 ? averageFromRows(traceResolutionRows, (row) => row && row.adminTraceResolutionTimeMs) : null,
-    sampleCount: traceResolutionRows.length,
+    value: traceResolutionObservedRows.length > 0
+      ? averageFromRows(traceResolutionObservedRows, (row) => row && row.adminTraceResolutionTimeMs)
+      : null,
+    sampleCount: traceResolutionObservedRows.length,
+    missingCount: Math.max(0, traceRows.length - traceResolutionObservedRows.length),
     threshold: { operator: 'max', value: QUALITY_LOOP_V2_THRESHOLDS.adminTraceResolutionTimeMsStg },
-    note: traceResolutionRows.length > 0 ? null : 'pending_operator_trace_latency_wiring'
+    note: traceRows.length > 0 ? null : 'pending_operator_trace_latency_wiring',
+    provenance: 'trace_bundle_probe',
+    sourceCollections: ['trace_search.view', 'trace_bundle']
+  });
+  const evidenceObservedRows = normalizedKnowledgeRows.filter((row) => row && row.evidenceCoverageObserved === true);
+  const evidenceCoverage = buildRateMetric({
+    key: 'evidenceCoverage',
+    value: evidenceObservedRows.length > 0 ? averageFromRows(evidenceObservedRows, (row) => row && row.evidenceCoverage) : null,
+    sampleCount: evidenceObservedRows.length,
+    missingCount: Math.max(0, normalizedKnowledgeRows.length - evidenceObservedRows.length),
+    threshold: { operator: 'min', value: DEFAULT_RELEASE_READINESS_THRESHOLDS.minEvidenceCoverage },
+    provenance: 'live_runtime',
+    sourceCollections: ['llm_action_logs', 'faq_answer_logs']
   });
   const directUrlLeakage = buildRateMetric({
     key: 'directUrlLeakage',
     value: null,
     sampleCount: 0,
     threshold: { operator: 'exact', value: 0 },
-    note: 'pending_direct_url_runtime_signal'
+    note: 'pending_direct_url_runtime_signal',
+    provenance: 'pending_runtime_signal',
+    sourceCollections: ['llm_action_logs', 'faq_answer_logs']
   });
 
   const integrationKpis = {
+    evidenceCoverage,
+    officialSourceUsageRate,
     cityPackGroundingRate,
     staleSourceBlockRate,
     emergencyOfficialSourceRate,
@@ -1409,6 +1705,7 @@ function buildQualityLoopV2Summary(data) {
     crossSystemConflictRate,
     traceJoinCompleteness,
     adminTraceResolutionTime,
+    adminTraceResolutionTimeMs: Object.assign({}, adminTraceResolutionTime, { key: 'adminTraceResolutionTimeMs' }),
     officialSourceUsageRateHighRisk,
     compatShareWindow,
     directUrlLeakage
@@ -1484,7 +1781,9 @@ function buildImprovementLoopSummary(payload) {
   const data = payload && typeof payload === 'object' ? payload : {};
   const qualityLoopV2 = data.qualityLoopV2 && typeof data.qualityLoopV2 === 'object' ? data.qualityLoopV2 : {};
   const actionRows = Array.isArray(data.actionRows) ? data.actionRows : [];
+  const faqRows = Array.isArray(data.faqRows) ? data.faqRows : [];
   const traceSearchAuditRows = Array.isArray(data.traceSearchAuditRows) ? data.traceSearchAuditRows : [];
+  const traceProbeRows = Array.isArray(data.traceProbeRows) ? data.traceProbeRows : [];
   const hardFailures = Array.isArray(data.hardFailures) ? data.hardFailures : [];
   const topQualityFailures = Array.isArray(data.topQualityFailures) ? data.topQualityFailures : [];
   const topLoopCases = Array.isArray(data.topLoopCases) ? data.topLoopCases : [];
@@ -1558,14 +1857,14 @@ function buildImprovementLoopSummary(payload) {
     .slice(0, 5)
     .map((signal) => ({ signal }));
 
-  const sampleCount = actionRows.length + traceSearchAuditRows.length;
+  const sampleCount = actionRows.length + faqRows.length + traceSearchAuditRows.length + traceProbeRows.length;
   let qualityLoopStatus = 'ok';
   if (runtimeAuditUnavailable) qualityLoopStatus = 'action_required';
   else if (sampleCount <= 0) qualityLoopStatus = 'missing';
   else if ((qualityLoopV2.criticalSliceFailCount || 0) > 0 || hardFailures.length > 0) qualityLoopStatus = 'action_required';
   else if (missingMeasurements.length > 0 || topFailures.length > 0) qualityLoopStatus = 'warning';
 
-  const lastAuditAt = [actionRows, traceSearchAuditRows]
+  const lastAuditAt = [actionRows, faqRows, traceSearchAuditRows, traceProbeRows]
     .flat()
     .reduce((latest, row) => {
       const value = toMillis(row && row.createdAt ? row.createdAt : null);
@@ -1592,6 +1891,7 @@ function buildTraceSearchAuditRows(auditRows) {
   return (Array.isArray(auditRows) ? auditRows : []).map((row) => {
     const summary = row && row.payloadSummary && typeof row.payloadSummary === 'object' ? row.payloadSummary : {};
     return {
+      traceId: normalizeTraceId(summary.traceId || (row && row.traceId)),
       traceJoinCompleteness: Number(summary.traceJoinCompleteness),
       adminTraceResolutionTimeMs: Number(summary.adminTraceResolutionTimeMs),
       traceBundleLoadMs: Number(summary.traceBundleLoadMs),
@@ -1599,9 +1899,10 @@ function buildTraceSearchAuditRows(auditRows) {
       missingDomainCount: Number(summary.missingDomainCount),
       joinedDomains: Array.isArray(summary.joinedDomains) ? summary.joinedDomains.slice() : [],
       missingDomains: Array.isArray(summary.missingDomains) ? summary.missingDomains.slice() : [],
-      createdAt: row && row.createdAt ? row.createdAt : null
+      createdAt: row && row.createdAt ? row.createdAt : null,
+      provenance: 'trace_search_view'
     };
-  }).filter((row) => Number.isFinite(row.traceJoinCompleteness) || Number.isFinite(row.adminTraceResolutionTimeMs));
+  }).filter((row) => row.traceId || Number.isFinite(row.traceJoinCompleteness) || Number.isFinite(row.adminTraceResolutionTimeMs));
 }
 
 function buildQualityFrameworkSummary(payload) {
@@ -1937,14 +2238,21 @@ function buildQualityFrameworkSummary(payload) {
 
   const qualityLoopV2 = buildQualityLoopV2Summary({
     actionRows,
+    faqRows: Array.isArray(data.faqRows) ? data.faqRows : [],
     traceSearchAuditRows: Array.isArray(data.traceSearchAuditRows) ? data.traceSearchAuditRows : [],
+    traceProbeRows: Array.isArray(data.traceProbeRows) ? data.traceProbeRows : [],
     conversationQuality: conversation,
     optimization: data.optimization
   });
   const runtimeAuditPayload = data.runtimeAudit && typeof data.runtimeAudit === 'object' ? data.runtimeAudit : null;
   const inferredRuntimeAuditUnavailable = runtimeAuditPayload
     ? runtimeAuditPayload.runtimeAuditUnavailable === true
-    : (actionRows.length + (Array.isArray(data.traceSearchAuditRows) ? data.traceSearchAuditRows.length : 0)) <= 0;
+    : (
+      actionRows.length
+      + (Array.isArray(data.faqRows) ? data.faqRows.length : 0)
+      + (Array.isArray(data.traceSearchAuditRows) ? data.traceSearchAuditRows.length : 0)
+      + (Array.isArray(data.traceProbeRows) ? data.traceProbeRows.length : 0)
+    ) <= 0;
   const inferredRuntimeFetchStatus = runtimeAuditPayload && typeof runtimeAuditPayload.runtimeFetchStatus === 'string'
     ? runtimeAuditPayload.runtimeFetchStatus
     : (inferredRuntimeAuditUnavailable ? 'unavailable' : 'ok');
@@ -1974,7 +2282,9 @@ function buildQualityFrameworkSummary(payload) {
   qualityLoopV2.improvementLoop = buildImprovementLoopSummary({
     qualityLoopV2,
     actionRows,
+    faqRows: Array.isArray(data.faqRows) ? data.faqRows : [],
     traceSearchAuditRows: Array.isArray(data.traceSearchAuditRows) ? data.traceSearchAuditRows : [],
+    traceProbeRows: Array.isArray(data.traceProbeRows) ? data.traceProbeRows : [],
     hardFailures,
     topQualityFailures: boards.topQualityFailures,
     topLoopCases: boards.topLoopCases,
@@ -2110,7 +2420,9 @@ async function handleLlmUsageSummary(req, res) {
     });
     let gateAuditRows = [];
     let actionRows = [];
+    let faqRows = [];
     let traceSearchAuditRows = [];
+    let traceProbeRows = [];
     try {
       const rawAuditRows = await auditLogsRepo.listAuditLogs({
         action: 'llm_gate.decision',
@@ -2135,6 +2447,15 @@ async function handleLlmUsageSummary(req, res) {
       actionRows = [];
     }
     try {
+      faqRows = await faqAnswerLogsRepo.listFaqAnswerLogsByCreatedAtRange({
+        fromAt,
+        toAt,
+        limit: scanLimit
+      });
+    } catch (_err) {
+      faqRows = [];
+    }
+    try {
       const rawTraceAuditRows = await auditLogsRepo.listAuditLogs({
         action: 'trace_search.view',
         limit: scanLimit
@@ -2147,6 +2468,24 @@ async function handleLlmUsageSummary(req, res) {
       }));
     } catch (_err) {
       traceSearchAuditRows = [];
+    }
+    try {
+      const traceIds = Array.from(new Set([]
+        .concat(actionRows || [])
+        .concat(faqRows || [])
+        .concat(gateAuditRows.map((row) => {
+          const summary = row && row.payloadSummary && typeof row.payloadSummary === 'object' ? row.payloadSummary : {};
+          return summary.traceId || row.traceId || null;
+        }))
+        .concat(traceSearchAuditRows.map((row) => row && row.traceId ? row.traceId : null))
+        .map((value) => normalizeTraceId(value))
+        .filter(Boolean)));
+      traceProbeRows = await buildTraceProbeRows({
+        traceIds,
+        limit: Math.min(50, traceIds.length || 0)
+      });
+    } catch (_err) {
+      traceProbeRows = [];
     }
 
     const callsTotal = Array.isArray(rows) ? rows.length : 0;
@@ -2180,7 +2519,9 @@ async function handleLlmUsageSummary(req, res) {
       releaseReadiness,
       byPlan: buildPlanBreakdown(rows),
       actionRows,
+      faqRows,
       traceSearchAuditRows,
+      traceProbeRows,
       baselineOverallScore: Number(process.env.LLM_QUALITY_BASELINE_SCORE || 54.9)
     });
 
@@ -2279,6 +2620,8 @@ module.exports = {
   buildQualityLoopV2Summary,
   buildImprovementLoopSummary,
   buildTraceSearchAuditRows,
+  normalizeTelemetryRow,
+  mergeTraceAuditRows,
   buildContractFreezeSummary,
   buildCounterexampleQueueFromBoards,
   maskLineUserId

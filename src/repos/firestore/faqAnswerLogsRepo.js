@@ -76,8 +76,26 @@ async function listFaqAnswerLogsByTraceId(params) {
     .slice(0, limit);
 }
 
+async function listFaqAnswerLogsByCreatedAtRange(params) {
+  const payload = params || {};
+  const limit = Number.isFinite(Number(payload.limit)) ? Math.min(Math.max(Math.floor(Number(payload.limit)), 1), 500) : 100;
+  const fromAtMs = payload.fromAt ? toMillis(payload.fromAt) : 0;
+  const toAtMs = payload.toAt ? toMillis(payload.toAt) : 0;
+  const db = getDb();
+  const snap = await db.collection(COLLECTION).orderBy('createdAt', 'desc').limit(limit).get();
+  return snap.docs
+    .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .filter((item) => {
+      const ms = toMillis(item && item.createdAt);
+      if (fromAtMs && ms < fromAtMs) return false;
+      if (toAtMs && ms > toAtMs) return false;
+      return true;
+    });
+}
+
 module.exports = {
   appendFaqAnswerLog,
   listFaqAnswerLogs,
-  listFaqAnswerLogsByTraceId
+  listFaqAnswerLogsByTraceId,
+  listFaqAnswerLogsByCreatedAtRange
 };

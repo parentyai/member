@@ -452,7 +452,16 @@ async function appendLlmActionLog(params) {
     sourceFreshnessScore: Math.max(0, Math.min(1, normalizeNumber(payload.sourceFreshnessScore, 0))),
     sourceReadinessDecision: normalizeSourceReadinessDecision(payload.sourceReadinessDecision),
     sourceReadinessReasons: normalizeStringList(payload.sourceReadinessReasons, 8),
+    evidenceCoverage: Number.isFinite(Number(payload.evidenceCoverage))
+      ? Math.max(0, Math.min(1, Number(payload.evidenceCoverage)))
+      : null,
+    evidenceCoverageObserved: payload.evidenceCoverageObserved === true
+      ? true
+      : (payload.evidenceCoverageObserved === false ? false : null),
     officialOnlySatisfied: payload.officialOnlySatisfied === true,
+    officialOnlySatisfiedObserved: payload.officialOnlySatisfiedObserved === true
+      ? true
+      : (payload.officialOnlySatisfiedObserved === false ? false : null),
     readinessDecision: normalizeReadinessDecision(payload.readinessDecision),
     readinessReasonCodes: normalizeStringList(payload.readinessReasonCodes, 12),
     readinessSafeResponseMode: normalizeReadinessSafeResponseMode(payload.readinessSafeResponseMode),
@@ -467,14 +476,32 @@ async function appendLlmActionLog(params) {
     readinessSafeResponseModeV2: normalizeReadinessSafeResponseMode(payload.readinessSafeResponseModeV2),
     emergencyContextActive: payload.emergencyContextActive === true,
     emergencyOfficialSourceSatisfied: payload.emergencyOfficialSourceSatisfied === true,
+    emergencyOfficialSourceSatisfiedObserved: payload.emergencyOfficialSourceSatisfiedObserved === true
+      ? true
+      : (payload.emergencyOfficialSourceSatisfiedObserved === false ? false : null),
     journeyPhase: normalizeString(payload.journeyPhase, null),
     taskBlockerDetected: payload.taskBlockerDetected === true,
     journeyAlignedAction: typeof payload.journeyAlignedAction === 'boolean' ? payload.journeyAlignedAction : true,
+    journeyAlignedActionObserved: payload.journeyAlignedActionObserved === true
+      ? true
+      : (payload.journeyAlignedActionObserved === false ? false : null),
     cityPackGrounded: payload.cityPackGrounded === true,
+    cityPackGroundedObserved: payload.cityPackGroundedObserved === true
+      ? true
+      : (payload.cityPackGroundedObserved === false ? false : null),
     cityPackFreshnessScore: Math.max(0, Math.min(1, normalizeNumber(payload.cityPackFreshnessScore, 0))),
     cityPackAuthorityScore: Math.max(0, Math.min(1, normalizeNumber(payload.cityPackAuthorityScore, 0))),
+    staleSourceBlocked: payload.staleSourceBlocked === true
+      ? true
+      : (payload.staleSourceBlocked === false ? false : null),
+    staleSourceBlockedObserved: payload.staleSourceBlockedObserved === true
+      ? true
+      : (payload.staleSourceBlockedObserved === false ? false : null),
     savedFaqReused: payload.savedFaqReused === true,
     savedFaqReusePass: payload.savedFaqReusePass === true,
+    savedFaqReusePassObserved: payload.savedFaqReusePassObserved === true
+      ? true
+      : (payload.savedFaqReusePassObserved === false ? false : null),
     savedFaqReuseReasonCodes: normalizeStringList(payload.savedFaqReuseReasonCodes, 8),
     savedFaqValid: typeof payload.savedFaqValid === 'boolean' ? payload.savedFaqValid : null,
     savedFaqAllowedIntent: typeof payload.savedFaqAllowedIntent === 'boolean' ? payload.savedFaqAllowedIntent : null,
