@@ -750,6 +750,10 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 ### Live telemetry restoration（P0）
 - `runtimeAuditUnavailable` は release blocker として扱う。
 - frozen-only pass は `provisional verdict` であり、release verdict には使わない。
+- `PR-policy-tightening (r827)` 以降、high-risk route は `officialOnlySatisfied` missing を `clarify`、explicit false を `refuse` として扱う。
+- `PR-policy-tightening (r827)` 以降、high-risk route で `evidenceCoverage` missing は `clarify`、allow threshold 未満は `hedged` 以上へ倒す。
+- `compat` high-risk route は required policy signals が欠ける場合に `compat_high_risk_policy_tightened` を付与して `clarify` へ寄せる。
+- high-risk saved FAQ reuse は `sourceSnapshotRefs` と authority/freshness threshold を満たさない場合に `saved_faq_high_risk_not_ready` として扱う。
 - local 復旧確認コマンド:
   - `gcloud auth application-default login`
   - `gcloud auth application-default print-access-token`

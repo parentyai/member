@@ -22,6 +22,7 @@ function normalizeReasonCodes(values) {
 
 function buildLegacyInput(payload) {
   return {
+    entryType: payload.entryType,
     lawfulBasis: payload.lawfulBasis,
     consentVerified: payload.consentVerified,
     crossBorder: payload.crossBorder,
@@ -31,6 +32,7 @@ function buildLegacyInput(payload) {
     sourceFreshnessScore: payload.sourceFreshnessScore,
     sourceReadinessDecision: payload.sourceReadinessDecision,
     officialOnlySatisfied: payload.officialOnlySatisfied,
+    officialOnlySatisfiedObserved: payload.officialOnlySatisfiedObserved,
     unsupportedClaimCount: payload.unsupportedClaimCount,
     contradictionDetected: payload.contradictionDetected,
     requiredCoreFactsComplete: payload.requiredCoreFactsComplete,
@@ -39,6 +41,7 @@ function buildLegacyInput(payload) {
     requiredCoreFactsDecision: payload.requiredCoreFactsDecision,
     requiredCoreFactsLogOnly: payload.requiredCoreFactsLogOnly,
     evidenceCoverage: payload.evidenceCoverage,
+    evidenceCoverageObserved: payload.evidenceCoverageObserved,
     fallbackType: payload.fallbackType || null,
     reasonCodes: normalizeReasonCodes(payload.reasonCodes)
   };

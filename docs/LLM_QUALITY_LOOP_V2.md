@@ -90,6 +90,9 @@ The following slices are release blockers even if global quality remains `pass`.
 ## Live runtime audit policy
 - `runtimeAuditUnavailable` is a release blocker.
 - frozen-only pass is a `provisional verdict`, not a release verdict.
+- `PR-policy-tightening (r827)` and later treat missing `officialOnlySatisfied` / `evidenceCoverage` on high-risk routes as non-allowing signals.
+- `compat` high-risk routes use visibility-first suppression and clarify when required policy signals are absent.
+- high-risk saved FAQ reuse requires `sourceReadinessDecision=allow`, `sourceSnapshotRefs`, and authority/freshness thresholds.
 - preferred recovery order:
   1. `gcloud auth application-default login`
   2. confirm external IdP sign-in state

@@ -49,7 +49,13 @@ function runAnswerReadinessGateV2(params) {
       savedFaqAllowedIntent: context.knowledge.savedFaqAllowedIntent,
       savedFaqAuthorityScore: context.knowledge.savedFaqAuthorityScore,
       crossSystemConflictDetected: context.knowledge.crossSystemConflictDetected,
-      sourceSnapshotRefs: context.knowledge.sourceSnapshotRefs
+      sourceSnapshotRefs: context.knowledge.sourceSnapshotRefs,
+      evidenceCoverageObserved: context.v2Input.evidenceCoverageObserved === true,
+      officialOnlySatisfiedObserved: context.v2Input.officialOnlySatisfiedObserved === true,
+      compatContextActive: context.v2Input.entryType === 'compat',
+      policyTighteningVersion: readinessV2.qualitySnapshot && readinessV2.qualitySnapshot.policyTighteningVersion
+        ? readinessV2.qualitySnapshot.policyTighteningVersion
+        : null
     }
   };
 }
