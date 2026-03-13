@@ -5,6 +5,11 @@ function normalizeText(value) {
   return value.trim().toLowerCase();
 }
 
+function normalizeUpperText(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim().toUpperCase();
+}
+
 function clamp01(value) {
   const num = Number(value);
   if (!Number.isFinite(num)) return 0;
@@ -62,7 +67,7 @@ function sourceTypeScore(value) {
   if (sourceType === 'semi_official') return 0.85;
   if (sourceType === 'community') return 0.4;
   if (sourceType === 'other') return 0.45;
-  return 0.72;
+  return 0.58;
 }
 
 function authorityLevelScore(value) {
@@ -71,7 +76,26 @@ function authorityLevelScore(value) {
   if (level === 'state') return 0.9;
   if (level === 'local') return 0.8;
   if (level === 'other') return 0.55;
-  return 0.7;
+  return 0.52;
+}
+
+function authorityTierScore(value) {
+  const tier = normalizeUpperText(value);
+  if (tier === 'T0_LAW_FORM') return 1;
+  if (tier === 'T1_OFFICIAL_OPERATION') return 0.97;
+  if (tier === 'T2_PUBLIC_DATA') return 0.84;
+  if (tier === 'T3_VENDOR') return 0.58;
+  if (tier === 'T4_COMMUNITY') return 0.34;
+  return 0.48;
+}
+
+function bindingLevelScore(value) {
+  const level = normalizeUpperText(value);
+  if (level === 'MANDATORY') return 1;
+  if (level === 'POLICY') return 0.96;
+  if (level === 'RECOMMENDED') return 0.82;
+  if (level === 'REFERENCE') return 0.62;
+  return 0.5;
 }
 
 function statusScore(value) {
@@ -83,8 +107,12 @@ function statusScore(value) {
   return 0.5;
 }
 
-function freshnessScore(validUntilMs, nowMs) {
-  if (!Number.isFinite(validUntilMs)) return 0.62;
+function freshnessScore(validUntilMs, nowMs, intentRiskTier) {
+  if (!Number.isFinite(validUntilMs)) {
+    if (intentRiskTier === 'high') return 0.34;
+    if (intentRiskTier === 'medium') return 0.44;
+    return 0.58;
+  }
   const remainingMs = validUntilMs - nowMs;
   if (remainingMs <= 0) return 0;
   const remainingDays = remainingMs / (24 * 60 * 60 * 1000);
@@ -94,20 +122,77 @@ function freshnessScore(validUntilMs, nowMs) {
   return 1;
 }
 
+function deriveAuthorityTier(sourceType, authorityTier) {
+  if (authorityTier) return authorityTier;
+  if (sourceType === 'official') return 'T1_OFFICIAL_OPERATION';
+  if (sourceType === 'semi_official') return 'T2_PUBLIC_DATA';
+  if (sourceType === 'community') return 'T4_COMMUNITY';
+  return '';
+}
+
+function deriveBindingLevel(sourceType, bindingLevel, authorityTier) {
+  if (bindingLevel) return bindingLevel;
+  if (authorityTier === 'T0_LAW_FORM' || authorityTier === 'T1_OFFICIAL_OPERATION') return 'POLICY';
+  if (sourceType === 'official') return 'POLICY';
+  if (authorityTier === 'T2_PUBLIC_DATA' || sourceType === 'semi_official') return 'REFERENCE';
+  return '';
+}
+
 function normalizeCandidates(value) {
   const rows = Array.isArray(value) ? value : [];
   return rows
     .map((item) => {
       if (!item || typeof item !== 'object') return null;
+      const sourceType = normalizeText(item.sourceType);
+      const authorityLevel = normalizeText(item.authorityLevel);
+      const authorityTier = deriveAuthorityTier(sourceType, normalizeUpperText(item.authorityTier));
+      const bindingLevel = deriveBindingLevel(sourceType, normalizeUpperText(item.bindingLevel), authorityTier);
       return {
-        sourceType: normalizeText(item.sourceType),
-        authorityLevel: normalizeText(item.authorityLevel),
+        sourceType,
+        authorityLevel,
+        authorityTier,
+        bindingLevel,
         status: normalizeText(item.status),
         validUntilMs: toMillis(item.validUntil),
-        requiredLevel: normalizeText(item.requiredLevel)
+        requiredLevel: normalizeText(item.requiredLevel),
+        linkRegistryCount: Number.isFinite(Number(item.linkRegistryCount))
+          ? Math.max(0, Math.floor(Number(item.linkRegistryCount)))
+          : 0,
+        sourceSnapshotRefCount: Number.isFinite(Number(item.sourceSnapshotRefCount))
+          ? Math.max(0, Math.floor(Number(item.sourceSnapshotRefCount)))
+          : 0
       };
     })
     .filter(Boolean);
+}
+
+function resolveMetadataCompleteness(candidate) {
+  const slots = [
+    candidate.sourceType ? 1 : 0,
+    candidate.authorityLevel ? 1 : 0,
+    candidate.authorityTier ? 1 : 0,
+    candidate.bindingLevel ? 1 : 0,
+    Number.isFinite(candidate.validUntilMs) ? 1 : 0,
+    (candidate.linkRegistryCount + candidate.sourceSnapshotRefCount) > 0 ? 1 : 0
+  ];
+  return slots.reduce((sum, value) => sum + value, 0) / slots.length;
+}
+
+function resolveReferenceSupportScore(candidate) {
+  const referenceCount = candidate.linkRegistryCount + candidate.sourceSnapshotRefCount;
+  if (referenceCount >= 2) return 1;
+  if (referenceCount === 1) return 0.84;
+  return 0.55;
+}
+
+function isOfficialLike(candidate) {
+  const sourceType = normalizeText(candidate.sourceType);
+  const authorityTier = normalizeUpperText(candidate.authorityTier);
+  const bindingLevel = normalizeUpperText(candidate.bindingLevel);
+  if (sourceType === 'official') return true;
+  if (authorityTier === 'T0_LAW_FORM' || authorityTier === 'T1_OFFICIAL_OPERATION') return true;
+  if (sourceType === 'semi_official' && (bindingLevel === 'MANDATORY' || bindingLevel === 'POLICY')) return true;
+  return false;
 }
 
 function computeSourceReadiness(params) {
@@ -157,27 +242,57 @@ function computeSourceReadiness(params) {
 
   const authorityScores = [];
   const freshnessScores = [];
+  const metadataScores = [];
   let staleSourceCount = 0;
   let nonOfficialCount = 0;
   let officialCount = 0;
   let requiredNonOfficialCount = 0;
   let requiredBlockedCount = 0;
   let optionalBlockedCount = 0;
+  let missingAuthorityMetadataCount = 0;
+  let missingFreshnessMetadataCount = 0;
+  let sourceReferenceMissingCount = 0;
+  let requiredSourceReferenceMissingCount = 0;
+  let optionalSourceReferenceMissingCount = 0;
+  let weakAuthorityTierCount = 0;
+  let weakBindingLevelCount = 0;
 
   candidates.forEach((candidate) => {
     const typeScore = sourceTypeScore(candidate.sourceType);
     const levelScore = authorityLevelScore(candidate.authorityLevel);
+    const tierScore = authorityTierScore(candidate.authorityTier);
+    const bindingScore = bindingLevelScore(candidate.bindingLevel);
+    const referenceScore = resolveReferenceSupportScore(candidate);
+    const metadataCompleteness = resolveMetadataCompleteness(candidate);
     const stateScore = statusScore(candidate.status);
-    const authorityScore = clamp01((typeScore * 0.6) + (levelScore * 0.4)) * stateScore;
+    const authorityScore = clamp01(
+      ((typeScore * 0.28)
+      + (levelScore * 0.12)
+      + (tierScore * 0.30)
+      + (bindingScore * 0.18)
+      + (referenceScore * 0.12))
+      * (0.72 + (metadataCompleteness * 0.28))
+    ) * stateScore;
     authorityScores.push(authorityScore);
-    if (candidate.sourceType === 'official' || candidate.sourceType === 'semi_official') {
+    metadataScores.push(metadataCompleteness);
+    const officialLike = isOfficialLike(candidate);
+    if (officialLike) {
       officialCount += 1;
     } else {
       nonOfficialCount += 1;
       if (candidate.requiredLevel === 'required') requiredNonOfficialCount += 1;
     }
-    const itemFreshness = freshnessScore(candidate.validUntilMs, nowMs);
+    const itemFreshness = freshnessScore(candidate.validUntilMs, nowMs, intentRiskTier);
     freshnessScores.push(itemFreshness);
+    if (!candidate.sourceType && !candidate.authorityTier) missingAuthorityMetadataCount += 1;
+    if (!Number.isFinite(candidate.validUntilMs)) missingFreshnessMetadataCount += 1;
+    if ((candidate.linkRegistryCount + candidate.sourceSnapshotRefCount) <= 0) {
+      sourceReferenceMissingCount += 1;
+      if (candidate.requiredLevel === 'required') requiredSourceReferenceMissingCount += 1;
+      else optionalSourceReferenceMissingCount += 1;
+    }
+    if (candidate.authorityTier && tierScore < 0.75) weakAuthorityTierCount += 1;
+    if (candidate.bindingLevel && bindingScore < 0.75) weakBindingLevelCount += 1;
     const blockedByState = candidate.status === 'blocked' || candidate.status === 'dead' || candidate.status === 'retired';
     const staleOrBlocked = itemFreshness <= 0.05 || blockedByState;
     if (staleOrBlocked) {
@@ -193,6 +308,9 @@ function computeSourceReadiness(params) {
   const sourceFreshnessScore = freshnessScores.length
     ? clamp01(freshnessScores.reduce((sum, score) => sum + score, 0) / freshnessScores.length)
     : 0;
+  const metadataCompletenessScore = metadataScores.length
+    ? clamp01(metadataScores.reduce((sum, score) => sum + score, 0) / metadataScores.length)
+    : 0;
   const officialOnlySatisfied = thresholds.officialOnlyRequired === true
     ? (officialCount > 0 && requiredNonOfficialCount === 0)
     : true;
@@ -201,6 +319,13 @@ function computeSourceReadiness(params) {
   if (staleSourceCount > 0) reasonCodes.push('stale_source_detected');
   if (requiredBlockedCount > 0) reasonCodes.push('required_source_blocked');
   if (optionalBlockedCount > 0) reasonCodes.push('optional_source_stale');
+  if (missingAuthorityMetadataCount > 0) reasonCodes.push('authority_metadata_missing');
+  if (missingFreshnessMetadataCount > 0) reasonCodes.push('freshness_metadata_missing');
+  if (sourceReferenceMissingCount > 0) reasonCodes.push('source_reference_missing');
+  if (requiredSourceReferenceMissingCount > 0) reasonCodes.push('required_source_reference_missing');
+  if (weakAuthorityTierCount > 0) reasonCodes.push('authority_tier_weak');
+  if (weakBindingLevelCount > 0) reasonCodes.push('binding_level_weak');
+  if (metadataCompletenessScore < 0.65) reasonCodes.push('metadata_completeness_low');
   if (sourceAuthorityScore < thresholds.minAuthority) reasonCodes.push('authority_below_threshold');
   if (sourceFreshnessScore < thresholds.minFreshness) reasonCodes.push('freshness_below_threshold');
   if (retrievalQuality === 'bad') reasonCodes.push('retrieval_quality_bad');
@@ -209,12 +334,21 @@ function computeSourceReadiness(params) {
 
   let sourceReadinessDecision = 'allow';
   if (requiredBlockedCount > 0) sourceReadinessDecision = 'refuse';
+  else if (intentRiskTier === 'high' && requiredSourceReferenceMissingCount > 0) sourceReadinessDecision = 'refuse';
   else if (!officialOnlySatisfied && thresholds.officialOnlyRequired) sourceReadinessDecision = 'refuse';
   else if (intentRiskTier === 'high' && (sourceAuthorityScore < thresholds.minAuthority || sourceFreshnessScore < thresholds.minFreshness)) {
     sourceReadinessDecision = 'refuse';
+  } else if (intentRiskTier === 'high' && metadataCompletenessScore < 0.6) {
+    sourceReadinessDecision = 'refuse';
+  } else if (intentRiskTier === 'medium' && requiredSourceReferenceMissingCount > 0) {
+    sourceReadinessDecision = 'clarify';
   } else if (sourceAuthorityScore < thresholds.minAuthority || sourceFreshnessScore < thresholds.minFreshness || retrievalQuality === 'bad') {
     sourceReadinessDecision = intentRiskTier === 'low' ? 'hedged' : 'clarify';
+  } else if (intentRiskTier !== 'low' && metadataCompletenessScore < 0.72) {
+    sourceReadinessDecision = 'clarify';
   } else if (optionalBlockedCount > 0) {
+    sourceReadinessDecision = 'hedged';
+  } else if (intentRiskTier !== 'low' && optionalSourceReferenceMissingCount > 0) {
     sourceReadinessDecision = 'hedged';
   } else if (retrievalQuality === 'mixed' || evidenceCoverage < 0.7) {
     sourceReadinessDecision = 'hedged';
@@ -229,10 +363,18 @@ function computeSourceReadiness(params) {
     sourceReadinessDecision,
     reasonCodes,
     sampleSize: candidates.length,
+    metadataCompletenessScore,
     staleSourceCount,
     nonOfficialCount,
     requiredBlockedCount,
-    optionalBlockedCount
+    optionalBlockedCount,
+    missingAuthorityMetadataCount,
+    missingFreshnessMetadataCount,
+    sourceReferenceMissingCount,
+    requiredSourceReferenceMissingCount,
+    optionalSourceReferenceMissingCount,
+    weakAuthorityTierCount,
+    weakBindingLevelCount
   };
 }
 

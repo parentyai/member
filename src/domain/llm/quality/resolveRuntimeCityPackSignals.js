@@ -18,14 +18,25 @@ function shouldInspectCityPack(domainIntent) {
 
 function toReadinessCandidate(item) {
   const ref = item && item.ref && typeof item.ref === 'object' ? item.ref : {};
+  const sourceRefId = normalizeText(item && item.sourceRefId);
+  const linkRegistryCount = Number.isFinite(Number(ref.linkRegistryCount))
+    ? Math.max(0, Math.floor(Number(ref.linkRegistryCount)))
+    : ((sourceRefId || item) ? 1 : 0);
+  const sourceSnapshotRefCount = Number.isFinite(Number(ref.sourceSnapshotRefCount))
+    ? Math.max(0, Math.floor(Number(ref.sourceSnapshotRefCount)))
+    : 0;
   return {
     sourceType: ref.sourceType || 'other',
     authorityLevel: ref.authorityLevel || 'other',
+    authorityTier: ref.authorityTier || ref.authorityTierHint || '',
+    bindingLevel: ref.bindingLevel || ref.bindingLevelHint || '',
     validUntil: ref.validUntil || null,
     status: ref.status || 'active',
     requiredLevel: ref.requiredLevel || 'required',
     domainClass: ref.domainClass || 'unknown',
-    confidenceScore: ref.confidenceScore
+    confidenceScore: ref.confidenceScore,
+    linkRegistryCount,
+    sourceSnapshotRefCount
   };
 }
 

@@ -20,6 +20,7 @@ const { computeSourceReadiness } = require('../../domain/llm/knowledge/computeSo
 const { runAnswerReadinessGateV2 } = require('../../domain/llm/quality/runAnswerReadinessGateV2');
 const { resolveTelemetryCoverageSignals } = require('../../domain/llm/quality/resolveTelemetryCoverageSignals');
 const { refineSavedFaqReuseSignals } = require('./refineSavedFaqReuseSignals');
+const { buildKnowledgeReadinessCandidates } = require('./buildKnowledgeReadinessCandidates');
 
 const DEFAULT_TIMEOUT_MS = 2500;
 const PROMPT_VERSION = 'faq_answer_v2_kb_only';
@@ -439,6 +440,22 @@ function collectAllowedSourceIds(articles) {
   return Array.from(out);
 }
 
+function collectKnowledgeSourceRefs(article) {
+  const out = new Set();
+  const rows = article ? [article] : [];
+  for (const item of rows) {
+    const snapshotRefs = Array.isArray(item && item.sourceSnapshotRefs) ? item.sourceSnapshotRefs : [];
+    snapshotRefs.forEach((ref) => {
+      if (typeof ref === 'string' && ref.trim().length > 0) out.add(ref.trim());
+    });
+    const ids = Array.isArray(item && item.linkRegistryIds) ? item.linkRegistryIds : [];
+    ids.forEach((id) => {
+      if (typeof id === 'string' && id.trim().length > 0) out.add(id.trim());
+    });
+  }
+  return Array.from(out);
+}
+
 function matchesAllowedIntent(allowedIntents, intent) {
   const normalizedIntent = normalizeIntentToken(intent);
   const rows = Array.isArray(allowedIntents) ? allowedIntents : [];
@@ -463,7 +480,7 @@ function buildSavedFaqReuseSignals(params) {
   const candidates = Array.isArray(payload.candidates) ? payload.candidates : [];
   const nowMs = Number.isFinite(Number(payload.nowMs)) ? Number(payload.nowMs) : Date.now();
   const primary = candidates[0] && typeof candidates[0] === 'object' ? candidates[0] : null;
-  const sourceSnapshotRefs = collectAllowedSourceIds(candidates).slice(0, 8);
+  const sourceSnapshotRefs = collectKnowledgeSourceRefs(primary).slice(0, 8);
   if (!primary) {
     return {
       savedFaqReused: false,
@@ -808,15 +825,7 @@ async function answerFaqFromKb(params, deps) {
   });
   const sourceReadiness = computeSourceReadiness({
     intentRiskTier: riskSnapshot.intentRiskTier,
-    candidates: candidates.map((item) => ({
-      sourceType: item && item.sourceType
-        ? item.sourceType
-        : (Array.isArray(item && item.linkRegistryIds) && item.linkRegistryIds.length ? 'semi_official' : 'other'),
-      authorityLevel: item && item.authorityLevel ? item.authorityLevel : 'other',
-      validUntil: item && item.validUntil ? item.validUntil : null,
-      status: item && item.status ? item.status : 'active',
-      requiredLevel: String(item && item.riskLevel || '').toLowerCase() === 'high' ? 'required' : 'optional'
-    })),
+    candidates: buildKnowledgeReadinessCandidates(candidates),
     retrievalQuality: confidence.confident ? 'good' : 'bad',
     retrieveNeeded: true,
     evidenceCoverage: confidence.top1Score !== null && confidence.top1Score !== undefined

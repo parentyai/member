@@ -93,6 +93,8 @@ The following slices are release blockers even if global quality remains `pass`.
 - `PR-policy-tightening (r827)` and later treat missing `officialOnlySatisfied` / `evidenceCoverage` on high-risk routes as non-allowing signals.
 - `compat` high-risk routes use visibility-first suppression and clarify when required policy signals are absent.
 - high-risk saved FAQ reuse requires `sourceReadinessDecision=allow`, `sourceSnapshotRefs`, and authority/freshness thresholds.
+- `PR-knowledge-hardening (r828)` and later source readiness uses `authorityTier`, `bindingLevel`, source reference counts, and metadata completeness before medium/high-risk knowledge is treated as reusable.
+- medium/high-risk saved FAQ reuse remains blocked when linked source refs are weak, stale, or missing even if the FAQ article itself is otherwise active.
 - preferred recovery order:
   1. `gcloud auth application-default login`
   2. confirm external IdP sign-in state

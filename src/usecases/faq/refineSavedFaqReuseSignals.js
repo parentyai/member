@@ -22,6 +22,8 @@ function clamp01(value) {
 
 const HIGH_RISK_MIN_AUTHORITY = 0.72;
 const HIGH_RISK_MIN_FRESHNESS = 0.72;
+const MEDIUM_RISK_MIN_AUTHORITY = 0.62;
+const MEDIUM_RISK_MIN_FRESHNESS = 0.64;
 
 function refineSavedFaqReuseSignals(params) {
   const payload = params && typeof params === 'object' ? params : {};
@@ -61,10 +63,21 @@ function refineSavedFaqReuseSignals(params) {
     if (!reasonCodes.includes('saved_faq_source_readiness_blocked')) {
       reasonCodes.push('saved_faq_source_readiness_blocked');
     }
+  } else if (intentRiskTier === 'medium' && sourceReadiness.sourceReadinessDecision !== 'allow') {
+    removeReadyCode();
+    if (!reasonCodes.includes('saved_faq_source_readiness_blocked')) {
+      reasonCodes.push('saved_faq_source_readiness_blocked');
+    }
   } else if (sourceReadiness.sourceReadinessDecision === 'refuse') {
     removeReadyCode();
     if (!reasonCodes.includes('saved_faq_source_readiness_blocked')) {
       reasonCodes.push('saved_faq_source_readiness_blocked');
+    }
+  }
+  if (intentRiskTier === 'medium' && sourceSnapshotRefs.length === 0) {
+    removeReadyCode();
+    if (!reasonCodes.includes('saved_faq_source_snapshot_missing')) {
+      reasonCodes.push('saved_faq_source_snapshot_missing');
     }
   }
   if (intentRiskTier === 'high' && sourceSnapshotRefs.length === 0) {
@@ -80,6 +93,18 @@ function refineSavedFaqReuseSignals(params) {
     }
   }
   if (intentRiskTier === 'high' && (freshnessScore === null || freshnessScore < HIGH_RISK_MIN_FRESHNESS)) {
+    removeReadyCode();
+    if (!reasonCodes.includes('saved_faq_freshness_below_threshold')) {
+      reasonCodes.push('saved_faq_freshness_below_threshold');
+    }
+  }
+  if (intentRiskTier === 'medium' && (authorityScore === null || authorityScore < MEDIUM_RISK_MIN_AUTHORITY)) {
+    removeReadyCode();
+    if (!reasonCodes.includes('saved_faq_authority_below_threshold')) {
+      reasonCodes.push('saved_faq_authority_below_threshold');
+    }
+  }
+  if (intentRiskTier === 'medium' && (freshnessScore === null || freshnessScore < MEDIUM_RISK_MIN_FRESHNESS)) {
     removeReadyCode();
     if (!reasonCodes.includes('saved_faq_freshness_below_threshold')) {
       reasonCodes.push('saved_faq_freshness_below_threshold');
