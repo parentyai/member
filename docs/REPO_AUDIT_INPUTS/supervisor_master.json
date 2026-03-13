@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-13T08:29:06-04:00",
-  "gitCommit": "0127aaf888132c4be4dff205accf46d96a7570d1",
+  "generatedAt": "2026-03-13T08:54:40-04:00",
+  "gitCommit": "a3da775ed06b532d20ca0ecd7c9d3f41289a14b1",
   "branch": "codex/llm-readiness-hardening-live-report-r829",
-  "sourceDigest": "061fca2604faf5164e205697c0dc466d4565c37a2c2b3b07aae19f82828c1041",
+  "sourceDigest": "b5bb1d2045ba62f5046974ffe92c776bf7b1f973d865cc73cf3ab71f4beca0f3",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

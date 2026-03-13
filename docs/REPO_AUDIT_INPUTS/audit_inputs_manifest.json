@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-13T12:53:46.811Z",
-  "gitCommit": "0127aaf888132c4be4dff205accf46d96a7570d1",
+  "generatedAt": "2026-03-13T13:00:13.527Z",
+  "gitCommit": "a3da775ed06b532d20ca0ecd7c9d3f41289a14b1",
   "branch": "codex/llm-readiness-hardening-live-report-r829",
-  "sourceDigest": "4f721a2c7503f7652d6dda95b2eababb61369d4646ed6efc9789bc565b1830a8",
+  "sourceDigest": "f01d3fda2cfac3d045719cdf1c8ac9d1ec5d7bdd544d609ae25bed82321832e6",
   "counts": {
     "endpoints": 291,
     "routes": 130,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "e2a70d902a14d1a8f9ccbe601432b5a8dd18e3a7ffa0b12791d143bcf84efdb3",
+      "sha256": "2735080427fc5af3d80604d4cc4fbbbd8ec828de6ef170c9b8c71dacee9c05b1",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "11ac8a28e0b84e67fe4a3ea14ceb3e81de2324a4da7ce5fefdc68775b0a59a92",
+      "sha256": "870e9ca73513ea2be6af870ba48a2363a25d1edf203a80efab1b75388c4aec8d",
       "bytes": 487
     },
     {
@@ -151,7 +151,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "b1f0362c23fabe61a0464f574a06de53523ef8a9cd7e2ba1ab8bf9d095b1c4f5",
+      "sha256": "55fe69cf338de4d15aa78fdf8d68ca38a6db41367da54eb8982c42e25da34357",
       "bytes": 740
     },
     {
@@ -166,12 +166,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "df492e5f077e251e1eb7c4faa94124903356e53f0cad65bd5b71545ed6827ae4",
+      "sha256": "937a8c0534c572787aca75e6c0835c44d88641248f13da71989a8bdb4cee39fb",
       "bytes": 3579
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "f835f62e6bb485878b56c66a7f489930bb431da92bdf7c2757f8373eb0eb9bb5",
+      "sha256": "82c36ce14af50e55c5e8aef73bf99c08bcd97c370e7ddcfd25b109d92bad1797",
       "bytes": 2432
     },
     {
