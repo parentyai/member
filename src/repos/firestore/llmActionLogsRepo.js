@@ -431,6 +431,16 @@ async function appendLlmActionLog(params) {
     actionGatewayReason: normalizeString(payload.actionGatewayReason, null),
     conversationMode: normalizeConversationMode(payload.conversationMode),
     routerReason: normalizeString(payload.routerReason, null),
+    routerReasonObserved: payload.routerReasonObserved === true
+      ? true
+      : (payload.routerReasonObserved === false ? false : null),
+    routeKind: normalizeString(payload.routeKind, null),
+    compatFallbackReason: normalizeString(payload.compatFallbackReason, null),
+    sharedReadinessBridge: normalizeString(payload.sharedReadinessBridge, null),
+    sharedReadinessBridgeObserved: payload.sharedReadinessBridgeObserved === true
+      ? true
+      : (payload.sharedReadinessBridgeObserved === false ? false : null),
+    routeDecisionSource: normalizeString(payload.routeDecisionSource, null),
     opportunityType: normalizeOpportunityType(payload.opportunityType),
     opportunityReasonKeys: normalizeStringList(payload.opportunityReasonKeys, 8),
     interventionBudget: normalizeInterventionBudget(payload.interventionBudget),

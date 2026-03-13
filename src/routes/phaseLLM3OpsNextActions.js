@@ -74,6 +74,11 @@ async function handleOpsNextActions(req, res) {
       : '';
     const sharedReadiness = resolveSharedAnswerReadiness({
       entryType: 'compat',
+      routeKind: 'compat',
+      routerReason: 'compat_ops_next_actions_fallback',
+      compatFallbackReason: 'legacy_compat_ops_next_actions',
+      sharedReadinessBridge: 'shared_compat_next_actions',
+      routeDecisionSource: 'compat_route',
       domainIntent: 'general',
       llmUsed: result && result.llmUsed === true,
       fallbackType: qualitySignals.fallbackType,
@@ -87,6 +92,22 @@ async function handleOpsNextActions(req, res) {
       actionClass: 'lookup',
       toolName: 'lookup'
     });
+    result.routeKind = sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeKind : 'compat';
+    result.routerReason = sharedReadiness.routeCoverageMeta && sharedReadiness.routeCoverageMeta.routerReason
+      ? sharedReadiness.routeCoverageMeta.routerReason
+      : 'compat_ops_next_actions_fallback';
+    result.routerReasonObserved = sharedReadiness.routeCoverageMeta
+      ? sharedReadiness.routeCoverageMeta.routerReasonObserved === true
+      : true;
+    result.compatFallbackReason = sharedReadiness.routeCoverageMeta
+      ? sharedReadiness.routeCoverageMeta.compatFallbackReason
+      : 'legacy_compat_ops_next_actions';
+    result.sharedReadinessBridge = sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.sharedReadinessBridge : null;
+    result.sharedReadinessBridgeObserved = sharedReadiness.routeCoverageMeta
+      ? sharedReadiness.routeCoverageMeta.sharedReadinessBridgeObserved === true
+      : false;
+    result.routeDecisionSource = sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeDecisionSource : 'compat_route';
+    result.entryType = 'compat';
     result.readinessDecision = sharedReadiness.readiness.decision;
     result.readinessReasonCodes = sharedReadiness.readiness.reasonCodes;
     result.readinessSafeResponseMode = sharedReadiness.readiness.safeResponseMode;
@@ -138,6 +159,21 @@ async function handleOpsNextActions(req, res) {
       actionGatewayDecision: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.decision : null,
       actionGatewayReason: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.reason : null,
       entryType: 'compat',
+      routeKind: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeKind : 'compat',
+      routerReason: sharedReadiness.routeCoverageMeta && sharedReadiness.routeCoverageMeta.routerReason
+        ? sharedReadiness.routeCoverageMeta.routerReason
+        : 'compat_ops_next_actions_fallback',
+      routerReasonObserved: sharedReadiness.routeCoverageMeta
+        ? sharedReadiness.routeCoverageMeta.routerReasonObserved === true
+        : true,
+      compatFallbackReason: sharedReadiness.routeCoverageMeta
+        ? sharedReadiness.routeCoverageMeta.compatFallbackReason
+        : 'legacy_compat_ops_next_actions',
+      sharedReadinessBridge: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.sharedReadinessBridge : null,
+      sharedReadinessBridgeObserved: sharedReadiness.routeCoverageMeta
+        ? sharedReadiness.routeCoverageMeta.sharedReadinessBridgeObserved === true
+        : false,
+      routeDecisionSource: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeDecisionSource : 'compat_route',
       gatesApplied: ['kill_switch']
     }).catch(() => null);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });

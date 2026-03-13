@@ -25,6 +25,7 @@ const { detectMessagePosture } = require('../usecases/assistant/opportunity/dete
 const { loadRecentInterventionSignals } = require('../usecases/assistant/opportunity/loadRecentInterventionSignals');
 const { routeConversation } = require('../domain/llm/router/conversationRouter');
 const { normalizeConversationIntent } = require('../domain/llm/router/normalizeConversationIntent');
+const { resolveRouteCoverageMeta } = require('../domain/llm/router/resolveRouteCoverageMeta');
 const {
   resolveLlmLegalPolicySnapshot,
   loadLlmLegalPolicySnapshot
@@ -1288,6 +1289,18 @@ async function appendLlmGateDecisionBestEffort(data) {
         ? payload.committedFollowupQuestion
         : null
     });
+  const routeCoverageMeta = resolveRouteCoverageMeta({
+    entryType: 'webhook',
+    routeKind: payload.routeKind || 'canonical',
+    routerReason: payload.routerReason,
+    fallbackType: typeof payload.fallbackType === 'string' && payload.fallbackType.trim()
+      ? payload.fallbackType
+      : (qualityMeta.fallbackType || payload.blockedReason || null),
+    compatFallbackReason: payload.compatFallbackReason,
+    sharedReadinessBridge: payload.sharedReadinessBridge || 'webhook_direct_readiness',
+    routeDecisionSource: payload.routeDecisionSource
+      || (typeof payload.routerReason === 'string' && payload.routerReason.trim() ? 'conversation_router' : 'webhook_route')
+  });
   try {
     await appendLlmGateDecision({
       actor: 'line_webhook',
@@ -1369,12 +1382,16 @@ async function appendLlmGateDecisionBestEffort(data) {
           ? conciergeMeta.counterfactualEval
           : null,
         assistantQuality,
+        routeKind: routeCoverageMeta.routeKind,
         conversationMode: typeof payload.conversationMode === 'string' && payload.conversationMode.trim()
           ? payload.conversationMode.trim().toLowerCase()
           : null,
-        routerReason: typeof payload.routerReason === 'string' && payload.routerReason.trim()
-          ? payload.routerReason.trim().toLowerCase().replace(/\s+/g, '_')
-          : null,
+        routerReason: routeCoverageMeta.routerReason,
+        routerReasonObserved: routeCoverageMeta.routerReasonObserved,
+        compatFallbackReason: routeCoverageMeta.compatFallbackReason,
+        sharedReadinessBridge: routeCoverageMeta.sharedReadinessBridge,
+        sharedReadinessBridgeObserved: routeCoverageMeta.sharedReadinessBridgeObserved,
+        routeDecisionSource: routeCoverageMeta.routeDecisionSource,
         opportunityType: typeof payload.opportunityType === 'string' && payload.opportunityType.trim()
           ? payload.opportunityType.trim().toLowerCase()
           : 'none',
@@ -1671,6 +1688,18 @@ async function appendLlmActionLogBestEffort(data) {
         ? payload.committedFollowupQuestion
         : null
     });
+  const routeCoverageMeta = resolveRouteCoverageMeta({
+    entryType: 'webhook',
+    routeKind: payload.routeKind || 'canonical',
+    routerReason: payload.routerReason,
+    fallbackType: typeof payload.fallbackType === 'string' && payload.fallbackType.trim()
+      ? payload.fallbackType
+      : (qualityMeta.fallbackType || payload.blockedReason || null),
+    compatFallbackReason: payload.compatFallbackReason,
+    sharedReadinessBridge: payload.sharedReadinessBridge || 'webhook_direct_readiness',
+    routeDecisionSource: payload.routeDecisionSource
+      || (typeof payload.routerReason === 'string' && payload.routerReason.trim() ? 'conversation_router' : 'webhook_route')
+  });
 
   try {
     await llmActionLogsRepo.appendLlmActionLog({
@@ -1736,12 +1765,16 @@ async function appendLlmActionLogBestEffort(data) {
         ? payload.requiredCoreFactsGateDecision.trim().toLowerCase()
         : null,
       requiredCoreFactsGateLogOnly: payload.requiredCoreFactsGateLogOnly === true,
+      routeKind: routeCoverageMeta.routeKind,
       conversationMode: typeof payload.conversationMode === 'string'
         ? payload.conversationMode
         : (conciergeMeta && conciergeMeta.conversationState ? 'concierge' : null),
-      routerReason: typeof payload.routerReason === 'string' && payload.routerReason.trim()
-        ? payload.routerReason.trim().toLowerCase().replace(/\s+/g, '_')
-        : null,
+      routerReason: routeCoverageMeta.routerReason,
+      routerReasonObserved: routeCoverageMeta.routerReasonObserved,
+      compatFallbackReason: routeCoverageMeta.compatFallbackReason,
+      sharedReadinessBridge: routeCoverageMeta.sharedReadinessBridge,
+      sharedReadinessBridgeObserved: routeCoverageMeta.sharedReadinessBridgeObserved,
+      routeDecisionSource: routeCoverageMeta.routeDecisionSource,
       opportunityType: typeof payload.opportunityType === 'string' && payload.opportunityType.trim()
         ? payload.opportunityType.trim().toLowerCase()
         : 'none',

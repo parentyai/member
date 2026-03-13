@@ -138,8 +138,13 @@ function buildTraceJoinSummary(payload) {
     },
     routeHints: {
       entryTypes: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.entryType)).filter(Boolean))),
+      routeKinds: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.routeKind)).filter(Boolean))),
       conversationModes: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.conversationMode)).filter(Boolean))),
-      routerReasons: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.routerReason)).filter(Boolean))).slice(0, 8)
+      routerReasons: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.routerReason)).filter(Boolean))).slice(0, 8),
+      fallbackTypes: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.fallbackType)).filter(Boolean))).slice(0, 8),
+      compatFallbackReasons: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.compatFallbackReason)).filter(Boolean))).slice(0, 8),
+      sharedReadinessBridges: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.sharedReadinessBridge)).filter(Boolean))).slice(0, 8),
+      routeDecisionSources: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.routeDecisionSource)).filter(Boolean))).slice(0, 8)
     }
   };
 }

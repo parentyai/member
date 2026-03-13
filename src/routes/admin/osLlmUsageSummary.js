@@ -815,6 +815,10 @@ function buildConversationQualitySummary(actionRows) {
   const followupIntents = new Map();
   const followupIntentReasons = new Map();
   const routerReasons = new Map();
+  const routeKinds = new Map();
+  const compatFallbackReasons = new Map();
+  const sharedReadinessBridges = new Map();
+  const routeDecisionSources = new Map();
   const parentIntentTypes = new Map();
   const parentAnswerModes = new Map();
   const parentLifecycleStages = new Map();
@@ -859,6 +863,11 @@ function buildConversationQualitySummary(actionRows) {
   let followupCarryFromHistoryCount = 0;
   let contextResumeSeenCount = 0;
   let contextResumeHandledCount = 0;
+  let routerReasonObservedSeenCount = 0;
+  let routerReasonObservedCount = 0;
+  let sharedReadinessBridgeObservedSeenCount = 0;
+  let sharedReadinessBridgeObservedCount = 0;
+  let routeAttributionCompleteCount = 0;
   let recoverySignalSeenCount = 0;
   let recoverySignalCount = 0;
   let misunderstandingRecoveredSeenCount = 0;
@@ -886,6 +895,10 @@ function buildConversationQualitySummary(actionRows) {
     const followupIntent = normalizeReason(row && row.followupIntent ? row.followupIntent : 'none');
     const followupIntentReason = normalizeReason(row && row.followupIntentReason ? row.followupIntentReason : 'none');
     const routerReason = normalizeReason(row && row.routerReason ? row.routerReason : 'none');
+    const routeKind = normalizeReason(row && row.routeKind ? row.routeKind : 'none');
+    const compatFallbackReason = normalizeReason(row && row.compatFallbackReason ? row.compatFallbackReason : 'none');
+    const sharedReadinessBridge = normalizeReason(row && row.sharedReadinessBridge ? row.sharedReadinessBridge : 'none');
+    const routeDecisionSource = normalizeReason(row && row.routeDecisionSource ? row.routeDecisionSource : 'none');
     const parentIntentType = normalizeReason(row && row.parentIntentType ? row.parentIntentType : 'none');
     const parentAnswerMode = normalizeReason(row && row.parentAnswerMode ? row.parentAnswerMode : 'none');
     const parentLifecycleStage = normalizeReason(row && row.parentLifecycleStage ? row.parentLifecycleStage : 'none');
@@ -934,6 +947,10 @@ function buildConversationQualitySummary(actionRows) {
     followupIntents.set(followupIntent, (followupIntents.get(followupIntent) || 0) + 1);
     followupIntentReasons.set(followupIntentReason, (followupIntentReasons.get(followupIntentReason) || 0) + 1);
     routerReasons.set(routerReason, (routerReasons.get(routerReason) || 0) + 1);
+    routeKinds.set(routeKind, (routeKinds.get(routeKind) || 0) + 1);
+    compatFallbackReasons.set(compatFallbackReason, (compatFallbackReasons.get(compatFallbackReason) || 0) + 1);
+    sharedReadinessBridges.set(sharedReadinessBridge, (sharedReadinessBridges.get(sharedReadinessBridge) || 0) + 1);
+    routeDecisionSources.set(routeDecisionSource, (routeDecisionSources.get(routeDecisionSource) || 0) + 1);
     parentIntentTypes.set(parentIntentType, (parentIntentTypes.get(parentIntentType) || 0) + 1);
     parentAnswerModes.set(parentAnswerMode, (parentAnswerModes.get(parentAnswerMode) || 0) + 1);
     parentLifecycleStages.set(parentLifecycleStage, (parentLifecycleStages.get(parentLifecycleStage) || 0) + 1);
@@ -1000,6 +1017,20 @@ function buildConversationQualitySummary(actionRows) {
       defaultCasualSeenCount += 1;
       if (routerReason === 'default_casual') defaultCasualCount += 1;
     }
+    if (typeof row.routerReasonObserved === 'boolean') {
+      routerReasonObservedSeenCount += 1;
+      if (row.routerReasonObserved === true) routerReasonObservedCount += 1;
+    }
+    if (typeof row.sharedReadinessBridgeObserved === 'boolean') {
+      sharedReadinessBridgeObservedSeenCount += 1;
+      if (row.sharedReadinessBridgeObserved === true) sharedReadinessBridgeObservedCount += 1;
+    }
+    const entryType = normalizeReason(row && row.entryType ? row.entryType : 'none');
+    const routeAttributionComplete = entryType !== 'none'
+      && routeKind !== 'none'
+      && routeDecisionSource !== 'none'
+      && typeof row.sharedReadinessBridgeObserved === 'boolean';
+    if (routeAttributionComplete) routeAttributionCompleteCount += 1;
     if (followupIntent && followupIntent !== 'none') {
       followupIntentSeenCount += 1;
       const followupResolved = directAnswerApplied
@@ -1093,6 +1124,10 @@ function buildConversationQualitySummary(actionRows) {
     followupIntents: sortCountEntries(followupIntents, 'followupIntent', 10),
     followupIntentReasons: sortCountEntries(followupIntentReasons, 'followupIntentReason', 10),
     routerReasons: sortCountEntries(routerReasons, 'routerReason', 12),
+    routeKinds: sortCountEntries(routeKinds, 'routeKind', 8),
+    compatFallbackReasons: sortCountEntries(compatFallbackReasons, 'compatFallbackReason', 8),
+    sharedReadinessBridges: sortCountEntries(sharedReadinessBridges, 'sharedReadinessBridge', 10),
+    routeDecisionSources: sortCountEntries(routeDecisionSources, 'routeDecisionSource', 8),
     parentIntentTypes: sortCountEntries(parentIntentTypes, 'parentIntentType', 12),
     parentAnswerModes: sortCountEntries(parentAnswerModes, 'parentAnswerMode', 12),
     parentLifecycleStages: sortCountEntries(parentLifecycleStages, 'parentLifecycleStage', 12),
@@ -1130,6 +1165,15 @@ function buildConversationQualitySummary(actionRows) {
       : 0,
     contextualResumeHandledRate: contextResumeSeenCount > 0
       ? Math.round((contextResumeHandledCount / contextResumeSeenCount) * 10000) / 10000
+      : 0,
+    routerReasonObservedRate: routerReasonObservedSeenCount > 0
+      ? Math.round((routerReasonObservedCount / routerReasonObservedSeenCount) * 10000) / 10000
+      : 0,
+    sharedReadinessBridgeObservedRate: sharedReadinessBridgeObservedSeenCount > 0
+      ? Math.round((sharedReadinessBridgeObservedCount / sharedReadinessBridgeObservedSeenCount) * 10000) / 10000
+      : 0,
+    routeAttributionCompleteness: sampleCount > 0
+      ? Math.round((routeAttributionCompleteCount / sampleCount) * 10000) / 10000
       : 0,
     recoverySignalRate: recoverySignalSeenCount > 0
       ? Math.round((recoverySignalCount / recoverySignalSeenCount) * 10000) / 10000

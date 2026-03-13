@@ -17846,7 +17846,9 @@ function renderLlmRouteTraceInfo(payload, options) {
   const apiSource = apiSourceFromPayload
     ? apiSourceFromPayload
     : (typeof context.apiSource === 'string' && context.apiSource.trim() ? context.apiSource.trim() : 'admin');
-  const routeKind = resolveRouteKindFromApiSource(apiSource);
+  const routeKind = typeof data.routeKind === 'string' && data.routeKind.trim()
+    ? data.routeKind.trim()
+    : resolveRouteKindFromApiSource(apiSource);
   const entryType = typeof data.entryType === 'string' && data.entryType.trim()
     ? data.entryType.trim()
     : (routeKind === 'compat' ? 'compat' : 'admin');
@@ -17859,6 +17861,18 @@ function renderLlmRouteTraceInfo(payload, options) {
   const routerReason = typeof data.routerReason === 'string' && data.routerReason.trim()
     ? data.routerReason.trim()
     : '-';
+  const fallbackType = typeof data.fallbackType === 'string' && data.fallbackType.trim()
+    ? data.fallbackType.trim()
+    : '-';
+  const routeDecisionSource = typeof data.routeDecisionSource === 'string' && data.routeDecisionSource.trim()
+    ? data.routeDecisionSource.trim()
+    : '-';
+  const sharedReadinessBridge = typeof data.sharedReadinessBridge === 'string' && data.sharedReadinessBridge.trim()
+    ? data.sharedReadinessBridge.trim()
+    : '-';
+  const compatFallbackReason = typeof data.compatFallbackReason === 'string' && data.compatFallbackReason.trim()
+    ? data.compatFallbackReason.trim()
+    : '-';
   const compatShare = Number.isFinite(Number(context.compatShareWindow)) ? Number(context.compatShareWindow) : llmCompatShareWindow;
 
   llmLastRouteTraceMeta = {
@@ -17868,6 +17882,10 @@ function renderLlmRouteTraceInfo(payload, options) {
     traceId,
     conversationMode,
     routerReason,
+    fallbackType,
+    routeDecisionSource,
+    sharedReadinessBridge,
+    compatFallbackReason,
     compatShareWindow: Number.isFinite(Number(compatShare)) ? Number(compatShare) : null
   };
 
@@ -17877,6 +17895,10 @@ function renderLlmRouteTraceInfo(payload, options) {
   setTextContent('llm-route-trace-id', traceId || '-');
   setTextContent('llm-route-conversation-mode', conversationMode || '-');
   setTextContent('llm-route-router-reason', routerReason || '-');
+  setTextContent('llm-route-fallback-type', fallbackType || '-');
+  setTextContent('llm-route-decision-source', routeDecisionSource || '-');
+  setTextContent('llm-route-bridge', sharedReadinessBridge || '-');
+  setTextContent('llm-route-compat-reason', compatFallbackReason || '-');
   setTextContent(
     'llm-route-compat-share',
     Number.isFinite(Number(compatShare)) ? Number(compatShare).toFixed(4) : '-'
@@ -17887,12 +17909,18 @@ function renderLlmRouteTraceInfo(payload, options) {
   warningEl.classList.remove('status-danger');
   const compatHigh = Number.isFinite(Number(compatShare)) && Number(compatShare) > LLM_COMPAT_SHARE_THRESHOLD;
   if (routeKind === 'compat' && compatHigh) {
-    warningEl.textContent = `ALERT: compat fallback active / compatShareWindow=${Number(compatShare).toFixed(4)} (> ${LLM_COMPAT_SHARE_THRESHOLD.toFixed(2)})`;
+    const compatReasonText = compatFallbackReason && compatFallbackReason !== '-'
+      ? ` / reason=${compatFallbackReason}`
+      : '';
+    warningEl.textContent = `ALERT: compat fallback active${compatReasonText} / compatShareWindow=${Number(compatShare).toFixed(4)} (> ${LLM_COMPAT_SHARE_THRESHOLD.toFixed(2)})`;
     warningEl.classList.add('status-danger');
     return;
   }
   if (routeKind === 'compat') {
-    warningEl.textContent = 'WARNING: compat fallback で取得しました (canonical route unavailable)';
+    const compatReasonText = compatFallbackReason && compatFallbackReason !== '-'
+      ? ` / reason=${compatFallbackReason}`
+      : '';
+    warningEl.textContent = `WARNING: compat fallback で取得しました (canonical route unavailable)${compatReasonText}`;
     return;
   }
   if (compatHigh) {

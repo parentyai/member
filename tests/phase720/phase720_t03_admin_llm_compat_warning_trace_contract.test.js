@@ -19,6 +19,10 @@ test('phase720: admin llm pane renders route+trace section and compat warning su
     'id="llm-route-trace-id"',
     'id="llm-route-conversation-mode"',
     'id="llm-route-router-reason"',
+    'id="llm-route-fallback-type"',
+    'id="llm-route-decision-source"',
+    'id="llm-route-bridge"',
+    'id="llm-route-compat-reason"',
     'id="llm-route-compat-share"',
     'id="llm-route-warning"',
     'id="llm-route-trace-open"',
@@ -32,6 +36,13 @@ test('phase720: admin llm pane renders route+trace section and compat warning su
   assert.ok(js.includes('LLM_COMPAT_SHARE_THRESHOLD'));
   assert.ok(js.includes('WARNING: compat fallback で取得しました'));
   assert.ok(js.includes('ALERT: compatShareWindow='));
+  assert.ok(js.includes("setTextContent('llm-route-fallback-type'"));
+  assert.ok(js.includes("setTextContent('llm-route-decision-source'"));
+  assert.ok(js.includes("setTextContent('llm-route-bridge'"));
+  assert.ok(js.includes("setTextContent('llm-route-compat-reason'"));
+  assert.ok(js.includes('compatFallbackReason'));
+  assert.ok(js.includes('routeDecisionSource'));
+  assert.ok(js.includes('sharedReadinessBridge'));
   assert.ok(js.includes("document.getElementById('llm-route-trace-open')?.addEventListener('click'"));
   assert.ok(js.includes('/api/admin/trace?traceId='));
   assert.ok(js.includes("source: ${source}"));

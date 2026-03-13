@@ -80,6 +80,10 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
       : '';
     const sharedReadiness = resolveSharedAnswerReadiness({
       entryType: 'admin',
+      routeKind: 'canonical',
+      routerReason: 'admin_ops_explain',
+      sharedReadinessBridge: 'shared_admin_ops_explain',
+      routeDecisionSource: 'admin_route',
       domainIntent: 'general',
       llmUsed: result && result.llmUsed === true,
       fallbackType: qualitySignals.fallbackType,
@@ -96,6 +100,20 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
     if (result && result.explanation && typeof result.explanation === 'object' && opsExplanationText) {
       result.explanation.opsExplanation = sharedReadiness.replyText;
     }
+    result.routeKind = sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeKind : 'canonical';
+    result.routerReason = sharedReadiness.routeCoverageMeta && sharedReadiness.routeCoverageMeta.routerReason
+      ? sharedReadiness.routeCoverageMeta.routerReason
+      : 'admin_ops_explain';
+    result.routerReasonObserved = sharedReadiness.routeCoverageMeta
+      ? sharedReadiness.routeCoverageMeta.routerReasonObserved === true
+      : true;
+    result.compatFallbackReason = sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.compatFallbackReason : null;
+    result.sharedReadinessBridge = sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.sharedReadinessBridge : null;
+    result.sharedReadinessBridgeObserved = sharedReadiness.routeCoverageMeta
+      ? sharedReadiness.routeCoverageMeta.sharedReadinessBridgeObserved === true
+      : false;
+    result.routeDecisionSource = sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeDecisionSource : 'admin_route';
+    result.entryType = 'admin';
     result.readinessDecision = sharedReadiness.readiness.decision;
     result.readinessReasonCodes = sharedReadiness.readiness.reasonCodes;
     result.readinessSafeResponseMode = sharedReadiness.readiness.safeResponseMode;
@@ -147,6 +165,19 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
       actionGatewayDecision: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.decision : null,
       actionGatewayReason: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.reason : null,
       entryType: 'admin',
+      routeKind: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeKind : 'canonical',
+      routerReason: sharedReadiness.routeCoverageMeta && sharedReadiness.routeCoverageMeta.routerReason
+        ? sharedReadiness.routeCoverageMeta.routerReason
+        : 'admin_ops_explain',
+      routerReasonObserved: sharedReadiness.routeCoverageMeta
+        ? sharedReadiness.routeCoverageMeta.routerReasonObserved === true
+        : true,
+      compatFallbackReason: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.compatFallbackReason : null,
+      sharedReadinessBridge: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.sharedReadinessBridge : null,
+      sharedReadinessBridgeObserved: sharedReadiness.routeCoverageMeta
+        ? sharedReadiness.routeCoverageMeta.sharedReadinessBridgeObserved === true
+        : false,
+      routeDecisionSource: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeDecisionSource : 'admin_route',
       gatesApplied: ['kill_switch']
     }).catch(() => null);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -188,6 +219,10 @@ async function handleAdminLlmNextActions(req, res, deps) {
       : '';
     const sharedReadiness = resolveSharedAnswerReadiness({
       entryType: 'admin',
+      routeKind: 'canonical',
+      routerReason: 'admin_next_actions',
+      sharedReadinessBridge: 'shared_admin_next_actions',
+      routeDecisionSource: 'admin_route',
       domainIntent: 'general',
       llmUsed: result && result.llmUsed === true,
       fallbackType: qualitySignals.fallbackType,
@@ -202,6 +237,20 @@ async function handleAdminLlmNextActions(req, res, deps) {
       toolName: 'lookup'
     });
     result.readinessDecision = sharedReadiness.readiness.decision;
+    result.routeKind = sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeKind : 'canonical';
+    result.routerReason = sharedReadiness.routeCoverageMeta && sharedReadiness.routeCoverageMeta.routerReason
+      ? sharedReadiness.routeCoverageMeta.routerReason
+      : 'admin_next_actions';
+    result.routerReasonObserved = sharedReadiness.routeCoverageMeta
+      ? sharedReadiness.routeCoverageMeta.routerReasonObserved === true
+      : true;
+    result.compatFallbackReason = sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.compatFallbackReason : null;
+    result.sharedReadinessBridge = sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.sharedReadinessBridge : null;
+    result.sharedReadinessBridgeObserved = sharedReadiness.routeCoverageMeta
+      ? sharedReadiness.routeCoverageMeta.sharedReadinessBridgeObserved === true
+      : false;
+    result.routeDecisionSource = sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeDecisionSource : 'admin_route';
+    result.entryType = 'admin';
     result.readinessReasonCodes = sharedReadiness.readiness.reasonCodes;
     result.readinessSafeResponseMode = sharedReadiness.readiness.safeResponseMode;
     result.intentRiskTier = sharedReadiness.intentRiskTier;
@@ -252,6 +301,19 @@ async function handleAdminLlmNextActions(req, res, deps) {
       actionGatewayDecision: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.decision : null,
       actionGatewayReason: sharedReadiness.actionGateway ? sharedReadiness.actionGateway.reason : null,
       entryType: 'admin',
+      routeKind: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeKind : 'canonical',
+      routerReason: sharedReadiness.routeCoverageMeta && sharedReadiness.routeCoverageMeta.routerReason
+        ? sharedReadiness.routeCoverageMeta.routerReason
+        : 'admin_next_actions',
+      routerReasonObserved: sharedReadiness.routeCoverageMeta
+        ? sharedReadiness.routeCoverageMeta.routerReasonObserved === true
+        : true,
+      compatFallbackReason: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.compatFallbackReason : null,
+      sharedReadinessBridge: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.sharedReadinessBridge : null,
+      sharedReadinessBridgeObserved: sharedReadiness.routeCoverageMeta
+        ? sharedReadiness.routeCoverageMeta.sharedReadinessBridgeObserved === true
+        : false,
+      routeDecisionSource: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeDecisionSource : 'admin_route',
       gatesApplied: ['kill_switch']
     }).catch(() => null);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
