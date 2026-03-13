@@ -356,6 +356,23 @@ function buildRuntimeAuditReport(input) {
     adminTraceResolutionTime: Object.assign({ sourceCollections: ['trace_search.view', 'trace_bundle'], provenance: 'trace_bundle_probe', missingCount: 0 }, qualityLoopV2.integrationKpis.adminTraceResolutionTime || {}),
     adminTraceResolutionTimeMs: Object.assign({ sourceCollections: ['trace_search.view', 'trace_bundle'], provenance: 'trace_bundle_probe', missingCount: 0 }, qualityLoopV2.integrationKpis.adminTraceResolutionTimeMs || qualityLoopV2.integrationKpis.adminTraceResolutionTime || {})
   };
+  const routeCoverage = {
+    routerReasons: Array.isArray(conversation.routerReasons) ? conversation.routerReasons : [],
+    routeKinds: Array.isArray(conversation.routeKinds) ? conversation.routeKinds : [],
+    fallbackTypes: Array.isArray(conversation.fallbackTypes) ? conversation.fallbackTypes : [],
+    compatFallbackReasons: Array.isArray(conversation.compatFallbackReasons) ? conversation.compatFallbackReasons : [],
+    sharedReadinessBridges: Array.isArray(conversation.sharedReadinessBridges) ? conversation.sharedReadinessBridges : [],
+    routeDecisionSources: Array.isArray(conversation.routeDecisionSources) ? conversation.routeDecisionSources : [],
+    routerReasonObservedRate: Number.isFinite(Number(conversation.routerReasonObservedRate))
+      ? Number(conversation.routerReasonObservedRate)
+      : 0,
+    sharedReadinessBridgeObservedRate: Number.isFinite(Number(conversation.sharedReadinessBridgeObservedRate))
+      ? Number(conversation.sharedReadinessBridgeObservedRate)
+      : 0,
+    routeAttributionCompleteness: Number.isFinite(Number(conversation.routeAttributionCompleteness))
+      ? Number(conversation.routeAttributionCompleteness)
+      : 0
+  };
 
   const missingMeasurements = Object.entries(kpis)
     .filter(([, row]) => !row || row.status === 'missing' || Number(row.sampleCount || 0) === 0)
@@ -406,6 +423,7 @@ function buildRuntimeAuditReport(input) {
       recoveryActionCode: payload.recoveryActionCode || null,
       recoveryCommands: Array.isArray(payload.recoveryCommands) ? payload.recoveryCommands.slice() : []
     },
+    routeCoverage,
     kpis,
     topFailures: (payload.runtimeFetchStatus === 'unavailable')
       ? [{ key: 'runtimeAuditUnavailable', status: 'fail', sampleCount: 0, value: null }].concat(buildTopFailures(kpis)).slice(0, 10)
