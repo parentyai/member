@@ -7,10 +7,55 @@ function normalizeText(value) {
 
 function clamp01(value) {
   const num = Number(value);
-  if (!Number.isFinite(num)) return 0;
+  if (!Number.isFinite(num)) return null;
   if (num < 0) return 0;
   if (num > 1) return 1;
   return num;
+}
+
+function resolveObservedBoolean(payload, valueKey, observedKey) {
+  const observedOverride = payload[observedKey];
+  if (typeof observedOverride === 'boolean') {
+    if (observedOverride !== true) return { value: null, observed: false };
+    return {
+      value: payload[valueKey] === true,
+      observed: true
+    };
+  }
+  if (typeof payload[valueKey] === 'boolean') {
+    return {
+      value: payload[valueKey] === true,
+      observed: true
+    };
+  }
+  return {
+    value: null,
+    observed: false
+  };
+}
+
+function resolveObservedNumber(payload, valueKey, observedKey) {
+  const numeric = clamp01(payload[valueKey]);
+  const observedOverride = payload[observedKey];
+  if (typeof observedOverride === 'boolean') {
+    if (observedOverride !== true) {
+      return { value: 0, observed: false };
+    }
+    return {
+      value: numeric === null ? 0 : numeric,
+      observed: numeric !== null
+    };
+  }
+  if (numeric !== null) {
+    return {
+      value: numeric,
+      observed: true
+    };
+  }
+  return {
+    value: 0,
+    observed: false
+  };
 }
 
 function normalizeRiskTier(value) {
@@ -43,10 +88,10 @@ function resolveThresholds(intentRiskTier) {
     return {
       minAuthorityAllow: 0.72,
       minFreshnessAllow: 0.72,
-      minEvidenceAllow: 0.72,
+      minEvidenceAllow: 0.8,
       minAuthorityHedge: 0.62,
       minFreshnessHedge: 0.62,
-      minEvidenceHedge: 0.55
+      minEvidenceHedge: 0.62
     };
   }
   if (intentRiskTier === 'medium') {
@@ -82,12 +127,18 @@ function evaluateAnswerReadiness(params) {
   const consentVerified = payload.consentVerified === true;
   const crossBorder = payload.crossBorder === true;
   const legalDecision = normalizeText(payload.legalDecision).toLowerCase();
+  const entryType = normalizeText(payload.entryType).toLowerCase() || 'unknown';
+  const compatContextActive = entryType === 'compat';
   const intentRiskTier = normalizeRiskTier(payload.intentRiskTier);
   const sourceAuthorityScore = clamp01(payload.sourceAuthorityScore);
   const sourceFreshnessScore = clamp01(payload.sourceFreshnessScore);
-  const evidenceCoverage = clamp01(payload.evidenceCoverage);
+  const evidenceCoverageSignal = resolveObservedNumber(payload, 'evidenceCoverage', 'evidenceCoverageObserved');
+  const evidenceCoverage = evidenceCoverageSignal.value;
+  const evidenceCoverageObserved = evidenceCoverageSignal.observed;
   const sourceReadinessDecision = normalizeSourceReadinessDecision(payload.sourceReadinessDecision);
-  const officialOnlySatisfied = payload.officialOnlySatisfied !== false;
+  const officialOnlySignal = resolveObservedBoolean(payload, 'officialOnlySatisfied', 'officialOnlySatisfiedObserved');
+  const officialOnlySatisfied = officialOnlySignal.value === true;
+  const officialOnlySatisfiedObserved = officialOnlySignal.observed;
   const unsupportedClaimCount = Math.max(0, Math.floor(Number.isFinite(Number(payload.unsupportedClaimCount)) ? Number(payload.unsupportedClaimCount) : 0));
   const contradictionDetected = payload.contradictionDetected === true;
   const requiredCoreFactsComplete = payload.requiredCoreFactsComplete !== false;
@@ -125,7 +176,10 @@ function evaluateAnswerReadiness(params) {
     savedFaqReusePass !== true
     || savedFaqValid !== true
     || savedFaqAllowedIntent !== true
-    || (savedFaqAuthorityScore > 0 && savedFaqAuthorityScore < thresholds.minAuthorityAllow)
+    || savedFaqAuthorityScore < thresholds.minAuthorityAllow
+    || sourceReadinessDecision !== 'allow'
+    || evidenceCoverageObserved !== true
+    || evidenceCoverage < thresholds.minEvidenceAllow
   );
 
   if (legalDecision === 'blocked' || (lawfulBasis === 'consent' && !consentVerified)) {
@@ -137,15 +191,21 @@ function evaluateAnswerReadiness(params) {
   } else if (requiredCityPackBlocked) {
     decision = 'refuse';
     reasonCodes.push('city_pack_required_source_blocked');
+  } else if (sourceReadinessDecision === 'refuse') {
+    decision = 'refuse';
+    reasonCodes.push('source_readiness_refuse');
+  } else if (intentRiskTier === 'high' && officialOnlySatisfiedObserved !== true) {
+    decision = 'clarify';
+    reasonCodes.push('official_only_signal_missing');
   } else if (intentRiskTier === 'high' && officialOnlySatisfied !== true) {
     decision = 'refuse';
     reasonCodes.push('official_only_not_satisfied');
   } else if (savedFaqHighRiskBlocked) {
     decision = 'refuse';
     reasonCodes.push('saved_faq_high_risk_not_ready');
-  } else if (sourceReadinessDecision === 'refuse') {
-    decision = 'refuse';
-    reasonCodes.push('source_readiness_refuse');
+  } else if (intentRiskTier === 'high' && evidenceCoverageObserved !== true) {
+    decision = 'clarify';
+    reasonCodes.push('evidence_coverage_signal_missing');
   } else if (intentRiskTier === 'high' && unsupportedClaimCount > 0 && evidenceCoverage < thresholds.minEvidenceHedge) {
     decision = 'refuse';
     reasonCodes.push('unsupported_claim_high_risk');
@@ -221,6 +281,19 @@ function evaluateAnswerReadiness(params) {
     decision = 'hedged';
     reasonCodes.push('saved_faq_reuse_hedged');
   }
+  if (
+    compatContextActive
+    && intentRiskTier === 'high'
+    && decision !== 'refuse'
+    && (
+      officialOnlySatisfiedObserved !== true
+      || evidenceCoverageObserved !== true
+      || sourceReadinessDecision !== 'allow'
+    )
+  ) {
+    decision = 'clarify';
+    reasonCodes.push('compat_high_risk_policy_tightened');
+  }
   if (crossBorder) reasonCodes.push('cross_border_enabled');
   if (fallbackType) reasonCodes.push('fallback_applied');
   if (emergencyContextActive) reasonCodes.push('emergency_context_active');
@@ -236,10 +309,13 @@ function evaluateAnswerReadiness(params) {
       consentVerified,
       crossBorder,
       legalDecision: legalDecision || null,
+      entryType,
+      compatContextActive,
       sourceAuthorityScore,
       sourceFreshnessScore,
       sourceReadinessDecision,
       officialOnlySatisfied: officialOnlySatisfied === true,
+      officialOnlySatisfiedObserved,
       requiredCoreFactsComplete: requiredCoreFactsComplete === true,
       missingRequiredCoreFactsCount,
       requiredCoreFactsMissing,
@@ -248,6 +324,7 @@ function evaluateAnswerReadiness(params) {
       unsupportedClaimCount,
       contradictionDetected,
       evidenceCoverage,
+      evidenceCoverageObserved,
       fallbackType,
       emergencyContextActive,
       emergencySeverity,
@@ -264,7 +341,8 @@ function evaluateAnswerReadiness(params) {
       savedFaqValid,
       savedFaqAllowedIntent,
       savedFaqAuthorityScore,
-      crossSystemConflictDetected
+      crossSystemConflictDetected,
+      policyTighteningVersion: 'r827'
     },
     safeResponseMode: resolveSafeResponseMode(decision)
   };

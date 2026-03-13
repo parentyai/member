@@ -66,6 +66,7 @@ function applyActionGatewayToReadiness(readiness, actionGateway) {
 
 function resolveSharedAnswerReadiness(params) {
   const payload = params && typeof params === 'object' ? params : {};
+  const entryType = normalizeText(payload.entryType) || 'admin';
   const domainIntent = normalizeText(payload.domainIntent).toLowerCase() || 'general';
   const risk = resolveIntentRiskTier({
     domainIntent,
@@ -77,29 +78,43 @@ function resolveSharedAnswerReadiness(params) {
     reasonCodes: payload.riskReasonCodes
   });
   const llmUsed = payload.llmUsed === true;
+  const highRisk = risk.intentRiskTier === 'high';
+  const compatEntry = entryType === 'compat';
+  const officialOnlySatisfiedObserved = typeof payload.officialOnlySatisfiedObserved === 'boolean'
+    ? payload.officialOnlySatisfiedObserved
+    : typeof payload.officialOnlySatisfied === 'boolean';
+  const evidenceCoverageObserved = typeof payload.evidenceCoverageObserved === 'boolean'
+    ? payload.evidenceCoverageObserved
+    : Number.isFinite(Number(payload.evidenceCoverage));
+  const optimisticLlmFallback = llmUsed === true && highRisk !== true && compatEntry !== true;
 
   const explicitDecision = normalizeDecision(payload.readinessDecision);
   const explicitReasonCodes = normalizeReasonCodes(payload.readinessReasonCodes);
   const explicitSafeResponseMode = normalizeText(payload.readinessSafeResponseMode).toLowerCase() || null;
+  const policyReasonCodes = []
+    .concat(risk.riskReasonCodes || [])
+    .concat(explicitReasonCodes);
 
   const evaluatedGate = runAnswerReadinessGateV2({
-    entryType: normalizeText(payload.entryType) || 'admin',
+    entryType,
     lawfulBasis: normalizeText(payload.lawfulBasis) || 'consent',
     consentVerified: payload.consentVerified !== false,
     crossBorder: payload.crossBorder === true,
     legalDecision: normalizeText(payload.legalDecision) || 'allow',
     intentRiskTier: risk.intentRiskTier,
-    sourceAuthorityScore: normalizeScore(payload.sourceAuthorityScore, llmUsed ? 0.72 : 0.55),
-    sourceFreshnessScore: normalizeScore(payload.sourceFreshnessScore, llmUsed ? 0.72 : 0.55),
-    sourceReadinessDecision: normalizeText(payload.sourceReadinessDecision) || (llmUsed ? 'allow' : 'clarify'),
-    officialOnlySatisfied: payload.officialOnlySatisfied !== false,
+    sourceAuthorityScore: normalizeScore(payload.sourceAuthorityScore, optimisticLlmFallback ? 0.72 : undefined),
+    sourceFreshnessScore: normalizeScore(payload.sourceFreshnessScore, optimisticLlmFallback ? 0.72 : undefined),
+    sourceReadinessDecision: normalizeText(payload.sourceReadinessDecision) || (optimisticLlmFallback ? 'allow' : 'clarify'),
+    officialOnlySatisfied: officialOnlySatisfiedObserved ? payload.officialOnlySatisfied === true : undefined,
+    officialOnlySatisfiedObserved,
     unsupportedClaimCount: Number.isFinite(Number(payload.unsupportedClaimCount))
       ? Number(payload.unsupportedClaimCount)
       : 0,
     contradictionDetected: payload.contradictionDetected === true,
-    evidenceCoverage: normalizeScore(payload.evidenceCoverage, llmUsed ? 0.7 : 0.5),
+    evidenceCoverage: evidenceCoverageObserved ? normalizeScore(payload.evidenceCoverage, undefined) : undefined,
+    evidenceCoverageObserved,
     fallbackType: normalizeText(payload.fallbackType) || null,
-    reasonCodes: normalizeReasonCodes([].concat(risk.riskReasonCodes || [], explicitReasonCodes)),
+    reasonCodes: normalizeReasonCodes(policyReasonCodes),
     emergencyContext: payload.emergencyContext === true,
     emergencySeverity: payload.emergencySeverity || null,
     emergencyOfficialSourceSatisfied: payload.emergencyOfficialSourceSatisfied === true,

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-12T19:39:07-04:00",
-  "gitCommit": "506ec0b13b082d8de468a036569f00c1f36c4934",
-  "branch": "codex/llm-quality-loop-v3-telemetry-coverage",
-  "sourceDigest": "91022c7d3a8aa6bfddecb83da66addde713baff081918d84760550c30fa6e22b",
+  "generatedAt": "2026-03-13T06:03:26-04:00",
+  "gitCommit": "f4dfc56633879eb6bf1abec354bd9d66901fabe7",
+  "branch": "codex/llm-policy-tightening-live-report-r827",
+  "sourceDigest": "51f1f1da1b1894bc0489a8416dabbb36c6143affe94ee0739f5e711760f9e2cb",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
