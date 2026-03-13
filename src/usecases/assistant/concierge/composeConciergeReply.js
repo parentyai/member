@@ -31,6 +31,7 @@ const { computeSourceReadiness } = require('../../../domain/llm/knowledge/comput
 const { runAnswerReadinessGateV2 } = require('../../../domain/llm/quality/runAnswerReadinessGateV2');
 const { applyAnswerReadinessDecision } = require('../../../domain/llm/quality/applyAnswerReadinessDecision');
 const { resolveJourneyActionSignals } = require('../../../domain/llm/quality/resolveJourneyActionSignals');
+const { resolveTelemetryCoverageSignals } = require('../../../domain/llm/quality/resolveTelemetryCoverageSignals');
 
 const CONTEXT_VERSION = 'concierge_ctx_v1';
 
@@ -228,6 +229,7 @@ function buildAuditMeta(input) {
   const citationRanks = Array.from(new Set(selected.map((row) => row.rank).filter(Boolean)));
 
   const chosen = payload.chosenAction && typeof payload.chosenAction === 'object' ? payload.chosenAction : {};
+  const telemetryCoverage = resolveTelemetryCoverageSignals(payload);
 
   return {
     topic: payload.topic || 'general',
@@ -290,12 +292,35 @@ function buildAuditMeta(input) {
     sourceReadinessReasons: Array.isArray(payload.sourceReadinessReasons)
       ? payload.sourceReadinessReasons.filter(Boolean).slice(0, 8)
       : [],
+    evidenceCoverage: telemetryCoverage.evidenceCoverage,
+    evidenceCoverageObserved: telemetryCoverage.evidenceCoverageObserved === true,
     officialOnlySatisfied: payload.officialOnlySatisfied === true,
+    officialOnlySatisfiedObserved: telemetryCoverage.officialOnlySatisfiedObserved === true
+      ? true
+      : (telemetryCoverage.officialOnlySatisfiedObserved === false ? false : null),
     readinessDecision: normalizeText(payload.readinessDecision) || null,
     readinessReasonCodes: Array.isArray(payload.readinessReasonCodes)
       ? payload.readinessReasonCodes.filter(Boolean).slice(0, 12)
       : [],
     readinessSafeResponseMode: normalizeText(payload.readinessSafeResponseMode) || null,
+    emergencyOfficialSourceSatisfiedObserved: telemetryCoverage.emergencyOfficialSourceSatisfiedObserved === true
+      ? true
+      : (telemetryCoverage.emergencyOfficialSourceSatisfiedObserved === false ? false : null),
+    journeyAlignedActionObserved: telemetryCoverage.journeyAlignedActionObserved === true
+      ? true
+      : (telemetryCoverage.journeyAlignedActionObserved === false ? false : null),
+    cityPackGroundedObserved: telemetryCoverage.cityPackGroundedObserved === true
+      ? true
+      : (telemetryCoverage.cityPackGroundedObserved === false ? false : null),
+    staleSourceBlocked: telemetryCoverage.staleSourceBlocked === true
+      ? true
+      : (telemetryCoverage.staleSourceBlocked === false ? false : null),
+    staleSourceBlockedObserved: telemetryCoverage.staleSourceBlockedObserved === true
+      ? true
+      : (telemetryCoverage.staleSourceBlockedObserved === false ? false : null),
+    savedFaqReusePassObserved: telemetryCoverage.savedFaqReusePassObserved === true
+      ? true
+      : (telemetryCoverage.savedFaqReusePassObserved === false ? false : null),
     unsupportedClaimCount: Number.isFinite(Number(payload.unsupportedClaimCount))
       ? Math.max(0, Math.floor(Number(payload.unsupportedClaimCount)))
       : 0,

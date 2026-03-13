@@ -18,6 +18,7 @@ const { resolveLlmLegalPolicySnapshot } = require('../../domain/llm/policy/resol
 const { resolveIntentRiskTier } = require('../../domain/llm/policy/resolveIntentRiskTier');
 const { computeSourceReadiness } = require('../../domain/llm/knowledge/computeSourceReadiness');
 const { runAnswerReadinessGateV2 } = require('../../domain/llm/quality/runAnswerReadinessGateV2');
+const { resolveTelemetryCoverageSignals } = require('../../domain/llm/quality/resolveTelemetryCoverageSignals');
 const { refineSavedFaqReuseSignals } = require('./refineSavedFaqReuseSignals');
 
 const DEFAULT_TIMEOUT_MS = 2500;
@@ -238,6 +239,38 @@ function buildFaqTelemetryFields(params) {
   const readinessV2Telemetry = answerReadinessGate.telemetry && typeof answerReadinessGate.telemetry === 'object'
     ? answerReadinessGate.telemetry
     : {};
+  const telemetryCoverage = resolveTelemetryCoverageSignals({
+    sourceAuthorityScore: sourceReadiness.sourceAuthorityScore,
+    sourceFreshnessScore: sourceReadiness.sourceFreshnessScore,
+    sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
+    sourceReadinessReasons: sourceReadiness.reasonCodes,
+    officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
+    evidenceCoverage: qualitySnapshot.evidenceCoverage,
+    assistantQuality: qualitySnapshot,
+    emergencyContext: readinessV2Telemetry.emergencyContextActive === true,
+    emergencySeverity: readinessV2Telemetry.emergencySeverity || null,
+    emergencyEventId: readinessV2Telemetry.emergencyEventId || null,
+    emergencyOfficialSourceSatisfied: readinessV2Telemetry.emergencyOfficialSourceSatisfied === true,
+    journeyContext: readinessV2Telemetry.journeyContext === true,
+    journeyPhase: readinessV2Telemetry.journeyPhase || null,
+    taskBlockerDetected: readinessV2Telemetry.taskBlockerDetected === true,
+    blockedTask: readinessV2Telemetry.blockedTask || null,
+    nextActions: readinessV2Telemetry.nextActions,
+    journeyAlignedAction: readinessV2Telemetry.journeyAlignedAction,
+    cityPackContext: readinessV2Telemetry.cityPackContext === true,
+    cityPackPackId: readinessV2Telemetry.cityPackPackId || null,
+    cityPackGrounded: readinessV2Telemetry.cityPackGrounded === true,
+    cityPackFreshnessScore: readinessV2Telemetry.cityPackFreshnessScore,
+    cityPackAuthorityScore: readinessV2Telemetry.cityPackAuthorityScore,
+    cityPackValidation: readinessV2Telemetry.cityPackValidation,
+    savedFaqReused: savedFaqSignals.savedFaqReused === true,
+    savedFaqReusePass: savedFaqSignals.savedFaqReusePass === true,
+    savedFaqReuseReasonCodes: savedFaqSignals.savedFaqReuseReasonCodes,
+    savedFaqValid: readinessV2Telemetry.savedFaqValid,
+    savedFaqAllowedIntent: readinessV2Telemetry.savedFaqAllowedIntent,
+    savedFaqAuthorityScore: readinessV2Telemetry.savedFaqAuthorityScore,
+    sourceSnapshotRefs: savedFaqSignals.sourceSnapshotRefs
+  });
   return {
     policySource: payload.legalSnapshot && payload.legalSnapshot.policySource ? payload.legalSnapshot.policySource : 'system_flags',
     policyContext: payload.legalSnapshot && payload.legalSnapshot.policyContext ? payload.legalSnapshot.policyContext : 'default',
@@ -257,7 +290,12 @@ function buildFaqTelemetryFields(params) {
       : null,
     sourceReadinessDecision: sourceReadiness.sourceReadinessDecision || null,
     sourceReadinessReasons: Array.isArray(sourceReadiness.reasonCodes) ? sourceReadiness.reasonCodes : [],
+    evidenceCoverage: telemetryCoverage.evidenceCoverage,
+    evidenceCoverageObserved: telemetryCoverage.evidenceCoverageObserved === true,
     officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
+    officialOnlySatisfiedObserved: telemetryCoverage.officialOnlySatisfiedObserved === true
+      ? true
+      : (telemetryCoverage.officialOnlySatisfiedObserved === false ? false : null),
     readinessDecision: answerReadiness.decision || null,
     readinessReasonCodes: Array.isArray(answerReadiness.reasonCodes) ? answerReadiness.reasonCodes : [],
     readinessSafeResponseMode: answerReadiness.safeResponseMode || null,
@@ -287,18 +325,33 @@ function buildFaqTelemetryFields(params) {
     readinessSafeResponseModeV2: readinessV2.safeResponseMode || null,
     emergencyContextActive: readinessV2Telemetry.emergencyContextActive === true,
     emergencyOfficialSourceSatisfied: readinessV2Telemetry.emergencyOfficialSourceSatisfied === true,
+    emergencyOfficialSourceSatisfiedObserved: telemetryCoverage.emergencyOfficialSourceSatisfiedObserved === true
+      ? true
+      : (telemetryCoverage.emergencyOfficialSourceSatisfiedObserved === false ? false : null),
     journeyPhase: readinessV2Telemetry.journeyPhase || null,
     taskBlockerDetected: readinessV2Telemetry.taskBlockerDetected === true,
     journeyAlignedAction: typeof readinessV2Telemetry.journeyAlignedAction === 'boolean'
       ? readinessV2Telemetry.journeyAlignedAction
       : true,
+    journeyAlignedActionObserved: telemetryCoverage.journeyAlignedActionObserved === true
+      ? true
+      : (telemetryCoverage.journeyAlignedActionObserved === false ? false : null),
     cityPackGrounded: readinessV2Telemetry.cityPackGrounded === true,
+    cityPackGroundedObserved: telemetryCoverage.cityPackGroundedObserved === true
+      ? true
+      : (telemetryCoverage.cityPackGroundedObserved === false ? false : null),
     cityPackFreshnessScore: Number.isFinite(Number(readinessV2Telemetry.cityPackFreshnessScore))
       ? Number(readinessV2Telemetry.cityPackFreshnessScore)
       : null,
     cityPackAuthorityScore: Number.isFinite(Number(readinessV2Telemetry.cityPackAuthorityScore))
       ? Number(readinessV2Telemetry.cityPackAuthorityScore)
       : null,
+    staleSourceBlocked: telemetryCoverage.staleSourceBlocked === true
+      ? true
+      : (telemetryCoverage.staleSourceBlocked === false ? false : null),
+    staleSourceBlockedObserved: telemetryCoverage.staleSourceBlockedObserved === true
+      ? true
+      : (telemetryCoverage.staleSourceBlockedObserved === false ? false : null),
     savedFaqValid: typeof readinessV2Telemetry.savedFaqValid === 'boolean'
       ? readinessV2Telemetry.savedFaqValid
       : (readinessV2Snapshot.savedFaqValid === true),
@@ -308,6 +361,9 @@ function buildFaqTelemetryFields(params) {
     savedFaqAuthorityScore: Number.isFinite(Number(readinessV2Telemetry.savedFaqAuthorityScore))
       ? Number(readinessV2Telemetry.savedFaqAuthorityScore)
       : null,
+    savedFaqReusePassObserved: telemetryCoverage.savedFaqReusePassObserved === true
+      ? true
+      : (telemetryCoverage.savedFaqReusePassObserved === false ? false : null),
     crossSystemConflictDetected: readinessV2Telemetry.crossSystemConflictDetected === true
   };
 }

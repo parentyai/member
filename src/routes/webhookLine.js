@@ -35,6 +35,7 @@ const { applyAnswerReadinessDecision } = require('../domain/llm/quality/applyAns
 const { resolveJourneyActionSignals } = require('../domain/llm/quality/resolveJourneyActionSignals');
 const { resolveRuntimeCityPackSignals } = require('../domain/llm/quality/resolveRuntimeCityPackSignals');
 const { resolveRuntimeEmergencySignals } = require('../domain/llm/quality/resolveRuntimeEmergencySignals');
+const { resolveTelemetryCoverageSignals } = require('../domain/llm/quality/resolveTelemetryCoverageSignals');
 const { generatePaidDomainConciergeReply, FORBIDDEN_REPLY_PATTERN } = require('../usecases/assistant/generatePaidDomainConciergeReply');
 const { generatePaidHousingConciergeReply } = require('../usecases/assistant/generatePaidHousingConciergeReply');
 const { runPaidConversationOrchestrator } = require('../domain/llm/orchestrator/runPaidConversationOrchestrator');
@@ -1181,6 +1182,22 @@ function resolveAnswerReadinessTelemetry(params) {
       readiness.reasonCodes = ['readiness_signal_missing_allow'];
     }
   }
+  const telemetryCoverageSignals = resolveTelemetryCoverageSignals(Object.assign({}, payload, {
+    evidenceCoverage,
+    unsupportedClaimCount,
+    contradictionDetected,
+    sourceAuthorityScore,
+    sourceFreshnessScore,
+    sourceReadinessDecision: payload.sourceReadinessDecision,
+    sourceReadinessReasons: payload.sourceReadinessReasons,
+    officialOnlySatisfied: payload.officialOnlySatisfied === true,
+    emergencyOfficialSourceSatisfied: payload.emergencyOfficialSourceSatisfied === true,
+    journeyAlignedAction: typeof payload.journeyAlignedAction === 'boolean' ? payload.journeyAlignedAction : true,
+    cityPackGrounded: payload.cityPackGrounded === true,
+    savedFaqReusePass: payload.savedFaqReusePass === true,
+    savedFaqReused: payload.savedFaqReused === true,
+    sourceSnapshotRefs: payload.sourceSnapshotRefs
+  }));
   return {
     readiness,
     readinessV2: readinessGate.readinessV2,
@@ -1190,7 +1207,7 @@ function resolveAnswerReadinessTelemetry(params) {
     answerReadinessV2Mode: readinessGate.mode ? readinessGate.mode.mode : null,
     answerReadinessV2Stage: readinessGate.mode ? readinessGate.mode.stage : null,
     answerReadinessV2EnforcementReason: readinessGate.mode ? readinessGate.mode.enforcementReason : null,
-    readinessTelemetryV2: readinessGate.telemetry,
+    readinessTelemetryV2: Object.assign({}, readinessGate.telemetry || {}, telemetryCoverageSignals),
     unsupportedClaimCount,
     contradictionDetected
   };
@@ -1381,7 +1398,16 @@ async function appendLlmGateDecisionBestEffort(data) {
         sourceFreshnessScore,
         sourceReadinessDecision,
         sourceReadinessReasons,
+        evidenceCoverage: Number.isFinite(Number(readinessTelemetry.readinessTelemetryV2.evidenceCoverage))
+          ? Number(readinessTelemetry.readinessTelemetryV2.evidenceCoverage)
+          : null,
+        evidenceCoverageObserved: readinessTelemetry.readinessTelemetryV2.evidenceCoverageObserved === true
+          ? true
+          : (readinessTelemetry.readinessTelemetryV2.evidenceCoverageObserved === false ? false : null),
         officialOnlySatisfied,
+        officialOnlySatisfiedObserved: readinessTelemetry.readinessTelemetryV2.officialOnlySatisfiedObserved === true
+          ? true
+          : (readinessTelemetry.readinessTelemetryV2.officialOnlySatisfiedObserved === false ? false : null),
         readinessDecision: readinessTelemetry.readiness.decision,
         readinessReasonCodes: readinessTelemetry.readiness.reasonCodes,
         readinessSafeResponseMode: readinessTelemetry.readiness.safeResponseMode,
@@ -1396,20 +1422,38 @@ async function appendLlmGateDecisionBestEffort(data) {
         readinessSafeResponseModeV2: readinessTelemetry.readinessV2.safeResponseMode,
         emergencyContextActive: readinessTelemetry.readinessTelemetryV2.emergencyContextActive === true,
         emergencyOfficialSourceSatisfied: readinessTelemetry.readinessTelemetryV2.emergencyOfficialSourceSatisfied === true,
+        emergencyOfficialSourceSatisfiedObserved: readinessTelemetry.readinessTelemetryV2.emergencyOfficialSourceSatisfiedObserved === true
+          ? true
+          : (readinessTelemetry.readinessTelemetryV2.emergencyOfficialSourceSatisfiedObserved === false ? false : null),
         journeyPhase: readinessTelemetry.readinessTelemetryV2.journeyPhase || null,
         taskBlockerDetected: readinessTelemetry.readinessTelemetryV2.taskBlockerDetected === true,
         journeyAlignedAction: typeof readinessTelemetry.readinessTelemetryV2.journeyAlignedAction === 'boolean'
           ? readinessTelemetry.readinessTelemetryV2.journeyAlignedAction
           : true,
+        journeyAlignedActionObserved: readinessTelemetry.readinessTelemetryV2.journeyAlignedActionObserved === true
+          ? true
+          : (readinessTelemetry.readinessTelemetryV2.journeyAlignedActionObserved === false ? false : null),
         cityPackGrounded: readinessTelemetry.readinessTelemetryV2.cityPackGrounded === true,
+        cityPackGroundedObserved: readinessTelemetry.readinessTelemetryV2.cityPackGroundedObserved === true
+          ? true
+          : (readinessTelemetry.readinessTelemetryV2.cityPackGroundedObserved === false ? false : null),
         cityPackFreshnessScore: Number.isFinite(Number(readinessTelemetry.readinessTelemetryV2.cityPackFreshnessScore))
           ? Number(readinessTelemetry.readinessTelemetryV2.cityPackFreshnessScore)
           : null,
         cityPackAuthorityScore: Number.isFinite(Number(readinessTelemetry.readinessTelemetryV2.cityPackAuthorityScore))
           ? Number(readinessTelemetry.readinessTelemetryV2.cityPackAuthorityScore)
           : null,
+        staleSourceBlocked: readinessTelemetry.readinessTelemetryV2.staleSourceBlocked === true
+          ? true
+          : (readinessTelemetry.readinessTelemetryV2.staleSourceBlocked === false ? false : null),
+        staleSourceBlockedObserved: readinessTelemetry.readinessTelemetryV2.staleSourceBlockedObserved === true
+          ? true
+          : (readinessTelemetry.readinessTelemetryV2.staleSourceBlockedObserved === false ? false : null),
         savedFaqReused: readinessTelemetry.readinessTelemetryV2.savedFaqReused === true,
         savedFaqReusePass: readinessTelemetry.readinessTelemetryV2.savedFaqReusePass === true,
+        savedFaqReusePassObserved: readinessTelemetry.readinessTelemetryV2.savedFaqReusePassObserved === true
+          ? true
+          : (readinessTelemetry.readinessTelemetryV2.savedFaqReusePassObserved === false ? false : null),
         savedFaqReuseReasonCodes: Array.isArray(payload.savedFaqReuseReasonCodes)
           ? payload.savedFaqReuseReasonCodes
           : [],
@@ -1762,7 +1806,16 @@ async function appendLlmActionLogBestEffort(data) {
       sourceFreshnessScore,
       sourceReadinessDecision,
       sourceReadinessReasons,
+      evidenceCoverage: Number.isFinite(Number(readinessTelemetry.readinessTelemetryV2.evidenceCoverage))
+        ? Number(readinessTelemetry.readinessTelemetryV2.evidenceCoverage)
+        : null,
+      evidenceCoverageObserved: readinessTelemetry.readinessTelemetryV2.evidenceCoverageObserved === true
+        ? true
+        : (readinessTelemetry.readinessTelemetryV2.evidenceCoverageObserved === false ? false : null),
       officialOnlySatisfied,
+      officialOnlySatisfiedObserved: readinessTelemetry.readinessTelemetryV2.officialOnlySatisfiedObserved === true
+        ? true
+        : (readinessTelemetry.readinessTelemetryV2.officialOnlySatisfiedObserved === false ? false : null),
       readinessDecision: readinessTelemetry.readiness.decision,
       readinessReasonCodes: readinessTelemetry.readiness.reasonCodes,
       readinessSafeResponseMode: readinessTelemetry.readiness.safeResponseMode,
@@ -1777,20 +1830,38 @@ async function appendLlmActionLogBestEffort(data) {
       readinessSafeResponseModeV2: readinessTelemetry.readinessV2.safeResponseMode,
       emergencyContextActive: readinessTelemetry.readinessTelemetryV2.emergencyContextActive === true,
       emergencyOfficialSourceSatisfied: readinessTelemetry.readinessTelemetryV2.emergencyOfficialSourceSatisfied === true,
+      emergencyOfficialSourceSatisfiedObserved: readinessTelemetry.readinessTelemetryV2.emergencyOfficialSourceSatisfiedObserved === true
+        ? true
+        : (readinessTelemetry.readinessTelemetryV2.emergencyOfficialSourceSatisfiedObserved === false ? false : null),
       journeyPhase: readinessTelemetry.readinessTelemetryV2.journeyPhase || null,
       taskBlockerDetected: readinessTelemetry.readinessTelemetryV2.taskBlockerDetected === true,
       journeyAlignedAction: typeof readinessTelemetry.readinessTelemetryV2.journeyAlignedAction === 'boolean'
         ? readinessTelemetry.readinessTelemetryV2.journeyAlignedAction
         : true,
+      journeyAlignedActionObserved: readinessTelemetry.readinessTelemetryV2.journeyAlignedActionObserved === true
+        ? true
+        : (readinessTelemetry.readinessTelemetryV2.journeyAlignedActionObserved === false ? false : null),
       cityPackGrounded: readinessTelemetry.readinessTelemetryV2.cityPackGrounded === true,
+      cityPackGroundedObserved: readinessTelemetry.readinessTelemetryV2.cityPackGroundedObserved === true
+        ? true
+        : (readinessTelemetry.readinessTelemetryV2.cityPackGroundedObserved === false ? false : null),
       cityPackFreshnessScore: Number.isFinite(Number(readinessTelemetry.readinessTelemetryV2.cityPackFreshnessScore))
         ? Number(readinessTelemetry.readinessTelemetryV2.cityPackFreshnessScore)
         : null,
       cityPackAuthorityScore: Number.isFinite(Number(readinessTelemetry.readinessTelemetryV2.cityPackAuthorityScore))
         ? Number(readinessTelemetry.readinessTelemetryV2.cityPackAuthorityScore)
         : null,
+      staleSourceBlocked: readinessTelemetry.readinessTelemetryV2.staleSourceBlocked === true
+        ? true
+        : (readinessTelemetry.readinessTelemetryV2.staleSourceBlocked === false ? false : null),
+      staleSourceBlockedObserved: readinessTelemetry.readinessTelemetryV2.staleSourceBlockedObserved === true
+        ? true
+        : (readinessTelemetry.readinessTelemetryV2.staleSourceBlockedObserved === false ? false : null),
       savedFaqReused: readinessTelemetry.readinessTelemetryV2.savedFaqReused === true,
       savedFaqReusePass: readinessTelemetry.readinessTelemetryV2.savedFaqReusePass === true,
+      savedFaqReusePassObserved: readinessTelemetry.readinessTelemetryV2.savedFaqReusePassObserved === true
+        ? true
+        : (readinessTelemetry.readinessTelemetryV2.savedFaqReusePassObserved === false ? false : null),
       savedFaqReuseReasonCodes: Array.isArray(payload.savedFaqReuseReasonCodes)
         ? payload.savedFaqReuseReasonCodes
         : [],

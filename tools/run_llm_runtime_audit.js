@@ -11,8 +11,10 @@ const {
   buildGateAuditBaseline,
   buildOptimizationSummary,
   buildConversationQualitySummary,
-  buildQualityLoopV2Summary
+  buildQualityLoopV2Summary,
+  buildTraceSearchAuditRows
 } = require('../src/routes/admin/osLlmUsageSummary');
+const { buildTraceProbeRows } = require('../src/usecases/admin/buildTraceProbeRows');
 
 const CLARIFY_THRESHOLDS_BY_TIER = Object.freeze({
   high: 0.35,
@@ -88,6 +90,20 @@ function latestTimestamp(rows) {
   return latest === null ? null : new Date(latest).toISOString();
 }
 
+function toMillis(value) {
+  if (!value) return null;
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value.getTime();
+  if (value && typeof value.toDate === 'function') {
+    const date = value.toDate();
+    if (date instanceof Date && Number.isFinite(date.getTime())) return date.getTime();
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
 function buildStatus(value, threshold) {
   if (value === null || value === undefined || !threshold) return 'missing';
   const numeric = Number(value);
@@ -102,15 +118,18 @@ function buildStatus(value, threshold) {
 }
 
 function buildRateKpi(key, value, sampleCount, threshold, sourceCollections, extras) {
+  const payload = extras && typeof extras === 'object' ? extras : {};
   const numericValue = clamp01(value);
   const status = sampleCount > 0 ? buildStatus(numericValue, threshold) : 'missing';
   return Object.assign({
     value: numericValue,
     sampleCount,
+    missingCount: Math.max(0, Number.isFinite(Number(payload.missingCount)) ? Number(payload.missingCount) : 0),
     status,
     threshold,
+    provenance: typeof payload.provenance === 'string' && payload.provenance.trim() ? payload.provenance.trim() : 'live_runtime',
     sourceCollections: Array.isArray(sourceCollections) ? sourceCollections.slice() : []
-  }, extras || {});
+  }, payload);
 }
 
 function buildFallbackKpi(actionRows) {
@@ -170,51 +189,55 @@ function buildClarifyRateByTier(actionRows) {
       operator: 'max_by_tier',
       value: Object.assign({}, CLARIFY_THRESHOLDS_BY_TIER)
     },
+    missingCount: 0,
+    provenance: 'live_runtime',
     sourceCollections: ['llm_action_logs'],
     byTier: tierRows
   };
 }
 
-function buildOfficialSourceUsageRate(actionRows, qualityLoopV2) {
-  const rows = Array.isArray(actionRows) ? actionRows : [];
-  const byTier = ['high', 'medium', 'low'].map((tier) => {
-    const scoped = rows.filter((row) => normalizeTier(row && row.intentRiskTier) === tier);
-    const satisfiedCount = scoped.filter((row) => row && row.officialOnlySatisfied === true).length;
-    const value = scoped.length > 0 ? Math.round((satisfiedCount / scoped.length) * 10000) / 10000 : null;
-    const threshold = tier === 'high'
-      ? KPI_THRESHOLDS.officialSourceUsageRate
-      : { operator: 'min', value: 0 };
-    return {
-      tier,
-      value,
-      sampleCount: scoped.length,
-      status: scoped.length > 0 ? buildStatus(value, threshold) : 'missing',
-      threshold
-    };
-  });
-  const present = byTier.filter((row) => row.sampleCount > 0 && row.value !== null);
-  const overallValue = present.length > 0
-    ? Math.round((present.reduce((sum, row) => sum + Number(row.value || 0), 0) / present.length) * 10000) / 10000
-    : null;
-  const highRiskMetric = qualityLoopV2 && qualityLoopV2.integrationKpis && qualityLoopV2.integrationKpis.officialSourceUsageRateHighRisk;
-  const status = byTier.some((row) => row.tier === 'high' && row.status === 'fail')
-    ? 'fail'
-    : (present.length > 0 ? 'pass' : 'missing');
-  return {
-    value: overallValue,
-    sampleCount: rows.length,
-    status,
-    threshold: {
-      operator: 'min_high_risk',
-      value: KPI_THRESHOLDS.officialSourceUsageRate.value
-    },
-    sourceCollections: ['llm_action_logs'],
-    byTier,
-    highRiskMetric: highRiskMetric || null
-  };
+function buildOfficialSourceUsageRate(qualityLoopV2) {
+  const integrationKpis = qualityLoopV2 && qualityLoopV2.integrationKpis && typeof qualityLoopV2.integrationKpis === 'object'
+    ? qualityLoopV2.integrationKpis
+    : {};
+  const highRiskMetric = integrationKpis.officialSourceUsageRateHighRisk || null;
+  const metric = integrationKpis.officialSourceUsageRate || highRiskMetric;
+  if (metric && typeof metric === 'object') {
+    return Object.assign({
+      threshold: KPI_THRESHOLDS.officialSourceUsageRate,
+      sourceCollections: ['llm_action_logs', 'faq_answer_logs'],
+      provenance: metric.provenance || 'live_runtime',
+      missingCount: Number.isFinite(Number(metric.missingCount)) ? Number(metric.missingCount) : 0
+    }, metric, {
+      threshold: KPI_THRESHOLDS.officialSourceUsageRate,
+      highRiskMetric: highRiskMetric || null
+    });
+  }
+  return buildRateKpi(
+    'officialSourceUsageRate',
+    null,
+    0,
+    KPI_THRESHOLDS.officialSourceUsageRate,
+    ['llm_action_logs', 'faq_answer_logs'],
+    { highRiskMetric: null }
+  );
 }
 
-function buildEvidenceCoverage(gateAuditRows) {
+function buildEvidenceCoverage(gateAuditRows, qualityLoopV2) {
+  const integrationKpis = qualityLoopV2 && qualityLoopV2.integrationKpis && typeof qualityLoopV2.integrationKpis === 'object'
+    ? qualityLoopV2.integrationKpis
+    : {};
+  const metric = integrationKpis.evidenceCoverage;
+  if (metric && typeof metric === 'object') {
+    return Object.assign({
+      threshold: KPI_THRESHOLDS.evidenceCoverage,
+      sourceCollections: ['llm_action_logs', 'faq_answer_logs'],
+      provenance: metric.provenance || 'live_runtime',
+      missingCount: Number.isFinite(Number(metric.missingCount)) ? Number(metric.missingCount) : 0
+    }, metric, {
+      threshold: KPI_THRESHOLDS.evidenceCoverage
+    });
+  }
   const summaries = (Array.isArray(gateAuditRows) ? gateAuditRows : []).map(extractAuditSummary);
   const values = summaries
     .map((summary) => summary.assistantQuality && Number(summary.assistantQuality.evidenceCoverage))
@@ -222,7 +245,27 @@ function buildEvidenceCoverage(gateAuditRows) {
   const value = values.length > 0
     ? Math.round((values.reduce((sum, current) => sum + current, 0) / values.length) * 10000) / 10000
     : null;
-  return buildRateKpi('evidenceCoverage', value, values.length, KPI_THRESHOLDS.evidenceCoverage, ['llm_gate.decision']);
+  return buildRateKpi('evidenceCoverage', value, values.length, KPI_THRESHOLDS.evidenceCoverage, ['llm_gate.decision'], {
+    missingCount: 0
+  });
+}
+
+function normalizeTraceId(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : '';
+}
+
+function collectTraceIds(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  return Array.from(new Set([]
+    .concat(Array.isArray(payload.gateAuditRows) ? payload.gateAuditRows.map((row) => {
+      const summary = extractAuditSummary(row);
+      return summary.traceId || (row && row.traceId) || null;
+    }) : [])
+    .concat(Array.isArray(payload.actionRows) ? payload.actionRows.map((row) => row && row.traceId ? row.traceId : null) : [])
+    .concat(Array.isArray(payload.faqRows) ? payload.faqRows.map((row) => row && row.traceId ? row.traceId : null) : [])
+    .concat(Array.isArray(payload.traceSearchAuditRows) ? payload.traceSearchAuditRows.map((row) => row && row.traceId ? row.traceId : null) : [])
+    .map((value) => normalizeTraceId(value))
+    .filter(Boolean)));
 }
 
 function buildTopFailures(kpis) {
@@ -250,13 +293,17 @@ function buildRuntimeAuditReport(input) {
   const actionRows = Array.isArray(payload.actionRows) ? payload.actionRows : [];
   const qualityRows = Array.isArray(payload.qualityRows) ? payload.qualityRows : [];
   const faqRows = Array.isArray(payload.faqRows) ? payload.faqRows : [];
+  const traceSearchAuditRows = Array.isArray(payload.traceSearchAuditRows) ? payload.traceSearchAuditRows : [];
+  const traceProbeRows = Array.isArray(payload.traceProbeRows) ? payload.traceProbeRows : [];
 
   const gateAuditBaseline = buildGateAuditBaseline(gateAuditRows);
   const optimization = buildOptimizationSummary(actionRows, gateAuditBaseline);
   const conversation = buildConversationQualitySummary(actionRows);
   const qualityLoopV2 = buildQualityLoopV2Summary({
     actionRows,
-    traceSearchAuditRows: [],
+    faqRows,
+    traceSearchAuditRows,
+    traceProbeRows,
     conversationQuality: conversation,
     optimization
   });
@@ -276,18 +323,20 @@ function buildRuntimeAuditReport(input) {
     actionRows.length > 0 ? unsupportedClaimCount / actionRows.length : null,
     actionRows.length,
     KPI_THRESHOLDS.unsupportedClaimRate,
-    ['llm_action_logs']
+    ['llm_action_logs'],
+    { missingCount: 0 }
   );
-  const evidenceCoverage = buildEvidenceCoverage(gateAuditRows);
+  const evidenceCoverage = buildEvidenceCoverage(gateAuditRows, qualityLoopV2);
   const clarifyRateByTier = buildClarifyRateByTier(actionRows);
-  const officialSourceUsageRate = buildOfficialSourceUsageRate(actionRows, qualityLoopV2);
+  const officialSourceUsageRate = buildOfficialSourceUsageRate(qualityLoopV2);
   const fallbackRateByCause = buildFallbackKpi(actionRows);
   const compatShareWindow = buildRateKpi(
     'compatShareWindow',
     optimization.compatShareWindow,
     Number(gateAuditBaseline.callsTotal || 0),
     KPI_THRESHOLDS.compatShareWindow,
-    ['llm_gate.decision', 'llm_action_logs']
+    ['llm_gate.decision', 'llm_action_logs'],
+    { missingCount: 0 }
   );
 
   const kpis = {
@@ -298,10 +347,14 @@ function buildRuntimeAuditReport(input) {
     officialSourceUsageRate,
     fallbackRateByCause,
     compatShareWindow,
-    cityPackGroundingRate: Object.assign({ sourceCollections: ['llm_action_logs'] }, qualityLoopV2.integrationKpis.cityPackGroundingRate || {}),
-    emergencyOfficialSourceRate: Object.assign({ sourceCollections: ['llm_action_logs'] }, qualityLoopV2.integrationKpis.emergencyOfficialSourceRate || {}),
-    journeyAlignedActionRate: Object.assign({ sourceCollections: ['llm_action_logs'] }, qualityLoopV2.integrationKpis.journeyAlignedActionRate || {}),
-    savedFaqReusePassRate: Object.assign({ sourceCollections: ['llm_action_logs', 'faq_answer_logs'] }, qualityLoopV2.integrationKpis.savedFaqReusePassRate || {})
+    cityPackGroundingRate: Object.assign({ sourceCollections: ['llm_action_logs', 'faq_answer_logs'], provenance: 'live_runtime', missingCount: 0 }, qualityLoopV2.integrationKpis.cityPackGroundingRate || {}),
+    staleSourceBlockRate: Object.assign({ sourceCollections: ['llm_action_logs', 'faq_answer_logs'], provenance: 'live_runtime', missingCount: 0 }, qualityLoopV2.integrationKpis.staleSourceBlockRate || {}),
+    emergencyOfficialSourceRate: Object.assign({ sourceCollections: ['llm_action_logs', 'faq_answer_logs'], provenance: 'live_runtime', missingCount: 0 }, qualityLoopV2.integrationKpis.emergencyOfficialSourceRate || {}),
+    journeyAlignedActionRate: Object.assign({ sourceCollections: ['llm_action_logs', 'faq_answer_logs'], provenance: 'live_runtime', missingCount: 0 }, qualityLoopV2.integrationKpis.journeyAlignedActionRate || {}),
+    savedFaqReusePassRate: Object.assign({ sourceCollections: ['llm_action_logs', 'faq_answer_logs'], provenance: 'live_runtime', missingCount: 0 }, qualityLoopV2.integrationKpis.savedFaqReusePassRate || {}),
+    traceJoinCompleteness: Object.assign({ sourceCollections: ['trace_search.view', 'trace_bundle'], provenance: 'trace_bundle_probe', missingCount: 0 }, qualityLoopV2.integrationKpis.traceJoinCompleteness || {}),
+    adminTraceResolutionTime: Object.assign({ sourceCollections: ['trace_search.view', 'trace_bundle'], provenance: 'trace_bundle_probe', missingCount: 0 }, qualityLoopV2.integrationKpis.adminTraceResolutionTime || {}),
+    adminTraceResolutionTimeMs: Object.assign({ sourceCollections: ['trace_search.view', 'trace_bundle'], provenance: 'trace_bundle_probe', missingCount: 0 }, qualityLoopV2.integrationKpis.adminTraceResolutionTimeMs || qualityLoopV2.integrationKpis.adminTraceResolutionTime || {})
   };
 
   const missingMeasurements = Object.entries(kpis)
@@ -315,9 +368,13 @@ function buildRuntimeAuditReport(input) {
     'officialSourceUsageRate',
     'compatShareWindow',
     'cityPackGroundingRate',
+    'staleSourceBlockRate',
     'emergencyOfficialSourceRate',
     'journeyAlignedActionRate',
-    'savedFaqReusePassRate'
+    'savedFaqReusePassRate',
+    'traceJoinCompleteness',
+    'adminTraceResolutionTime',
+    'adminTraceResolutionTimeMs'
   ];
   const releaseBlockers = releaseBlockerKeys.filter((key) => {
     const row = kpis[key];
@@ -333,9 +390,11 @@ function buildRuntimeAuditReport(input) {
       limit: Number.isFinite(Number(payload.limit)) ? Number(payload.limit) : null
     },
     source: {
-      latestAuditAt: latestTimestamp([].concat(gateAuditRows, actionRows, qualityRows, faqRows)),
+      latestAuditAt: latestTimestamp([].concat(gateAuditRows, actionRows, qualityRows, faqRows, traceSearchAuditRows, traceProbeRows)),
       qualityLogSampleCount: qualityRows.length,
       faqLogSampleCount: faqRows.length,
+      traceSearchSampleCount: traceSearchAuditRows.length,
+      traceProbeSampleCount: traceProbeRows.length,
       runtimeFetchStatus: payload.runtimeFetchStatus || 'ok',
       runtimeFetchErrorCode: payload.runtimeFetchErrorCode || null,
       runtimeFetchErrorMessage: payload.runtimeFetchErrorMessage || null,
@@ -385,11 +444,12 @@ async function loadRuntimeAuditInputs(params) {
   const toAt = payload.toAt ? new Date(payload.toAt) : null;
   const limit = Number.isFinite(Number(payload.limit)) ? Math.max(1, Math.min(5000, Math.floor(Number(payload.limit)))) : 500;
 
-  const [gateAuditRows, actionRows, qualityRows, faqRows] = await Promise.all([
+  const [gateAuditRows, actionRows, qualityRows, faqRows, rawTraceAuditRows] = await Promise.all([
     auditLogsRepo.listAuditLogs({ action: 'llm_gate.decision', limit }),
     llmActionLogsRepo.listLlmActionLogsByCreatedAtRange({ fromAt, toAt, limit }),
     llmQualityLogsRepo.listLlmQualityLogsByCreatedAtRange({ fromAt, toAt, limit }),
-    faqAnswerLogsRepo.listFaqAnswerLogs({ sinceAt: fromAt ? fromAt.toISOString() : null, limit })
+    faqAnswerLogsRepo.listFaqAnswerLogsByCreatedAtRange({ fromAt, toAt, limit }),
+    auditLogsRepo.listAuditLogs({ action: 'trace_search.view', limit })
   ]);
 
   const fromMs = fromAt instanceof Date && Number.isFinite(fromAt.getTime()) ? fromAt.getTime() : null;
@@ -405,11 +465,31 @@ async function loadRuntimeAuditInputs(params) {
     return true;
   });
 
+  const traceSearchAuditRows = buildTraceSearchAuditRows((Array.isArray(rawTraceAuditRows) ? rawTraceAuditRows : []).filter((row) => {
+    const rawMs = toMillis(row && row.createdAt ? row.createdAt : null);
+    if (!Number.isFinite(rawMs)) return false;
+    if (fromMs !== null && rawMs < fromMs) return false;
+    if (toMs !== null && rawMs > toMs) return false;
+    return true;
+  }));
+  const traceIds = collectTraceIds({
+    gateAuditRows: filteredGateAuditRows,
+    actionRows,
+    faqRows,
+    traceSearchAuditRows
+  });
+  const traceProbeRows = await buildTraceProbeRows({
+    traceIds,
+    limit: Math.min(50, traceIds.length || 0)
+  });
+
   return {
     gateAuditRows: filteredGateAuditRows,
     actionRows,
     qualityRows,
-    faqRows
+    faqRows,
+    traceSearchAuditRows,
+    traceProbeRows
   };
 }
 
