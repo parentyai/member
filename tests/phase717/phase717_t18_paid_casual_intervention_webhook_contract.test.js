@@ -26,13 +26,16 @@ function withEnv(patch) {
 }
 
 function createWebhookBody(text) {
+  const uniqueId = `phase717_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   return JSON.stringify({
     events: [
       {
+        webhookEventId: uniqueId,
+        timestamp: Date.now(),
         type: 'message',
         replyToken: 'rt_phase717_paid',
-        source: { userId: 'U_PHASE717_PAID' },
-        message: { type: 'text', text }
+        source: { type: 'user', userId: 'U_PHASE717_PAID' },
+        message: { id: `${uniqueId}_message`, type: 'text', text }
       }
     ]
   });

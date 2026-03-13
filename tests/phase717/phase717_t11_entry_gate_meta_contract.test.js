@@ -45,6 +45,12 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
     readinessDecision: 'clarify',
     readinessReasonCodes: ['source_readiness_clarify'],
     readinessSafeResponseMode: 'clarify',
+    routeKind: 'canonical',
+    routerReasonObserved: true,
+    compatFallbackReason: null,
+    sharedReadinessBridge: 'webhook_direct_readiness',
+    sharedReadinessBridgeObserved: true,
+    routeDecisionSource: 'conversation_router',
     unsupportedClaimCount: 1,
     contradictionDetected: true,
     answerReadinessLogOnly: true,
@@ -87,6 +93,12 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
   assert.equal(sanitized.readinessDecision, 'clarify');
   assert.deepEqual(sanitized.readinessReasonCodes, ['source_readiness_clarify']);
   assert.equal(sanitized.readinessSafeResponseMode, 'clarify');
+  assert.equal(sanitized.routeKind, 'canonical');
+  assert.equal(sanitized.routerReasonObserved, true);
+  assert.equal(sanitized.compatFallbackReason, null);
+  assert.equal(sanitized.sharedReadinessBridge, 'webhook_direct_readiness');
+  assert.equal(sanitized.sharedReadinessBridgeObserved, true);
+  assert.equal(sanitized.routeDecisionSource, 'conversation_router');
   assert.equal(sanitized.unsupportedClaimCount, 1);
   assert.equal(sanitized.contradictionDetected, true);
   assert.equal(sanitized.answerReadinessLogOnly, true);
@@ -174,15 +186,20 @@ test('phase717: webhook/admin/compat routes set entryType and gatesApplied for l
   assert.ok(webhook.includes("gatesApplied: ['kill_switch', 'injection', 'url_guard']"));
 
   assert.ok(adminFaq.includes("entryType: 'admin'"));
+  assert.ok(adminFaq.includes("sharedReadinessBridge: 'shared_admin_faq'"));
   assert.ok(adminFaq.includes("gatesApplied: ['kill_switch', 'injection', 'url_guard']"));
   assert.ok(adminOps.includes("entryType: 'admin'"));
+  assert.ok(adminOps.includes("sharedReadinessBridge: 'shared_admin_ops_explain'"));
   assert.ok(adminOps.includes("gatesApplied: ['kill_switch']"));
 
   assert.ok(compat2.includes("entryType: 'compat'"));
+  assert.ok(compat2.includes("compatFallbackReason: 'legacy_compat_ops_explain'"));
   assert.ok(compat2.includes("gatesApplied: ['kill_switch']"));
   assert.ok(compat3.includes("entryType: 'compat'"));
+  assert.ok(compat3.includes("compatFallbackReason: 'legacy_compat_ops_next_actions'"));
   assert.ok(compat3.includes("gatesApplied: ['kill_switch']"));
   assert.ok(compat4.includes("entryType: 'compat'"));
+  assert.ok(compat4.includes("compatFallbackReason: 'legacy_compat_faq_answer'"));
   assert.ok(compat4.includes("gatesApplied: ['kill_switch', 'injection', 'url_guard']"));
 
   assert.ok(internalJob.includes("entryType: ENTRY_TYPE"));

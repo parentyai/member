@@ -3,6 +3,7 @@
 const { runAnswerReadinessGateV2 } = require('./runAnswerReadinessGateV2');
 const { applyAnswerReadinessDecision } = require('./applyAnswerReadinessDecision');
 const { resolveIntentRiskTier } = require('../policy/resolveIntentRiskTier');
+const { resolveRouteCoverageMeta } = require('../router/resolveRouteCoverageMeta');
 const { enforceActionGateway } = require('../../../v1/action_gateway/actionGateway');
 const { resolveActionClass } = require('../../../v1/policy_graph/resolveActionClass');
 
@@ -94,6 +95,15 @@ function resolveSharedAnswerReadiness(params) {
   const policyReasonCodes = []
     .concat(risk.riskReasonCodes || [])
     .concat(explicitReasonCodes);
+  const routeCoverageMeta = resolveRouteCoverageMeta({
+    entryType,
+    routeKind: payload.routeKind,
+    routerReason: payload.routerReason,
+    fallbackType: payload.fallbackType,
+    compatFallbackReason: payload.compatFallbackReason,
+    sharedReadinessBridge: payload.sharedReadinessBridge,
+    routeDecisionSource: payload.routeDecisionSource
+  });
 
   const evaluatedGate = runAnswerReadinessGateV2({
     entryType,
@@ -186,7 +196,8 @@ function resolveSharedAnswerReadiness(params) {
     answerReadinessV2Mode: evaluatedGate.mode ? evaluatedGate.mode.mode : 'log_only_v2',
     answerReadinessV2Stage: evaluatedGate.mode ? evaluatedGate.mode.stage : 'log_only',
     answerReadinessV2EnforcementReason: evaluatedGate.mode ? evaluatedGate.mode.enforcementReason : 'log_only_default',
-    readinessTelemetryV2: evaluatedGate.telemetry
+    readinessTelemetryV2: evaluatedGate.telemetry,
+    routeCoverageMeta
   };
 }
 

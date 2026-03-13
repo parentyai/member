@@ -68,6 +68,14 @@ async function handleAdminLlmFaqAnswer(req, res, body, deps) {
       ? (result.blockedReason || result.llmStatus || 'blocked')
       : null;
     const qualitySignals = buildFaqQualitySignals(result, blockedReason);
+    result.routeKind = 'canonical';
+    result.routerReason = 'admin_faq_answer';
+    result.routerReasonObserved = true;
+    result.compatFallbackReason = null;
+    result.sharedReadinessBridge = 'shared_admin_faq';
+    result.sharedReadinessBridgeObserved = true;
+    result.routeDecisionSource = 'admin_route';
+    result.entryType = 'admin';
     await appendLlmGateDecision({
       actor,
       traceId,
@@ -133,6 +141,13 @@ async function handleAdminLlmFaqAnswer(req, res, body, deps) {
         : 0,
       contradictionDetected: result ? result.contradictionDetected === true : false,
       entryType: 'admin',
+      routeKind: 'canonical',
+      routerReason: 'admin_faq_answer',
+      routerReasonObserved: true,
+      compatFallbackReason: null,
+      sharedReadinessBridge: 'shared_admin_faq',
+      sharedReadinessBridgeObserved: true,
+      routeDecisionSource: 'admin_route',
       gatesApplied: ['kill_switch', 'injection', 'url_guard']
     }).catch(() => null);
     const status = result && Number.isInteger(result.httpStatus) ? result.httpStatus : 200;

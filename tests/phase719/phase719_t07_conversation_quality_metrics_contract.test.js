@@ -19,7 +19,14 @@ test('phase719: conversation quality summary aggregates naturalness and domain c
       actionCount: 3,
       domainIntent: 'housing',
       conversationMode: 'concierge',
-      fallbackType: 'domain_concierge'
+      fallbackType: 'domain_concierge',
+      routeKind: 'canonical',
+      routerReason: 'housing_intent_detected',
+      routerReasonObserved: true,
+      sharedReadinessBridge: 'webhook_direct_readiness',
+      sharedReadinessBridgeObserved: true,
+      routeDecisionSource: 'conversation_router',
+      entryType: 'webhook'
     },
     {
       legacyTemplateHit: false,
@@ -28,7 +35,15 @@ test('phase719: conversation quality summary aggregates naturalness and domain c
       actionCount: 2,
       domainIntent: 'school',
       conversationMode: 'concierge',
-      fallbackType: 'domain_concierge_fallback'
+      fallbackType: 'domain_concierge_fallback',
+      routeKind: 'compat',
+      routerReason: 'school_intent_detected',
+      routerReasonObserved: true,
+      compatFallbackReason: 'legacy_compat_ops_explain',
+      sharedReadinessBridge: 'shared_compat_ops_explain',
+      sharedReadinessBridgeObserved: true,
+      routeDecisionSource: 'compat_route',
+      entryType: 'compat'
     },
     {
       legacyTemplateHit: true,
@@ -37,7 +52,12 @@ test('phase719: conversation quality summary aggregates naturalness and domain c
       actionCount: 0,
       domainIntent: 'general',
       conversationMode: 'casual',
-      fallbackType: 'free_retrieval_sanitized'
+      fallbackType: 'free_retrieval_sanitized',
+      routeKind: 'canonical',
+      routerReasonObserved: false,
+      sharedReadinessBridgeObserved: false,
+      routeDecisionSource: 'webhook_route',
+      entryType: 'webhook'
     }
   ]);
 
@@ -48,8 +68,15 @@ test('phase719: conversation quality summary aggregates naturalness and domain c
   assert.equal(summary.pitfallIncludedRate, 0.6667);
   assert.equal(summary.avgActionCount, 1.6667);
   assert.equal(summary.domainIntentConciergeRate, 1);
+  assert.equal(summary.routerReasonObservedRate, 0.6667);
+  assert.equal(summary.sharedReadinessBridgeObservedRate, 0.6667);
+  assert.equal(summary.routeAttributionCompleteness, 1);
   assert.ok(Array.isArray(summary.domainIntents));
   assert.ok(Array.isArray(summary.fallbackTypes));
+  assert.ok(Array.isArray(summary.routeKinds));
+  assert.ok(Array.isArray(summary.compatFallbackReasons));
+  assert.ok(Array.isArray(summary.sharedReadinessBridges));
+  assert.ok(Array.isArray(summary.routeDecisionSources));
 });
 
 test('phase719: llm action log schema includes conversation quality metadata fields', () => {
@@ -62,7 +89,13 @@ test('phase719: llm action log schema includes conversation quality metadata fie
     'pitfallIncluded',
     'domainIntent',
     'fallbackType',
-    'interventionSuppressedBy'
+    'interventionSuppressedBy',
+    'routeKind',
+    'routerReasonObserved',
+    'compatFallbackReason',
+    'sharedReadinessBridge',
+    'sharedReadinessBridgeObserved',
+    'routeDecisionSource'
   ].forEach((token) => {
     assert.ok(repo.includes(token), token);
   });

@@ -20,6 +20,16 @@ test('phase778: shared readiness helper computes decision and returns normalized
   assert.ok(Array.isArray(result.readiness.reasonCodes));
   assert.equal(result.intentRiskTier, 'high');
   assert.equal(typeof result.replyText, 'string');
+  assert.deepEqual(result.routeCoverageMeta, {
+    routeKind: 'canonical',
+    routerReason: null,
+    routerReasonObserved: false,
+    fallbackType: null,
+    compatFallbackReason: null,
+    sharedReadinessBridge: null,
+    sharedReadinessBridgeObserved: false,
+    routeDecisionSource: 'admin_route'
+  });
 });
 
 test('phase778: explicit readiness decision overrides computed decision', () => {
@@ -35,6 +45,7 @@ test('phase778: explicit readiness decision overrides computed decision', () => 
   assert.equal(result.readiness.decision, 'hedged');
   assert.deepEqual(result.readiness.reasonCodes, ['manual_override']);
   assert.equal(result.readiness.safeResponseMode, 'answer_with_hedge');
+  assert.equal(result.routeCoverageMeta.routeDecisionSource, 'admin_route');
 });
 
 test('phase778: shared readiness helper enforces action gateway decision when enabled', () => {
@@ -54,4 +65,5 @@ test('phase778: shared readiness helper enforces action gateway decision when en
   assert.equal(result.actionGateway.decision, 'clarify');
   assert.equal(result.actionGateway.reason, 'assist_confirmation_required');
   assert.equal(result.readiness.decision, 'clarify');
+  assert.equal(result.routeCoverageMeta.routeKind, 'canonical');
 });

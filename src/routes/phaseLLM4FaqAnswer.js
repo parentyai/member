@@ -75,6 +75,14 @@ async function handleFaqAnswer(req, res, body) {
       ? (result.blockedReason || result.llmStatus || 'blocked')
       : null;
     const qualitySignals = buildCompatFaqQualitySignals(result, blockedReason);
+    result.routeKind = 'compat';
+    result.routerReason = 'compat_faq_answer_fallback';
+    result.routerReasonObserved = true;
+    result.compatFallbackReason = 'legacy_compat_faq_answer';
+    result.sharedReadinessBridge = 'shared_compat_faq';
+    result.sharedReadinessBridgeObserved = true;
+    result.routeDecisionSource = 'compat_route';
+    result.entryType = 'compat';
     await appendLlmGateDecision({
       actor,
       traceId,
@@ -140,6 +148,13 @@ async function handleFaqAnswer(req, res, body) {
         : 0,
       contradictionDetected: result ? result.contradictionDetected === true : false,
       entryType: 'compat',
+      routeKind: 'compat',
+      routerReason: 'compat_faq_answer_fallback',
+      routerReasonObserved: true,
+      compatFallbackReason: 'legacy_compat_faq_answer',
+      sharedReadinessBridge: 'shared_compat_faq',
+      sharedReadinessBridgeObserved: true,
+      routeDecisionSource: 'compat_route',
       gatesApplied: ['kill_switch', 'injection', 'url_guard']
     }).catch(() => null);
     const status = result && Number.isInteger(result.httpStatus) ? result.httpStatus : 200;
