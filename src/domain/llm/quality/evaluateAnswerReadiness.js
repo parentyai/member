@@ -167,12 +167,20 @@ function evaluateAnswerReadiness(params) {
   const savedFaqAuthorityScore = clamp01(payload.savedFaqAuthorityScore);
   const crossSystemConflictDetected = payload.crossSystemConflictDetected === true;
   const thresholds = resolveThresholds(intentRiskTier);
+  const highRisk = intentRiskTier === 'high';
+  const mediumRisk = intentRiskTier === 'medium';
 
   let decision = 'allow';
+  let decisionSource = 'threshold_allow';
+  function applyDecision(nextDecision, reasonCode, source) {
+    decision = nextDecision;
+    if (reasonCode) reasonCodes.push(reasonCode);
+    if (source) decisionSource = source;
+  }
   const hasCityPackSignals = cityPackGrounded || cityPackAuthorityScore > 0 || cityPackFreshnessScore > 0;
   const optionalCityPackHedge = reasonCodes.includes('city_pack_optional_source_stale');
   const requiredCityPackBlocked = reasonCodes.includes('city_pack_required_source_blocked');
-  const savedFaqHighRiskBlocked = savedFaqReused && intentRiskTier === 'high' && (
+  const savedFaqHighRiskBlocked = savedFaqReused && highRisk && (
     savedFaqReusePass !== true
     || savedFaqValid !== true
     || savedFaqAllowedIntent !== true
@@ -183,62 +191,45 @@ function evaluateAnswerReadiness(params) {
   );
 
   if (legalDecision === 'blocked' || (lawfulBasis === 'consent' && !consentVerified)) {
-    decision = 'refuse';
-    reasonCodes.push('legal_blocked');
+    applyDecision('refuse', 'legal_blocked', 'legal_policy_guard');
   } else if (emergencyContextActive && emergencyOfficialSourceSatisfied !== true) {
-    decision = 'refuse';
-    reasonCodes.push('emergency_official_source_missing');
+    applyDecision('refuse', 'emergency_official_source_missing', 'emergency_official_source_guard');
   } else if (requiredCityPackBlocked) {
-    decision = 'refuse';
-    reasonCodes.push('city_pack_required_source_blocked');
+    applyDecision('refuse', 'city_pack_required_source_blocked', 'city_pack_required_source_guard');
   } else if (sourceReadinessDecision === 'refuse') {
-    decision = 'refuse';
-    reasonCodes.push('source_readiness_refuse');
-  } else if (intentRiskTier === 'high' && officialOnlySatisfiedObserved !== true) {
-    decision = 'clarify';
-    reasonCodes.push('official_only_signal_missing');
-  } else if (intentRiskTier === 'high' && officialOnlySatisfied !== true) {
-    decision = 'refuse';
-    reasonCodes.push('official_only_not_satisfied');
+    applyDecision('refuse', 'source_readiness_refuse', 'source_readiness_guard');
+  } else if (highRisk && officialOnlySatisfiedObserved !== true) {
+    applyDecision('clarify', 'official_only_signal_missing', 'high_risk_official_signal_guard');
+  } else if (highRisk && officialOnlySatisfied !== true) {
+    applyDecision('refuse', 'official_only_not_satisfied', 'high_risk_official_policy_guard');
   } else if (savedFaqHighRiskBlocked) {
-    decision = 'refuse';
-    reasonCodes.push('saved_faq_high_risk_not_ready');
-  } else if (intentRiskTier === 'high' && evidenceCoverageObserved !== true) {
-    decision = 'clarify';
-    reasonCodes.push('evidence_coverage_signal_missing');
-  } else if (intentRiskTier === 'high' && unsupportedClaimCount > 0 && evidenceCoverage < thresholds.minEvidenceHedge) {
-    decision = 'refuse';
-    reasonCodes.push('unsupported_claim_high_risk');
+    applyDecision('refuse', 'saved_faq_high_risk_not_ready', 'high_risk_saved_faq_guard');
+  } else if (highRisk && evidenceCoverageObserved !== true) {
+    applyDecision('clarify', 'evidence_coverage_signal_missing', 'high_risk_evidence_signal_guard');
+  } else if (highRisk && unsupportedClaimCount > 0 && evidenceCoverage < thresholds.minEvidenceHedge) {
+    applyDecision('refuse', 'unsupported_claim_high_risk', 'high_risk_unsupported_claim_guard');
   } else if (requiredCoreFactsLogOnly !== true && requiredCoreFactsDecision === 'clarify') {
-    decision = 'clarify';
-    reasonCodes.push('missing_required_core_facts');
+    applyDecision('clarify', 'missing_required_core_facts', 'required_core_facts_guard');
   } else if (requiredCoreFactsLogOnly !== true && requiredCoreFactsComplete !== true && missingRequiredCoreFactsCount >= 7) {
-    decision = 'clarify';
-    reasonCodes.push('missing_required_core_facts');
+    applyDecision('clarify', 'missing_required_core_facts', 'required_core_facts_guard');
   } else if (taskBlockerDetected && journeyAlignedAction !== true) {
-    decision = 'clarify';
-    reasonCodes.push('journey_task_conflict');
+    applyDecision('clarify', 'journey_task_conflict', 'journey_task_conflict_guard');
   } else if (crossSystemConflictDetected) {
-    decision = 'clarify';
-    reasonCodes.push('cross_system_conflict_detected');
+    applyDecision('clarify', 'cross_system_conflict_detected', 'cross_system_conflict_guard');
   } else if (contradictionDetected) {
     if (
       evidenceCoverage >= thresholds.minEvidenceAllow
       && sourceAuthorityScore >= thresholds.minAuthorityAllow
       && sourceFreshnessScore >= thresholds.minFreshnessAllow
     ) {
-      decision = 'hedged';
-      reasonCodes.push('contradiction_detected_hedged');
+      applyDecision('hedged', 'contradiction_detected_hedged', 'contradiction_guard');
     } else {
-      decision = 'clarify';
-      reasonCodes.push('contradiction_detected');
+      applyDecision('clarify', 'contradiction_detected', 'contradiction_guard');
     }
   } else if (sourceReadinessDecision === 'clarify') {
-    decision = 'clarify';
-    reasonCodes.push('source_readiness_clarify');
+    applyDecision('clarify', 'source_readiness_clarify', 'source_readiness_guard');
   } else if (sourceReadinessDecision === 'hedged') {
-    decision = 'hedged';
-    reasonCodes.push('source_readiness_hedged');
+    applyDecision('hedged', 'source_readiness_hedged', 'source_readiness_guard');
   } else {
     const allowReady = (
       sourceAuthorityScore >= thresholds.minAuthorityAllow
@@ -251,20 +242,16 @@ function evaluateAnswerReadiness(params) {
       && evidenceCoverage >= thresholds.minEvidenceHedge
     );
     if (allowReady) {
-      decision = 'allow';
-      reasonCodes.push('readiness_allow');
+      applyDecision('allow', 'readiness_allow', 'threshold_allow');
     } else if (hedgeReady) {
-      decision = 'hedged';
-      reasonCodes.push('readiness_hedged');
+      applyDecision('hedged', 'readiness_hedged', 'threshold_hedged');
     } else {
-      decision = 'clarify';
-      reasonCodes.push('readiness_clarify');
+      applyDecision('clarify', 'readiness_clarify', 'threshold_clarify');
     }
   }
 
   if (optionalCityPackHedge && decision === 'allow') {
-    decision = 'hedged';
-    reasonCodes.push('city_pack_optional_source_stale');
+    applyDecision('hedged', 'city_pack_optional_source_stale', 'city_pack_optional_source_guard');
   }
   if (
     decision === 'allow'
@@ -274,16 +261,54 @@ function evaluateAnswerReadiness(params) {
       || cityPackFreshnessScore > 0 && cityPackFreshnessScore < thresholds.minFreshnessHedge
     )
   ) {
-    decision = 'hedged';
-    reasonCodes.push('city_pack_signal_hedged');
+    applyDecision('hedged', 'city_pack_signal_hedged', 'city_pack_signal_guard');
   }
   if (decision === 'allow' && savedFaqReused && savedFaqReusePass !== true && intentRiskTier !== 'high') {
-    decision = 'hedged';
-    reasonCodes.push('saved_faq_reuse_hedged');
+    applyDecision('hedged', 'saved_faq_reuse_hedged', 'saved_faq_reuse_guard');
+  }
+
+  const evidenceBelowAllow = evidenceCoverageObserved === true && evidenceCoverage < thresholds.minEvidenceAllow;
+  const mediumRiskOfficialWeak = mediumRisk && officialOnlySatisfiedObserved === true && officialOnlySatisfied !== true;
+  const mediumRiskSavedFaqWeak = mediumRisk && savedFaqReused && savedFaqReusePass !== true;
+  const journeyAlignmentWeak = journeyContextActive && journeyAlignedAction === false;
+
+  if (decision === 'hedged' && highRisk && evidenceBelowAllow) {
+    applyDecision('clarify', 'high_risk_evidence_not_ready', 'high_risk_evidence_guard');
+  }
+  if (decision === 'hedged' && mediumRisk && evidenceBelowAllow && unsupportedClaimCount > 0) {
+    applyDecision('clarify', 'medium_risk_evidence_not_ready', 'medium_risk_evidence_guard');
+  }
+  if (
+    decision !== 'refuse'
+    && mediumRiskOfficialWeak
+    && (
+      decision === 'allow'
+      || evidenceBelowAllow
+      || sourceReadinessDecision !== 'allow'
+      || mediumRiskSavedFaqWeak
+    )
+  ) {
+    applyDecision('clarify', 'medium_risk_official_not_ready', 'medium_risk_official_guard');
+  }
+  if (
+    decision !== 'refuse'
+    && mediumRiskSavedFaqWeak
+    && (
+      decision === 'allow'
+      || decision === 'hedged'
+      || evidenceBelowAllow
+      || sourceReadinessDecision !== 'allow'
+      || mediumRiskOfficialWeak
+    )
+  ) {
+    applyDecision('clarify', 'saved_faq_reuse_not_ready', 'saved_faq_reuse_guard');
+  }
+  if (decision !== 'refuse' && decision !== 'clarify' && journeyAlignmentWeak && intentRiskTier !== 'low') {
+    applyDecision('clarify', 'journey_alignment_not_ready', 'journey_alignment_guard');
   }
   if (
     compatContextActive
-    && intentRiskTier === 'high'
+    && highRisk
     && decision !== 'refuse'
     && (
       officialOnlySatisfiedObserved !== true
@@ -291,8 +316,7 @@ function evaluateAnswerReadiness(params) {
       || sourceReadinessDecision !== 'allow'
     )
   ) {
-    decision = 'clarify';
-    reasonCodes.push('compat_high_risk_policy_tightened');
+    applyDecision('clarify', 'compat_high_risk_policy_tightened', 'compat_high_risk_policy_guard');
   }
   if (crossBorder) reasonCodes.push('cross_border_enabled');
   if (fallbackType) reasonCodes.push('fallback_applied');
@@ -342,9 +366,12 @@ function evaluateAnswerReadiness(params) {
       savedFaqAllowedIntent,
       savedFaqAuthorityScore,
       crossSystemConflictDetected,
-      policyTighteningVersion: 'r827'
+      policyTighteningVersion: 'r827',
+      readinessHardeningVersion: 'r829',
+      decisionSource
     },
-    safeResponseMode: resolveSafeResponseMode(decision)
+    safeResponseMode: resolveSafeResponseMode(decision),
+    decisionSource
   };
 }
 

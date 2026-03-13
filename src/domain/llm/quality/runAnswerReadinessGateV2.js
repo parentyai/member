@@ -31,6 +31,11 @@ function runAnswerReadinessGateV2(params) {
       answerReadinessV2EnforcementReason: mode.enforcementReason,
       answerReadinessEnforcedV2: mode.answerReadinessEnforcedV2,
       answerReadinessLogOnlyV2: mode.answerReadinessLogOnlyV2,
+      readinessDecisionSource: readinessLegacy.decisionSource || null,
+      readinessDecisionSourceV2: readinessV2.decisionSource || null,
+      readinessHardeningVersion: readinessV2.qualitySnapshot && readinessV2.qualitySnapshot.readinessHardeningVersion
+        ? readinessV2.qualitySnapshot.readinessHardeningVersion
+        : null,
       readinessDecisionV2: readinessV2.decision,
       readinessReasonCodesV2: readinessV2.reasonCodes,
       readinessSafeResponseModeV2: readinessV2.safeResponseMode,

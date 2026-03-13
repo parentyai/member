@@ -40,8 +40,9 @@ test('phase827: high-risk weak evidence no longer allows with otherwise strong s
     evidenceCoverageObserved: true
   });
 
-  assert.equal(result.decision, 'hedged');
-  assert.ok(result.reasonCodes.includes('readiness_hedged'));
+  assert.equal(result.decision, 'clarify');
+  assert.ok(result.reasonCodes.includes('high_risk_evidence_not_ready'));
+  assert.equal(result.decisionSource, 'high_risk_evidence_guard');
 });
 
 test('phase827: low-risk flow keeps prior allow behavior with the same evidence score', () => {
