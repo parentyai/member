@@ -1728,10 +1728,14 @@ function buildQualityLoopV2Summary(data) {
   const readinessDecisionV2Breakdown = new Map();
   const readinessModeBreakdown = new Map();
   const readinessStageBreakdown = new Map();
+  const readinessDecisionSourceBreakdown = new Map();
+  const readinessHardeningVersionBreakdown = new Map();
   readinessV2Rows.forEach((row) => {
     incrementCount(readinessDecisionV2Breakdown, row && row.readinessDecisionV2 ? row.readinessDecisionV2 : 'none');
     incrementCount(readinessModeBreakdown, row && row.answerReadinessV2Mode ? row.answerReadinessV2Mode : 'unknown');
     incrementCount(readinessStageBreakdown, row && row.answerReadinessV2Stage ? row.answerReadinessV2Stage : 'unknown');
+    incrementCount(readinessDecisionSourceBreakdown, row && row.readinessDecisionSourceV2 ? row.readinessDecisionSourceV2 : 'unknown');
+    incrementCount(readinessHardeningVersionBreakdown, row && row.readinessHardeningVersion ? row.readinessHardeningVersion : 'none');
   });
   const nogoGateMandatoryCount = countWhere(readinessV2Rows, (row) => row && row.answerReadinessV2Stage === 'nogo_gate_mandatory');
   const hardEnforcedCount = countWhere(
@@ -1767,6 +1771,8 @@ function buildQualityLoopV2Summary(data) {
       decisionBreakdown: sortCountEntries(readinessDecisionV2Breakdown, 'decision', 10),
       modeBreakdown: sortCountEntries(readinessModeBreakdown, 'mode', 10),
       stageBreakdown: sortCountEntries(readinessStageBreakdown, 'stage', 10),
+      decisionSourceBreakdown: sortCountEntries(readinessDecisionSourceBreakdown, 'decisionSource', 10),
+      hardeningVersionBreakdown: sortCountEntries(readinessHardeningVersionBreakdown, 'version', 10),
       hardEnforcedCount,
       softEnforcedCount,
       logOnlyCount,

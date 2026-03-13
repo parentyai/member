@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-13T06:50:54-04:00",
-  "gitCommit": "10bf116fad341c87f32709eccfa62651affbc91e",
-  "branch": "codex/llm-knowledge-hardening-live-report-r828",
-  "sourceDigest": "b956225d0b0182ade5fb79fe2a65d57dd988d2bb9ffc5166f7aa5d1eb852cb5a",
+  "generatedAt": "2026-03-13T08:54:40-04:00",
+  "gitCommit": "a3da775ed06b532d20ca0ecd7c9d3f41289a14b1",
+  "branch": "codex/llm-readiness-hardening-live-report-r829",
+  "sourceDigest": "b5bb1d2045ba62f5046974ffe92c776bf7b1f973d865cc73cf3ab71f4beca0f3",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
