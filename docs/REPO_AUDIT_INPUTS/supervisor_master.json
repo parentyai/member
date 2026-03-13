@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-13T06:03:26-04:00",
-  "gitCommit": "f4dfc56633879eb6bf1abec354bd9d66901fabe7",
-  "branch": "codex/llm-policy-tightening-live-report-r827",
-  "sourceDigest": "51f1f1da1b1894bc0489a8416dabbb36c6143affe94ee0739f5e711760f9e2cb",
+  "generatedAt": "2026-03-13T06:50:54-04:00",
+  "gitCommit": "10bf116fad341c87f32709eccfa62651affbc91e",
+  "branch": "codex/llm-knowledge-hardening-live-report-r828",
+  "sourceDigest": "b956225d0b0182ade5fb79fe2a65d57dd988d2bb9ffc5166f7aa5d1eb852cb5a",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
