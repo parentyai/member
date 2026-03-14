@@ -42,6 +42,13 @@
 - route also requires `x-actor` like other admin endpoints.
 - raw transcript is not returned. Trace references are identifiers only and human audience suppresses direct trace ids.
 
+## Admin UI surface
+- PR-9 adds the read-only `Quality Patrol` pane inside `/admin/app`.
+- default UI state is `mode=latest` and `audience=operator`.
+- UI keeps the blocker-first rule: `observationBlockers[]` render before `recommendedPr[]`.
+- operator view shows denser evidence and trace handoff buttons; human view keeps the summary compact and suppresses direct trace refs.
+- scheduler is not wired yet. `latest` remains live synthesis from the read-side foundations.
+
 ## Non-goals in PR-8
 - no admin UI pane
 - no scheduler or cron caller

@@ -63,6 +63,10 @@
             <span class="nav-icon" aria-hidden="true">A</span>
             <span data-dict-key="ui.label.nav.opsDecision">判断ログ</span>
           </button>
+          <button class="nav-item" data-pane-target="quality-patrol" data-nav-priority="232.5">
+            <span class="nav-icon" aria-hidden="true">QP</span>
+            <span data-dict-key="ui.label.nav.qualityPatrol">Quality Patrol</span>
+          </button>
           <div class="nav-layer-label">System</div>
           <button id="nav-open-settings" class="nav-item" data-pane-target="settings" data-nav-priority="232">
             <span class="nav-icon" aria-hidden="true">S</span>
@@ -3996,6 +4000,111 @@
                 <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
                 <div class="panel-body">
                   <p class="note" data-dict-key="ui.desc.audit.actions">traceIdで証跡を確認します。</p>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-quality-patrol" class="app-pane" data-pane="quality-patrol">
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.page.qualityPatrol">Quality Patrol</div>
+                <div class="panel-body">
+                  <p class="note" data-dict-key="ui.desc.qualityPatrol.lead">会話品質の観測結果を read-only で確認します。blocker がある場合は改善提案より先に観測不足を確認します。</p>
+                  <div class="quality-patrol-summary-meta">
+                    <span id="quality-patrol-generated-at" class="cell-muted">generatedAt: -</span>
+                    <span id="quality-patrol-current-mode" class="cell-muted">mode: latest</span>
+                    <span id="quality-patrol-current-audience" class="cell-muted">audience: operator</span>
+                  </div>
+                  <div class="dashboard-summary-grid quality-patrol-summary-grid">
+                    <section class="manual-card quality-patrol-summary-card">
+                      <div class="repo-map-card-subtitle">overallStatus</div>
+                      <div class="quality-patrol-summary-value">
+                        <span id="quality-patrol-overall-status" class="badge badge-unset">UNAVAILABLE</span>
+                      </div>
+                    </section>
+                    <section class="manual-card quality-patrol-summary-card">
+                      <div class="repo-map-card-subtitle">topPriorityCount</div>
+                      <div id="quality-patrol-top-priority-count" class="metric-value">-</div>
+                    </section>
+                    <section class="manual-card quality-patrol-summary-card">
+                      <div class="repo-map-card-subtitle">observationBlockerCount</div>
+                      <div id="quality-patrol-observation-blocker-count" class="metric-value">-</div>
+                    </section>
+                    <section class="manual-card quality-patrol-summary-card">
+                      <div class="repo-map-card-subtitle">observationStatus</div>
+                      <div class="quality-patrol-summary-value">
+                        <span id="quality-patrol-observation-status" class="badge badge-unset">UNAVAILABLE</span>
+                      </div>
+                    </section>
+                  </div>
+                  <div class="repo-map-card-subtitle">topFindings</div>
+                  <ul id="quality-patrol-top-findings" class="repo-map-list"></ul>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title">Observation blockers</div>
+                <div class="panel-body">
+                  <div id="quality-patrol-observation-blockers" class="quality-patrol-list"></div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title">Recommended PR</div>
+                <div class="panel-body">
+                  <div id="quality-patrol-recommended-pr" class="quality-patrol-list"></div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title">Issues</div>
+                <div class="panel-body">
+                  <div id="quality-patrol-issues" class="quality-patrol-list"></div>
+                </div>
+              </div>
+            </div>
+            <div class="pane-detail">
+              <div class="panel">
+                <div class="panel-title">Evidence</div>
+                <div class="panel-body">
+                  <div id="quality-patrol-evidence" class="quality-patrol-list"></div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title">Trace refs</div>
+                <div class="panel-body">
+                  <div id="quality-patrol-trace-note" class="note">traceは operator audience でのみ詳しく表示します。</div>
+                  <div id="quality-patrol-trace-refs" class="quality-patrol-list"></div>
+                </div>
+              </div>
+            </div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <p class="note" data-dict-key="ui.desc.qualityPatrol.actions">Quality Patrol は参照専用です。mode / audience を切り替えても write は発生しません。</p>
+                  <div class="note">
+                    <label for="quality-patrol-mode-select">mode</label>
+                    <select id="quality-patrol-mode-select" class="input-inline input-sm">
+                      <option value="latest">latest</option>
+                      <option value="top-risk">top-risk</option>
+                      <option value="newly-detected-improvements">newly-detected-improvements</option>
+                      <option value="observation-blockers">observation-blockers</option>
+                      <option value="next-best-pr">next-best-pr</option>
+                    </select>
+                  </div>
+                  <div class="note">
+                    <label for="quality-patrol-audience-select">audience</label>
+                    <select id="quality-patrol-audience-select" class="input-inline input-sm">
+                      <option value="operator">operator</option>
+                      <option value="human">human</option>
+                    </select>
+                  </div>
+                  <div class="row row-top">
+                    <button id="quality-patrol-refresh" type="button">更新</button>
+                    <button id="quality-patrol-open-audit" type="button" class="secondary-btn">判断ログへ</button>
+                  </div>
+                  <div id="quality-patrol-load-state" class="note">latest / operator を表示します。</div>
                 </div>
               </div>
             </aside>

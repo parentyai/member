@@ -290,6 +290,11 @@ const state = {
   missingIndexSurfaceItems: [],
   missingIndexSurfaceMeta: null,
   productReadiness: null,
+  qualityPatrolResult: null,
+  qualityPatrolMode: 'latest',
+  qualityPatrolAudience: 'operator',
+  qualityPatrolLoading: false,
+  qualityPatrolError: null,
   paneUpdatedAt: {},
   activePane: 'home',
   buildMeta: null,
@@ -775,6 +780,7 @@ const PANE_HEADER_MAP = Object.freeze({
   'emergency-layer': { titleKey: 'ui.label.page.emergencyLayer', subtitleKey: 'ui.desc.page.emergencyLayer' },
   'city-pack': { titleKey: 'ui.label.page.cityPack', subtitleKey: 'ui.desc.page.cityPack' },
   audit: { titleKey: 'ui.label.page.audit', subtitleKey: 'ui.desc.page.audit' },
+  'quality-patrol': { titleKey: 'ui.label.page.qualityPatrol', subtitleKey: 'ui.desc.page.qualityPatrol' },
   'developer-map': { titleKey: 'ui.label.page.developerMap', subtitleKey: 'ui.desc.page.developerMap' },
   'developer-manual-redac': { titleKey: 'ui.label.page.developerManualRedac', subtitleKey: 'ui.desc.page.developerManualRedac' },
   'developer-manual-user': { titleKey: 'ui.label.page.developerManualUser', subtitleKey: 'ui.desc.page.developerManualUser' },
@@ -806,9 +812,9 @@ const PAGE_HEADER_ACTION_MAP = Object.freeze({
 });
 
 const NAV_POLICY = Object.freeze({
-  operator: ['home', 'ops-feature-catalog', 'ops-system-health', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings'],
-  admin: ['home', 'ops-feature-catalog', 'ops-system-health', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user'],
-  developer: ['home', 'ops-feature-catalog', 'ops-system-health', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user']
+  operator: ['home', 'ops-feature-catalog', 'ops-system-health', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'quality-patrol', 'settings'],
+  admin: ['home', 'ops-feature-catalog', 'ops-system-health', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'quality-patrol', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user'],
+  developer: ['home', 'ops-feature-catalog', 'ops-system-health', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'quality-patrol', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user']
 });
 
 const NAV_GROUP_VISIBILITY_POLICY = Object.freeze({
@@ -3374,6 +3380,508 @@ function asText(value, fallback) {
   return normalizeCopyForRole(fallback || '-', state.role);
 }
 
+const QUALITY_PATROL_QUERY_MODES = Object.freeze([
+  'latest',
+  'top-risk',
+  'newly-detected-improvements',
+  'observation-blockers',
+  'next-best-pr'
+]);
+
+function resolveQualityPatrolMode(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return QUALITY_PATROL_QUERY_MODES.includes(normalized) ? normalized : 'latest';
+}
+
+function resolveQualityPatrolAudience(value) {
+  return String(value || '').trim().toLowerCase() === 'human' ? 'human' : 'operator';
+}
+
+function buildQualityPatrolModeLabel(value) {
+  const mode = resolveQualityPatrolMode(value);
+  if (mode === 'top-risk') return '上位リスク';
+  if (mode === 'newly-detected-improvements') return '新しく検知された改善';
+  if (mode === 'observation-blockers') return '観測不足';
+  if (mode === 'next-best-pr') return '次に切るべきPR';
+  return '最新';
+}
+
+function buildQualityPatrolAudienceLabel(value) {
+  return resolveQualityPatrolAudience(value) === 'human' ? 'human view' : 'operator view';
+}
+
+function buildQualityPatrolStatusLabel(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return 'UNAVAILABLE';
+  return normalized.replace(/[^a-z0-9]+/g, '_').toUpperCase();
+}
+
+function resolveQualityPatrolTone(status) {
+  const normalized = String(status || '').trim().toLowerCase();
+  if (!normalized) return 'unset';
+  if (normalized === 'ok' || normalized === 'ready' || normalized === 'pass' || normalized === 'resolved') return 'success';
+  if (normalized === 'warning' || normalized === 'warn' || normalized === 'watching') return 'warn';
+  if (normalized === 'blocked' || normalized === 'insufficient_evidence') return 'warn';
+  if (normalized === 'unavailable' || normalized === 'missing') return 'disabled';
+  if (normalized === 'fail' || normalized === 'critical' || normalized === 'high' || normalized === 'error') return 'error';
+  return 'unset';
+}
+
+function renderQualityPatrolPlaceholder(containerId, message, className) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  clearElementChildren(container);
+  const placeholder = document.createElement('div');
+  placeholder.className = className || 'empty-state';
+  placeholder.textContent = normalizeCopyForRole(message || '情報なし', state.role);
+  container.appendChild(placeholder);
+}
+
+function createQualityPatrolBadge(label, tone) {
+  const badge = document.createElement('span');
+  applyBadgeState(badge, label, tone, { baseClass: 'badge' });
+  return badge;
+}
+
+function createQualityPatrolItem(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const article = document.createElement('article');
+  article.className = 'quality-patrol-item';
+
+  const header = document.createElement('div');
+  header.className = 'quality-patrol-item-header';
+
+  const titleWrap = document.createElement('div');
+  const title = document.createElement('h3');
+  title.className = 'quality-patrol-item-title';
+  title.textContent = asText(opts.title, 'Quality Patrol');
+  titleWrap.appendChild(title);
+  header.appendChild(titleWrap);
+
+  if (Array.isArray(opts.badges) && opts.badges.length) {
+    const badgeWrap = document.createElement('div');
+    badgeWrap.className = 'quality-patrol-item-meta';
+    opts.badges.forEach((item) => {
+      if (!item || !item.label) return;
+      badgeWrap.appendChild(createQualityPatrolBadge(String(item.label), item.tone || 'unset'));
+    });
+    header.appendChild(badgeWrap);
+  }
+
+  article.appendChild(header);
+
+  const summary = document.createElement('p');
+  summary.className = 'quality-patrol-item-summary';
+  summary.textContent = asText(opts.summary, '情報なし');
+  article.appendChild(summary);
+
+  if (Array.isArray(opts.meta) && opts.meta.filter(Boolean).length) {
+    const meta = document.createElement('div');
+    meta.className = 'quality-patrol-item-meta';
+    opts.meta.filter(Boolean).forEach((item) => {
+      meta.appendChild(createQualityPatrolBadge(String(item), 'unset'));
+    });
+    article.appendChild(meta);
+  }
+
+  if (Array.isArray(opts.details) && opts.details.filter(Boolean).length) {
+    const list = document.createElement('ul');
+    list.className = 'quality-patrol-inline-list';
+    opts.details.filter(Boolean).forEach((item) => {
+      const li = document.createElement('li');
+      li.textContent = asText(item, '-');
+      list.appendChild(li);
+    });
+    article.appendChild(list);
+  }
+
+  if (Array.isArray(opts.actions) && opts.actions.length) {
+    const actions = document.createElement('div');
+    actions.className = 'quality-patrol-item-actions';
+    opts.actions.forEach((action) => {
+      if (!action || typeof action.onClick !== 'function') return;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = action.subtle === true ? 'button-subtle' : 'secondary-btn';
+      button.textContent = asText(action.label, 'Open');
+      button.addEventListener('click', action.onClick);
+      actions.appendChild(button);
+    });
+    article.appendChild(actions);
+  }
+
+  return article;
+}
+
+function summarizeQualityPatrolFiles(files, audience) {
+  const rows = Array.isArray(files) ? files.filter(Boolean).map((item) => String(item).trim()).filter(Boolean) : [];
+  if (!rows.length) return '-';
+  if (resolveQualityPatrolAudience(audience) === 'operator') return rows.join(', ');
+  return rows.map((item) => item.split('/').filter(Boolean).slice(-2).join('/')).join(', ');
+}
+
+function summarizeQualityPatrolBlockedBy(values) {
+  const rows = Array.isArray(values) ? values.filter(Boolean).map((item) => String(item).trim()).filter(Boolean) : [];
+  return rows.length ? rows.join(', ') : 'なし';
+}
+
+function summarizeQualityPatrolAffectedSlices(values) {
+  const rows = Array.isArray(values) ? values.filter(Boolean).map((item) => String(item).trim()).filter(Boolean) : [];
+  return rows.length ? rows.join(', ') : 'global';
+}
+
+function renderQualityPatrolSummary(result) {
+  const payload = result && typeof result === 'object' ? result : {};
+  const summary = payload.summary && typeof payload.summary === 'object' ? payload.summary : {};
+  setTextContent(
+    'quality-patrol-generated-at',
+    `generatedAt: ${payload.generatedAt ? formatDateLabel(payload.generatedAt) : '-'}`
+  );
+  setTextContent(
+    'quality-patrol-current-mode',
+    `mode: ${buildQualityPatrolModeLabel(payload.mode || state.qualityPatrolMode)} (${resolveQualityPatrolMode(payload.mode || state.qualityPatrolMode)})`
+  );
+  setTextContent(
+    'quality-patrol-current-audience',
+    `audience: ${buildQualityPatrolAudienceLabel(payload.audience || state.qualityPatrolAudience)}`
+  );
+  applyBadgeState(
+    document.getElementById('quality-patrol-overall-status'),
+    buildQualityPatrolStatusLabel(summary.overallStatus),
+    resolveQualityPatrolTone(summary.overallStatus),
+    { baseClass: 'badge' }
+  );
+  applyBadgeState(
+    document.getElementById('quality-patrol-observation-status'),
+    buildQualityPatrolStatusLabel(payload.observationStatus),
+    resolveQualityPatrolTone(payload.observationStatus),
+    { baseClass: 'badge' }
+  );
+  setTextContent('quality-patrol-top-priority-count', String(Number(summary.topPriorityCount || 0)));
+  setTextContent('quality-patrol-observation-blocker-count', String(Number(summary.observationBlockerCount || 0)));
+  renderStringList(
+    'quality-patrol-top-findings',
+    Array.isArray(summary.topFindings) ? summary.topFindings : [],
+    payload.observationStatus === 'insufficient_evidence'
+      ? '観測不足のため、まだ確度の高い finding を並べられません。'
+      : '現時点で優先 finding はありません。'
+  );
+  setTextContent(
+    'quality-patrol-load-state',
+    `${buildQualityPatrolModeLabel(payload.mode || state.qualityPatrolMode)} / ${buildQualityPatrolAudienceLabel(payload.audience || state.qualityPatrolAudience)} / ${buildQualityPatrolStatusLabel(payload.observationStatus)}`
+  );
+}
+
+function renderQualityPatrolObservationBlockers(result) {
+  const payload = result && typeof result === 'object' ? result : {};
+  const container = document.getElementById('quality-patrol-observation-blockers');
+  if (!container) return;
+  clearElementChildren(container);
+  const rows = Array.isArray(payload.observationBlockers) ? payload.observationBlockers : [];
+  if (!rows.length) {
+    renderQualityPatrolPlaceholder(
+      'quality-patrol-observation-blockers',
+      payload.observationStatus === 'blocked' || payload.observationStatus === 'insufficient_evidence'
+        ? '観測不足はありますが、詳細 blocker はまだ構造化されていません。'
+        : '現在は優先 blocker は検知されていません。'
+    );
+    return;
+  }
+  rows.forEach((item) => {
+    container.appendChild(createQualityPatrolItem({
+      title: item.title,
+      summary: item.summary,
+      badges: [{ label: 'BLOCKER', tone: 'warn' }],
+      meta: [
+        `slice=${summarizeQualityPatrolAffectedSlices(item.affectedSlices)}`,
+        'read-only'
+      ],
+      details: [`recommendedAction: ${asText(item.recommendedAction, '-')}`]
+    }));
+  });
+}
+
+function renderQualityPatrolRecommendedPr(result) {
+  const payload = result && typeof result === 'object' ? result : {};
+  const container = document.getElementById('quality-patrol-recommended-pr');
+  if (!container) return;
+  clearElementChildren(container);
+  const rows = Array.isArray(payload.recommendedPr) ? payload.recommendedPr : [];
+  if (!rows.length) {
+    renderQualityPatrolPlaceholder(
+      'quality-patrol-recommended-pr',
+      payload.observationStatus === 'blocked' || payload.observationStatus === 'insufficient_evidence'
+        ? '観測不足が主因のため、強い改善提案はまだ出していません。'
+        : '現時点で追加の改善提案はありません。'
+    );
+    return;
+  }
+  rows.forEach((item) => {
+    const badges = [
+      { label: item.priority || 'P2', tone: item.priority === 'P0' || item.priority === 'P1' ? 'error' : 'warn' },
+      { label: item.proposalType || 'proposal', tone: 'info' }
+    ];
+    if (item.changeStatus === 'new') badges.push({ label: 'NEW', tone: 'success' });
+    container.appendChild(createQualityPatrolItem({
+      title: item.title,
+      summary: item.objective,
+      badges,
+      meta: [
+        `risk=${asText(item.riskLevel, 'medium')}`,
+        `blockedBy=${summarizeQualityPatrolBlockedBy(item.blockedBy)}`,
+        payload.audience === 'operator' && item.whyNotOthers ? 'operator-detail' : null
+      ],
+      details: [
+        `whyNow: ${asText(item.whyNow, '-')}`,
+        `targetFiles: ${summarizeQualityPatrolFiles(item.targetFiles, payload.audience)}`,
+        payload.audience === 'operator' && item.whyNotOthers ? `whyNotOthers: ${asText(item.whyNotOthers, '-')}` : null
+      ]
+    }));
+  });
+}
+
+function renderQualityPatrolIssues(result) {
+  const payload = result && typeof result === 'object' ? result : {};
+  const container = document.getElementById('quality-patrol-issues');
+  if (!container) return;
+  clearElementChildren(container);
+  const rows = Array.isArray(payload.issues) ? payload.issues : [];
+  if (!rows.length) {
+    renderQualityPatrolPlaceholder(
+      'quality-patrol-issues',
+      payload.observationStatus === 'blocked' || payload.observationStatus === 'insufficient_evidence'
+        ? '断定可能な issue はまだありません。先に観測不足を解消してください。'
+        : '現時点で強い issue は見つかっていません。'
+    );
+    return;
+  }
+  rows.forEach((item) => {
+    const badges = [
+      { label: item.severity || 'medium', tone: resolveQualityPatrolTone(item.severity) },
+      { label: item.status || 'watching', tone: resolveQualityPatrolTone(item.status) }
+    ];
+    if (item.changeStatus === 'new') badges.push({ label: 'NEW', tone: 'success' });
+    container.appendChild(createQualityPatrolItem({
+      title: item.title,
+      summary: item.summary,
+      badges,
+      meta: [
+        `category=${asText(item.category, '-')}`,
+        `provenance=${asText(item.provenance, '-')}`,
+        `evidence=${Number(item.evidenceCount || 0)}`
+      ]
+    }));
+  });
+}
+
+function renderQualityPatrolEvidence(result) {
+  const payload = result && typeof result === 'object' ? result : {};
+  const container = document.getElementById('quality-patrol-evidence');
+  if (!container) return;
+  clearElementChildren(container);
+  const rows = Array.isArray(payload.evidence) ? payload.evidence : [];
+  if (!rows.length) {
+    renderQualityPatrolPlaceholder(
+      'quality-patrol-evidence',
+      payload.observationStatus === 'insufficient_evidence'
+        ? 'evidence が不足しているため、まだ一覧化できません。'
+        : '追加の evidence はありません。'
+    );
+    return;
+  }
+  rows.forEach((item) => {
+    container.appendChild(createQualityPatrolItem({
+      title: `${asText(item.kind, 'summary')} evidence`,
+      summary: item.summary,
+      badges: [{ label: item.kind || 'summary', tone: item.kind === 'trace' ? 'info' : 'unset' }],
+      meta: payload.audience === 'operator'
+        ? [
+          `provenance=${asText(item.provenance, '-')}`,
+          item.traceId ? `trace=${item.traceId}` : null
+        ]
+        : []
+    }));
+  });
+}
+
+function openQualityPatrolTrace(traceId) {
+  const normalized = String(traceId || '').trim();
+  if (!normalized) {
+    showToast('trace は未観測です', 'warn');
+    return;
+  }
+  const auditTrace = document.getElementById('audit-trace');
+  if (auditTrace) auditTrace.value = normalized;
+  activatePane('audit', { historyMode: 'push' });
+}
+
+function renderQualityPatrolTraceRefs(result) {
+  const payload = result && typeof result === 'object' ? result : {};
+  const audience = resolveQualityPatrolAudience(payload.audience || state.qualityPatrolAudience);
+  const container = document.getElementById('quality-patrol-trace-refs');
+  const noteEl = document.getElementById('quality-patrol-trace-note');
+  if (!container) return;
+  clearElementChildren(container);
+  if (noteEl) {
+    noteEl.textContent = audience === 'operator'
+      ? 'traceId をそのまま判断ログへ引き継げます。'
+      : 'human view では trace の内部識別子を縮約表示します。';
+  }
+  if (audience !== 'operator') {
+    renderQualityPatrolPlaceholder('quality-patrol-trace-refs', 'trace 参照は operator view で確認できます。');
+    return;
+  }
+  const rows = Array.isArray(payload.traceRefs) ? payload.traceRefs : [];
+  if (!rows.length) {
+    renderQualityPatrolPlaceholder('quality-patrol-trace-refs', 'trace はまだ観測されていません。');
+    return;
+  }
+  rows.forEach((item) => {
+    const availability = String(item && item.availability ? item.availability : 'missing');
+    const traceId = item && item.traceId ? String(item.traceId) : '';
+    container.appendChild(createQualityPatrolItem({
+      title: traceId || 'trace unavailable',
+      summary: item && item.reason ? item.reason : 'trace reason unavailable',
+      badges: [{ label: availability, tone: availability === 'available' ? 'success' : 'warn' }],
+      meta: [traceId ? `traceId=${traceId}` : 'traceId=missing'],
+      actions: availability === 'available' && traceId
+        ? [{ label: 'Open Trace', subtle: false, onClick: () => openQualityPatrolTrace(traceId) }]
+        : []
+    }));
+  });
+}
+
+function renderQualityPatrolResult(result) {
+  const payload = result && typeof result === 'object' ? result : {
+    mode: state.qualityPatrolMode,
+    audience: state.qualityPatrolAudience,
+    summary: { overallStatus: 'unavailable', topFindings: [], topPriorityCount: 0, observationBlockerCount: 0 },
+    observationStatus: 'unavailable',
+    recommendedPr: [],
+    issues: [],
+    observationBlockers: [],
+    evidence: [],
+    traceRefs: []
+  };
+  renderQualityPatrolSummary(payload);
+  renderQualityPatrolObservationBlockers(payload);
+  renderQualityPatrolRecommendedPr(payload);
+  renderQualityPatrolIssues(payload);
+  renderQualityPatrolEvidence(payload);
+  renderQualityPatrolTraceRefs(payload);
+}
+
+function renderQualityPatrolLoadingState() {
+  setTextContent(
+    'quality-patrol-load-state',
+    `${buildQualityPatrolModeLabel(state.qualityPatrolMode)} / ${buildQualityPatrolAudienceLabel(state.qualityPatrolAudience)} / LOADING`
+  );
+  renderQualityPatrolPlaceholder('quality-patrol-observation-blockers', 'Quality Patrol を読み込み中です。', 'loading-state');
+  renderQualityPatrolPlaceholder('quality-patrol-recommended-pr', 'Quality Patrol を読み込み中です。', 'loading-state');
+  renderQualityPatrolPlaceholder('quality-patrol-issues', 'Quality Patrol を読み込み中です。', 'loading-state');
+  renderQualityPatrolPlaceholder('quality-patrol-evidence', 'Quality Patrol を読み込み中です。', 'loading-state');
+  renderQualityPatrolPlaceholder('quality-patrol-trace-refs', 'Quality Patrol を読み込み中です。', 'loading-state');
+}
+
+function renderQualityPatrolErrorState(errorPayload) {
+  const error = errorPayload && typeof errorPayload === 'object' ? errorPayload : {};
+  const message = error && error.error ? `Quality Patrol の取得に失敗しました: ${error.error}` : 'Quality Patrol の取得に失敗しました。';
+  renderQualityPatrolPlaceholder('quality-patrol-observation-blockers', message, 'error-state');
+  renderQualityPatrolPlaceholder('quality-patrol-recommended-pr', message, 'error-state');
+  renderQualityPatrolPlaceholder('quality-patrol-issues', message, 'error-state');
+  renderQualityPatrolPlaceholder('quality-patrol-evidence', message, 'error-state');
+  renderQualityPatrolPlaceholder('quality-patrol-trace-refs', message, 'error-state');
+  setTextContent('quality-patrol-load-state', message);
+}
+
+function buildQualityPatrolQueryPath() {
+  const params = new URLSearchParams({
+    mode: resolveQualityPatrolMode(state.qualityPatrolMode),
+    audience: resolveQualityPatrolAudience(state.qualityPatrolAudience)
+  });
+  return `/api/admin/quality-patrol?${params.toString()}`;
+}
+
+async function loadQualityPatrolInsights(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  if (isLocalPreflightBlockingDataLoads()) {
+    state.qualityPatrolResult = null;
+    state.qualityPatrolError = { error: 'local_preflight_blocked' };
+    renderQualityPatrolResult({
+      mode: state.qualityPatrolMode,
+      audience: state.qualityPatrolAudience,
+      summary: {
+        overallStatus: 'blocked',
+        topFindings: ['ローカル診断が未復旧のため、Quality Patrol の読込を停止しています。'],
+        topPriorityCount: 0,
+        observationBlockerCount: 1
+      },
+      observationStatus: 'blocked',
+      observationBlockers: [{
+        title: 'ローカル診断が未復旧です',
+        summary: 'Quality Patrol の取得前にローカル診断の復旧が必要です。',
+        affectedSlices: ['global'],
+        recommendedAction: 'System状態を確認し、ローカル診断を復旧してから再取得してください。'
+      }],
+      recommendedPr: [],
+      issues: [],
+      evidence: [],
+      traceRefs: []
+    });
+    if (opts.notify) showToast(t('ui.toast.localPreflight.blockedLoads', 'ローカル診断が未復旧のためデータ取得を停止中です'), 'warn');
+    return state.qualityPatrolError;
+  }
+
+  state.qualityPatrolLoading = true;
+  state.qualityPatrolError = null;
+  renderQualityPatrolLoadingState();
+  const data = await adminFetchJson({
+    url: buildQualityPatrolQueryPath(),
+    method: 'GET',
+    traceId: newTraceId()
+  });
+  state.qualityPatrolLoading = false;
+
+  if (data && data.ok) {
+    state.qualityPatrolResult = data;
+    state.qualityPatrolError = null;
+    setPaneUpdatedAt('quality-patrol', data.generatedAt || new Date().toISOString());
+    renderQualityPatrolResult(data);
+    if (state.activePane === 'quality-patrol') updatePageHeader('quality-patrol');
+    if (opts.notify) showToast('Quality Patrol を更新しました', 'ok');
+    return data;
+  }
+
+  state.qualityPatrolResult = null;
+  state.qualityPatrolError = data || { ok: false, error: 'fetch_error' };
+  setPaneUpdatedAt('quality-patrol', new Date().toISOString());
+  renderQualityPatrolErrorState(state.qualityPatrolError);
+  if (state.activePane === 'quality-patrol') updatePageHeader('quality-patrol');
+  if (opts.notify) showToast('Quality Patrol の取得に失敗しました', 'danger');
+  return state.qualityPatrolError;
+}
+
+function setupQualityPatrolControls() {
+  setSelectValue('quality-patrol-mode-select', state.qualityPatrolMode);
+  setSelectValue('quality-patrol-audience-select', state.qualityPatrolAudience);
+  renderQualityPatrolResult(null);
+
+  document.getElementById('quality-patrol-mode-select')?.addEventListener('change', (event) => {
+    state.qualityPatrolMode = resolveQualityPatrolMode(event && event.target ? event.target.value : state.qualityPatrolMode);
+    void loadQualityPatrolInsights({ notify: false });
+  });
+  document.getElementById('quality-patrol-audience-select')?.addEventListener('change', (event) => {
+    state.qualityPatrolAudience = resolveQualityPatrolAudience(event && event.target ? event.target.value : state.qualityPatrolAudience);
+    void loadQualityPatrolInsights({ notify: false });
+  });
+  document.getElementById('quality-patrol-refresh')?.addEventListener('click', () => {
+    void loadQualityPatrolInsights({ notify: true });
+  });
+  document.getElementById('quality-patrol-open-audit')?.addEventListener('click', () => {
+    activatePane('audit', { historyMode: 'push' });
+  });
+}
+
 function renderRepoMapFaqRows(rows) {
   const body = document.getElementById('manual-redac-faq-rows');
   if (!body) return;
@@ -4342,6 +4850,9 @@ function activatePane(target, options) {
   }
   if (nextPane === 'ops-system-health' && isOpsRealtimeSnapshotEnabled() && !state.opsSystemSnapshot) {
     void loadOpsSystemSnapshot({ notify: false });
+  }
+  if (nextPane === 'quality-patrol' && !state.qualityPatrolLoading && !state.qualityPatrolResult) {
+    void loadQualityPatrolInsights({ notify: false });
   }
   expandPaneDetails(nextPane);
   if (nextPane === 'monitor') {
@@ -18924,6 +19435,7 @@ function setupLlmControls() {
   setupMaintenanceControls();
   setupDecisionActions();
   setupAudit();
+  setupQualityPatrolControls();
   setupLlmControls();
   bindEvidencePlaceholderNoiseObservers();
   setRole(state.role, { historyMode: 'replace', syncHistory: false });
