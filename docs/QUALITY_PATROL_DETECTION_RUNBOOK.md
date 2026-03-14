@@ -31,3 +31,4 @@
 ## Future integration
 - PR-6 should consume persisted detection issues for root cause analysis.
 - PR-7 should expand minimal backlog hints into implementation-ready improvement plans.
+- detector does not infer root cause itself; symptom-to-cause mapping starts in the dedicated root cause analyzer layer.
