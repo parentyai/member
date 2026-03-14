@@ -35,7 +35,12 @@ test('phase758: clarify candidate avoids repeating recent generic clarification 
   });
 
   assert.equal(result.ok, true);
-  assert.equal(result.telemetry.strategy, 'clarify');
+  assert.equal(result.telemetry.strategy, 'grounded_answer');
+  assert.equal(result.telemetry.strategyReason, 'broad_question_grounding_probe');
+  assert.equal(result.telemetry.selectedCandidateKind, 'clarify_candidate');
+  assert.equal(result.telemetry.retrieveNeeded, true);
+  assert.equal(result.telemetry.retrievalBlockedByStrategy, false);
+  assert.equal(result.telemetry.retrievalPermitReason, 'broad_structured_grounding_probe');
   assert.equal(result.replyText.includes(repeatedPhrase), false);
   assert.equal(result.replyText.includes('まず優先手続きを1つに絞りたい'), true);
 });
@@ -81,7 +86,7 @@ test('phase758: domain follow-up clarify remains domain-specific when domain can
   assert.equal(result.telemetry.followupIntent, 'appointment_needed');
 });
 
-test('phase758: recovery signal keeps domain-aware clarify wording instead of generic reset', async () => {
+test('phase758: recovery signal preserves domain context before high-risk safety refusal', async () => {
   const result = await runPaidConversationOrchestrator({
     lineUserId: 'U_PHASE758_RECOVERY',
     messageText: '違う、予約じゃなくて書類',
@@ -117,7 +122,14 @@ test('phase758: recovery signal keeps domain-aware clarify wording instead of ge
   assert.equal(result.packet.normalizedConversationIntent, 'ssn');
   assert.equal(result.packet.followupIntent, 'docs_required');
   assert.equal(result.telemetry.directAnswerApplied, true);
-  assert.match(result.replyText, /SSN|書類/);
+  assert.equal(result.telemetry.strategyReason, 'recovery_signal_domain_resume');
+  assert.equal(result.telemetry.priorContextUsed, true);
+  assert.equal(result.telemetry.retrievalPermitReason, 'followup_context_grounding_probe');
+  assert.equal(result.telemetry.selectedCandidateKind, 'clarify_candidate');
+  assert.equal(result.telemetry.readinessDecision, 'refuse');
+  assert.equal(result.telemetry.officialOnlySatisfied, false);
+  assert.equal(result.telemetry.finalizerTemplateKind, 'refuse_template');
+  assert.match(result.replyText, /公式窓口|最終確認/);
   assert.equal(result.replyText.includes('対象を絞って案内したいので'), false);
 });
 
