@@ -107,6 +107,18 @@ Notes:
 - KPI envelopes are not persisted in PR-4.
 - KPI builder aggregates evaluator results and review units only; registry writes start in later PRs.
 
+### Quality Patrol detection results (derived, optional persistence)
+Purpose: convert KPI envelopes into deterministic issue candidates and minimal backlog candidates for downstream operator and planning layers.
+
+Typical fields:
+- `summary.issueCount`, `summary.blockedCount`, `summary.openCount`, `summary.byType`, `summary.bySlice`
+- `issueCandidates[]` with `issueType`, `metricKey`, `slice`, `severity`, `status`, `confidence`
+- `backlogCandidates[]` with `title`, `priority`, `objective`
+
+Notes:
+- detection results are not stored by default in PR-5.
+- `detectAndUpsertQualityIssues` may reuse existing `quality_issue_registry` and `quality_improvement_backlog` foundations only when explicit persistence is requested.
+
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
 

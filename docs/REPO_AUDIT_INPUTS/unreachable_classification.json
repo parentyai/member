@@ -476,6 +476,127 @@
         "docs/QUALITY_PATROL_KPI_RUNBOOK.md",
         "scripts/check_structural_cleanup.js"
       ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/detectIssues.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-5 foundation only; detection entrypoint stays isolated until manual callers, jobs, or query surfaces land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_DETECTION_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/detection/buildBacklogCandidate.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-5 foundation only; backlog hint builder is intentionally limited to future planner and manual detector callers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_DETECTION_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/detection/buildIssueCandidate.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-5 foundation only; issue candidate builder remains detached from runtime until later patrol layers reuse it",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_DETECTION_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/detection/constants.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-5 foundation only; detector thresholds and mappings remain isolated until root-cause and query layers tune them",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_DETECTION_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/detection/detectMetricIssues.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-5 foundation only; metric detector is intentionally caller-limited until detection wrappers are invoked manually or by later jobs",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_DETECTION_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/detection/detectObservationBlockers.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-5 foundation only; blocker detector stays internal until future patrol routes and jobs consume it",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_DETECTION_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/detection/detectSliceIssues.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-5 foundation only; slice detector is intentionally reserved for future query and root-cause consumers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_DETECTION_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/detection/resolveDetectionConfidence.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-5 foundation only; confidence resolver remains isolated until later detector and planner wiring broadens",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_DETECTION_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/detection/resolveDetectionSeverity.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-5 foundation only; severity resolver is intentionally detached from runtime and UI callers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_DETECTION_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/detection/resolveDetectionStatus.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-5 foundation only; status resolver remains internal until future detection callers land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_DETECTION_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/usecases/qualityPatrol/detectAndUpsertQualityIssues.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-5 foundation only; write-enabled detector wrapper is explicit-option only and intentionally not route or scheduler wired yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_DETECTION_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
     }
   ]
 }
