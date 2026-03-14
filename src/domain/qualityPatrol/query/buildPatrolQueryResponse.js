@@ -48,7 +48,8 @@ function buildPatrolQueryResponse(params) {
     metrics: payload.metrics,
     transcriptCoverage: payload.transcriptCoverage,
     issues: payload.issues,
-    rootCauseReports: payload.rootCauseReports
+    rootCauseReports: payload.rootCauseReports,
+    joinDiagnostics: payload.joinDiagnostics
   });
   const traceRefs = buildTraceRefs({
     audience,

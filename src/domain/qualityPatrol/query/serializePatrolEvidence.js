@@ -94,6 +94,24 @@ function serializeRootCauseEvidence(rootCauseReports, audience, rows, seen) {
   });
 }
 
+function serializeJoinDiagnostics(joinDiagnostics, audience, rows, seen) {
+  const payload = joinDiagnostics && typeof joinDiagnostics === 'object' ? joinDiagnostics : null;
+  if (!payload || audience !== 'operator') return;
+  const skipped = Number.isFinite(Number(payload.faqOnlyRowsSkipped)) ? Number(payload.faqOnlyRowsSkipped) : 0;
+  const limited = Number.isFinite(Number(payload.traceHydrationLimitedCount)) ? Number(payload.traceHydrationLimitedCount) : 0;
+  const anchorKindCounts = payload.reviewUnitAnchorKindCounts && typeof payload.reviewUnitAnchorKindCounts === 'object'
+    ? payload.reviewUnitAnchorKindCounts
+    : {};
+  if (skipped <= 0 && limited <= 0 && Object.keys(anchorKindCounts).length === 0) return;
+
+  pushEvidence(rows, seen, {
+    kind: 'summary',
+    summary: `review_unit_join faqOnlyRowsSkipped=${skipped} traceHydrationLimitedCount=${limited} anchorKinds=${JSON.stringify(anchorKindCounts)}`,
+    provenance: 'quality_patrol_review_unit_join',
+    traceId: null
+  });
+}
+
 function serializePatrolEvidence(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const audience = resolveAudienceView(payload.audience);
@@ -101,6 +119,7 @@ function serializePatrolEvidence(params) {
   const rows = [];
   const seen = new Set();
 
+  serializeJoinDiagnostics(payload.joinDiagnostics, audience, rows, seen);
   serializeMetricEvidence(payload.metrics, audience, rows, seen);
   serializeTranscriptCoverageEvidence(payload.transcriptCoverage, audience, rows, seen);
   serializeIssueEvidence(payload.issues, audience, rows, seen);

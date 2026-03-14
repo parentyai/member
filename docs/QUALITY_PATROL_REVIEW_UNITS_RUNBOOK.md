@@ -9,6 +9,8 @@
 - extractor usecase: `src/usecases/qualityPatrol/buildConversationReviewUnitsFromSources.js`
 - domain builder: `src/domain/qualityPatrol/transcript/buildConversationReviewUnits.js`
 - review units normalize masked transcript fields, telemetry signals, slice classification, and observation blockers.
+- review unit anchors are created from `conversation_review_snapshots` or `llm_action_logs`; `faq_answer_logs` are supplemental evidence only.
+- extractor surfaces add-only join diagnostics: `faqOnlyRowsSkipped`, `traceHydrationLimitedCount`, `reviewUnitAnchorKindCounts`.
 - PR-3 evaluator reads review units via `src/usecases/qualityPatrol/evaluateConversationReviewUnits.js` and does not persist a second transcript artifact.
 
 ## Slice classification
@@ -23,6 +25,7 @@
 
 ## Observation blockers
 - extractor does not fail the whole batch when evidence is missing.
+- `missing_trace_evidence` is reserved for real source/join absence; trace fetch limits are surfaced via join diagnostics instead of inflating blockers.
 - blocker codes:
   - `missing_user_message`
   - `missing_assistant_reply`
@@ -35,6 +38,7 @@
 ## Privacy and retention
 - extractor consumes masked transcript snapshots only.
 - raw transcript is not persisted by PR-2.
+- FAQ rows without a matching snapshot/action anchor are skipped from review-unit creation rather than promoted into standalone transcript evidence.
 - review units are in-memory outputs and inherit source retention from existing collections.
 
 ## Rollback

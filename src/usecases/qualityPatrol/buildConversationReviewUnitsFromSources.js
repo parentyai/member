@@ -4,7 +4,10 @@ const conversationReviewSnapshotsRepo = require('../../repos/firestore/conversat
 const llmActionLogsRepo = require('../../repos/firestore/llmActionLogsRepo');
 const faqAnswerLogsRepo = require('../../repos/firestore/faqAnswerLogsRepo');
 const { getTraceBundle } = require('../admin/getTraceBundle');
-const { buildConversationReviewUnits } = require('../../domain/qualityPatrol/transcript/buildConversationReviewUnits');
+const {
+  buildConversationReviewAnchors,
+  buildConversationReviewUnits
+} = require('../../domain/qualityPatrol/transcript/buildConversationReviewUnits');
 const {
   buildTranscriptCoverageDiagnostics
 } = require('../../domain/qualityPatrol/transcript/buildTranscriptCoverageDiagnostics');
@@ -42,11 +45,20 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
     })
   ]);
 
-  const traceIds = Array.from(new Set([]
-    .concat(snapshots.map((row) => row && row.traceId))
-    .concat(llmActionLogs.map((row) => row && row.traceId))
-    .concat(faqAnswerLogs.map((row) => row && row.traceId))
-    .filter((item) => typeof item === 'string' && item.trim()))).slice(0, traceLimit);
+  const joinDiagnostics = {
+    faqOnlyRowsSkipped: 0,
+    traceHydrationLimitedCount: 0,
+    reviewUnitAnchorKindCounts: {}
+  };
+  const anchorBuild = buildConversationReviewAnchors({
+    snapshots,
+    llmActionLogs,
+    faqAnswerLogs,
+    joinDiagnosticsTarget: joinDiagnostics
+  });
+  const traceIds = anchorBuild.anchorTraceIds.slice(0, traceLimit);
+  const limitedTraceIds = anchorBuild.anchorTraceIds.slice(traceLimit);
+  joinDiagnostics.traceHydrationLimitedCount = limitedTraceIds.length;
 
   const bundles = await Promise.all(traceIds.map(async (traceId) => {
     try {
@@ -60,10 +72,9 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
   const traceBundles = Object.fromEntries(bundles);
   const transcriptCoverage = buildTranscriptCoverageDiagnostics({ llmActionLogs });
   const reviewUnits = buildConversationReviewUnits({
-    snapshots,
-    llmActionLogs,
-    faqAnswerLogs,
-    traceBundles
+    anchors: anchorBuild.anchors,
+    traceBundles,
+    traceHydrationLimitedTraceIds: limitedTraceIds
   });
 
   return {
@@ -80,7 +91,8 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
       llmActionLogs: llmActionLogs.length,
       faqAnswerLogs: faqAnswerLogs.length,
       traceBundles: traceIds.length
-    }
+    },
+    joinDiagnostics
   };
 }
 

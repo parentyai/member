@@ -24,7 +24,9 @@ function buildObservationBlockers(params) {
   }
   if (payload.hasActionLogEvidence !== true) blockers.push(createBlocker('missing_action_log_evidence'));
   if (payload.expectsFaqEvidence === true && payload.hasFaqEvidence !== true) blockers.push(createBlocker('missing_faq_evidence'));
-  if (payload.hasTraceEvidence !== true) blockers.push(createBlocker('missing_trace_evidence'));
+  if (payload.hasTraceEvidence !== true && payload.traceHydrationLimited !== true) {
+    blockers.push(createBlocker('missing_trace_evidence'));
+  }
   if (payload.userMessageAvailable !== true || payload.assistantReplyAvailable !== true) {
     blockers.push(createBlocker('transcript_not_reviewable'));
   }

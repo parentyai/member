@@ -104,6 +104,31 @@ function ensureAnchor(map, key) {
   return map.get(key);
 }
 
+function createJoinDiagnostics(target) {
+  const diagnostics = target && typeof target === 'object' ? target : {};
+  if (!diagnostics.reviewUnitAnchorKindCounts || typeof diagnostics.reviewUnitAnchorKindCounts !== 'object') {
+    diagnostics.reviewUnitAnchorKindCounts = {};
+  }
+  if (!Number.isFinite(Number(diagnostics.faqOnlyRowsSkipped))) diagnostics.faqOnlyRowsSkipped = 0;
+  if (!Number.isFinite(Number(diagnostics.traceHydrationLimitedCount))) diagnostics.traceHydrationLimitedCount = 0;
+  return diagnostics;
+}
+
+function incrementDiagnosticCount(target, key, amount) {
+  const numeric = Number(amount);
+  const delta = Number.isFinite(numeric) ? numeric : 1;
+  target[key] = Number.isFinite(Number(target[key])) ? Number(target[key]) + delta : delta;
+}
+
+function resolveAnchorKind(anchor) {
+  const hasSnapshot = Boolean(anchor && anchor.snapshot);
+  const hasAction = Array.isArray(anchor && anchor.llmActions) && anchor.llmActions.length > 0;
+  if (hasSnapshot && hasAction) return 'snapshot_action';
+  if (hasSnapshot) return 'snapshot_only';
+  if (hasAction) return 'action_only';
+  return 'unanchored';
+}
+
 function computeSourceWindow(anchor) {
   const allRows = [];
   if (anchor.snapshot) allRows.push(anchor.snapshot);
@@ -201,81 +226,12 @@ function buildTelemetrySignals(snapshot, latestAction) {
   };
 }
 
-function buildReviewUnit(anchor, traceBundle) {
-  const snapshot = anchor.snapshot;
-  const llmActions = anchor.llmActions.slice().sort(compareCreatedDesc);
-  const faqAnswerLogs = anchor.faqAnswerLogs.slice().sort(compareCreatedDesc);
-  const latestAction = llmActions[0] || null;
-  const telemetrySignals = buildTelemetrySignals(snapshot, latestAction);
-  const sliceClassification = classifyConversationSlice(telemetrySignals);
-  const evidence = normalizeReviewEvidence({
-    snapshot,
-    llmActions,
-    faqAnswerLogs,
-    traceBundle
-  });
-  const traceSummary = traceBundle && traceBundle.traceJoinSummary && typeof traceBundle.traceJoinSummary === 'object'
-    ? traceBundle.traceJoinSummary
-    : null;
-  const blockers = buildObservationBlockers({
-    userMessageAvailable: snapshot ? snapshot.userMessageAvailable === true : false,
-    assistantReplyAvailable: snapshot ? snapshot.assistantReplyAvailable === true : false,
-    priorContextSummaryAvailable: snapshot ? snapshot.priorContextSummaryAvailable === true : false,
-    needsPriorContextSummary: telemetrySignals.priorContextUsed === true || telemetrySignals.followupResolvedFromHistory === true,
-    hasTraceEvidence: Boolean(traceBundle && traceBundle.ok === true && traceSummary && traceSummary.completeness > 0),
-    hasActionLogEvidence: llmActions.length > 0,
-    expectsFaqEvidence: telemetrySignals.savedFaqUsedInAnswer === true
-      || telemetrySignals.savedFaqCandidateAvailable === true
-      || telemetrySignals.selectedCandidateKind === 'saved_faq_candidate',
-    hasFaqEvidence: faqAnswerLogs.length > 0
-  });
-  const lineUserKey = pickString(
-    snapshot && snapshot.lineUserKey,
-    buildLineUserKey(latestAction && latestAction.lineUserId)
-  );
-  const sourceWindow = computeSourceWindow(anchor);
-  const traceId = pickString(anchor.traceId, snapshot && snapshot.traceId, latestAction && latestAction.traceId, faqAnswerLogs[0] && faqAnswerLogs[0].traceId);
-  const reviewUnitId = reviewUnitIdFor([
-    traceId || anchor.key,
-    lineUserKey || 'missing_line_user_key',
-    sourceWindow.fromAt || 'missing_from',
-    sourceWindow.toAt || 'missing_to'
-  ].join('|'));
-
-  return {
-    reviewUnitId,
-    traceId: traceId || null,
-    lineUserKey: lineUserKey || null,
-    sourceWindow,
-    slice: sliceClassification.slice,
-    sliceReason: sliceClassification.sliceReason,
-    sliceSignalsUsed: sliceClassification.sliceSignalsUsed,
-    userMessage: {
-      text: snapshot && snapshot.userMessageMasked ? snapshot.userMessageMasked : '',
-      available: snapshot ? snapshot.userMessageAvailable === true : false
-    },
-    assistantReply: {
-      text: snapshot && snapshot.assistantReplyMasked ? snapshot.assistantReplyMasked : '',
-      available: snapshot ? snapshot.assistantReplyAvailable === true : false
-    },
-    priorContextSummary: {
-      text: snapshot && snapshot.priorContextSummaryMasked ? snapshot.priorContextSummaryMasked : '',
-      available: snapshot ? snapshot.priorContextSummaryAvailable === true : false
-    },
-    telemetrySignals,
-    observationBlockers: blockers,
-    evidenceRefs: evidence.evidenceRefs,
-    sourceCollections: evidence.sourceCollections
-  };
-}
-
-function buildConversationReviewUnits(params) {
+function buildConversationReviewAnchors(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const snapshots = Array.isArray(payload.snapshots) ? payload.snapshots : [];
   const llmActionLogs = Array.isArray(payload.llmActionLogs) ? payload.llmActionLogs : [];
   const faqAnswerLogs = Array.isArray(payload.faqAnswerLogs) ? payload.faqAnswerLogs : [];
-  const traceBundles = payload.traceBundles && typeof payload.traceBundles === 'object' ? payload.traceBundles : {};
-
+  const diagnostics = createJoinDiagnostics(payload.joinDiagnosticsTarget);
   const anchors = new Map();
 
   snapshots.forEach((row, index) => {
@@ -295,15 +251,146 @@ function buildConversationReviewUnits(params) {
     anchor.llmActions.push(Object.assign({ id: row && row.id ? row.id : null }, row));
   });
 
-  faqAnswerLogs.forEach((row, index) => {
-    const key = buildAnchorKey('faq', row, index);
-    const anchor = ensureAnchor(anchors, key);
-    anchor.traceId = normalizeText(row && row.traceId) || anchor.traceId;
+  faqAnswerLogs.forEach((row) => {
+    const traceId = normalizeText(row && row.traceId);
+    if (!traceId) {
+      incrementDiagnosticCount(diagnostics, 'faqOnlyRowsSkipped', 1);
+      return;
+    }
+    const anchor = anchors.get(`trace:${traceId}`);
+    if (!anchor) {
+      incrementDiagnosticCount(diagnostics, 'faqOnlyRowsSkipped', 1);
+      return;
+    }
+    anchor.traceId = traceId || anchor.traceId;
     anchor.faqAnswerLogs.push(Object.assign({ id: row && row.id ? row.id : null }, row));
   });
 
+  diagnostics.reviewUnitAnchorKindCounts = Array.from(anchors.values()).reduce((acc, anchor) => {
+    const kind = resolveAnchorKind(anchor);
+    if (kind === 'unanchored') return acc;
+    acc[kind] = Number.isFinite(Number(acc[kind])) ? Number(acc[kind]) + 1 : 1;
+    return acc;
+  }, {});
+
+  const anchorTraceIds = Array.from(new Set(Array.from(anchors.values())
+    .map((anchor) => normalizeText(anchor && anchor.traceId))
+    .filter(Boolean)));
+
+  return {
+    anchors,
+    diagnostics,
+    anchorTraceIds
+  };
+}
+
+function buildReviewUnit(anchor, traceBundle, options) {
+  const payload = options && typeof options === 'object' ? options : {};
+  const snapshot = anchor.snapshot;
+  const llmActions = anchor.llmActions.slice().sort(compareCreatedDesc);
+  const faqAnswerLogs = anchor.faqAnswerLogs.slice().sort(compareCreatedDesc);
+  const latestAction = llmActions[0] || null;
+  const telemetrySignals = buildTelemetrySignals(snapshot, latestAction);
+  const sliceClassification = classifyConversationSlice(telemetrySignals);
+  const evidence = normalizeReviewEvidence({
+    snapshot,
+    llmActions,
+    faqAnswerLogs,
+    traceBundle
+  });
+  const traceSummary = traceBundle && traceBundle.traceJoinSummary && typeof traceBundle.traceJoinSummary === 'object'
+    ? traceBundle.traceJoinSummary
+    : null;
+  const traceId = pickString(anchor.traceId, snapshot && snapshot.traceId, latestAction && latestAction.traceId, faqAnswerLogs[0] && faqAnswerLogs[0].traceId);
+  const traceHydrationLimited = payload.traceHydrationLimited === true;
+  const hasTraceEvidence = Boolean(traceBundle && traceBundle.ok === true && traceSummary && traceSummary.completeness > 0);
+  const blockers = buildObservationBlockers({
+    userMessageAvailable: snapshot ? snapshot.userMessageAvailable === true : false,
+    assistantReplyAvailable: snapshot ? snapshot.assistantReplyAvailable === true : false,
+    priorContextSummaryAvailable: snapshot ? snapshot.priorContextSummaryAvailable === true : false,
+    needsPriorContextSummary: telemetrySignals.priorContextUsed === true || telemetrySignals.followupResolvedFromHistory === true,
+    hasTraceEvidence,
+    hasActionLogEvidence: llmActions.length > 0,
+    expectsFaqEvidence: telemetrySignals.savedFaqUsedInAnswer === true
+      || telemetrySignals.savedFaqCandidateAvailable === true
+      || telemetrySignals.selectedCandidateKind === 'saved_faq_candidate',
+    hasFaqEvidence: faqAnswerLogs.length > 0,
+    traceHydrationLimited
+  });
+  const lineUserKey = pickString(
+    snapshot && snapshot.lineUserKey,
+    buildLineUserKey(latestAction && latestAction.lineUserId)
+  );
+  const sourceWindow = computeSourceWindow(anchor);
+  const reviewUnitId = reviewUnitIdFor([
+    traceId || anchor.key,
+    lineUserKey || 'missing_line_user_key',
+    sourceWindow.fromAt || 'missing_from',
+    sourceWindow.toAt || 'missing_to'
+  ].join('|'));
+
+  return {
+    reviewUnitId,
+    traceId: traceId || null,
+    lineUserKey: lineUserKey || null,
+    sourceWindow,
+    anchorKind: resolveAnchorKind(anchor),
+    slice: sliceClassification.slice,
+    sliceReason: sliceClassification.sliceReason,
+    sliceSignalsUsed: sliceClassification.sliceSignalsUsed,
+    userMessage: {
+      text: snapshot && snapshot.userMessageMasked ? snapshot.userMessageMasked : '',
+      available: snapshot ? snapshot.userMessageAvailable === true : false
+    },
+    assistantReply: {
+      text: snapshot && snapshot.assistantReplyMasked ? snapshot.assistantReplyMasked : '',
+      available: snapshot ? snapshot.assistantReplyAvailable === true : false
+    },
+    priorContextSummary: {
+      text: snapshot && snapshot.priorContextSummaryMasked ? snapshot.priorContextSummaryMasked : '',
+      available: snapshot ? snapshot.priorContextSummaryAvailable === true : false
+    },
+    telemetrySignals,
+    evidenceJoinStatus: {
+      actionLog: llmActions.length > 0 ? 'joined' : 'missing_source',
+      trace: hasTraceEvidence
+        ? 'joined'
+        : (traceHydrationLimited ? 'limited_by_trace_hydration' : 'missing_source'),
+      faq: faqAnswerLogs.length > 0
+        ? 'joined'
+        : (telemetrySignals.savedFaqUsedInAnswer === true
+          || telemetrySignals.savedFaqCandidateAvailable === true
+          || telemetrySignals.selectedCandidateKind === 'saved_faq_candidate'
+          ? 'missing_source'
+          : 'not_expected')
+    },
+    observationBlockers: blockers,
+    evidenceRefs: evidence.evidenceRefs,
+    sourceCollections: evidence.sourceCollections
+  };
+}
+
+function buildConversationReviewUnits(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const traceBundles = payload.traceBundles && typeof payload.traceBundles === 'object' ? payload.traceBundles : {};
+  const traceHydrationLimitedTraceIds = payload.traceHydrationLimitedTraceIds instanceof Set
+    ? payload.traceHydrationLimitedTraceIds
+    : new Set(Array.isArray(payload.traceHydrationLimitedTraceIds) ? payload.traceHydrationLimitedTraceIds : []);
+  const anchors = payload.anchors instanceof Map
+    ? payload.anchors
+    : buildConversationReviewAnchors(payload).anchors;
+
   return Array.from(anchors.values())
-    .map((anchor) => buildReviewUnit(anchor, anchor.traceId ? traceBundles[anchor.traceId] || null : null))
+    .map((anchor) => {
+      const traceId = normalizeText(anchor && anchor.traceId);
+      return buildReviewUnit(
+        anchor,
+        traceId ? traceBundles[traceId] || null : null,
+        {
+          traceHydrationLimited: Boolean(traceId && traceHydrationLimitedTraceIds.has(traceId))
+        }
+      );
+    })
     .sort((left, right) => {
       const leftAt = left && left.sourceWindow ? left.sourceWindow.toAt : null;
       const rightAt = right && right.sourceWindow ? right.sourceWindow.toAt : null;
@@ -312,5 +399,6 @@ function buildConversationReviewUnits(params) {
 }
 
 module.exports = {
+  buildConversationReviewAnchors,
   buildConversationReviewUnits
 };
