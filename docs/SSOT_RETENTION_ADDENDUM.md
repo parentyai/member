@@ -10,7 +10,7 @@
 | kind | count |
 | --- | --- |
 | aggregate | 13 |
-| config | 52 |
+| config | 54 |
 | event | 9 |
 | evidence | 16 |
 | transient | 3 |
@@ -85,6 +85,8 @@
 | `phase2_reports_weekly_events` | aggregate | 90d | CONDITIONAL | true |
 | `phase2_runs` | aggregate | 90d | CONDITIONAL | true |
 | `phase22_kpi_snapshots` | config | INDEFINITE | false | false |
+| `quality_improvement_backlog` | config | INDEFINITE | false | false |
+| `quality_issue_registry` | config | INDEFINITE | false | false |
 | `redac_membership_links` | config | INDEFINITE | false | false |
 | `rich_menu_assignment_rules` | config | INDEFINITE | false | false |
 | `rich_menu_bindings` | config | INDEFINITE | false | false |

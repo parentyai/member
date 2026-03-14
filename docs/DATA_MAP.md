@@ -345,6 +345,39 @@ Typical fields:
 - `traceId`
 - `targetSourceRefIds[]`
 
+### `quality_issue_registry/{issueId}`
+Purpose: Quality Patrol の検知 issue を重複抑制つきで保持する正規 registry。
+
+Typical fields:
+- `issueId`, `issueFingerprint`
+- `threadId`
+- `layer`, `category`, `slice`
+- `severity`, `status`, `provenance`, `observationBlocker`, `confidence`
+- `supportingEvidence[]`, `traceRefs[]`, `sourceCollections[]`, `relatedMetrics[]`
+- `firstSeenAt`, `lastSeenAt`, `occurrenceCount`
+- `latestSummary`
+- `rootCauseHint[]`
+
+Notes:
+- fingerprint 単位で同一 issue を集約する。
+- raw transcript は保存しない。
+
+### `quality_improvement_backlog/{backlogId}`
+Purpose: issue に紐づく改善候補 PR を保持する backlog。
+
+Typical fields:
+- `backlogId`
+- `status`, `priority`
+- `issueIds[]`
+- `proposedPrName`, `objective`, `whyNow`
+- `targetFiles[]`
+- `expectedKpiMovement[]`
+- `risk`
+- `rollbackPlan`
+- `dependency[]`
+- `owner`
+- `provenance`
+
 ### `city_pack_metrics_daily/{id}`
 Purpose: City Pack効果測定（pack/slot/sourceRef単位の日次集計）。
 
