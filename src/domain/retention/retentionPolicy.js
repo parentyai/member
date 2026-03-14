@@ -69,6 +69,8 @@ const RETENTION_POLICY = Object.freeze({
   'phase2_reports_daily_events': Object.freeze({ kind: 'aggregate', retentionDays: 90, deletable: 'CONDITIONAL', recomputable: true }),
   'phase2_reports_weekly_events': Object.freeze({ kind: 'aggregate', retentionDays: 90, deletable: 'CONDITIONAL', recomputable: true }),
   'phase2_runs': Object.freeze({ kind: 'aggregate', retentionDays: 90, deletable: 'CONDITIONAL', recomputable: true }),
+  'quality_improvement_backlog': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
+  'quality_issue_registry': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'redac_membership_links': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'rich_menu_assignment_rules': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'rich_menu_bindings': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),

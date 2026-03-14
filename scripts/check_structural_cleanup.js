@@ -46,7 +46,20 @@ const DELETED_FROZEN_FILES = Object.freeze([
 ]);
 
 const STATIC_UNREACHABLE_ALLOWLIST = Object.freeze([
-  'src/shared/phaseDocPathResolver.js'
+  'src/domain/qualityPatrol/buildBacklogRecord.js',
+  'src/domain/qualityPatrol/buildIssueRecord.js',
+  'src/domain/qualityPatrol/dedupe.js',
+  'src/domain/qualityPatrol/fingerprint.js',
+  'src/domain/qualityPatrol/issueModel.js',
+  'src/domain/qualityPatrol/normalizeSeverity.js',
+  'src/domain/qualityPatrol/normalizeStatus.js',
+  'src/repos/firestore/improvementBacklogRepo.js',
+  'src/repos/firestore/qualityIssueRegistryRepo.js',
+  'src/shared/phaseDocPathResolver.js',
+  'src/usecases/qualityPatrol/listOpenIssues.js',
+  'src/usecases/qualityPatrol/listTopPriorityBacklog.js',
+  'src/usecases/qualityPatrol/upsertImprovementBacklog.js',
+  'src/usecases/qualityPatrol/upsertQualityIssue.js'
 ]);
 
 function toPosix(value) {

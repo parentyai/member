@@ -1061,6 +1061,38 @@
       "fullscan_risk": "LOW"
     },
     {
+      "collection": "quality_improvement_backlog",
+      "repos": [
+        "improvementBacklogRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/improvementBacklogRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/improvementBacklogRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "quality_issue_registry",
+      "repos": [
+        "qualityIssueRegistryRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/qualityIssueRegistryRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/qualityIssueRegistryRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
       "collection": "redac_membership_links",
       "repos": [],
       "write_paths": [],

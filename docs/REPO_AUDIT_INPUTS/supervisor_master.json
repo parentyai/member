@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-13T23:45:32-04:00",
-  "gitCommit": "9f239a8c3234ffdb78b13d5d8fa8ca94299ab815",
-  "branch": "codex/llm-knowledge-grounding-alignment-r836",
-  "sourceDigest": "b34607f66f0678ed3e25b85e5785aa65df1398944c3eab3927b5ce05ae42ee6c",
+  "generatedAt": "2026-03-14T05:45:10-04:00",
+  "gitCommit": "4b891f7c5e2b10c85b527fe55e3b46ae2ddd46bf",
+  "branch": "codex/quality-patrol-pr1-T001",
+  "sourceDigest": "4196898896e403bd69abac2816208e006cd41d120c6572b55a234f4db163d83f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

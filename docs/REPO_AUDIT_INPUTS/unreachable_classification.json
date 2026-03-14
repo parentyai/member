@@ -25,6 +25,149 @@
         "scripts/check_structural_cleanup.js",
         "docs/PHASE_PATH_MAP.json"
       ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/buildBacklogRecord.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; backlog builder is intentionally caller-less until later patrol wiring PRs land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/buildIssueRecord.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; issue builder is intentionally caller-less until later patrol wiring PRs land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/dedupe.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; dedupe helper is reserved for future patrol detection callers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/fingerprint.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; fingerprint helper is reserved for future patrol issue upsert callers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/issueModel.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; issue model constants are intentionally not runtime-wired yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/normalizeSeverity.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; severity normalization is reserved for later patrol issue callers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/normalizeStatus.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; status normalization is reserved for later patrol issue callers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/repos/firestore/improvementBacklogRepo.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; backlog repo is intentionally not wired to runtime routes or jobs yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/repos/firestore/qualityIssueRegistryRepo.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; issue registry repo is intentionally not wired to runtime routes or jobs yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/usecases/qualityPatrol/listOpenIssues.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; query helper is reserved for later operator/query layers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/usecases/qualityPatrol/listTopPriorityBacklog.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; query helper is reserved for later operator/query layers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/usecases/qualityPatrol/upsertImprovementBacklog.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; backlog upsert usecase is reserved for later patrol planners and jobs",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/usecases/qualityPatrol/upsertQualityIssue.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-1 foundation only; issue upsert usecase is reserved for later patrol detectors and jobs",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
     }
   ]
 }

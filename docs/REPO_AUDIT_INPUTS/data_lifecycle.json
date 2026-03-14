@@ -752,6 +752,28 @@
     ]
   },
   {
+    "collection": "quality_improvement_backlog",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/improvementBacklogRepo.js:14",
+      "src/repos/firestore/improvementBacklogRepo.js:118"
+    ]
+  },
+  {
+    "collection": "quality_issue_registry",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/qualityIssueRegistryRepo.js:18",
+      "src/repos/firestore/qualityIssueRegistryRepo.js:92"
+    ]
+  },
+  {
     "collection": "redac_membership_links",
     "kind": "config",
     "recomputable": false,
