@@ -752,12 +752,16 @@ async function listLlmActionLogsByCreatedAtRange(params) {
   const fromAt = toDate(payload.fromAt);
   const toAt = toDate(payload.toAt);
   const db = getDb();
-
-  let query = db.collection(COLLECTION);
-  if (fromAt) query = query.where('createdAt', '>=', fromAt);
-  if (toAt) query = query.where('createdAt', '<=', toAt);
-  const snap = await query.orderBy('createdAt', 'desc').limit(limit).get();
-  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  const snap = await db.collection(COLLECTION).orderBy('createdAt', 'desc').limit(limit).get();
+  return snap.docs
+    .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .filter((row) => {
+      const at = toDate(row && row.createdAt);
+      if (!at) return false;
+      if (fromAt && at.getTime() < fromAt.getTime()) return false;
+      if (toAt && at.getTime() > toAt.getTime()) return false;
+      return true;
+    });
 }
 
 async function listPendingLlmActionLogs(params) {

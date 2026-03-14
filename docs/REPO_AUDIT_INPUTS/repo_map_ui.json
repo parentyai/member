@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "82a107b30e2c53c780cb216eddc4c4b54fd479e1",
+      "hash": "118e3973f1c878f9319161c27f65e947238d1b9a",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 1406
+    "testCount": 1412
   },
   "systemOverview": {
     "what": [
@@ -542,7 +542,7 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackBulletinsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackMetricsDailyRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/conversationReviewSnapshotsRepo.js"
           ],
           "evidence": [
             "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
@@ -1402,8 +1402,8 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/canonicalCoreOutboxRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackMetricsDailyRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/conversationReviewSnapshotsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js"
           ],
           "evidence": [
             "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
@@ -4933,7 +4933,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 226,
+              "testsCount": 221,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4955,8 +4955,8 @@
                 "cityPackBulletinsRepo",
                 "cityPackMetricsDailyRepo",
                 "cityPacksRepo",
-                "deliveriesRepo",
-                "emergencyBulletinsRepo"
+                "conversationReviewSnapshotsRepo",
+                "deliveriesRepo"
               ],
               "relatedCollections": [
                 "audit_logs",
@@ -4965,8 +4965,8 @@
                 "city_pack_bulletins",
                 "city_pack_metrics_daily",
                 "city_packs",
-                "emergency_bulletins",
-                "emergency_diffs"
+                "conversation_review_snapshots",
+                "emergency_bulletins"
               ],
               "entrypoints": [
                 "src/routes/admin/cityPackBulletins.js",
@@ -5452,7 +5452,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 75,
+              "testsCount": 76,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5622,7 +5622,7 @@
               "status": "deprecated",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 73,
+              "testsCount": 74,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -6147,7 +6147,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 248,
+              "testsCount": 250,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6168,9 +6168,9 @@
                 "canonicalCoreOutboxRepo",
                 "cityPackMetricsDailyRepo",
                 "cityPacksRepo",
+                "conversationReviewSnapshotsRepo",
                 "decisionLogsRepo",
-                "decisionTimelineRepo",
-                "deliveriesRepo"
+                "decisionTimelineRepo"
               ],
               "relatedCollections": [
                 "audit_logs",
@@ -6178,9 +6178,9 @@
                 "checklists",
                 "city_pack_metrics_daily",
                 "city_packs",
+                "conversation_review_snapshots",
                 "decision_logs",
-                "decision_timeline",
-                "emergency_bulletins"
+                "decision_timeline"
               ],
               "entrypoints": [
                 "src/routes/admin/cityPackBulletins.js",
@@ -6751,7 +6751,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 149,
+              "testsCount": 150,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7656,7 +7656,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 85,
+              "testsCount": 86,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9744,7 +9744,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 81,
+              "testsCount": 82,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [

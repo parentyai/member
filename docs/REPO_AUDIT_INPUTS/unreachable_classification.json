@@ -168,6 +168,72 @@
         "docs/QUALITY_PATROL_REGISTRY_RUNBOOK.md",
         "scripts/check_structural_cleanup.js"
       ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/transcript/buildConversationReviewUnits.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-2 foundation only; review unit builder is intentionally caller-limited until evaluator/query layers land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REVIEW_UNITS_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/transcript/buildObservationBlockers.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-2 foundation only; blocker builder is reserved for later review and detection callers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REVIEW_UNITS_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/transcript/classifyConversationSlice.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-2 foundation only; slice classifier is intentionally isolated until downstream patrol evaluators adopt it",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REVIEW_UNITS_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/transcript/constants.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-2 foundation only; transcript extractor constants are intentionally isolated until later patrol wiring PRs land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REVIEW_UNITS_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/transcript/normalizeReviewEvidence.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-2 foundation only; evidence normalization is reserved for later evaluator and query callers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REVIEW_UNITS_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/usecases/qualityPatrol/buildConversationReviewUnitsFromSources.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-2 foundation only; extractor usecase is intentionally not wired to runtime routes, jobs, or admin surfaces yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_REVIEW_UNITS_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
     }
   ]
 }

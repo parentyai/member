@@ -68,6 +68,19 @@ Notes:
 - plaintext user/assistant transcript is not durably stored in this collection.
 - review snapshots are add-only and retention-bound for patrol use.
 
+### Quality Patrol review units (derived, read-only)
+Purpose: build review-ready units for downstream conversation evaluation without persisting another transcript copy.
+
+Typical fields:
+- `reviewUnitId`, `traceId`, `lineUserKey`, `sourceWindow`
+- `slice`, `sliceReason`, `sliceSignalsUsed`
+- `userMessage`, `assistantReply`, `priorContextSummary`
+- `telemetrySignals`, `observationBlockers`, `evidenceRefs`, `sourceCollections`
+
+Notes:
+- sources: `conversation_review_snapshots`, `llm_action_logs`, `faq_answer_logs`, `trace_bundle`
+- review units are not persisted; they are derived read-only outputs for downstream evaluator/detection PRs.
+
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
 

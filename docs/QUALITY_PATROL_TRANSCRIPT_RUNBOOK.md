@@ -34,6 +34,7 @@ Masked transcript foundation for Member Quality Patrol v1.1 (add-only).
 ## Retention
 - policy: `event / 180d / CONDITIONAL / recomputable=true`
 - SSOT: `src/domain/retention/retentionPolicy.js`, `docs/SSOT_RETENTION.md`, `docs/REPO_AUDIT_INPUTS/data_lifecycle.json`
+- review units consume `conversation_review_snapshots` read-only and do not persist any new transcript copy
 
 ## Rollback
 - immediate stop: set `ENABLE_QUALITY_PATROL_TRANSCRIPT_SNAPSHOTS_V1=0`
