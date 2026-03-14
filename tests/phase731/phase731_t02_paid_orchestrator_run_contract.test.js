@@ -5,7 +5,7 @@ const { test } = require('node:test');
 
 const { runPaidConversationOrchestrator } = require('../../src/domain/llm/orchestrator/runPaidConversationOrchestrator');
 
-test('phase731: orchestrator clarifies broad paid questions without retrieval', async () => {
+test('phase731: orchestrator probes grounding before broad paid fallback', async () => {
   let groundedCalls = 0;
   const result = await runPaidConversationOrchestrator({
     lineUserId: 'U_PHASE731',
@@ -39,10 +39,13 @@ test('phase731: orchestrator clarifies broad paid questions without retrieval', 
     }
   });
 
-  assert.equal(groundedCalls, 0);
-  assert.equal(result.telemetry.strategy, 'clarify');
-  assert.equal(result.telemetry.retrieveNeeded, false);
-  assert.equal(result.telemetry.verificationOutcome, 'passed');
+  assert.equal(groundedCalls, 1);
+  assert.equal(result.telemetry.strategy, 'grounded_answer');
+  assert.equal(result.telemetry.retrieveNeeded, true);
+  assert.equal(result.telemetry.retrievalPermitReason, 'broad_structured_grounding_probe');
+  assert.equal(result.telemetry.selectedCandidateKind, 'domain_concierge_candidate');
+  assert.equal(result.telemetry.fallbackPriorityReason, 'fallback_to_domain_concierge_after_grounding_probe');
+  assert.equal(result.telemetry.verificationOutcome, 'clarify');
   assert.equal(typeof result.telemetry.readinessDecision, 'string');
   assert.ok(Array.isArray(result.telemetry.readinessReasonCodes));
   assert.equal(result.telemetry.answerReadinessLogOnly, false);
@@ -52,7 +55,7 @@ test('phase731: orchestrator clarifies broad paid questions without retrieval', 
   assert.equal(result.replyText.includes('対象を絞って案内したい'), true);
 });
 
-test('phase731: orchestrator rejects legacy grounded candidate and prefers composed concierge candidate', async () => {
+test('phase731: orchestrator rejects legacy grounded candidate and prefers structured grounded output over generic fallback', async () => {
   const result = await runPaidConversationOrchestrator({
     lineUserId: 'U_PHASE731',
     messageText: 'ビザ更新の必要書類を教えて',
@@ -111,7 +114,7 @@ test('phase731: orchestrator rejects legacy grounded candidate and prefers compo
 
   assert.equal(result.telemetry.strategy, 'grounded_answer');
   assert.equal(result.telemetry.retrieveNeeded, true);
-  assert.equal(result.telemetry.judgeWinner, 'composed_concierge_candidate');
+  assert.equal(result.telemetry.judgeWinner, 'structured_answer_candidate');
   assert.equal(result.telemetry.retrievalQuality, 'good');
   assert.equal(typeof result.telemetry.readinessDecision, 'string');
   assert.ok(Array.isArray(result.telemetry.readinessReasonCodes));

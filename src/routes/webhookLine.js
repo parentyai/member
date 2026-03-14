@@ -1163,10 +1163,20 @@ function buildConversationQualityMeta(params) {
     contextCarryScore,
     repeatRiskScore,
     strategyReason: normalizeReplyText(payload.strategyReason).toLowerCase() || null,
+    strategyAlternativeSet: Array.isArray(payload.strategyAlternativeSet)
+      ? payload.strategyAlternativeSet
+        .map((item) => normalizeReplyText(item).toLowerCase())
+        .filter(Boolean)
+        .slice(0, 8)
+      : [],
+    strategyPriorityVersion: normalizeReplyText(payload.strategyPriorityVersion) || null,
+    fallbackPriorityReason: normalizeReplyText(payload.fallbackPriorityReason).toLowerCase() || null,
     selectedCandidateKind: normalizeReplyText(payload.selectedCandidateKind).toLowerCase() || null,
     selectedByDirectAnswerFirst: payload.selectedByDirectAnswerFirst === true,
     retrievalBlockedByStrategy: payload.retrievalBlockedByStrategy === true,
     retrievalBlockReason: normalizeReplyText(payload.retrievalBlockReason).toLowerCase() || null,
+    retrievalPermitReason: normalizeReplyText(payload.retrievalPermitReason).toLowerCase() || null,
+    retrievalReenabledBySlice: normalizeReplyText(payload.retrievalReenabledBySlice).toLowerCase() || null,
     fallbackTemplateKind,
     finalizerTemplateKind,
     replyTemplateFingerprint: normalizeReplyText(payload.replyTemplateFingerprint) || buildReplyTemplateFingerprint(replyText),
@@ -1177,6 +1187,9 @@ function buildConversationQualityMeta(params) {
     knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true,
     cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true,
     savedFaqUsedInAnswer: payload.savedFaqUsedInAnswer === true,
+    groundedCandidateAvailable: payload.groundedCandidateAvailable === true,
+    structuredCandidateAvailable: payload.structuredCandidateAvailable === true,
+    continuationCandidateAvailable: payload.continuationCandidateAvailable === true,
     genericFallbackSlice
   };
 }
@@ -1635,6 +1648,18 @@ async function appendLlmGateDecisionBestEffort(data) {
         strategyReason: typeof payload.strategyReason === 'string' && payload.strategyReason.trim()
           ? payload.strategyReason.trim().toLowerCase()
           : (qualityMeta.strategyReason || null),
+        strategyAlternativeSet: Array.isArray(payload.strategyAlternativeSet)
+          ? payload.strategyAlternativeSet
+            .map((item) => (typeof item === 'string' ? item.trim().toLowerCase() : ''))
+            .filter(Boolean)
+            .slice(0, 8)
+          : (Array.isArray(qualityMeta.strategyAlternativeSet) ? qualityMeta.strategyAlternativeSet : []),
+        strategyPriorityVersion: typeof payload.strategyPriorityVersion === 'string' && payload.strategyPriorityVersion.trim()
+          ? payload.strategyPriorityVersion.trim()
+          : (qualityMeta.strategyPriorityVersion || null),
+        fallbackPriorityReason: typeof payload.fallbackPriorityReason === 'string' && payload.fallbackPriorityReason.trim()
+          ? payload.fallbackPriorityReason.trim().toLowerCase()
+          : (qualityMeta.fallbackPriorityReason || null),
         selectedCandidateKind: typeof payload.selectedCandidateKind === 'string' && payload.selectedCandidateKind.trim()
           ? payload.selectedCandidateKind.trim().toLowerCase()
           : (qualityMeta.selectedCandidateKind || null),
@@ -1643,6 +1668,12 @@ async function appendLlmGateDecisionBestEffort(data) {
         retrievalBlockReason: typeof payload.retrievalBlockReason === 'string' && payload.retrievalBlockReason.trim()
           ? payload.retrievalBlockReason.trim().toLowerCase()
           : (qualityMeta.retrievalBlockReason || null),
+        retrievalPermitReason: typeof payload.retrievalPermitReason === 'string' && payload.retrievalPermitReason.trim()
+          ? payload.retrievalPermitReason.trim().toLowerCase()
+          : (qualityMeta.retrievalPermitReason || null),
+        retrievalReenabledBySlice: typeof payload.retrievalReenabledBySlice === 'string' && payload.retrievalReenabledBySlice.trim()
+          ? payload.retrievalReenabledBySlice.trim().toLowerCase()
+          : (qualityMeta.retrievalReenabledBySlice || null),
         fallbackTemplateKind: typeof payload.fallbackTemplateKind === 'string' && payload.fallbackTemplateKind.trim()
           ? payload.fallbackTemplateKind.trim().toLowerCase()
           : (qualityMeta.fallbackTemplateKind || null),
@@ -1666,6 +1697,9 @@ async function appendLlmGateDecisionBestEffort(data) {
         knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true || qualityMeta.knowledgeCandidateUsed === true,
         cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true || qualityMeta.cityPackUsedInAnswer === true,
         savedFaqUsedInAnswer: payload.savedFaqUsedInAnswer === true || qualityMeta.savedFaqUsedInAnswer === true,
+        groundedCandidateAvailable: payload.groundedCandidateAvailable === true || qualityMeta.groundedCandidateAvailable === true,
+        structuredCandidateAvailable: payload.structuredCandidateAvailable === true || qualityMeta.structuredCandidateAvailable === true,
+        continuationCandidateAvailable: payload.continuationCandidateAvailable === true || qualityMeta.continuationCandidateAvailable === true,
         genericFallbackSlice: typeof payload.genericFallbackSlice === 'string' && payload.genericFallbackSlice.trim()
           ? payload.genericFallbackSlice.trim().toLowerCase()
           : (qualityMeta.genericFallbackSlice || null),
@@ -2100,6 +2134,18 @@ async function appendLlmActionLogBestEffort(data) {
       strategyReason: typeof payload.strategyReason === 'string' && payload.strategyReason.trim()
         ? payload.strategyReason.trim().toLowerCase()
         : (qualityMeta.strategyReason || null),
+      strategyAlternativeSet: Array.isArray(payload.strategyAlternativeSet)
+        ? payload.strategyAlternativeSet
+          .map((item) => (typeof item === 'string' ? item.trim().toLowerCase() : ''))
+          .filter(Boolean)
+          .slice(0, 8)
+        : (Array.isArray(qualityMeta.strategyAlternativeSet) ? qualityMeta.strategyAlternativeSet : []),
+      strategyPriorityVersion: typeof payload.strategyPriorityVersion === 'string' && payload.strategyPriorityVersion.trim()
+        ? payload.strategyPriorityVersion.trim()
+        : (qualityMeta.strategyPriorityVersion || null),
+      fallbackPriorityReason: typeof payload.fallbackPriorityReason === 'string' && payload.fallbackPriorityReason.trim()
+        ? payload.fallbackPriorityReason.trim().toLowerCase()
+        : (qualityMeta.fallbackPriorityReason || null),
       selectedCandidateKind: typeof payload.selectedCandidateKind === 'string' && payload.selectedCandidateKind.trim()
         ? payload.selectedCandidateKind.trim().toLowerCase()
         : (qualityMeta.selectedCandidateKind || null),
@@ -2108,6 +2154,12 @@ async function appendLlmActionLogBestEffort(data) {
       retrievalBlockReason: typeof payload.retrievalBlockReason === 'string' && payload.retrievalBlockReason.trim()
         ? payload.retrievalBlockReason.trim().toLowerCase()
         : (qualityMeta.retrievalBlockReason || null),
+      retrievalPermitReason: typeof payload.retrievalPermitReason === 'string' && payload.retrievalPermitReason.trim()
+        ? payload.retrievalPermitReason.trim().toLowerCase()
+        : (qualityMeta.retrievalPermitReason || null),
+      retrievalReenabledBySlice: typeof payload.retrievalReenabledBySlice === 'string' && payload.retrievalReenabledBySlice.trim()
+        ? payload.retrievalReenabledBySlice.trim().toLowerCase()
+        : (qualityMeta.retrievalReenabledBySlice || null),
       fallbackTemplateKind: typeof payload.fallbackTemplateKind === 'string' && payload.fallbackTemplateKind.trim()
         ? payload.fallbackTemplateKind.trim().toLowerCase()
         : (qualityMeta.fallbackTemplateKind || null),
@@ -2131,6 +2183,9 @@ async function appendLlmActionLogBestEffort(data) {
       knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true || qualityMeta.knowledgeCandidateUsed === true,
       cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true || qualityMeta.cityPackUsedInAnswer === true,
       savedFaqUsedInAnswer: payload.savedFaqUsedInAnswer === true || qualityMeta.savedFaqUsedInAnswer === true,
+      groundedCandidateAvailable: payload.groundedCandidateAvailable === true || qualityMeta.groundedCandidateAvailable === true,
+      structuredCandidateAvailable: payload.structuredCandidateAvailable === true || qualityMeta.structuredCandidateAvailable === true,
+      continuationCandidateAvailable: payload.continuationCandidateAvailable === true || qualityMeta.continuationCandidateAvailable === true,
       genericFallbackSlice: typeof payload.genericFallbackSlice === 'string' && payload.genericFallbackSlice.trim()
         ? payload.genericFallbackSlice.trim().toLowerCase()
         : (qualityMeta.genericFallbackSlice || null),

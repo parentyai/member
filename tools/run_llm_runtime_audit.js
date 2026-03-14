@@ -378,8 +378,13 @@ function buildRuntimeAuditReport(input) {
   const routeCoverage = {
     routerReasons: Array.isArray(conversation.routerReasons) ? conversation.routerReasons : [],
     strategyReasons: Array.isArray(conversation.strategyReasons) ? conversation.strategyReasons : [],
+    strategyAlternatives: Array.isArray(conversation.strategyAlternatives) ? conversation.strategyAlternatives : [],
+    strategyPriorityVersions: Array.isArray(conversation.strategyPriorityVersions) ? conversation.strategyPriorityVersions : [],
+    fallbackPriorityReasons: Array.isArray(conversation.fallbackPriorityReasons) ? conversation.fallbackPriorityReasons : [],
     selectedCandidateKinds: Array.isArray(conversation.selectedCandidateKinds) ? conversation.selectedCandidateKinds : [],
     retrievalBlockReasons: Array.isArray(conversation.retrievalBlockReasons) ? conversation.retrievalBlockReasons : [],
+    retrievalPermitReasons: Array.isArray(conversation.retrievalPermitReasons) ? conversation.retrievalPermitReasons : [],
+    retrievalReenabledBySlices: Array.isArray(conversation.retrievalReenabledBySlices) ? conversation.retrievalReenabledBySlices : [],
     routeKinds: Array.isArray(conversation.routeKinds) ? conversation.routeKinds : [],
     fallbackTypes: Array.isArray(conversation.fallbackTypes) ? conversation.fallbackTypes : [],
     fallbackTemplateKinds: Array.isArray(conversation.fallbackTemplateKinds) ? conversation.fallbackTemplateKinds : [],
@@ -400,6 +405,27 @@ function buildRuntimeAuditReport(input) {
     retrievalBlockedByStrategyRate: Number.isFinite(Number(conversation.retrievalBlockedByStrategyRate))
       ? Number(conversation.retrievalBlockedByStrategyRate)
       : 0,
+    groundedCandidateAvailableRate: Number.isFinite(Number(conversation.groundedCandidateAvailableRate))
+      ? Number(conversation.groundedCandidateAvailableRate)
+      : 0,
+    structuredCandidateAvailableRate: Number.isFinite(Number(conversation.structuredCandidateAvailableRate))
+      ? Number(conversation.structuredCandidateAvailableRate)
+      : 0,
+    continuationCandidateAvailableRate: Number.isFinite(Number(conversation.continuationCandidateAvailableRate))
+      ? Number(conversation.continuationCandidateAvailableRate)
+      : 0,
+    groundedCandidateSelectionRate: Number.isFinite(Number(conversation.groundedCandidateSelectionRate))
+      ? Number(conversation.groundedCandidateSelectionRate)
+      : 0,
+    structuredCandidateSelectionRate: Number.isFinite(Number(conversation.structuredCandidateSelectionRate))
+      ? Number(conversation.structuredCandidateSelectionRate)
+      : 0,
+    domainConciergeSelectionRate: Number.isFinite(Number(conversation.domainConciergeSelectionRate))
+      ? Number(conversation.domainConciergeSelectionRate)
+      : 0,
+    clarifySelectionRate: Number.isFinite(Number(conversation.clarifySelectionRate))
+      ? Number(conversation.clarifySelectionRate)
+      : 0,
     knowledgeCandidateUsedRate: Number.isFinite(Number(conversation.knowledgeCandidateUsedRate))
       ? Number(conversation.knowledgeCandidateUsedRate)
       : 0,
@@ -411,6 +437,9 @@ function buildRuntimeAuditReport(input) {
       : 0,
     genericFallbackRepeatRateBySlice: Array.isArray(conversation.genericFallbackRepeatRateBySlice)
       ? conversation.genericFallbackRepeatRateBySlice
+      : [],
+    retrievalReenabledRateBySlice: Array.isArray(conversation.retrievalReenabledRateBySlice)
+      ? conversation.retrievalReenabledRateBySlice
       : [],
     topRepeatedFallbackFingerprints: Array.isArray(conversation.topRepeatedFallbackFingerprints)
       ? conversation.topRepeatedFallbackFingerprints

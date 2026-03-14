@@ -36,7 +36,7 @@ test('phase832: conversation packet records when follow-up resolution comes from
     routerMode: 'question',
     llmFlags: { llmConciergeEnabled: true }
   });
-  assert.equal(negative.priorContextUsed, false);
+  assert.equal(negative.priorContextUsed, true);
   assert.equal(negative.followupResolvedFromHistory, false);
-  assert.equal(negative.genericFallbackSlice, 'broad');
+  assert.equal(negative.genericFallbackSlice, 'followup');
 });

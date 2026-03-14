@@ -16,6 +16,12 @@ const VERIFICATION_OUTCOMES = new Set(['passed', 'hedged', 'clarify', 'refuse'])
 const CANDIDATE_KINDS = new Set([
   'none',
   'grounded_candidate',
+  'city_grounded_candidate',
+  'city_pack_backed_candidate',
+  'structured_answer_candidate',
+  'continuation_candidate',
+  'knowledge_backed_candidate',
+  'housing_knowledge_candidate',
   'clarify_candidate',
   'domain_concierge_candidate',
   'composed_concierge_candidate',
@@ -140,6 +146,10 @@ function normalizeStringList(value, limit) {
     if (!out.includes(normalized)) out.push(normalized);
   });
   return out;
+}
+
+function normalizeReasonList(value, limit) {
+  return normalizeStringList(value, limit).map((item) => item.toLowerCase().replace(/\s+/g, '_'));
 }
 
 function normalizePlainObject(value) {
@@ -369,12 +379,15 @@ function normalizeJudgeScores(value) {
       total: normalizeNumber(row.total, 0),
       rejectedReasons: normalizeStringList(row.rejectedReasons, 8),
       metrics: {
+        candidatePriority: normalizeNumber(metrics.candidatePriority, 0),
+        strategyAlignmentPriority: normalizeNumber(metrics.strategyAlignmentPriority, 0),
         sensibleness: normalizeNumber(metrics.sensibleness, 0),
         contextConsistency: normalizeNumber(metrics.contextConsistency, 0),
         taskProgress: normalizeNumber(metrics.taskProgress, 0),
         groundedness: normalizeNumber(metrics.groundedness, 0),
         naturalness: normalizeNumber(metrics.naturalness, 0),
-        safety: normalizeNumber(metrics.safety, 0)
+        safety: normalizeNumber(metrics.safety, 0),
+        directAnswerFit: normalizeNumber(metrics.directAnswerFit, 0)
       }
     };
   }).filter((row) => row.candidateId);
@@ -614,10 +627,15 @@ async function appendLlmActionLog(params) {
     loopBreakApplied: payload.loopBreakApplied === true,
     followupIntent: normalizeFollowupIntent(payload.followupIntent),
     strategyReason: normalizeString(payload.strategyReason, null),
+    strategyAlternativeSet: normalizeReasonList(payload.strategyAlternativeSet, 8),
+    strategyPriorityVersion: normalizeString(payload.strategyPriorityVersion, null),
+    fallbackPriorityReason: normalizeString(payload.fallbackPriorityReason, null),
     selectedCandidateKind: normalizeCandidateKind(payload.selectedCandidateKind),
     selectedByDirectAnswerFirst: payload.selectedByDirectAnswerFirst === true,
     retrievalBlockedByStrategy: payload.retrievalBlockedByStrategy === true,
     retrievalBlockReason: normalizeString(payload.retrievalBlockReason, null),
+    retrievalPermitReason: normalizeString(payload.retrievalPermitReason, null),
+    retrievalReenabledBySlice: normalizeGenericFallbackSlice(payload.retrievalReenabledBySlice),
     fallbackTemplateKind: normalizeTemplateKind(payload.fallbackTemplateKind),
     finalizerTemplateKind: normalizeTemplateKind(payload.finalizerTemplateKind),
     replyTemplateFingerprint: normalizeString(payload.replyTemplateFingerprint, null),
@@ -628,6 +646,9 @@ async function appendLlmActionLog(params) {
     knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true,
     cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true,
     savedFaqUsedInAnswer: payload.savedFaqUsedInAnswer === true,
+    groundedCandidateAvailable: payload.groundedCandidateAvailable === true,
+    structuredCandidateAvailable: payload.structuredCandidateAvailable === true,
+    continuationCandidateAvailable: payload.continuationCandidateAvailable === true,
     genericFallbackSlice: normalizeGenericFallbackSlice(payload.genericFallbackSlice),
     parentIntentType: normalizeParentIntentType(payload.parentIntentType),
     parentAnswerMode: normalizeParentAnswerMode(payload.parentAnswerMode),
