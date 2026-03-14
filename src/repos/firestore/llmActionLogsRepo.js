@@ -3,6 +3,10 @@
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
 const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
+const {
+  normalizeTranscriptSnapshotOutcome,
+  normalizeTranscriptSnapshotReason
+} = require('../../domain/qualityPatrol/transcript/buildTranscriptCoverageDiagnostics');
 
 const COLLECTION = 'llm_action_logs';
 const ENTRY_TYPES = new Set(['webhook', 'admin', 'compat', 'job', 'unknown']);
@@ -363,6 +367,11 @@ function normalizeContaminationRisk(value) {
   return CONTAMINATION_RISKS.has(normalized) ? normalized : null;
 }
 
+function normalizeNullableBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  return null;
+}
+
 function normalizeReplayFailureType(value) {
   const normalized = normalizeString(value, '').toLowerCase();
   if (!normalized) return 'none';
@@ -643,6 +652,12 @@ async function appendLlmActionLog(params) {
     priorContextUsed: payload.priorContextUsed === true,
     followupResolvedFromHistory: payload.followupResolvedFromHistory === true,
     continuationReason: normalizeString(payload.continuationReason, null),
+    transcriptSnapshotOutcome: normalizeTranscriptSnapshotOutcome(payload.transcriptSnapshotOutcome),
+    transcriptSnapshotReason: normalizeTranscriptSnapshotReason(payload.transcriptSnapshotReason),
+    transcriptSnapshotLineUserKeyAvailable: normalizeNullableBoolean(payload.transcriptSnapshotLineUserKeyAvailable),
+    transcriptSnapshotUserMessageAvailable: normalizeNullableBoolean(payload.transcriptSnapshotUserMessageAvailable),
+    transcriptSnapshotAssistantReplyAvailable: normalizeNullableBoolean(payload.transcriptSnapshotAssistantReplyAvailable),
+    transcriptSnapshotPriorContextSummaryAvailable: normalizeNullableBoolean(payload.transcriptSnapshotPriorContextSummaryAvailable),
     knowledgeCandidateCountBySource: normalizeKnowledgeCandidateCountBySource(payload.knowledgeCandidateCountBySource),
     knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true,
     knowledgeCandidateRejectedReason: normalizeString(payload.knowledgeCandidateRejectedReason, null),

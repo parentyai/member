@@ -34,6 +34,10 @@ test('phase845: appendConversationReviewSnapshot builds masked snapshot and appe
   });
 
   assert.equal(result.ok, true);
+  assert.equal(result.outcome, 'written');
+  assert.equal(result.written, true);
+  assert.equal(result.skipped, false);
+  assert.equal(result.failed, false);
   assert.equal(result.id, 'review_snapshot_phase845');
   assert.equal(writes.length, 1);
   assert.equal(writes[0].userMessageMasked.includes('foo@example.com'), false);
@@ -61,5 +65,69 @@ test('phase845: appendConversationReviewSnapshot is disabled by rollback flag', 
 
   assert.equal(result.skipped, true);
   assert.equal(result.reason, 'feature_flag_off');
+  assert.equal(result.outcome, 'skipped_flag_disabled');
   assert.equal(called, 0);
+});
+
+test('phase845: appendConversationReviewSnapshot surfaces missing line user key as skip reason', async () => {
+  const result = await appendConversationReviewSnapshot({
+    lineUserId: '',
+    userMessageText: 'こんにちは',
+    assistantReplyText: 'まずは条件を整理しましょう'
+  }, {
+    conversationReviewSnapshotsRepo: {
+      appendConversationReviewSnapshot: async () => {
+        throw new Error('should_not_write');
+      }
+    }
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.skipped, true);
+  assert.equal(result.outcome, 'skipped_missing_line_user_key');
+  assert.equal(result.reason, 'line_user_key_missing');
+});
+
+test('phase845: appendConversationReviewSnapshot keeps unreviewable transcript skipped after masking', async () => {
+  const result = await appendConversationReviewSnapshot({
+    lineUserId: 'U_PHASE845_UNREVIEWABLE',
+    userMessageText: '   ',
+    assistantReplyText: '\n\n'
+  }, {
+    conversationReviewSnapshotsRepo: {
+      appendConversationReviewSnapshot: async () => {
+        throw new Error('should_not_write');
+      }
+    }
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.skipped, true);
+  assert.equal(result.outcome, 'skipped_unreviewable_transcript');
+  assert.equal(result.reason, 'transcript_unavailable');
+  assert.equal(result.transcriptSnapshotUserMessageAvailable, false);
+  assert.equal(result.transcriptSnapshotAssistantReplyAvailable, false);
+});
+
+test('phase845: appendConversationReviewSnapshot classifies repo write failure without throwing main flow', async () => {
+  const result = await appendConversationReviewSnapshot({
+    lineUserId: 'U_PHASE845_REPO_FAIL',
+    userMessageText: '家賃補助の条件を教えてください',
+    assistantReplyText: 'まずは勤務先の規定を確認しましょう'
+  }, {
+    conversationReviewSnapshotsRepo: {
+      appendConversationReviewSnapshot: async () => {
+        const error = new Error('firestore write denied');
+        error.code = 'permission-denied';
+        throw error;
+      }
+    }
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.failed, true);
+  assert.equal(result.outcome, 'failed_repo_write');
+  assert.equal(result.reason, 'repo_write_failed');
+  assert.equal(result.error.code, 'permission-denied');
+  assert.match(result.error.message, /firestore write denied/);
 });

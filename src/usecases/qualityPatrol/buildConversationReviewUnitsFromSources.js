@@ -5,6 +5,9 @@ const llmActionLogsRepo = require('../../repos/firestore/llmActionLogsRepo');
 const faqAnswerLogsRepo = require('../../repos/firestore/faqAnswerLogsRepo');
 const { getTraceBundle } = require('../admin/getTraceBundle');
 const { buildConversationReviewUnits } = require('../../domain/qualityPatrol/transcript/buildConversationReviewUnits');
+const {
+  buildTranscriptCoverageDiagnostics
+} = require('../../domain/qualityPatrol/transcript/buildTranscriptCoverageDiagnostics');
 
 function normalizeLimit(value, fallback, max) {
   const numeric = Number(value);
@@ -55,6 +58,7 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
   }));
 
   const traceBundles = Object.fromEntries(bundles);
+  const transcriptCoverage = buildTranscriptCoverageDiagnostics({ llmActionLogs });
   const reviewUnits = buildConversationReviewUnits({
     snapshots,
     llmActionLogs,
@@ -69,6 +73,7 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
       toAt: payload.toAt || null
     },
     reviewUnits,
+    transcriptCoverage,
     sourceCollections: ['conversation_review_snapshots', 'llm_action_logs', 'faq_answer_logs', 'trace_bundle'],
     counts: {
       snapshots: snapshots.length,

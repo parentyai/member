@@ -31,6 +31,8 @@ test('phase855: patrol job emits query-aligned output artifact shape', async () 
   assert.ok(Array.isArray(artifact.recommendedPr));
   assert.ok(artifact.planningStatus);
   assert.ok(artifact.analysisStatus);
+  assert.ok(artifact.transcriptCoverage);
+  assert.ok(artifact.transcriptCoverage.transcriptWriteOutcomeCounts);
   assert.equal(artifact.provenance, 'quality_patrol_job');
   assert.ok(artifact.runtimeFetchStatus);
 

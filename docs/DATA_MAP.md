@@ -59,7 +59,7 @@ Fields:
 Purpose: LLM runtime quality telemetry and masked conversation review evidence.
 
 Typical fields:
-- `llm_action_logs`: route/strategy/readiness/fallback telemetry, template fingerprints, trace linkage
+- `llm_action_logs`: route/strategy/readiness/fallback telemetry, template fingerprints, trace linkage, transcript snapshot outcome telemetry (`transcriptSnapshotOutcome`, `transcriptSnapshotReason`, availability booleans without raw transcript text)
 - `faq_answer_logs`: question hash, matched FAQ ids, saved FAQ / readiness telemetry
 - `conversation_review_snapshots`: `lineUserKey`, `traceId`, `requestId`, `routeKind`, `strategy`, `selectedCandidateKind`, `fallbackTemplateKind`, `replyTemplateFingerprint`, `priorContextUsed`, `followupResolvedFromHistory`, `knowledgeCandidateUsed`, `readinessDecision`, `userMessageMasked`, `assistantReplyMasked`, `priorContextSummaryMasked`, `textPolicy`
 
@@ -67,6 +67,7 @@ Notes:
 - `conversation_review_snapshots` stores masked and length-capped review text only.
 - plaintext user/assistant transcript is not durably stored in this collection.
 - review snapshots are add-only and retention-bound for patrol use.
+- transcript snapshot skip/failure classification is stored in `llm_action_logs`, not as a new raw transcript store.
 
 ### Quality Patrol review units (derived, read-only)
 Purpose: build review-ready units for downstream conversation evaluation without persisting another transcript copy.
@@ -80,6 +81,7 @@ Typical fields:
 Notes:
 - sources: `conversation_review_snapshots`, `llm_action_logs`, `faq_answer_logs`, `trace_bundle`
 - review units are not persisted; they are derived read-only outputs for downstream evaluator/detection PRs.
+- transcript coverage diagnostics are derived from `llm_action_logs` outcome telemetry and stay separate from transcript availability rates.
 
 ### Quality Patrol evaluator outputs (derived, read-only)
 Purpose: deterministic conversation quality assessment over review units without writing issue registry or backlog records.

@@ -141,6 +141,28 @@ function buildTelemetrySignals(snapshot, latestAction) {
       hasOwn(latestAction, 'followupResolvedFromHistory') ? latestAction.followupResolvedFromHistory === true : null,
       snapshot ? snapshot.followupResolvedFromHistory === true : null
     ),
+    transcriptSnapshotOutcome: pickToken(latestAction && latestAction.transcriptSnapshotOutcome),
+    transcriptSnapshotReason: pickToken(latestAction && latestAction.transcriptSnapshotReason),
+    transcriptSnapshotLineUserKeyAvailable: pickBoolean(
+      hasOwn(latestAction, 'transcriptSnapshotLineUserKeyAvailable')
+        ? latestAction.transcriptSnapshotLineUserKeyAvailable === true
+        : null
+    ),
+    transcriptSnapshotUserMessageAvailable: pickBoolean(
+      hasOwn(latestAction, 'transcriptSnapshotUserMessageAvailable')
+        ? latestAction.transcriptSnapshotUserMessageAvailable === true
+        : null
+    ),
+    transcriptSnapshotAssistantReplyAvailable: pickBoolean(
+      hasOwn(latestAction, 'transcriptSnapshotAssistantReplyAvailable')
+        ? latestAction.transcriptSnapshotAssistantReplyAvailable === true
+        : null
+    ),
+    transcriptSnapshotPriorContextSummaryAvailable: pickBoolean(
+      hasOwn(latestAction, 'transcriptSnapshotPriorContextSummaryAvailable')
+        ? latestAction.transcriptSnapshotPriorContextSummaryAvailable === true
+        : null
+    ),
     knowledgeCandidateUsed: pickBoolean(
       hasOwn(latestAction, 'knowledgeCandidateUsed') ? latestAction.knowledgeCandidateUsed === true : null,
       snapshot ? snapshot.knowledgeCandidateUsed === true : null

@@ -5,6 +5,7 @@ Masked transcript foundation for Member Quality Patrol v1.1 (add-only).
 ## Scope
 - collection: `conversation_review_snapshots`
 - write path: `src/routes/webhookLine.js` -> `src/usecases/qualityPatrol/appendConversationReviewSnapshot.js` -> `src/repos/firestore/conversationReviewSnapshotsRepo.js`
+- outcome telemetry surface: `src/routes/webhookLine.js` -> `src/repos/firestore/llmActionLogsRepo.js`
 - surface: LINE webhook conversation replies only in PR-0
 
 ## Stored Data
@@ -17,6 +18,17 @@ Masked transcript foundation for Member Quality Patrol v1.1 (add-only).
   - `assistantReplyMasked`
   - `priorContextSummaryMasked`
 - masking evidence: `textPolicy`
+
+## Write Outcomes
+- transcript snapshot writes remain best-effort and do not block webhook reply flow.
+- runtime now classifies snapshot outcomes as:
+  - `written`
+  - `skipped_flag_disabled`
+  - `skipped_missing_line_user_key`
+  - `skipped_unreviewable_transcript`
+  - `failed_repo_write`
+  - `failed_unknown`
+- skip/failure reasons are surfaced through add-only `llm_action_logs` metadata so patrol jobs can distinguish write omission from read-side gaps without storing new raw transcript content.
 
 ## Masking Rules
 - replace emails with `[email]`
@@ -38,7 +50,7 @@ Masked transcript foundation for Member Quality Patrol v1.1 (add-only).
 
 ## Rollback
 - immediate stop: set `ENABLE_QUALITY_PATROL_TRANSCRIPT_SNAPSHOTS_V1=0`
-- staged rollback: stop runtime writes first, keep existing snapshots read-only
+- staged rollback: stop runtime writes first, ignore transcript snapshot outcome telemetry in patrol read-side if needed, keep existing snapshots read-only
 - full rollback: revert the PR that introduced `conversation_review_snapshots`
 
 ## Non-goals In PR-0

@@ -13,6 +13,9 @@ async function buildPatrolKpisFromEvaluations(params, deps) {
     toAt: payload.toAt || null
   };
   let sourceCollections = [];
+  let transcriptCoverage = payload.transcriptCoverage && typeof payload.transcriptCoverage === 'object'
+    ? payload.transcriptCoverage
+    : null;
 
   if (!reviewUnits) {
     const extractor = deps && deps.buildConversationReviewUnitsFromSources
@@ -22,6 +25,9 @@ async function buildPatrolKpisFromEvaluations(params, deps) {
     reviewUnits = Array.isArray(extracted && extracted.reviewUnits) ? extracted.reviewUnits : [];
     sourceWindow = extracted && extracted.sourceWindow ? extracted.sourceWindow : sourceWindow;
     sourceCollections = Array.isArray(extracted && extracted.sourceCollections) ? extracted.sourceCollections.slice() : sourceCollections;
+    transcriptCoverage = extracted && extracted.transcriptCoverage && typeof extracted.transcriptCoverage === 'object'
+      ? extracted.transcriptCoverage
+      : transcriptCoverage;
   }
 
   if (!evaluations) {
@@ -35,7 +41,8 @@ async function buildPatrolKpisFromEvaluations(params, deps) {
 
   const result = buildPatrolKpis({
     reviewUnits,
-    evaluations
+    evaluations,
+    transcriptCoverage
   });
   return Object.assign({
     ok: true,
