@@ -5,15 +5,131 @@ function normalizeText(value) {
   return value.trim();
 }
 
-function judgeNeedRetrieval(packet, strategyPlan) {
-  const strategy = normalizeText(strategyPlan && strategyPlan.strategy).toLowerCase();
-  if (!strategy || strategy === 'casual' || strategy === 'clarify' || strategy === 'domain_concierge' || strategy === 'concierge') {
-    return false;
+function hasPattern(text, pattern) {
+  return Boolean(text && pattern && pattern.test(text));
+}
+
+function isHighRiskDomain(domainIntent) {
+  const normalized = normalizeText(domainIntent).toLowerCase();
+  return normalized === 'ssn' || normalized === 'banking';
+}
+
+function detectBroadGroundingSignals(messageText) {
+  const normalized = normalizeText(messageText);
+  return {
+    costQuestion: hasPattern(normalized, /(いくら|どのくらい.*(お金|費用|コスト)|費用|初期費用|生活費|家賃相場|予算|相場)/i),
+    timelineQuestion: hasPattern(normalized, /(いつ|どのタイミング|タイミング|いつまで|期限|スケジュール|何日前|到着後|出国前)/i),
+    checklistQuestion: hasPattern(normalized, /(何から|まず何|最初に|準備|チェックリスト|段取り|流れ|手順|どう進める)/i),
+    relocationQuestion: hasPattern(normalized, /(引っ越し|引越し|転居|移住|赴任先|生活立ち上げ|住みやすさ|家賃|初期費用|生活で最初に困る|暮らし|生活費|relocation|move|moving)/i)
+  };
+}
+
+function resolveRetrievalDecision(packet, strategyPlan) {
+  const payload = packet && typeof packet === 'object' ? packet : {};
+  const plan = strategyPlan && typeof strategyPlan === 'object' ? strategyPlan : {};
+  const strategy = normalizeText(plan.strategy).toLowerCase();
+  const domainIntent = normalizeText(payload.normalizedConversationIntent).toLowerCase() || 'general';
+  const genericFallbackSlice = normalizeText(payload.genericFallbackSlice).toLowerCase() || 'other';
+  const followupIntent = normalizeText(payload.followupIntent).toLowerCase();
+  const messageText = normalizeText(payload.messageText);
+  const broadSignals = detectBroadGroundingSignals(messageText);
+  const strategyReason = normalizeText(plan.strategyReason).toLowerCase();
+  const blockedByDefault = !strategy
+    || strategy === 'casual'
+    || strategy === 'clarify'
+    || strategy === 'domain_concierge'
+    || strategy === 'concierge';
+  const blockedStrategies = new Set(['casual', 'clarify', 'domain_concierge', 'concierge']);
+  const continuationContext = payload.priorContextUsed === true
+    || payload.contextResume === true
+    || payload.followupResolvedFromHistory === true
+    || Boolean(followupIntent);
+  const housingGrounding = (domainIntent === 'housing' || genericFallbackSlice === 'housing')
+    && strategyReason === 'explicit_domain_grounded_answer';
+  const cityGrounding = genericFallbackSlice === 'city'
+    || broadSignals.relocationQuestion === true;
+  const explicitDomainGrounding = strategyReason === 'explicit_domain_grounded_answer'
+    && domainIntent !== 'general';
+  const broadGrounding = genericFallbackSlice === 'broad'
+    && (broadSignals.costQuestion || broadSignals.timelineQuestion || broadSignals.checklistQuestion);
+  const followupGrounding = genericFallbackSlice === 'followup'
+    && continuationContext
+    && domainIntent !== 'general';
+  const highRiskDomain = isHighRiskDomain(domainIntent);
+  const permitReason = [];
+
+  if (strategy === 'recommendation') {
+    return {
+      retrieveNeeded: true,
+      retrievalBlockedByStrategy: false,
+      retrievalBlockReason: null,
+      retrievalPermitReason: 'recommendation_strategy',
+      retrievalReenabledBySlice: null
+    };
   }
-  if (strategy === 'recommendation') return true;
-  const messageText = normalizeText(packet && packet.messageText);
-  if (messageText.length <= 10) return false;
-  return true;
+
+  if (housingGrounding) permitReason.push('housing_grounding_probe');
+  if (cityGrounding) permitReason.push('city_grounding_probe');
+  if (explicitDomainGrounding && !highRiskDomain) permitReason.push('explicit_domain_grounding_probe');
+  if (broadGrounding) permitReason.push('broad_structured_grounding_probe');
+  if (followupGrounding) permitReason.push('followup_context_grounding_probe');
+  if (continuationContext && domainIntent !== 'general' && !highRiskDomain) {
+    permitReason.push('domain_continuation_grounding_probe');
+  }
+
+  if (permitReason.length > 0 && messageText.length > 4) {
+    const preferredSlice = genericFallbackSlice === 'other'
+      ? (cityGrounding ? 'city' : (housingGrounding ? 'housing' : (followupGrounding ? 'followup' : 'broad')))
+      : genericFallbackSlice;
+    return {
+      retrieveNeeded: true,
+      retrievalBlockedByStrategy: false,
+      retrievalBlockReason: null,
+      retrievalPermitReason: permitReason.join('+'),
+      retrievalReenabledBySlice: blockedByDefault ? preferredSlice : null
+    };
+  }
+
+  if (!blockedByDefault) {
+    if (messageText.length <= 10) {
+      return {
+        retrieveNeeded: false,
+        retrievalBlockedByStrategy: false,
+        retrievalBlockReason: 'message_too_short',
+        retrievalPermitReason: null,
+        retrievalReenabledBySlice: null
+      };
+    }
+    return {
+      retrieveNeeded: true,
+      retrievalBlockedByStrategy: false,
+      retrievalBlockReason: null,
+      retrievalPermitReason: 'strategy_default',
+      retrievalReenabledBySlice: null
+    };
+  }
+
+  if (highRiskDomain && blockedStrategies.has(strategy)) {
+    return {
+      retrieveNeeded: false,
+      retrievalBlockedByStrategy: true,
+      retrievalBlockReason: `strategy_${strategy}_high_risk`,
+      retrievalPermitReason: null,
+      retrievalReenabledBySlice: null
+    };
+  }
+
+  return {
+    retrieveNeeded: false,
+    retrievalBlockedByStrategy: true,
+    retrievalBlockReason: `strategy_${strategy}`,
+    retrievalPermitReason: null,
+    retrievalReenabledBySlice: null
+  };
+}
+
+function judgeNeedRetrieval(packet, strategyPlan) {
+  return resolveRetrievalDecision(packet, strategyPlan).retrieveNeeded === true;
 }
 
 function judgeRetrievalQuality(result) {
@@ -42,6 +158,7 @@ function judgeEvidenceSufficiency(params) {
 }
 
 module.exports = {
+  resolveRetrievalDecision,
   judgeNeedRetrieval,
   judgeRetrievalQuality,
   judgeEvidenceSufficiency

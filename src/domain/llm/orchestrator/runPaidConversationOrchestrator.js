@@ -3,11 +3,17 @@
 const { buildConversationPacket } = require('./buildConversationPacket');
 const { buildStrategyPlan } = require('./strategyPlanner');
 const {
+  resolveRetrievalDecision,
   judgeNeedRetrieval,
   judgeRetrievalQuality,
   judgeEvidenceSufficiency
 } = require('./retrievalController');
 const { judgeCandidates } = require('./judgeCandidates');
+const {
+  resolveCandidatePriority,
+  isDirectAnswerEligibleCandidate,
+  resolveFallbackPriorityReason
+} = require('./candidatePriority');
 const { verifyCandidate } = require('./verifyCandidate');
 const { finalizeCandidate } = require('./finalizeCandidate');
 const { resolveLlmLegalPolicySnapshot } = require('../policy/resolveLlmLegalPolicySnapshot');
@@ -447,9 +453,22 @@ function buildCasualCandidate(casualReply, packet) {
 
 function buildGroundedCandidate(result, retrievalQuality, packet) {
   if (!result || result.ok !== true) return null;
+  const auditMeta = extractAuditMeta(result);
+  const cityPackGrounded = Boolean(
+    auditMeta
+    && (
+      auditMeta.cityPackGrounded === true
+      || auditMeta.cityPackContext === true
+      || (typeof auditMeta.cityPackPackId === 'string' && auditMeta.cityPackPackId.trim())
+    )
+  );
+  const genericFallbackSlice = normalizeText(packet && packet.genericFallbackSlice).toLowerCase();
+  const candidateKind = genericFallbackSlice === 'city'
+    ? (cityPackGrounded ? 'city_pack_backed_candidate' : 'city_grounded_candidate')
+    : 'grounded_candidate';
   return {
-    id: 'grounded_candidate',
-    kind: 'grounded_candidate',
+    id: candidateKind,
+    kind: candidateKind,
     replyText: result.replyText || '',
     domainIntent: packet.normalizedConversationIntent || 'general',
     retrievalQuality,
@@ -466,6 +485,44 @@ function buildGroundedCandidate(result, retrievalQuality, packet) {
           followupQuestion: Array.isArray(result.output.gaps) ? (result.output.gaps[0] || '') : ''
         }
       : {}
+  };
+}
+
+function buildStructuredCandidate(result, retrievalQuality, packet) {
+  if (!result || result.ok !== true) return null;
+  const output = result.output && typeof result.output === 'object' ? result.output : {};
+  const lines = [];
+  const situation = normalizeText(output.situation);
+  if (situation) lines.push(situation);
+  const nextActions = Array.isArray(output.nextActions)
+    ? output.nextActions.map((item) => normalizeText(item)).filter(Boolean).slice(0, 2)
+    : [];
+  if (nextActions.length > 0) {
+    lines.push(`まずは ${nextActions.join('、')} を進めると詰まりにくいです。`);
+  }
+  const gap = Array.isArray(output.gaps)
+    ? normalizeText(output.gaps[0])
+    : '';
+  if (gap) lines.push(gap);
+  const replyText = lines.length > 0 ? lines.join('\n') : normalizeText(result.replyText);
+  if (!replyText) return null;
+  return {
+    id: 'structured_answer_candidate',
+    kind: 'structured_answer_candidate',
+    replyText,
+    domainIntent: packet.normalizedConversationIntent || 'general',
+    retrievalQuality,
+    assistantQuality: result.assistantQuality || null,
+    model: result.model || null,
+    tokensIn: Number.isFinite(Number(result.tokensIn)) ? Number(result.tokensIn) : 0,
+    tokensOut: Number.isFinite(Number(result.tokensOut)) ? Number(result.tokensOut) : 0,
+    raw: result,
+    atoms: {
+      situationLine: situation || replyText,
+      nextActions,
+      pitfall: Array.isArray(output.risks) ? (normalizeText(output.risks[0]) || '') : '',
+      followupQuestion: gap || ''
+    }
   };
 }
 
@@ -506,11 +563,61 @@ function buildDomainCandidate(result, packet) {
   };
 }
 
+function buildContinuationCandidate(result, packet) {
+  const domainCandidate = buildDomainCandidate(result, packet);
+  if (!domainCandidate) return null;
+  return Object.assign({}, domainCandidate, {
+    id: 'continuation_candidate',
+    kind: 'continuation_candidate',
+    directAnswerCandidate: true
+  });
+}
+
+function shouldBuildContinuationCandidate(packet, strategyPlan) {
+  const payload = packet && typeof packet === 'object' ? packet : {};
+  const plan = strategyPlan && typeof strategyPlan === 'object' ? strategyPlan : {};
+  return (
+    payload.priorContextUsed === true
+    || payload.followupResolvedFromHistory === true
+    || Boolean(payload.followupIntent)
+    || normalizeText(plan.fallbackType).toLowerCase() === 'followup_grounding_probe'
+  ) && normalizeText(payload.normalizedConversationIntent).toLowerCase() !== 'general';
+}
+
 async function buildCandidateSet(packet, strategyPlan, deps) {
   const candidates = [];
   const strategy = strategyPlan.strategy;
   let groundedResult = null;
   let retrievalQuality = 'none';
+  let domainResult = null;
+  const candidateSet = Array.isArray(strategyPlan.candidateSet) ? strategyPlan.candidateSet : [];
+  const wantsDomainFallback = candidateSet.includes('domain_concierge_candidate');
+  const wantsClarify = candidateSet.includes('clarify_candidate');
+  const continuationPreferred = shouldBuildContinuationCandidate(packet, strategyPlan);
+
+  const pushUniqueCandidate = (candidate) => {
+    if (!candidate || typeof candidate !== 'object') return;
+    if (candidates.some((item) => item && item.kind === candidate.kind)) return;
+    candidates.push(candidate);
+  };
+
+  const ensureDomainResult = async () => {
+    if (domainResult) return domainResult;
+    if (typeof deps.generateDomainConciergeCandidate !== 'function') return null;
+    domainResult = await deps.generateDomainConciergeCandidate({
+      domainIntent: packet.normalizedConversationIntent || 'general',
+      messageText: packet.messageText,
+      contextSnapshot: packet.contextSnapshot,
+      contextResumeDomain: packet.contextResumeDomain || null,
+      opportunityDecision: packet.opportunityDecision,
+      followupIntent: packet.followupIntent,
+      recentFollowupIntents: packet.recentFollowupIntents,
+      recentResponseHints: packet.recentResponseHints,
+      recoverySignal: packet.recoverySignal === true,
+      blockedReason: groundedResult && groundedResult.blockedReason ? groundedResult.blockedReason : null
+    });
+    return domainResult;
+  };
 
   if (strategy === 'casual') {
     const casualReply = await deps.generatePaidCasualReply({
@@ -527,25 +634,6 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
     return { candidates, groundedResult, retrievalQuality };
   }
 
-  if (strategy === 'domain_concierge' || strategy === 'concierge') {
-    const domainResult = await deps.generateDomainConciergeCandidate({
-      domainIntent: packet.normalizedConversationIntent || 'general',
-      messageText: packet.messageText,
-      contextSnapshot: packet.contextSnapshot,
-      contextResumeDomain: packet.contextResumeDomain || null,
-      opportunityDecision: packet.opportunityDecision,
-      followupIntent: packet.followupIntent,
-      recentFollowupIntents: packet.recentFollowupIntents,
-      recentResponseHints: packet.recentResponseHints,
-      recoverySignal: packet.recoverySignal === true,
-      blockedReason: null
-    });
-    const domainCandidate = buildDomainCandidate(domainResult, packet);
-    if (domainCandidate) candidates.push(domainCandidate);
-    appendClarifyCandidates(candidates, packet, strategy);
-    return { candidates, groundedResult, retrievalQuality };
-  }
-
   if (strategyPlan.retrieveNeeded === true) {
     groundedResult = await deps.generateGroundedReply({
       question: packet.messageText,
@@ -555,7 +643,9 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
     });
     retrievalQuality = judgeRetrievalQuality(groundedResult);
     const groundedCandidate = buildGroundedCandidate(groundedResult, retrievalQuality, packet);
-    if (groundedCandidate) candidates.push(groundedCandidate);
+    const structuredCandidate = buildStructuredCandidate(groundedResult, retrievalQuality, packet);
+    pushUniqueCandidate(groundedCandidate);
+    pushUniqueCandidate(structuredCandidate);
 
     if (groundedCandidate && packet.llmFlags.llmConciergeEnabled && typeof deps.composeConciergeCandidate === 'function') {
       const composed = await deps.composeConciergeCandidate({
@@ -563,8 +653,25 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
         packet
       });
       const composedCandidate = buildComposedCandidate(composed, packet);
-      if (composedCandidate) candidates.push(composedCandidate);
+      pushUniqueCandidate(composedCandidate);
     }
+  }
+
+  if (strategy === 'domain_concierge' || strategy === 'concierge' || wantsDomainFallback || continuationPreferred) {
+    const currentDomainResult = await ensureDomainResult();
+    const continuationCandidate = continuationPreferred
+      ? buildContinuationCandidate(currentDomainResult, packet)
+      : null;
+    const domainCandidate = buildDomainCandidate(currentDomainResult, packet);
+    pushUniqueCandidate(continuationCandidate);
+    if (strategy === 'domain_concierge' || strategy === 'concierge' || wantsDomainFallback) {
+      pushUniqueCandidate(domainCandidate);
+    }
+  }
+
+  if (strategy === 'domain_concierge' || strategy === 'concierge') {
+    if (wantsClarify || candidates.length === 0) appendClarifyCandidates(candidates, packet, strategy);
+    return { candidates, groundedResult, retrievalQuality };
   }
 
   if (strategy === 'clarify') {
@@ -575,16 +682,16 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
       recentResponseHints: packet.recentResponseHints,
       suggestedAtoms: { nextActions: [], pitfall: null, question: null }
     });
-    candidates.push(buildCasualCandidate(casualReply, packet));
+    pushUniqueCandidate(buildCasualCandidate(casualReply, packet));
   }
 
-  if (strategy === 'clarify' || strategy === 'grounded_answer' || strategy === 'recommendation') {
+  if (strategy === 'clarify' || strategy === 'grounded_answer' || strategy === 'recommendation' || wantsClarify) {
     appendClarifyCandidates(candidates, packet, strategy);
   }
 
   if (!candidates.length) {
     const fallbackDomain = await deps.generateDomainConciergeCandidate({
-      domainIntent: 'general',
+      domainIntent: packet.normalizedConversationIntent || 'general',
       messageText: packet.messageText,
       contextSnapshot: packet.contextSnapshot,
       contextResumeDomain: packet.contextResumeDomain || null,
@@ -596,7 +703,7 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
       blockedReason: groundedResult && groundedResult.blockedReason ? groundedResult.blockedReason : null
     });
     const fallbackCandidate = buildDomainCandidate(fallbackDomain, packet);
-    if (fallbackCandidate) candidates.push(fallbackCandidate);
+    pushUniqueCandidate(fallbackCandidate);
   }
 
   return { candidates, groundedResult, retrievalQuality };
@@ -694,7 +801,8 @@ async function runPaidConversationOrchestrator(params) {
     legalSnapshot
   }));
   const strategyPlan = buildStrategyPlan(packet);
-  strategyPlan.retrieveNeeded = judgeNeedRetrieval(packet, strategyPlan);
+  const retrievalDecision = resolveRetrievalDecision(packet, strategyPlan);
+  strategyPlan.retrieveNeeded = retrievalDecision.retrieveNeeded === true;
   const riskSnapshot = resolveIntentRiskTier({
     domainIntent: packet.normalizedConversationIntent
   });
@@ -752,14 +860,26 @@ async function runPaidConversationOrchestrator(params) {
     strategy: strategyPlan.strategy,
     candidates: candidateSet.candidates
   });
+  const groundedCandidateAvailable = candidateSet.candidates.some((item) => {
+    const kind = normalizeText(item && item.kind).toLowerCase();
+    return kind === 'grounded_candidate' || kind === 'city_grounded_candidate' || kind === 'city_pack_backed_candidate';
+  });
+  const structuredCandidateAvailable = candidateSet.candidates.some((item) => normalizeText(item && item.kind).toLowerCase() === 'structured_answer_candidate');
+  const continuationCandidateAvailable = candidateSet.candidates.some((item) => normalizeText(item && item.kind).toLowerCase() === 'continuation_candidate');
   let selectedCandidate = judged.selected;
   let selectedByDirectAnswerFirst = false;
   if (strategyPlan.directAnswerFirst === true) {
-    const directAnswerCandidate = Array.isArray(candidateSet.candidates)
-      ? candidateSet.candidates.find((item) => item && item.kind === 'domain_concierge_candidate')
-      : null;
-    if (directAnswerCandidate) {
-      selectedCandidate = directAnswerCandidate;
+    const directAnswerCandidates = Array.isArray(candidateSet.candidates)
+      ? candidateSet.candidates
+        .filter((item) => isDirectAnswerEligibleCandidate(packet, item))
+        .sort((left, right) => resolveCandidatePriority(packet, right) - resolveCandidatePriority(packet, left))
+      : [];
+    const preferredDirectCandidate = directAnswerCandidates[0] || null;
+    const selectedPriority = resolveCandidatePriority(packet, selectedCandidate);
+    const preferredPriority = resolveCandidatePriority(packet, preferredDirectCandidate);
+    const selectedIsDirect = isDirectAnswerEligibleCandidate(packet, selectedCandidate);
+    if (preferredDirectCandidate && (!selectedIsDirect || preferredPriority >= selectedPriority)) {
+      selectedCandidate = preferredDirectCandidate;
       selectedByDirectAnswerFirst = true;
     }
   }
@@ -877,13 +997,12 @@ async function runPaidConversationOrchestrator(params) {
     readinessClarifyText,
     fallbackText: '状況を整理しながら進めます。優先する手続きを1つ決めましょう。'
   });
-  const retrievalBlockedByStrategy = ['casual', 'clarify', 'domain_concierge', 'concierge'].includes(strategyPlan.strategy);
+  const retrievalBlockedByStrategy = retrievalDecision.retrievalBlockedByStrategy === true;
   const retrievalBlockReason = strategyPlan.retrieveNeeded === true
     ? null
-    : (retrievalBlockedByStrategy
-      ? `strategy_${strategyPlan.strategy}`
-      : 'message_too_short');
+    : (retrievalDecision.retrievalBlockReason || null);
   const knowledgeCandidateCountBySource = buildKnowledgeCandidateCountBySource(candidateSet);
+  const fallbackPriorityReason = resolveFallbackPriorityReason(packet, loopResolved.selected, candidateSet.candidates);
 
   const selected = verified.selected && typeof verified.selected === 'object' ? verified.selected : {};
   const knowledgeUsageMeta = buildKnowledgeUsageMeta(selected);
@@ -944,6 +1063,11 @@ async function runPaidConversationOrchestrator(params) {
     telemetry: {
       strategy: strategyPlan.strategy,
       strategyReason: strategyPlan.strategyReason || null,
+      strategyAlternativeSet: Array.isArray(strategyPlan.strategyAlternativeSet)
+        ? strategyPlan.strategyAlternativeSet.slice(0, 8)
+        : [],
+      strategyPriorityVersion: strategyPlan.strategyPriorityVersion || 'v2',
+      fallbackPriorityReason,
       directAnswerApplied,
       selectedCandidateKind: finalized.finalMeta && finalized.finalMeta.candidateKind
         ? finalized.finalMeta.candidateKind
@@ -958,7 +1082,12 @@ async function runPaidConversationOrchestrator(params) {
       retrieveNeeded: strategyPlan.retrieveNeeded === true,
       retrievalBlockedByStrategy,
       retrievalBlockReason,
+      retrievalPermitReason: retrievalDecision.retrievalPermitReason || null,
+      retrievalReenabledBySlice: retrievalDecision.retrievalReenabledBySlice || null,
       retrievalQuality: candidateSet.retrievalQuality,
+      groundedCandidateAvailable,
+      structuredCandidateAvailable,
+      continuationCandidateAvailable,
       orchestratorPathUsed: true,
       contextResumeDomain: packet.contextResumeDomain || null,
       priorContextUsed: packet.priorContextUsed === true,

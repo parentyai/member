@@ -92,14 +92,18 @@ function resolveGenericFallbackSlice(params) {
   const priorContextUsed = payload.priorContextUsed === true;
   const followupResolvedFromHistory = payload.followupResolvedFromHistory === true;
   const continuationReason = normalizeText(payload.continuationReason).toLowerCase();
+  const cityExplicit = /(ニューヨーク|new york|ロサンゼルス|los angeles|サンフランシスコ|san francisco|シアトル|seattle|ボストン|boston|シカゴ|chicago|オースティン|austin|サンディエゴ|san diego|ワシントン|washington|街|都市|city|州|エリア)/.test(messageText);
 
   if (followupIntent || priorContextUsed || followupResolvedFromHistory || continuationReason === 'history_followup_carry') {
     return 'followup';
   }
+  if (cityExplicit) {
+    return 'city';
+  }
   if (domainIntent === 'housing' || /(住まい|住居|家賃|賃貸|物件|アパート|住宅|部屋探し)/.test(messageText)) {
     return 'housing';
   }
-  if (/(ニューヨーク|new york|ロサンゼルス|los angeles|サンフランシスコ|san francisco|シアトル|seattle|ボストン|boston|シカゴ|chicago|引っ越|引越|生活|街|都市|city|州|エリア)/.test(messageText)) {
+  if (/(引っ越|引越|生活)/.test(messageText)) {
     return 'city';
   }
   if (routerReason === 'question_pattern'

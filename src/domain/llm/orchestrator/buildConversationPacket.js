@@ -125,10 +125,12 @@ function isLowInformationMessage(text) {
 function isContextResumeCue(text) {
   const normalized = normalizeText(text);
   if (!normalized) return false;
-  if (normalized.length > 18) return false;
+  const longFollowupCue = /^(それで|それなら|それって|じゃあ|では|その場合|となると|なら).*(タイミング|いつ|何から|何を|どう進め|どれくらい|期限|予定)/i;
+  if (normalized.length > 18 && !longFollowupCue.test(normalized)) return false;
   if (/^(それで|それなら|それって|じゃあ|では|その場合|となると|なら|で、|で\?|で？|後は何[?？]?|あとは何[?？]?|次は[?？]?|つぎは[?？]?|予約するの[?？]?|必要書類は[?？]?|それだと)$/i.test(normalized)) {
     return true;
   }
+  if (longFollowupCue.test(normalized)) return true;
   return /^(それで|それなら|じゃあ|では|なら).*[?？]$/.test(normalized);
 }
 

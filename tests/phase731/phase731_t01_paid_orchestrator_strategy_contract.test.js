@@ -39,19 +39,19 @@ test('phase731: orchestrator strategy keeps greeting/casual retrieval-free', () 
   assert.equal(casual.retrieveNeeded, false);
 });
 
-test('phase731: orchestrator strategy prefers clarify for broad questions', () => {
+test('phase731: orchestrator strategy probes grounding before broad-question clarify', () => {
   const plan = resolvePlan('何から始めればいい？');
-  assert.equal(plan.strategy, 'clarify');
-  assert.equal(plan.conversationMode, 'casual');
-  assert.equal(plan.retrieveNeeded, false);
-  assert.deepEqual(plan.candidateSet, ['clarify_candidate', 'conversation_candidate']);
+  assert.equal(plan.strategy, 'grounded_answer');
+  assert.equal(plan.conversationMode, 'concierge');
+  assert.equal(plan.retrieveNeeded, true);
+  assert.deepEqual(plan.candidateSet, ['structured_answer_candidate', 'grounded_candidate', 'domain_concierge_candidate', 'clarify_candidate']);
 });
 
-test('phase731: orchestrator strategy forces domain concierge for paid domain intents', () => {
+test('phase731: orchestrator strategy probes grounding for housing-like domain intents', () => {
   const domain = resolvePlan('学校手続きどうする？');
-  assert.equal(domain.strategy, 'domain_concierge');
+  assert.equal(domain.strategy, 'grounded_answer');
   assert.equal(domain.conversationMode, 'concierge');
-  assert.equal(domain.retrieveNeeded, false);
+  assert.equal(domain.retrieveNeeded, true);
 });
 
 test('phase731: orchestrator strategy keeps recommendation path retrieval-aware', () => {
@@ -61,7 +61,7 @@ test('phase731: orchestrator strategy keeps recommendation path retrieval-aware'
   assert.equal(activity.verifyNeeded, true);
 });
 
-test('phase731: orchestrator resumes recent domain context for ambiguous short utterance', () => {
+test('phase731: orchestrator resumes recent domain context and probes continuation grounding', () => {
   const packet = buildConversationPacket({
     lineUserId: 'U_PHASE731',
     messageText: 'ヒザ',
@@ -83,7 +83,7 @@ test('phase731: orchestrator resumes recent domain context for ambiguous short u
   assert.equal(packet.contextResumeDomain, 'school');
   assert.equal(packet.routerReason, 'contextual_domain_resume');
   assert.equal(packet.normalizedConversationIntent, 'school');
-  assert.equal(plan.strategy, 'domain_concierge');
+  assert.equal(plan.strategy, 'grounded_answer');
   assert.equal(plan.conversationMode, 'concierge');
 });
 

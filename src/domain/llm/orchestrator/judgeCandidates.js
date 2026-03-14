@@ -1,6 +1,7 @@
 'use strict';
 
 const { containsLegacyTemplateTerms } = require('../conversation/paidReplyGuard');
+const { resolveCandidatePriority, isDirectAnswerEligibleCandidate } = require('./candidatePriority');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -31,19 +32,46 @@ function hasDomainAlignment(packet, candidate) {
   return packetIntent === candidateIntent;
 }
 
+function resolveStrategyAlignmentPriority(strategy, candidateKind) {
+  const normalizedStrategy = normalizeText(strategy).toLowerCase();
+  const normalizedKind = normalizeText(candidateKind).toLowerCase();
+  if (normalizedStrategy === 'casual') {
+    if (normalizedKind === 'casual_candidate' || normalizedKind === 'conversation_candidate') return 40;
+    if (normalizedKind === 'clarify_candidate') return 6;
+    return 0;
+  }
+  if (normalizedStrategy === 'clarify') {
+    if (normalizedKind === 'clarify_candidate') return 38;
+    if (normalizedKind === 'structured_answer_candidate' || normalizedKind === 'grounded_candidate') return 22;
+    return 0;
+  }
+  if (normalizedStrategy === 'grounded_answer') {
+    if (normalizedKind === 'continuation_candidate') return 34;
+    if (normalizedKind === 'city_pack_backed_candidate' || normalizedKind === 'city_grounded_candidate') return 32;
+    if (normalizedKind === 'grounded_candidate' || normalizedKind === 'structured_answer_candidate') return 28;
+    return 0;
+  }
+  if (normalizedStrategy === 'recommendation') {
+    if (normalizedKind === 'grounded_candidate' || normalizedKind === 'structured_answer_candidate') return 22;
+    return 0;
+  }
+  return 0;
+}
+
 function scoreCandidate(packet, candidate, options) {
   const payload = candidate && typeof candidate === 'object' ? candidate : {};
   const strategy = normalizeText(options && options.strategy).toLowerCase();
   const followupIntent = normalizeText(packet && packet.followupIntent).toLowerCase();
   const followupAware = followupIntent === 'docs_required' || followupIntent === 'appointment_needed' || followupIntent === 'next_step';
   const contextResume = packet && packet.contextResume === true;
-  const directAnswerCandidate = payload.directAnswerCandidate === true
-    || (followupAware && payload.kind === 'domain_concierge_candidate');
+  const directAnswerCandidate = isDirectAnswerEligibleCandidate(packet, payload);
   const text = normalizeText(payload.replyText);
   const bulletCount = countActionBullets(text);
   const questionCount = countQuestions(text);
   const legacyTemplateHit = containsLegacyTemplateTerms(text);
   const directUrl = hasDirectUrl(text);
+  const candidatePriority = resolveCandidatePriority(packet, payload);
+  const strategyAlignmentPriority = resolveStrategyAlignmentPriority(strategy, payload.kind);
   const rejectedReasons = [];
 
   if (!text) rejectedReasons.push('empty_reply');
@@ -91,6 +119,8 @@ function scoreCandidate(packet, candidate, options) {
     total,
     rejectedReasons,
     metrics: {
+      candidatePriority,
+      strategyAlignmentPriority,
       sensibleness,
       contextConsistency,
       taskProgress,
@@ -115,6 +145,11 @@ function judgeCandidates(params) {
     const leftRejected = left.verdict.rejectedReasons.length > 0 ? 1 : 0;
     const rightRejected = right.verdict.rejectedReasons.length > 0 ? 1 : 0;
     if (leftRejected !== rightRejected) return leftRejected - rightRejected;
+    const leftPriority = (Number(left.verdict.metrics && left.verdict.metrics.candidatePriority) || 0)
+      + (Number(left.verdict.metrics && left.verdict.metrics.strategyAlignmentPriority) || 0);
+    const rightPriority = (Number(right.verdict.metrics && right.verdict.metrics.candidatePriority) || 0)
+      + (Number(right.verdict.metrics && right.verdict.metrics.strategyAlignmentPriority) || 0);
+    if (rightPriority !== leftPriority) return rightPriority - leftPriority;
     const leftDirect = Number(left.verdict.metrics && left.verdict.metrics.directAnswerFit) || 0;
     const rightDirect = Number(right.verdict.metrics && right.verdict.metrics.directAnswerFit) || 0;
     if (rightDirect !== leftDirect) return rightDirect - leftDirect;
