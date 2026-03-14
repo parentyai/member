@@ -45,6 +45,23 @@ function normalizeTextPolicy(policy) {
   return normalized;
 }
 
+function toDate(value) {
+  if (!value) return null;
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Date(value > 1000000000000 ? value : value * 1000);
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = new Date(value);
+    if (Number.isFinite(parsed.getTime())) return parsed;
+  }
+  if (value && typeof value.toDate === 'function') {
+    const date = value.toDate();
+    if (date instanceof Date && Number.isFinite(date.getTime())) return date;
+  }
+  return null;
+}
+
 async function appendConversationReviewSnapshot(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const db = getDb();
@@ -103,7 +120,72 @@ async function appendConversationReviewSnapshot(data) {
   return { id: docRef.id };
 }
 
+async function listConversationReviewSnapshotsByCreatedAtRange(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const limit = Number.isFinite(Number(payload.limit)) ? Math.min(Math.max(Math.floor(Number(payload.limit)), 1), 500) : 100;
+  const fromAt = toDate(payload.fromAt);
+  const toAt = toDate(payload.toAt);
+  const db = getDb();
+  const snap = await db.collection(COLLECTION).orderBy('createdAt', 'desc').limit(limit).get();
+  return snap.docs
+    .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .filter((row) => {
+      const at = toDate(row && row.createdAt);
+      if (!at) return false;
+      if (fromAt && at.getTime() < fromAt.getTime()) return false;
+      if (toAt && at.getTime() > toAt.getTime()) return false;
+      return true;
+    });
+}
+
+async function listConversationReviewSnapshotsByTraceId(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const traceId = normalizeText(payload.traceId);
+  if (!traceId) return [];
+  const limit = Number.isFinite(Number(payload.limit)) ? Math.min(Math.max(Math.floor(Number(payload.limit)), 1), 200) : 50;
+  const db = getDb();
+  const snap = await db.collection(COLLECTION).where('traceId', '==', traceId).limit(limit).get();
+  return snap.docs
+    .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .sort((left, right) => {
+      const leftAt = toDate(left && left.createdAt);
+      const rightAt = toDate(right && right.createdAt);
+      return (rightAt ? rightAt.getTime() : 0) - (leftAt ? leftAt.getTime() : 0);
+    })
+    .slice(0, limit);
+}
+
+async function listConversationReviewSnapshotsByLineUserKey(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const lineUserKey = normalizeText(payload.lineUserKey);
+  if (!lineUserKey) return [];
+  const limit = Number.isFinite(Number(payload.limit)) ? Math.min(Math.max(Math.floor(Number(payload.limit)), 1), 200) : 50;
+  const fromAt = toDate(payload.fromAt);
+  const toAt = toDate(payload.toAt);
+  const db = getDb();
+  const snap = await db.collection(COLLECTION).where('lineUserKey', '==', lineUserKey).limit(limit).get();
+  return snap.docs
+    .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .filter((row) => {
+      const at = toDate(row && row.createdAt);
+      if (!at) return false;
+      if (fromAt && at.getTime() < fromAt.getTime()) return false;
+      if (toAt && at.getTime() > toAt.getTime()) return false;
+      return true;
+    })
+    .sort((left, right) => {
+      const leftAt = toDate(left && left.createdAt);
+      const rightAt = toDate(right && right.createdAt);
+      return (rightAt ? rightAt.getTime() : 0) - (leftAt ? leftAt.getTime() : 0);
+    })
+    .slice(0, limit);
+}
+
 module.exports = {
   COLLECTION,
-  appendConversationReviewSnapshot
+  appendConversationReviewSnapshot,
+  listConversationReviewSnapshotsByCreatedAtRange,
+  listConversationReviewSnapshotsByTraceId,
+  listConversationReviewSnapshotsByLineUserKey,
+  toDate
 };
