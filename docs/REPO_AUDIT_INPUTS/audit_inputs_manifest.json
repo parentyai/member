@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-14T02:17:50.666Z",
-  "gitCommit": "3b23d490489ca0a879e4a2ec966529b73842272c",
-  "branch": "codex/llm-strategy-diversification-r834",
-  "sourceDigest": "2b7d58194bea1a12469f3213d4e916db7652f1ddd0801beae26a03f275b5cf91",
+  "generatedAt": "2026-03-14T03:27:33.328Z",
+  "gitCommit": "143204ef7c9e7d43da8ff7736323f7d761bd60b9",
+  "branch": "codex/llm-retrieval-activation-r835",
+  "sourceDigest": "d0d28725ac171e9cf7fef81952e39b957cd8880e8df2f5154ddba7fb74633b77",
   "counts": {
     "endpoints": 291,
     "routes": 130,
@@ -76,7 +76,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "e861eb8f62a08fcbeec804af7e0cd8d7f547ffa8790545fe46ccc6f9710a13fc",
+      "sha256": "7c039c815546092dce252f4be780d22fb832f0ddc655ecc3595ec5a25523bd21",
       "bytes": 78310
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "7703d23c3bf2689edf0fde29128ec1f62c7390128a60049107b26b7bb6f8db35",
+      "sha256": "d591793d795711eb455028f3c47c74da81265303a5b6505e73fff4ee7f8f9af2",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "9cd1f13d57ad5ba23e0bdf85b3e0e40cebbbaea904c6b31068c75e3a0e2a78cf",
+      "sha256": "d654748014e2d92d2ccf26aa3ef8175c07ebbb6b615d5d76a6eb4be5a70c657a",
       "bytes": 487
     },
     {
@@ -146,12 +146,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "36a9b81cbd823ac3265b90037b6e815f50e8e37037d83ddb0d129281e222da7f",
+      "sha256": "61cf4ec3b45ad3034109c46a8b70585ebf4d4d2cf2658f0862b480b172b99d38",
       "bytes": 450400
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "cb9087d18fbf4f1cc5596245f97e2830d4318c388ff727658be24c5dfef1f064",
+      "sha256": "cd8a75e1846fac0280e5bd4a1a17ced732c59bdc847b6c5e33c73a479a18ceff",
       "bytes": 740
     },
     {
@@ -166,13 +166,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "fb2494febb056543acedd873fe19ed01041b0712ad92777b7f38bb4d0d31b9b2",
+      "sha256": "6895cf1627d0432e924549d0f10ecc787895f36104719b8ad0e5705e698efbc0",
       "bytes": 3579
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "abbae0884505bda0932e4be32a984b77a3382079336e003b934dc1c6a364d398",
-      "bytes": 2425
+      "sha256": "a9218b99ed07538b2eaf98da27bf835988092eafdd862a66d42ea421227b07a0",
+      "bytes": 2421
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",

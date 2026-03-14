@@ -385,6 +385,11 @@ function buildRuntimeAuditReport(input) {
     retrievalBlockReasons: Array.isArray(conversation.retrievalBlockReasons) ? conversation.retrievalBlockReasons : [],
     retrievalPermitReasons: Array.isArray(conversation.retrievalPermitReasons) ? conversation.retrievalPermitReasons : [],
     retrievalReenabledBySlices: Array.isArray(conversation.retrievalReenabledBySlices) ? conversation.retrievalReenabledBySlices : [],
+    knowledgeRejectedReasons: Array.isArray(conversation.knowledgeRejectedReasons) ? conversation.knowledgeRejectedReasons : [],
+    cityPackRejectedReasons: Array.isArray(conversation.cityPackRejectedReasons) ? conversation.cityPackRejectedReasons : [],
+    savedFaqRejectedReasons: Array.isArray(conversation.savedFaqRejectedReasons) ? conversation.savedFaqRejectedReasons : [],
+    knowledgeGroundingKinds: Array.isArray(conversation.knowledgeGroundingKinds) ? conversation.knowledgeGroundingKinds : [],
+    sourceReadinessDecisionSources: Array.isArray(conversation.sourceReadinessDecisionSources) ? conversation.sourceReadinessDecisionSources : [],
     routeKinds: Array.isArray(conversation.routeKinds) ? conversation.routeKinds : [],
     fallbackTypes: Array.isArray(conversation.fallbackTypes) ? conversation.fallbackTypes : [],
     fallbackTemplateKinds: Array.isArray(conversation.fallbackTemplateKinds) ? conversation.fallbackTemplateKinds : [],
@@ -429,8 +434,17 @@ function buildRuntimeAuditReport(input) {
     knowledgeCandidateUsedRate: Number.isFinite(Number(conversation.knowledgeCandidateUsedRate))
       ? Number(conversation.knowledgeCandidateUsedRate)
       : 0,
+    knowledgeActivationRate: Number.isFinite(Number(conversation.knowledgeActivationRate))
+      ? Number(conversation.knowledgeActivationRate)
+      : 0,
+    cityPackCandidateActivationRate: Number.isFinite(Number(conversation.cityPackCandidateActivationRate))
+      ? Number(conversation.cityPackCandidateActivationRate)
+      : 0,
     cityPackUsedInAnswerRate: Number.isFinite(Number(conversation.cityPackUsedInAnswerRate))
       ? Number(conversation.cityPackUsedInAnswerRate)
+      : 0,
+    savedFaqCandidateActivationRate: Number.isFinite(Number(conversation.savedFaqCandidateActivationRate))
+      ? Number(conversation.savedFaqCandidateActivationRate)
       : 0,
     savedFaqUsedInAnswerRate: Number.isFinite(Number(conversation.savedFaqUsedInAnswerRate))
       ? Number(conversation.savedFaqUsedInAnswerRate)

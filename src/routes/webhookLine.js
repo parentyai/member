@@ -788,8 +788,17 @@ async function buildPaidDomainConciergeResult(params) {
       webSearch: 0
     },
     knowledgeCandidateUsed: cityPackSignals && cityPackSignals.cityPackGrounded === true,
+    knowledgeCandidateRejectedReason: null,
+    cityPackCandidateAvailable: cityPackSignals && cityPackSignals.cityPackGrounded === true,
+    cityPackRejectedReason: cityPackSignals && cityPackSignals.cityPackGrounded === true ? null : 'domain_concierge_city_pack_unavailable',
     cityPackUsedInAnswer: cityPackSignals && cityPackSignals.cityPackGrounded === true,
+    savedFaqCandidateAvailable: false,
+    savedFaqRejectedReason: 'domain_concierge_saved_faq_unavailable',
     savedFaqUsedInAnswer: false,
+    sourceReadinessDecisionSource: cityPackSignals && cityPackSignals.cityPackGrounded === true
+      ? 'domain_concierge_city_pack_signal'
+      : 'domain_concierge_strategy_default',
+    knowledgeGroundingKind: cityPackSignals && cityPackSignals.cityPackGrounded === true ? 'city_pack' : null,
     genericFallbackSlice: resolveGenericFallbackSlice({
       messageText: text,
       domainIntent,
@@ -824,8 +833,15 @@ async function buildPaidDomainConciergeResult(params) {
       continuationReason: conversationQuality.continuationReason,
       knowledgeCandidateCountBySource: conversationQuality.knowledgeCandidateCountBySource,
       knowledgeCandidateUsed: conversationQuality.knowledgeCandidateUsed,
+      knowledgeCandidateRejectedReason: conversationQuality.knowledgeCandidateRejectedReason,
+      cityPackCandidateAvailable: conversationQuality.cityPackCandidateAvailable,
+      cityPackRejectedReason: conversationQuality.cityPackRejectedReason,
       cityPackUsedInAnswer: conversationQuality.cityPackUsedInAnswer,
+      savedFaqCandidateAvailable: conversationQuality.savedFaqCandidateAvailable,
+      savedFaqRejectedReason: conversationQuality.savedFaqRejectedReason,
       savedFaqUsedInAnswer: conversationQuality.savedFaqUsedInAnswer,
+      sourceReadinessDecisionSource: conversationQuality.sourceReadinessDecisionSource,
+      knowledgeGroundingKind: conversationQuality.knowledgeGroundingKind,
       genericFallbackSlice: conversationQuality.genericFallbackSlice
     },
     integrationSignals: Object.assign({}, journeySignals, cityPackSignals, emergencySignals, {
@@ -1185,8 +1201,15 @@ function buildConversationQualityMeta(params) {
     continuationReason: normalizeReplyText(payload.continuationReason).toLowerCase() || null,
     knowledgeCandidateCountBySource,
     knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true,
+    knowledgeCandidateRejectedReason: normalizeReplyText(payload.knowledgeCandidateRejectedReason).toLowerCase() || null,
+    cityPackCandidateAvailable: payload.cityPackCandidateAvailable === true,
+    cityPackRejectedReason: normalizeReplyText(payload.cityPackRejectedReason).toLowerCase() || null,
     cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true,
+    savedFaqCandidateAvailable: payload.savedFaqCandidateAvailable === true,
+    savedFaqRejectedReason: normalizeReplyText(payload.savedFaqRejectedReason).toLowerCase() || null,
     savedFaqUsedInAnswer: payload.savedFaqUsedInAnswer === true,
+    sourceReadinessDecisionSource: normalizeReplyText(payload.sourceReadinessDecisionSource).toLowerCase() || null,
+    knowledgeGroundingKind: normalizeReplyText(payload.knowledgeGroundingKind).toLowerCase() || null,
     groundedCandidateAvailable: payload.groundedCandidateAvailable === true,
     structuredCandidateAvailable: payload.structuredCandidateAvailable === true,
     continuationCandidateAvailable: payload.continuationCandidateAvailable === true,
@@ -1695,8 +1718,25 @@ async function appendLlmGateDecisionBestEffort(data) {
             ? Object.assign({}, qualityMeta.knowledgeCandidateCountBySource)
             : null),
         knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true || qualityMeta.knowledgeCandidateUsed === true,
+        knowledgeCandidateRejectedReason: typeof payload.knowledgeCandidateRejectedReason === 'string' && payload.knowledgeCandidateRejectedReason.trim()
+          ? payload.knowledgeCandidateRejectedReason.trim().toLowerCase()
+          : (qualityMeta.knowledgeCandidateRejectedReason || null),
+        cityPackCandidateAvailable: payload.cityPackCandidateAvailable === true || qualityMeta.cityPackCandidateAvailable === true,
+        cityPackRejectedReason: typeof payload.cityPackRejectedReason === 'string' && payload.cityPackRejectedReason.trim()
+          ? payload.cityPackRejectedReason.trim().toLowerCase()
+          : (qualityMeta.cityPackRejectedReason || null),
         cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true || qualityMeta.cityPackUsedInAnswer === true,
+        savedFaqCandidateAvailable: payload.savedFaqCandidateAvailable === true || qualityMeta.savedFaqCandidateAvailable === true,
+        savedFaqRejectedReason: typeof payload.savedFaqRejectedReason === 'string' && payload.savedFaqRejectedReason.trim()
+          ? payload.savedFaqRejectedReason.trim().toLowerCase()
+          : (qualityMeta.savedFaqRejectedReason || null),
         savedFaqUsedInAnswer: payload.savedFaqUsedInAnswer === true || qualityMeta.savedFaqUsedInAnswer === true,
+        sourceReadinessDecisionSource: typeof payload.sourceReadinessDecisionSource === 'string' && payload.sourceReadinessDecisionSource.trim()
+          ? payload.sourceReadinessDecisionSource.trim().toLowerCase()
+          : (qualityMeta.sourceReadinessDecisionSource || null),
+        knowledgeGroundingKind: typeof payload.knowledgeGroundingKind === 'string' && payload.knowledgeGroundingKind.trim()
+          ? payload.knowledgeGroundingKind.trim().toLowerCase()
+          : (qualityMeta.knowledgeGroundingKind || null),
         groundedCandidateAvailable: payload.groundedCandidateAvailable === true || qualityMeta.groundedCandidateAvailable === true,
         structuredCandidateAvailable: payload.structuredCandidateAvailable === true || qualityMeta.structuredCandidateAvailable === true,
         continuationCandidateAvailable: payload.continuationCandidateAvailable === true || qualityMeta.continuationCandidateAvailable === true,
@@ -2181,8 +2221,25 @@ async function appendLlmActionLogBestEffort(data) {
           ? Object.assign({}, qualityMeta.knowledgeCandidateCountBySource)
           : null),
       knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true || qualityMeta.knowledgeCandidateUsed === true,
+      knowledgeCandidateRejectedReason: typeof payload.knowledgeCandidateRejectedReason === 'string' && payload.knowledgeCandidateRejectedReason.trim()
+        ? payload.knowledgeCandidateRejectedReason.trim().toLowerCase()
+        : (qualityMeta.knowledgeCandidateRejectedReason || null),
+      cityPackCandidateAvailable: payload.cityPackCandidateAvailable === true || qualityMeta.cityPackCandidateAvailable === true,
+      cityPackRejectedReason: typeof payload.cityPackRejectedReason === 'string' && payload.cityPackRejectedReason.trim()
+        ? payload.cityPackRejectedReason.trim().toLowerCase()
+        : (qualityMeta.cityPackRejectedReason || null),
       cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true || qualityMeta.cityPackUsedInAnswer === true,
+      savedFaqCandidateAvailable: payload.savedFaqCandidateAvailable === true || qualityMeta.savedFaqCandidateAvailable === true,
+      savedFaqRejectedReason: typeof payload.savedFaqRejectedReason === 'string' && payload.savedFaqRejectedReason.trim()
+        ? payload.savedFaqRejectedReason.trim().toLowerCase()
+        : (qualityMeta.savedFaqRejectedReason || null),
       savedFaqUsedInAnswer: payload.savedFaqUsedInAnswer === true || qualityMeta.savedFaqUsedInAnswer === true,
+      sourceReadinessDecisionSource: typeof payload.sourceReadinessDecisionSource === 'string' && payload.sourceReadinessDecisionSource.trim()
+        ? payload.sourceReadinessDecisionSource.trim().toLowerCase()
+        : (qualityMeta.sourceReadinessDecisionSource || null),
+      knowledgeGroundingKind: typeof payload.knowledgeGroundingKind === 'string' && payload.knowledgeGroundingKind.trim()
+        ? payload.knowledgeGroundingKind.trim().toLowerCase()
+        : (qualityMeta.knowledgeGroundingKind || null),
       groundedCandidateAvailable: payload.groundedCandidateAvailable === true || qualityMeta.groundedCandidateAvailable === true,
       structuredCandidateAvailable: payload.structuredCandidateAvailable === true || qualityMeta.structuredCandidateAvailable === true,
       continuationCandidateAvailable: payload.continuationCandidateAvailable === true || qualityMeta.continuationCandidateAvailable === true,
@@ -2446,8 +2503,15 @@ async function tryHandlePaidOrchestratorV2(params) {
     continuationReason: orchestrated.telemetry ? orchestrated.telemetry.continuationReason : null,
     knowledgeCandidateCountBySource: orchestrated.telemetry ? orchestrated.telemetry.knowledgeCandidateCountBySource : null,
     knowledgeCandidateUsed: orchestrated.telemetry ? orchestrated.telemetry.knowledgeCandidateUsed === true : false,
+    knowledgeCandidateRejectedReason: orchestrated.telemetry ? orchestrated.telemetry.knowledgeCandidateRejectedReason : null,
+    cityPackCandidateAvailable: orchestrated.telemetry ? orchestrated.telemetry.cityPackCandidateAvailable === true : false,
+    cityPackRejectedReason: orchestrated.telemetry ? orchestrated.telemetry.cityPackRejectedReason : null,
     cityPackUsedInAnswer: orchestrated.telemetry ? orchestrated.telemetry.cityPackUsedInAnswer === true : false,
+    savedFaqCandidateAvailable: orchestrated.telemetry ? orchestrated.telemetry.savedFaqCandidateAvailable === true : false,
+    savedFaqRejectedReason: orchestrated.telemetry ? orchestrated.telemetry.savedFaqRejectedReason : null,
     savedFaqUsedInAnswer: orchestrated.telemetry ? orchestrated.telemetry.savedFaqUsedInAnswer === true : false,
+    sourceReadinessDecisionSource: orchestrated.telemetry ? orchestrated.telemetry.sourceReadinessDecisionSource : null,
+    knowledgeGroundingKind: orchestrated.telemetry ? orchestrated.telemetry.knowledgeGroundingKind : null,
     genericFallbackSlice: orchestrated.telemetry ? orchestrated.telemetry.genericFallbackSlice : null,
     contextCarryScore: orchestrated.telemetry ? orchestrated.telemetry.contextCarryScore : 0,
     repeatRiskScore: orchestrated.telemetry ? orchestrated.telemetry.repeatRiskScore : 0

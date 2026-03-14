@@ -37,12 +37,13 @@ test('phase758: clarify candidate avoids repeating recent generic clarification 
   assert.equal(result.ok, true);
   assert.equal(result.telemetry.strategy, 'grounded_answer');
   assert.equal(result.telemetry.strategyReason, 'broad_question_grounding_probe');
-  assert.equal(result.telemetry.selectedCandidateKind, 'clarify_candidate');
+  assert.equal(result.telemetry.selectedCandidateKind, 'knowledge_backed_candidate');
   assert.equal(result.telemetry.retrieveNeeded, true);
   assert.equal(result.telemetry.retrievalBlockedByStrategy, false);
   assert.equal(result.telemetry.retrievalPermitReason, 'broad_structured_grounding_probe');
+  assert.equal(result.telemetry.knowledgeCandidateUsed, true);
   assert.equal(result.replyText.includes(repeatedPhrase), false);
-  assert.equal(result.replyText.includes('まず優先手続きを1つに絞りたい'), true);
+  assert.equal(result.replyText.includes('対象条件と期限を1つずつ整理する'), true);
 });
 
 test('phase758: domain follow-up clarify remains domain-specific when domain candidate is unavailable', async () => {
