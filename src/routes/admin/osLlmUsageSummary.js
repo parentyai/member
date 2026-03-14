@@ -194,6 +194,22 @@ function toOptionalNumber(value) {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
+function normalizeKnowledgeCandidateCountBySource(value) {
+  const payload = value && typeof value === 'object' ? value : {};
+  const clamp = (input) => {
+    const numeric = Number(input);
+    if (!Number.isFinite(numeric)) return 0;
+    return Math.max(0, Math.min(50, Math.floor(numeric)));
+  };
+  return {
+    faq: clamp(payload.faq),
+    savedFaq: clamp(payload.savedFaq),
+    cityPack: clamp(payload.cityPack),
+    sourceRefs: clamp(payload.sourceRefs),
+    webSearch: clamp(payload.webSearch)
+  };
+}
+
 function buildObservedFlag(explicitObserved, inferredObserved) {
   const explicit = toOptionalBoolean(explicitObserved);
   if (explicit !== null) return explicit;
@@ -279,6 +295,22 @@ function normalizeTelemetryRow(row) {
 
   return Object.assign({}, payload, {
     traceId: normalizeTraceId(payload.traceId),
+    strategyReason: normalizeReason(payload.strategyReason),
+    selectedCandidateKind: normalizeReason(payload.selectedCandidateKind),
+    retrievalBlockReason: normalizeReason(payload.retrievalBlockReason),
+    fallbackTemplateKind: normalizeReason(payload.fallbackTemplateKind),
+    finalizerTemplateKind: normalizeReason(payload.finalizerTemplateKind),
+    replyTemplateFingerprint: typeof payload.replyTemplateFingerprint === 'string' && payload.replyTemplateFingerprint.trim()
+      ? payload.replyTemplateFingerprint.trim()
+      : null,
+    priorContextUsed: toOptionalBoolean(payload.priorContextUsed),
+    followupResolvedFromHistory: toOptionalBoolean(payload.followupResolvedFromHistory),
+    continuationReason: normalizeReason(payload.continuationReason),
+    knowledgeCandidateCountBySource: normalizeKnowledgeCandidateCountBySource(payload.knowledgeCandidateCountBySource),
+    knowledgeCandidateUsed: toOptionalBoolean(payload.knowledgeCandidateUsed),
+    cityPackUsedInAnswer: toOptionalBoolean(payload.cityPackUsedInAnswer),
+    savedFaqUsedInAnswer: toOptionalBoolean(payload.savedFaqUsedInAnswer),
+    genericFallbackSlice: normalizeReason(payload.genericFallbackSlice),
     evidenceCoverage: evidence.value,
     evidenceCoverageObserved: evidence.observed,
     officialOnlySatisfied: officialOnly.value,
@@ -826,14 +858,24 @@ function buildConversationQualitySummary(actionRows) {
     if (Number.isFinite(Number(row.repeatRiskScore))) return true;
     return false;
   });
-  const rows = conversationRows.length > 0 ? conversationRows : rawRows;
+  const rows = (conversationRows.length > 0 ? conversationRows : rawRows)
+    .slice()
+    .sort((left, right) => {
+      const leftMs = toMillis(left && left.createdAt);
+      const rightMs = toMillis(right && right.createdAt);
+      if (leftMs !== null && rightMs !== null && leftMs !== rightMs) return leftMs - rightMs;
+      return 0;
+    });
   const naturalnessVersions = new Map();
   const domainCounts = new Map();
   const fallbackTypes = new Map();
   const strategies = new Map();
+  const strategyReasons = new Map();
   const retrievalQualities = new Map();
+  const retrievalBlockReasons = new Map();
   const verificationOutcomes = new Map();
   const judgeWinners = new Map();
+  const selectedCandidateKinds = new Map();
   const sourceReadinessDecisions = new Map();
   const readinessDecisions = new Map();
   const readinessSafeResponseModes = new Map();
@@ -841,9 +883,13 @@ function buildConversationQualitySummary(actionRows) {
   const followupIntentReasons = new Map();
   const routerReasons = new Map();
   const routeKinds = new Map();
+  const fallbackTemplateKinds = new Map();
+  const finalizerTemplateKinds = new Map();
+  const genericFallbackSlices = new Map();
   const compatFallbackReasons = new Map();
   const sharedReadinessBridges = new Map();
   const routeDecisionSources = new Map();
+  const continuationReasons = new Map();
   const parentIntentTypes = new Map();
   const parentAnswerModes = new Map();
   const parentLifecycleStages = new Map();
@@ -899,6 +945,33 @@ function buildConversationQualitySummary(actionRows) {
   let misunderstandingRecoveredCount = 0;
   let recoveryRiskSeenCount = 0;
   let recoveryHandledCount = 0;
+  let priorContextUsedSeenCount = 0;
+  let priorContextUsedCount = 0;
+  let followupResolvedFromHistorySeenCount = 0;
+  let followupResolvedFromHistoryCount = 0;
+  let selectedByDirectAnswerFirstSeenCount = 0;
+  let selectedByDirectAnswerFirstCount = 0;
+  let retrievalBlockedByStrategySeenCount = 0;
+  let retrievalBlockedByStrategyCount = 0;
+  let knowledgeCandidateUsedSeenCount = 0;
+  let knowledgeCandidateUsedCount = 0;
+  let cityPackUsedInAnswerSeenCount = 0;
+  let cityPackUsedInAnswerCount = 0;
+  let savedFaqUsedInAnswerSeenCount = 0;
+  let savedFaqUsedInAnswerCount = 0;
+  let genericFallbackSliceSampleCount = 0;
+  let genericFallbackRepeatCount = 0;
+  const genericFallbackSliceTotals = new Map();
+  const genericFallbackSliceRepeats = new Map();
+  const repeatedFingerprintCounts = new Map();
+  const recentFingerprintsByUser = new Map();
+  const knowledgeCandidateTotals = {
+    faq: 0,
+    savedFaq: 0,
+    cityPack: 0,
+    sourceRefs: 0,
+    webSearch: 0
+  };
   let requiredCoreFactsSeenCount = 0;
   let requiredCoreFactsCompleteCount = 0;
   let requiredCoreFactsMissingCountTotal = 0;
@@ -911,9 +984,12 @@ function buildConversationQualitySummary(actionRows) {
     const conversationMode = normalizeReason(row && row.conversationMode ? row.conversationMode : 'casual');
     const fallbackType = normalizeReason(row && row.fallbackType ? row.fallbackType : 'none');
     const strategy = normalizeReason(row && row.strategy ? row.strategy : 'none');
+    const strategyReason = normalizeReason(row && row.strategyReason ? row.strategyReason : 'none');
     const retrievalQuality = normalizeReason(row && row.retrievalQuality ? row.retrievalQuality : 'none');
+    const retrievalBlockReason = normalizeReason(row && row.retrievalBlockReason ? row.retrievalBlockReason : 'none');
     const verificationOutcome = normalizeReason(row && row.verificationOutcome ? row.verificationOutcome : 'none');
     const judgeWinner = normalizeReason(row && row.judgeWinner ? row.judgeWinner : 'none');
+    const selectedCandidateKind = normalizeReason(row && row.selectedCandidateKind ? row.selectedCandidateKind : 'none');
     const sourceReadinessDecision = normalizeReason(row && row.sourceReadinessDecision ? row.sourceReadinessDecision : 'none');
     const readinessDecision = normalizeReason(row && row.readinessDecision ? row.readinessDecision : 'none');
     const readinessSafeResponseMode = normalizeReason(row && row.readinessSafeResponseMode ? row.readinessSafeResponseMode : 'none');
@@ -921,9 +997,13 @@ function buildConversationQualitySummary(actionRows) {
     const followupIntentReason = normalizeReason(row && row.followupIntentReason ? row.followupIntentReason : 'none');
     const routerReason = normalizeReason(row && row.routerReason ? row.routerReason : 'none');
     const routeKind = normalizeReason(row && row.routeKind ? row.routeKind : 'none');
+    const fallbackTemplateKind = normalizeReason(row && row.fallbackTemplateKind ? row.fallbackTemplateKind : 'none');
+    const finalizerTemplateKind = normalizeReason(row && row.finalizerTemplateKind ? row.finalizerTemplateKind : 'none');
+    const genericFallbackSlice = normalizeReason(row && row.genericFallbackSlice ? row.genericFallbackSlice : 'other');
     const compatFallbackReason = normalizeReason(row && row.compatFallbackReason ? row.compatFallbackReason : 'none');
     const sharedReadinessBridge = normalizeReason(row && row.sharedReadinessBridge ? row.sharedReadinessBridge : 'none');
     const routeDecisionSource = normalizeReason(row && row.routeDecisionSource ? row.routeDecisionSource : 'none');
+    const continuationReason = normalizeReason(row && row.continuationReason ? row.continuationReason : 'none');
     const parentIntentType = normalizeReason(row && row.parentIntentType ? row.parentIntentType : 'none');
     const parentAnswerMode = normalizeReason(row && row.parentAnswerMode ? row.parentAnswerMode : 'none');
     const parentLifecycleStage = normalizeReason(row && row.parentLifecycleStage ? row.parentLifecycleStage : 'none');
@@ -952,17 +1032,31 @@ function buildConversationQualitySummary(actionRows) {
     const clarifySuppressed = row && row.clarifySuppressed === true;
     const misunderstandingRecovered = row && row.misunderstandingRecovered === true;
     const followupCarryFromHistory = row && row.followupCarryFromHistory === true;
+    const priorContextUsed = row && row.priorContextUsed === true;
+    const followupResolvedFromHistory = row && row.followupResolvedFromHistory === true;
+    const selectedByDirectAnswerFirst = row && row.selectedByDirectAnswerFirst === true;
+    const retrievalBlockedByStrategy = row && row.retrievalBlockedByStrategy === true;
+    const knowledgeCandidateUsed = row && row.knowledgeCandidateUsed === true;
+    const cityPackUsedInAnswer = row && row.cityPackUsedInAnswer === true;
+    const savedFaqUsedInAnswer = row && row.savedFaqUsedInAnswer === true;
     const recoverySignal = row && row.recoverySignal === true;
     const contextCarryScore = Number.isFinite(Number(row && row.contextCarryScore)) ? Number(row.contextCarryScore) : null;
     const repeatRiskScore = Number.isFinite(Number(row && row.repeatRiskScore)) ? Number(row.repeatRiskScore) : null;
+    const replyTemplateFingerprint = typeof (row && row.replyTemplateFingerprint) === 'string' && row.replyTemplateFingerprint.trim()
+      ? row.replyTemplateFingerprint.trim()
+      : null;
+    const knowledgeCandidateCountBySource = normalizeKnowledgeCandidateCountBySource(row && row.knowledgeCandidateCountBySource);
 
     naturalnessVersions.set(naturalnessVersion, (naturalnessVersions.get(naturalnessVersion) || 0) + 1);
     domainCounts.set(domainIntent, (domainCounts.get(domainIntent) || 0) + 1);
     fallbackTypes.set(fallbackType, (fallbackTypes.get(fallbackType) || 0) + 1);
     strategies.set(strategy, (strategies.get(strategy) || 0) + 1);
+    strategyReasons.set(strategyReason, (strategyReasons.get(strategyReason) || 0) + 1);
     retrievalQualities.set(retrievalQuality, (retrievalQualities.get(retrievalQuality) || 0) + 1);
+    retrievalBlockReasons.set(retrievalBlockReason, (retrievalBlockReasons.get(retrievalBlockReason) || 0) + 1);
     verificationOutcomes.set(verificationOutcome, (verificationOutcomes.get(verificationOutcome) || 0) + 1);
     judgeWinners.set(judgeWinner, (judgeWinners.get(judgeWinner) || 0) + 1);
+    selectedCandidateKinds.set(selectedCandidateKind, (selectedCandidateKinds.get(selectedCandidateKind) || 0) + 1);
     sourceReadinessDecisions.set(sourceReadinessDecision, (sourceReadinessDecisions.get(sourceReadinessDecision) || 0) + 1);
     readinessDecisions.set(readinessDecision, (readinessDecisions.get(readinessDecision) || 0) + 1);
     readinessSafeResponseModes.set(
@@ -973,9 +1067,13 @@ function buildConversationQualitySummary(actionRows) {
     followupIntentReasons.set(followupIntentReason, (followupIntentReasons.get(followupIntentReason) || 0) + 1);
     routerReasons.set(routerReason, (routerReasons.get(routerReason) || 0) + 1);
     routeKinds.set(routeKind, (routeKinds.get(routeKind) || 0) + 1);
+    fallbackTemplateKinds.set(fallbackTemplateKind, (fallbackTemplateKinds.get(fallbackTemplateKind) || 0) + 1);
+    finalizerTemplateKinds.set(finalizerTemplateKind, (finalizerTemplateKinds.get(finalizerTemplateKind) || 0) + 1);
+    genericFallbackSlices.set(genericFallbackSlice, (genericFallbackSlices.get(genericFallbackSlice) || 0) + 1);
     compatFallbackReasons.set(compatFallbackReason, (compatFallbackReasons.get(compatFallbackReason) || 0) + 1);
     sharedReadinessBridges.set(sharedReadinessBridge, (sharedReadinessBridges.get(sharedReadinessBridge) || 0) + 1);
     routeDecisionSources.set(routeDecisionSource, (routeDecisionSources.get(routeDecisionSource) || 0) + 1);
+    continuationReasons.set(continuationReason, (continuationReasons.get(continuationReason) || 0) + 1);
     parentIntentTypes.set(parentIntentType, (parentIntentTypes.get(parentIntentType) || 0) + 1);
     parentAnswerModes.set(parentAnswerMode, (parentAnswerModes.get(parentAnswerMode) || 0) + 1);
     parentLifecycleStages.set(parentLifecycleStage, (parentLifecycleStages.get(parentLifecycleStage) || 0) + 1);
@@ -990,6 +1088,11 @@ function buildConversationQualitySummary(actionRows) {
     );
     actionCountTotal += Math.max(0, actionCount);
     candidateCountTotal += Math.max(0, candidateCount);
+    knowledgeCandidateTotals.faq += knowledgeCandidateCountBySource.faq;
+    knowledgeCandidateTotals.savedFaq += knowledgeCandidateCountBySource.savedFaq;
+    knowledgeCandidateTotals.cityPack += knowledgeCandidateCountBySource.cityPack;
+    knowledgeCandidateTotals.sourceRefs += knowledgeCandidateCountBySource.sourceRefs;
+    knowledgeCandidateTotals.webSearch += knowledgeCandidateCountBySource.webSearch;
     if (retrieveNeeded) retrieveNeededCount += 1;
     if (legacyTemplateHit) legacyTemplateHitCount += 1;
     if (Object.prototype.hasOwnProperty.call(row, 'followupQuestionIncluded')) {
@@ -1019,6 +1122,34 @@ function buildConversationQualitySummary(actionRows) {
     if (Object.prototype.hasOwnProperty.call(row, 'followupCarryFromHistory')) {
       followupCarryFromHistorySeenCount += 1;
       if (followupCarryFromHistory) followupCarryFromHistoryCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'priorContextUsed')) {
+      priorContextUsedSeenCount += 1;
+      if (priorContextUsed) priorContextUsedCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'followupResolvedFromHistory')) {
+      followupResolvedFromHistorySeenCount += 1;
+      if (followupResolvedFromHistory) followupResolvedFromHistoryCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'selectedByDirectAnswerFirst')) {
+      selectedByDirectAnswerFirstSeenCount += 1;
+      if (selectedByDirectAnswerFirst) selectedByDirectAnswerFirstCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'retrievalBlockedByStrategy')) {
+      retrievalBlockedByStrategySeenCount += 1;
+      if (retrievalBlockedByStrategy) retrievalBlockedByStrategyCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'knowledgeCandidateUsed')) {
+      knowledgeCandidateUsedSeenCount += 1;
+      if (knowledgeCandidateUsed) knowledgeCandidateUsedCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'cityPackUsedInAnswer')) {
+      cityPackUsedInAnswerSeenCount += 1;
+      if (cityPackUsedInAnswer) cityPackUsedInAnswerCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'savedFaqUsedInAnswer')) {
+      savedFaqUsedInAnswerSeenCount += 1;
+      if (savedFaqUsedInAnswer) savedFaqUsedInAnswerCount += 1;
     }
     if (Object.prototype.hasOwnProperty.call(row, 'recoverySignal')) {
       recoverySignalSeenCount += 1;
@@ -1080,6 +1211,34 @@ function buildConversationQualitySummary(actionRows) {
         recoveryHandledCount += 1;
       }
     }
+    if (['broad', 'housing', 'city', 'followup'].includes(genericFallbackSlice)) {
+      genericFallbackSliceSampleCount += 1;
+      genericFallbackSliceTotals.set(
+        genericFallbackSlice,
+        (genericFallbackSliceTotals.get(genericFallbackSlice) || 0) + 1
+      );
+      const lineUserId = normalizeReason(row && row.lineUserId).toLowerCase();
+      const historyKey = lineUserId !== 'none' ? lineUserId : `anon:${rows.indexOf(row)}`;
+      const recentFingerprints = recentFingerprintsByUser.get(historyKey) || [];
+      const repeatedGenericFallback = fallbackTemplateKind === 'generic_fallback'
+        && replyTemplateFingerprint
+        && recentFingerprints.includes(replyTemplateFingerprint);
+      if (repeatedGenericFallback) {
+        genericFallbackRepeatCount += 1;
+        genericFallbackSliceRepeats.set(
+          genericFallbackSlice,
+          (genericFallbackSliceRepeats.get(genericFallbackSlice) || 0) + 1
+        );
+        repeatedFingerprintCounts.set(
+          replyTemplateFingerprint,
+          (repeatedFingerprintCounts.get(replyTemplateFingerprint) || 0) + 1
+        );
+      }
+      const nextHistory = recentFingerprints
+        .concat(replyTemplateFingerprint ? [replyTemplateFingerprint] : [])
+        .slice(-3);
+      recentFingerprintsByUser.set(historyKey, nextHistory);
+    }
     if (row && row.officialOnlySatisfied === true) officialOnlySatisfiedCount += 1;
     if (Number.isFinite(Number(row && row.unsupportedClaimCount))) {
       unsupportedClaimCountTotal += Math.max(0, Number(row.unsupportedClaimCount));
@@ -1131,9 +1290,12 @@ function buildConversationQualitySummary(actionRows) {
     contradictionRate: sampleCount > 0 ? Math.round((contradictionRowCount / sampleCount) * 10000) / 10000 : 0,
     domainIntentConciergeRate: domainIntentCount > 0 ? Math.round((domainConciergeCount / domainIntentCount) * 10000) / 10000 : 0,
     strategies: sortCountEntries(strategies, 'strategy', 10),
+    strategyReasons: sortCountEntries(strategyReasons, 'strategyReason', 12),
     retrievalQualities: sortCountEntries(retrievalQualities, 'retrievalQuality', 10),
+    retrievalBlockReasons: sortCountEntries(retrievalBlockReasons, 'retrievalBlockReason', 12),
     verificationOutcomes: sortCountEntries(verificationOutcomes, 'verificationOutcome', 10),
     judgeWinners: sortCountEntries(judgeWinners, 'judgeWinner', 10),
+    selectedCandidateKinds: sortCountEntries(selectedCandidateKinds, 'selectedCandidateKind', 10),
     sourceReadinessDecisions: sortCountEntries(sourceReadinessDecisions, 'sourceReadinessDecision', 10),
     avgSourceAuthorityScore: sourceAuthorityScoreCount > 0
       ? Math.round((sourceAuthorityScoreTotal / sourceAuthorityScoreCount) * 10000) / 10000
@@ -1150,9 +1312,13 @@ function buildConversationQualitySummary(actionRows) {
     followupIntentReasons: sortCountEntries(followupIntentReasons, 'followupIntentReason', 10),
     routerReasons: sortCountEntries(routerReasons, 'routerReason', 12),
     routeKinds: sortCountEntries(routeKinds, 'routeKind', 8),
+    fallbackTemplateKinds: sortCountEntries(fallbackTemplateKinds, 'fallbackTemplateKind', 10),
+    finalizerTemplateKinds: sortCountEntries(finalizerTemplateKinds, 'finalizerTemplateKind', 10),
+    genericFallbackSlices: sortCountEntries(genericFallbackSlices, 'genericFallbackSlice', 8),
     compatFallbackReasons: sortCountEntries(compatFallbackReasons, 'compatFallbackReason', 8),
     sharedReadinessBridges: sortCountEntries(sharedReadinessBridges, 'sharedReadinessBridge', 10),
     routeDecisionSources: sortCountEntries(routeDecisionSources, 'routeDecisionSource', 8),
+    continuationReasons: sortCountEntries(continuationReasons, 'continuationReason', 10),
     parentIntentTypes: sortCountEntries(parentIntentTypes, 'parentIntentType', 12),
     parentAnswerModes: sortCountEntries(parentAnswerModes, 'parentAnswerMode', 12),
     parentLifecycleStages: sortCountEntries(parentLifecycleStages, 'parentLifecycleStage', 12),
@@ -1188,6 +1354,27 @@ function buildConversationQualitySummary(actionRows) {
     followupCarryFromHistoryRate: followupCarryFromHistorySeenCount > 0
       ? Math.round((followupCarryFromHistoryCount / followupCarryFromHistorySeenCount) * 10000) / 10000
       : 0,
+    priorContextUsedRate: priorContextUsedSeenCount > 0
+      ? Math.round((priorContextUsedCount / priorContextUsedSeenCount) * 10000) / 10000
+      : 0,
+    followupResolvedFromHistoryRate: followupResolvedFromHistorySeenCount > 0
+      ? Math.round((followupResolvedFromHistoryCount / followupResolvedFromHistorySeenCount) * 10000) / 10000
+      : 0,
+    selectedByDirectAnswerFirstRate: selectedByDirectAnswerFirstSeenCount > 0
+      ? Math.round((selectedByDirectAnswerFirstCount / selectedByDirectAnswerFirstSeenCount) * 10000) / 10000
+      : 0,
+    retrievalBlockedByStrategyRate: retrievalBlockedByStrategySeenCount > 0
+      ? Math.round((retrievalBlockedByStrategyCount / retrievalBlockedByStrategySeenCount) * 10000) / 10000
+      : 0,
+    knowledgeCandidateUsedRate: knowledgeCandidateUsedSeenCount > 0
+      ? Math.round((knowledgeCandidateUsedCount / knowledgeCandidateUsedSeenCount) * 10000) / 10000
+      : 0,
+    cityPackUsedInAnswerRate: cityPackUsedInAnswerSeenCount > 0
+      ? Math.round((cityPackUsedInAnswerCount / cityPackUsedInAnswerSeenCount) * 10000) / 10000
+      : 0,
+    savedFaqUsedInAnswerRate: savedFaqUsedInAnswerSeenCount > 0
+      ? Math.round((savedFaqUsedInAnswerCount / savedFaqUsedInAnswerSeenCount) * 10000) / 10000
+      : 0,
     contextualResumeHandledRate: contextResumeSeenCount > 0
       ? Math.round((contextResumeHandledCount / contextResumeSeenCount) * 10000) / 10000
       : 0,
@@ -1219,6 +1406,26 @@ function buildConversationQualitySummary(actionRows) {
     recoveryHandledRate: recoveryRiskSeenCount > 0
       ? Math.round((recoveryHandledCount / recoveryRiskSeenCount) * 10000) / 10000
       : 0,
+    knowledgeCandidateCountBySourceTotals: Object.assign({}, knowledgeCandidateTotals),
+    genericFallbackSliceSampleCount,
+    genericFallbackRepeatRate: genericFallbackSliceSampleCount > 0
+      ? Math.round((genericFallbackRepeatCount / genericFallbackSliceSampleCount) * 10000) / 10000
+      : 0,
+    genericFallbackRepeatRateBySlice: ['broad', 'housing', 'city', 'followup']
+      .map((slice) => {
+        const sample = Number(genericFallbackSliceTotals.get(slice) || 0);
+        const repeats = Number(genericFallbackSliceRepeats.get(slice) || 0);
+        return {
+          genericFallbackSlice: slice,
+          sampleCount: sample,
+          repeatCount: repeats,
+          rate: sample > 0 ? Math.round((repeats / sample) * 10000) / 10000 : 0
+        };
+      }),
+    topRepeatedFallbackFingerprints: Array.from(repeatedFingerprintCounts.entries())
+      .map(([replyTemplateFingerprint, count]) => ({ replyTemplateFingerprint, count }))
+      .sort((left, right) => right.count - left.count || left.replyTemplateFingerprint.localeCompare(right.replyTemplateFingerprint, 'ja'))
+      .slice(0, 10),
     defaultCasualRate: defaultCasualSeenCount > 0
       ? Math.round((defaultCasualCount / defaultCasualSeenCount) * 10000) / 10000
       : 0,

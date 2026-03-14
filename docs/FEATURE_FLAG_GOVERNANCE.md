@@ -1,8 +1,8 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-12T14:19:17.501Z
-- gitCommit: cba74e7174c93f128061e1918066ae4d3f64893f
-- branch: codex/llm-quality-loop-v2-foundation
+- generatedAt: 2026-03-14T01:33:20.768Z
+- gitCommit: ab7858f97b5b439ba18d2c4b941d9a0912957280
+- branch: codex/llm-traceable-routing-diagnosis-r833
 - flagCount: 90
 - source: src/**/*.js
 - check: `npm run feature-flags:check`
