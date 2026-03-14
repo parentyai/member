@@ -32,3 +32,4 @@
 ## Future integration
 - PR-4 should aggregate evaluator outputs into KPI envelopes.
 - PR-5 should consume `issueCandidates` and `supportingEvidence` without changing this evaluator contract.
+- PR-4 KPI builder keeps evaluator output read-only and does not back-write registry or backlog records.

@@ -94,6 +94,19 @@ Notes:
 - evaluator outputs are not persisted in PR-3.
 - issue candidates remain read-only hints until a later detection/registry PR consumes them.
 
+### Quality Patrol KPI envelopes (derived, read-only)
+Purpose: aggregate evaluator outputs into signal, availability, blocker, and issue-candidate KPIs for downstream detection/query layers.
+
+Typical fields:
+- `summary.overallStatus`, `summary.reviewUnitCount`, `summary.sliceCounts`
+- `metrics.*` with `value`, `sampleCount`, `missingCount`, `falseCount`, `blockedCount`, `unavailableCount`, `status`
+- `issueCandidateMetrics.*`
+- `observationBlockers`, `provenance`, `sourceCollections`
+
+Notes:
+- KPI envelopes are not persisted in PR-4.
+- KPI builder aggregates evaluator results and review units only; registry writes start in later PRs.
+
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
 
