@@ -82,6 +82,8 @@ Notes:
 - sources: `conversation_review_snapshots`, `llm_action_logs`, `faq_answer_logs`, `trace_bundle`
 - review units are not persisted; they are derived read-only outputs for downstream evaluator/detection PRs.
 - transcript coverage diagnostics are derived from `llm_action_logs` outcome telemetry and stay separate from transcript availability rates.
+- `faq_answer_logs` are auxiliary evidence and do not create standalone review units without a snapshot/action anchor.
+- extractor responses may include add-only `joinDiagnostics` such as `faqOnlyRowsSkipped`, `traceHydrationLimitedCount`, and `reviewUnitAnchorKindCounts`.
 
 ### Quality Patrol evaluator outputs (derived, read-only)
 Purpose: deterministic conversation quality assessment over review units without writing issue registry or backlog records.

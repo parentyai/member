@@ -259,6 +259,7 @@ function buildFallbackQueryArtifact(payload) {
     recommendedPr: payload.planResult.recommendedPr || [],
     planObservationBlockers: payload.planResult.observationBlockers || [],
     planningStatus: payload.planResult.planningStatus || 'insufficient_evidence',
+    joinDiagnostics: payload.joinDiagnostics || null,
     existingIssues: payload.existingIssues || [],
     existingBacklog: payload.existingBacklog || [],
     sourceCollections: payload.sourceCollections || []
@@ -364,6 +365,7 @@ async function runQualityPatrolPipeline(input, deps) {
   runtimeFetchStatus.reviewUnits = {
     status: extractorStage.status,
     count: Array.isArray(extractorStage.result.reviewUnits) ? extractorStage.result.reviewUnits.length : 0,
+    joinDiagnostics: extractorStage.result && extractorStage.result.joinDiagnostics ? extractorStage.result.joinDiagnostics : null,
     error: extractorStage.error
   };
   const reviewUnits = Array.isArray(extractorStage.result.reviewUnits) ? extractorStage.result.reviewUnits : [];
@@ -455,7 +457,8 @@ async function runQualityPatrolPipeline(input, deps) {
       kpiResult,
       detectionResult,
       rootCauseResult,
-      planResult
+      planResult,
+      joinDiagnostics: extractorStage.result && extractorStage.result.joinDiagnostics ? extractorStage.result.joinDiagnostics : null
     }), Object.assign({}, deps, {
       listOpenIssues: async (params, nestedDeps) => {
         try {
@@ -496,6 +499,7 @@ async function runQualityPatrolPipeline(input, deps) {
       detectionResult,
       rootCauseResult,
       planResult,
+      joinDiagnostics: extractorStage.result && extractorStage.result.joinDiagnostics ? extractorStage.result.joinDiagnostics : null,
       existingIssues: [],
       existingBacklog: [],
       sourceCollections: uniqueStrings([]

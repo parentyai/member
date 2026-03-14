@@ -62,12 +62,18 @@ async function queryLatestPatrolInsights(params, deps) {
   let reviewUnits = Array.isArray(payload.reviewUnits) ? payload.reviewUnits : null;
   let sourceWindow = { fromAt: payload.fromAt || null, toAt: payload.toAt || null };
   let sourceCollections = [];
+  let joinDiagnostics = payload.joinDiagnostics && typeof payload.joinDiagnostics === 'object'
+    ? payload.joinDiagnostics
+    : null;
 
   if (!reviewUnits) {
     const extracted = await extractor(payload, deps);
     reviewUnits = Array.isArray(extracted && extracted.reviewUnits) ? extracted.reviewUnits : [];
     sourceWindow = extracted && extracted.sourceWindow ? extracted.sourceWindow : sourceWindow;
     sourceCollections = uniqueStrings([].concat(sourceCollections, extracted && extracted.sourceCollections));
+    joinDiagnostics = extracted && extracted.joinDiagnostics && typeof extracted.joinDiagnostics === 'object'
+      ? extracted.joinDiagnostics
+      : joinDiagnostics;
   }
 
   let evaluations = Array.isArray(payload.evaluations) ? payload.evaluations : null;
@@ -130,6 +136,7 @@ async function queryLatestPatrolInsights(params, deps) {
     recommendedPr: planResult && Array.isArray(planResult.recommendedPr) ? planResult.recommendedPr : [],
     planObservationBlockers: planResult && Array.isArray(planResult.observationBlockers) ? planResult.observationBlockers : [],
     planningStatus: planResult && planResult.planningStatus ? planResult.planningStatus : 'insufficient_evidence',
+    joinDiagnostics,
     existingIssues,
     existingBacklog,
     sourceCollections
