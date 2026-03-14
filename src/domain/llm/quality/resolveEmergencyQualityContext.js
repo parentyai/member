@@ -38,6 +38,19 @@ function resolveEmergencyQualityContext(params) {
     : (nested && typeof nested.officialSourceSatisfied === 'boolean'
       ? nested.officialSourceSatisfied
       : null);
+  const overrideApplied = typeof payload.emergencyOverrideApplied === 'boolean'
+    ? payload.emergencyOverrideApplied
+    : active;
+  const eventId = normalizeText(payload.emergencyEventId || (nested && nested.eventId)) || null;
+  const regionKey = normalizeText(payload.emergencyRegionKey || payload.regionKey || (nested && nested.regionKey)) || null;
+  const sourceSnapshot = payload.emergencySourceSnapshot && typeof payload.emergencySourceSnapshot === 'object'
+    ? Object.assign({}, payload.emergencySourceSnapshot)
+    : {
+        eventId,
+        regionKey,
+        severity,
+        officialSourceSatisfied
+      };
   const reasonCodes = normalizeReasonCodes([].concat(
     payload.emergencyReasonCodes || [],
     nested && Array.isArray(nested.reasonCodes) ? nested.reasonCodes : []
@@ -50,6 +63,10 @@ function resolveEmergencyQualityContext(params) {
     active,
     severity,
     officialSourceSatisfied,
+    overrideApplied,
+    eventId,
+    regionKey,
+    sourceSnapshot,
     reasonCodes: normalizeReasonCodes(reasonCodes)
   };
 }

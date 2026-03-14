@@ -251,18 +251,26 @@ function buildFaqTelemetryFields(params) {
     emergencyContext: readinessV2Telemetry.emergencyContextActive === true,
     emergencySeverity: readinessV2Telemetry.emergencySeverity || null,
     emergencyEventId: readinessV2Telemetry.emergencyEventId || null,
+    emergencyRegionKey: readinessV2Telemetry.emergencyRegionKey || null,
+    emergencySourceSnapshot: readinessV2Telemetry.emergencySourceSnapshot || null,
     emergencyOfficialSourceSatisfied: readinessV2Telemetry.emergencyOfficialSourceSatisfied === true,
+    emergencyOverrideApplied: readinessV2Telemetry.emergencyOverrideApplied === true,
     journeyContext: readinessV2Telemetry.journeyContext === true,
     journeyPhase: readinessV2Telemetry.journeyPhase || null,
     taskBlockerDetected: readinessV2Telemetry.taskBlockerDetected === true,
     blockedTask: readinessV2Telemetry.blockedTask || null,
+    taskGraphState: readinessV2Telemetry.taskGraphState || null,
+    nextActionCandidates: readinessV2Telemetry.nextActionCandidates,
     nextActions: readinessV2Telemetry.nextActions,
     journeyAlignedAction: readinessV2Telemetry.journeyAlignedAction,
     cityPackContext: readinessV2Telemetry.cityPackContext === true,
     cityPackPackId: readinessV2Telemetry.cityPackPackId || null,
     cityPackGrounded: readinessV2Telemetry.cityPackGrounded === true,
+    cityPackGroundingReason: readinessV2Telemetry.cityPackGroundingReason || null,
     cityPackFreshnessScore: readinessV2Telemetry.cityPackFreshnessScore,
     cityPackAuthorityScore: readinessV2Telemetry.cityPackAuthorityScore,
+    cityPackRequiredSourcesSatisfied: readinessV2Telemetry.cityPackRequiredSourcesSatisfied,
+    cityPackSourceSnapshot: readinessV2Telemetry.cityPackSourceSnapshot || null,
     cityPackValidation: readinessV2Telemetry.cityPackValidation,
     savedFaqReused: savedFaqSignals.savedFaqReused === true,
     savedFaqReusePass: savedFaqSignals.savedFaqReusePass === true,
@@ -328,27 +336,51 @@ function buildFaqTelemetryFields(params) {
     readinessReasonCodesV2: Array.isArray(readinessV2.reasonCodes) ? readinessV2.reasonCodes : [],
     readinessSafeResponseModeV2: readinessV2.safeResponseMode || null,
     emergencyContextActive: readinessV2Telemetry.emergencyContextActive === true,
+    emergencyOverrideApplied: readinessV2Telemetry.emergencyOverrideApplied === true,
+    emergencyEventId: readinessV2Telemetry.emergencyEventId || null,
+    emergencyRegionKey: readinessV2Telemetry.emergencyRegionKey || null,
+    emergencySourceSnapshot: readinessV2Telemetry.emergencySourceSnapshot || null,
     emergencyOfficialSourceSatisfied: readinessV2Telemetry.emergencyOfficialSourceSatisfied === true,
     emergencyOfficialSourceSatisfiedObserved: telemetryCoverage.emergencyOfficialSourceSatisfiedObserved === true
       ? true
       : (telemetryCoverage.emergencyOfficialSourceSatisfiedObserved === false ? false : null),
     journeyPhase: readinessV2Telemetry.journeyPhase || null,
     taskBlockerDetected: readinessV2Telemetry.taskBlockerDetected === true,
+    blockedTask: readinessV2Telemetry.blockedTask || null,
+    taskGraphState: readinessV2Telemetry.taskGraphState || null,
+    nextActionCandidates: Array.isArray(readinessV2Telemetry.nextActionCandidates)
+      ? readinessV2Telemetry.nextActionCandidates
+      : [],
+    nextActions: Array.isArray(readinessV2Telemetry.nextActions)
+      ? readinessV2Telemetry.nextActions
+      : [],
     journeyAlignedAction: typeof readinessV2Telemetry.journeyAlignedAction === 'boolean'
       ? readinessV2Telemetry.journeyAlignedAction
       : true,
     journeyAlignedActionObserved: telemetryCoverage.journeyAlignedActionObserved === true
       ? true
       : (telemetryCoverage.journeyAlignedActionObserved === false ? false : null),
+    cityPackContext: readinessV2Telemetry.cityPackContext === true,
     cityPackGrounded: readinessV2Telemetry.cityPackGrounded === true,
     cityPackGroundedObserved: telemetryCoverage.cityPackGroundedObserved === true
       ? true
       : (telemetryCoverage.cityPackGroundedObserved === false ? false : null),
+    cityPackGroundingReason: readinessV2Telemetry.cityPackGroundingReason || null,
     cityPackFreshnessScore: Number.isFinite(Number(readinessV2Telemetry.cityPackFreshnessScore))
       ? Number(readinessV2Telemetry.cityPackFreshnessScore)
       : null,
     cityPackAuthorityScore: Number.isFinite(Number(readinessV2Telemetry.cityPackAuthorityScore))
       ? Number(readinessV2Telemetry.cityPackAuthorityScore)
+      : null,
+    cityPackRequiredSourcesSatisfied: typeof readinessV2Telemetry.cityPackRequiredSourcesSatisfied === 'boolean'
+      ? readinessV2Telemetry.cityPackRequiredSourcesSatisfied
+      : null,
+    cityPackSourceSnapshot: readinessV2Telemetry.cityPackSourceSnapshot && typeof readinessV2Telemetry.cityPackSourceSnapshot === 'object'
+      ? readinessV2Telemetry.cityPackSourceSnapshot
+      : null,
+    cityPackPackId: readinessV2Telemetry.cityPackPackId || null,
+    cityPackValidation: readinessV2Telemetry.cityPackValidation && typeof readinessV2Telemetry.cityPackValidation === 'object'
+      ? readinessV2Telemetry.cityPackValidation
       : null,
     staleSourceBlocked: telemetryCoverage.staleSourceBlocked === true
       ? true

@@ -256,6 +256,13 @@ function normalizeTelemetryRow(row) {
     'emergencyOfficialSourceSatisfiedObserved',
     derived.emergencyOfficialSourceSatisfiedObserved
   );
+  const emergencyOverrideApplied = resolveObservedBoolean(
+    payload,
+    'emergencyOverrideApplied',
+    'emergencyOverrideAppliedObserved',
+    derived.emergencyOverrideAppliedObserved,
+    derived.emergencyOverrideApplied
+  );
   const journeyAlignedAction = resolveObservedBoolean(
     payload,
     'journeyAlignedAction',
@@ -282,6 +289,8 @@ function normalizeTelemetryRow(row) {
     staleSourceBlockedObserved: staleSourceBlocked.observed,
     emergencyOfficialSourceSatisfied: emergencyOfficialSourceSatisfied.value,
     emergencyOfficialSourceSatisfiedObserved: emergencyOfficialSourceSatisfied.observed,
+    emergencyOverrideApplied: emergencyOverrideApplied.value,
+    emergencyOverrideAppliedObserved: emergencyOverrideApplied.observed,
     journeyAlignedAction: journeyAlignedAction.value,
     journeyAlignedActionObserved: journeyAlignedAction.observed,
     savedFaqReusePass: savedFaqReusePass.value,
@@ -334,8 +343,12 @@ function mergeTraceAuditRows(traceSearchAuditRows, traceProbeRows) {
       cityPackGroundedObserved: null,
       emergencyOfficialSourceSatisfied: null,
       emergencyOfficialSourceSatisfiedObserved: null,
+      emergencyOverrideApplied: null,
+      emergencyOverrideAppliedObserved: null,
       journeyAlignedAction: null,
       journeyAlignedActionObserved: null,
+      savedFaqReusePass: null,
+      savedFaqReusePassObserved: null,
       provenance: []
     };
     const existingTraceJoinCompleteness = toOptionalNumber(existing.traceJoinCompleteness);
@@ -385,12 +398,24 @@ function mergeTraceAuditRows(traceSearchAuditRows, traceProbeRows) {
       emergencyOfficialSourceSatisfiedObserved: toOptionalBoolean(existing.emergencyOfficialSourceSatisfiedObserved) !== null
         ? toOptionalBoolean(existing.emergencyOfficialSourceSatisfiedObserved)
         : toOptionalBoolean(row.emergencyOfficialSourceSatisfiedObserved),
+      emergencyOverrideApplied: toOptionalBoolean(existing.emergencyOverrideApplied) !== null
+        ? toOptionalBoolean(existing.emergencyOverrideApplied)
+        : toOptionalBoolean(row.emergencyOverrideApplied),
+      emergencyOverrideAppliedObserved: toOptionalBoolean(existing.emergencyOverrideAppliedObserved) !== null
+        ? toOptionalBoolean(existing.emergencyOverrideAppliedObserved)
+        : toOptionalBoolean(row.emergencyOverrideAppliedObserved),
       journeyAlignedAction: toOptionalBoolean(existing.journeyAlignedAction) !== null
         ? toOptionalBoolean(existing.journeyAlignedAction)
         : toOptionalBoolean(row.journeyAlignedAction),
       journeyAlignedActionObserved: toOptionalBoolean(existing.journeyAlignedActionObserved) !== null
         ? toOptionalBoolean(existing.journeyAlignedActionObserved)
         : toOptionalBoolean(row.journeyAlignedActionObserved),
+      savedFaqReusePass: toOptionalBoolean(existing.savedFaqReusePass) !== null
+        ? toOptionalBoolean(existing.savedFaqReusePass)
+        : toOptionalBoolean(row.savedFaqReusePass),
+      savedFaqReusePassObserved: toOptionalBoolean(existing.savedFaqReusePassObserved) !== null
+        ? toOptionalBoolean(existing.savedFaqReusePassObserved)
+        : toOptionalBoolean(row.savedFaqReusePassObserved),
       provenance: Array.from(new Set([]
         .concat(existing.provenance || [])
         .concat(typeof row.provenance === 'string' && row.provenance.trim() ? [row.provenance.trim()] : [])))
@@ -1575,6 +1600,7 @@ function buildQualityLoopV2Summary(data) {
   const cityPackRows = normalizedIntegrationRows.filter((row) => row && row.cityPackGroundedObserved === true);
   const staleRows = normalizedKnowledgeRows.filter((row) => row && row.staleSourceBlockedObserved === true);
   const emergencyRows = normalizedIntegrationRows.filter((row) => row && row.emergencyOfficialSourceSatisfiedObserved === true);
+  const emergencyOverrideRows = normalizedIntegrationRows.filter((row) => row && row.emergencyOverrideAppliedObserved === true);
   const highRiskRows = normalizedKnowledgeRows.filter((row) => normalizeReason(row && row.intentRiskTier).toLowerCase() === 'high');
   const journeyRows = normalizedIntegrationRows.filter((row) => row && row.journeyAlignedActionObserved === true);
   const blockerRows = normalizedKnowledgeRows.filter((row) => row && row.taskBlockerDetected === true);
@@ -1682,13 +1708,15 @@ function buildQualityLoopV2Summary(data) {
   });
   const emergencyOverrideAppliedRate = buildRateMetric({
     key: 'emergencyOverrideAppliedRate',
-    value: null,
-    sampleCount: emergencyRows.length,
+    value: emergencyOverrideRows.length > 0
+      ? averageFromRows(emergencyOverrideRows, (row) => (row && row.emergencyOverrideApplied === true ? 1 : 0))
+      : null,
+    sampleCount: emergencyOverrideRows.length,
     threshold: { operator: 'min', value: 0 },
-    note: 'pending_emergency_override_wiring',
-    missingCount: emergencyRows.length,
-    provenance: 'pending_runtime_signal',
-    sourceCollections: ['llm_action_logs']
+    note: emergencyRows.length > 0 || emergencyOverrideRows.length > 0 ? null : 'pending_emergency_override_wiring',
+    missingCount: Math.max(0, emergencyRows.length - emergencyOverrideRows.length),
+    provenance: 'live_runtime',
+    sourceCollections: ['llm_action_logs', 'faq_answer_logs', 'trace_search.view', 'trace_bundle']
   });
   const traceJoinObservedRows = traceRows.filter((row) => row && Number.isFinite(Number(row.traceJoinCompleteness)));
   const traceJoinCompleteness = buildRateMetric({
@@ -1949,6 +1977,10 @@ function buildTraceSearchAuditRows(auditRows) {
       missingDomainCount: Number(summary.missingDomainCount),
       joinedDomains: Array.isArray(summary.joinedDomains) ? summary.joinedDomains.slice() : [],
       missingDomains: Array.isArray(summary.missingDomains) ? summary.missingDomains.slice() : [],
+      emergencyOverrideApplied: toOptionalBoolean(summary.emergencyOverrideApplied),
+      emergencyOverrideAppliedObserved: toOptionalBoolean(summary.emergencyOverrideAppliedObserved),
+      savedFaqReusePass: toOptionalBoolean(summary.savedFaqReusePass),
+      savedFaqReusePassObserved: toOptionalBoolean(summary.savedFaqReusePassObserved),
       createdAt: row && row.createdAt ? row.createdAt : null,
       provenance: 'trace_search_view'
     };

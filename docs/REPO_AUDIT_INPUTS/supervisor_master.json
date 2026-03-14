@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-13T09:16:51-04:00",
-  "gitCommit": "04c52b6409e52482eb75a77505b9273be529217d",
-  "branch": "codex/llm-router-coverage-live-report-r830",
-  "sourceDigest": "4ff7cdd2fd98f6f2e7456699dbb209fa90bf99f718d709edc6625e7f0928d5e0",
+  "generatedAt": "2026-03-13T11:26:23-04:00",
+  "gitCommit": "8ac4fc4d3d1bdb96ad89e720ad0ccc97c6f4e1df",
+  "branch": "codex/llm-integration-governance-live-report-r831",
+  "sourceDigest": "8c7f2310ffec0067a2312e95854303a095de385f8ec4c2d8ee5bc977235990b0",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

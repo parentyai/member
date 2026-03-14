@@ -114,6 +114,7 @@ function resolveTelemetryCoverageSignals(params) {
         : null;
 
   const emergencyObserved = typeof payload.emergencyOfficialSourceSatisfied === 'boolean';
+  const emergencyOverrideObserved = typeof payload.emergencyOverrideApplied === 'boolean';
 
   const journeyObserved = typeof payload.journeyAlignedAction === 'boolean';
 
@@ -133,6 +134,7 @@ function resolveTelemetryCoverageSignals(params) {
     staleSourceBlocked,
     staleSourceBlockedObserved: staleSignalObserved === true,
     emergencyOfficialSourceSatisfiedObserved: emergencyObserved,
+    emergencyOverrideAppliedObserved: emergencyOverrideObserved,
     journeyAlignedActionObserved: journeyObserved,
     savedFaqReusePass,
     savedFaqReusePassObserved: savedFaqObserved

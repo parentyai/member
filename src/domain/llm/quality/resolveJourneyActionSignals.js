@@ -54,7 +54,25 @@ function normalizeNextActions(values) {
   return rows
     .map((item) => normalizeText(item))
     .filter(Boolean)
-    .slice(0, 3);
+    .slice(0, 5);
+}
+
+function normalizeTaskGraphState(snapshot, blockedTask) {
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const topTasks = Array.isArray(source.topTasks)
+    ? source.topTasks
+    : (Array.isArray(source.topOpenTasks)
+      ? source.topOpenTasks
+      : (Array.isArray(source.openTasksTop5) ? source.openTasksTop5 : []));
+  return {
+    taskCount: topTasks.length,
+    blockedTaskKey: blockedTask && typeof blockedTask === 'object'
+      ? normalizeText(blockedTask.key || blockedTask.todoKey || blockedTask.taskKey || blockedTask.id) || null
+      : null,
+    blockedTaskStatus: blockedTask && typeof blockedTask === 'object'
+      ? normalizeText(blockedTask.status || blockedTask.graphStatus || blockedTask.progressState).toLowerCase() || null
+      : null
+  };
 }
 
 function resolveJourneyActionSignals(params) {
@@ -94,7 +112,9 @@ function resolveJourneyActionSignals(params) {
     taskBlockerDetected,
     journeyAlignedAction,
     blockedTask,
-    nextActions
+    nextActions,
+    nextActionCandidates: nextActions.slice(),
+    taskGraphState: normalizeTaskGraphState(snapshot, blockedTask)
   };
 }
 
