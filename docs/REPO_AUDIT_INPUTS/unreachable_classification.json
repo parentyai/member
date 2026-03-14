@@ -740,6 +740,160 @@
         "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
         "scripts/check_structural_cleanup.js"
       ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planImprovements.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; improvement planner entrypoint stays caller-less until query and scheduler surfaces land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planning/buildImprovementPlan.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; deterministic improvement plan builder is intentionally not runtime-wired yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planning/buildRecommendedPr.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; proposal formatter is reserved for future query and scheduler consumers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planning/constants.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; planner constants define proposal families before any runtime caller is added",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planning/detectContinuityFixPlan.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; continuity planning rule stays read-only until planner outputs are consumed elsewhere",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planning/detectKnowledgeFixPlan.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; knowledge repair planner mapping is intentionally isolated from runtime callers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planning/detectObservationFirstPlan.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; observation-first planner mapping is intentionally reserved for later operator surfaces",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planning/detectRuntimeFixPlan.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; runtime-fix planner mapping is suggestion-only and not wired into runtime paths",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planning/detectTemplateFixPlan.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; template-fix planner mapping stays detached until later query and scheduler PRs land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planning/mapCauseToProposal.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; cause-to-proposal router is intentionally caller-less while planning stays read-only",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planning/resolvePlanningPriority.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; planning priority resolver is reserved for future operator-facing consumers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planning/resolvePlanningRisk.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; planning risk resolver stays internal until planner outputs are surfaced elsewhere",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/planning/resolveRollbackPlan.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; rollback guidance generator remains internal to the read-only planner foundation",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/usecases/qualityPatrol/planQualityImprovements.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-7 foundation only; read-only improvement planner wrapper is intentionally not wired to routes, scheduler, or backlog persistence yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_IMPROVEMENT_PLANNER_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
     }
   ]
 }
