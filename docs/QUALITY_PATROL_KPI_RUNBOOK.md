@@ -7,6 +7,7 @@
 
 ## Contract
 - KPI builder consumes evaluator results and review units only.
+- KPI builder may include add-only transcript coverage diagnostics derived from read-side snapshot outcome telemetry in `llm_action_logs`.
 - KPI builder does not write to `quality_issue_registry` or `quality_improvement_backlog`.
 - provenance is fixed to `review_unit_evaluator`.
 
@@ -27,3 +28,14 @@
 - PR-5 should consume KPI envelopes and issue candidate rates for deterministic detection.
 - PR-8 query/read layers should reuse KPI envelopes without changing this contract.
 - PR-5 detector reuse keeps KPI envelopes read-only and performs registry/backlog writes only through an explicit wrapper usecase.
+
+## Transcript coverage diagnostics
+- operator/read-side surfaces may expose:
+  - `transcriptWriteOutcomeCounts`
+  - `transcriptWriteFailureReasons`
+  - `transcriptCoverageStatus`
+- these diagnostics explain snapshot write-path coverage and stay separate from:
+  - `userMessageAvailableRate`
+  - `assistantReplyAvailableRate`
+  - `reviewableTranscriptRate`
+- transcript coverage diagnostics do not widen retention and do not persist raw transcript text.

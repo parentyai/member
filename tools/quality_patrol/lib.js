@@ -148,6 +148,23 @@ function createEmptyKpiResult() {
     },
     metrics: {},
     issueCandidateMetrics: {},
+    transcriptCoverage: {
+      observedCount: 0,
+      writtenCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+      transcriptWriteOutcomeCounts: {
+        written: 0,
+        skipped_flag_disabled: 0,
+        skipped_missing_line_user_key: 0,
+        skipped_unreviewable_transcript: 0,
+        failed_repo_write: 0,
+        failed_unknown: 0
+      },
+      transcriptWriteFailureReasons: {},
+      transcriptCoverageStatus: 'unavailable',
+      sourceCollections: ['llm_action_logs']
+    },
     observationBlockers: [],
     provenance: 'review_unit_evaluator',
     sourceCollections: []
@@ -235,6 +252,7 @@ function buildFallbackQueryArtifact(payload) {
     reviewUnits: payload.reviewUnits,
     evaluations: payload.evaluations,
     metrics: Object.assign({}, payload.kpiResult.metrics || {}, payload.kpiResult.issueCandidateMetrics || {}),
+    transcriptCoverage: payload.kpiResult.transcriptCoverage || null,
     kpiSummary: payload.kpiResult.summary || null,
     issues: payload.detectionResult.issueCandidates || [],
     rootCauseReports: payload.rootCauseResult.rootCauseReports || [],
@@ -253,6 +271,7 @@ function buildMainArtifact(job) {
     mode: job.options.mode,
     planningStatus: job.planResult.planningStatus || 'insufficient_evidence',
     analysisStatus: summarizeAnalysisStatus(job.rootCauseResult),
+    transcriptCoverage: job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage,
     provenance: JOB_PROVENANCE,
     sourceWindow: job.sourceWindow,
     runtimeFetchStatus: job.runtimeFetchStatus,
@@ -269,6 +288,7 @@ function buildMetricsArtifact(job) {
     summary: job.kpiResult.summary || { overallStatus: 'unavailable', reviewUnitCount: 0, sliceCounts: {} },
     metrics: job.kpiResult.metrics || {},
     issueCandidateMetrics: job.kpiResult.issueCandidateMetrics || {},
+    transcriptCoverage: job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage,
     observationBlockers: job.kpiResult.observationBlockers || [],
     provenance: 'quality_patrol_job_metrics',
     sourceCollections: job.kpiResult.sourceCollections || [],

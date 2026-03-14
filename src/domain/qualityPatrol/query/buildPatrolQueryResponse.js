@@ -46,6 +46,7 @@ function buildPatrolQueryResponse(params) {
   const evidence = serializePatrolEvidence({
     audience,
     metrics: payload.metrics,
+    transcriptCoverage: payload.transcriptCoverage,
     issues: payload.issues,
     rootCauseReports: payload.rootCauseReports
   });

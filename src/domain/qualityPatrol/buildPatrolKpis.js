@@ -7,6 +7,10 @@ const { resolveMetricStatus } = require('./kpi/resolveMetricStatus');
 const { buildMetricEnvelope } = require('./kpi/buildMetricEnvelope');
 const { aggregateSignalMetric } = require('./kpi/aggregateSignalMetric');
 const { aggregateIssueCandidateMetric } = require('./kpi/aggregateIssueCandidateMetric');
+const {
+  createEmptyTranscriptCoverageDiagnostics,
+  buildTranscriptCoverageDiagnostics
+} = require('./transcript/buildTranscriptCoverageDiagnostics');
 
 function normalizeSliceCounts(rows) {
   const grouped = groupBySlice(rows, (row) => row && row.slice);
@@ -19,6 +23,43 @@ function normalizeSliceCounts(rows) {
 
 function mergeSourceCollections() {
   return Array.from(new Set([].concat(...Array.from(arguments)).filter(Boolean))).sort((left, right) => left.localeCompare(right, 'ja'));
+}
+
+function normalizeTranscriptCoverage(reviewUnits, input) {
+  const diagnostics = input && typeof input === 'object'
+    ? Object.assign({}, createEmptyTranscriptCoverageDiagnostics(), input)
+    : createEmptyTranscriptCoverageDiagnostics();
+  if ((!diagnostics || Number(diagnostics.observedCount || 0) <= 0) && Array.isArray(reviewUnits) && reviewUnits.length > 0) {
+    return buildTranscriptCoverageDiagnostics({
+      llmActionLogs: reviewUnits
+        .map((unit) => ({
+          transcriptSnapshotOutcome: unit && unit.telemetrySignals && unit.telemetrySignals.transcriptSnapshotOutcome,
+          transcriptSnapshotReason: unit && unit.telemetrySignals && unit.telemetrySignals.transcriptSnapshotReason
+        }))
+    });
+  }
+  return {
+    observedCount: Number(diagnostics.observedCount || 0),
+    writtenCount: Number(diagnostics.writtenCount || 0),
+    skippedCount: Number(diagnostics.skippedCount || 0),
+    failedCount: Number(diagnostics.failedCount || 0),
+    transcriptWriteOutcomeCounts: Object.assign(
+      {},
+      createEmptyTranscriptCoverageDiagnostics().transcriptWriteOutcomeCounts,
+      diagnostics.transcriptWriteOutcomeCounts || {}
+    ),
+    transcriptWriteFailureReasons: diagnostics.transcriptWriteFailureReasons && typeof diagnostics.transcriptWriteFailureReasons === 'object'
+      ? Object.fromEntries(
+        Object.entries(diagnostics.transcriptWriteFailureReasons)
+          .filter((entry) => Number(entry[1]) > 0)
+          .sort((left, right) => left[0].localeCompare(right[0], 'ja'))
+      )
+      : {},
+    transcriptCoverageStatus: typeof diagnostics.transcriptCoverageStatus === 'string'
+      ? diagnostics.transcriptCoverageStatus
+      : 'unavailable',
+    sourceCollections: mergeSourceCollections(diagnostics.sourceCollections || ['llm_action_logs'])
+  };
 }
 
 function reviewUnitNeedsPriorContext(reviewUnit) {
@@ -179,9 +220,11 @@ function buildPatrolKpis(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const evaluations = Array.isArray(payload.evaluations) ? payload.evaluations : [];
   const reviewUnits = Array.isArray(payload.reviewUnits) ? payload.reviewUnits : [];
+  const transcriptCoverage = normalizeTranscriptCoverage(reviewUnits, payload.transcriptCoverage);
   const sourceCollections = mergeSourceCollections(
     evaluations.flatMap((row) => Array.isArray(row && row.sourceCollections) ? row.sourceCollections : []),
-    reviewUnits.flatMap((row) => Array.isArray(row && row.sourceCollections) ? row.sourceCollections : [])
+    reviewUnits.flatMap((row) => Array.isArray(row && row.sourceCollections) ? row.sourceCollections : []),
+    transcriptCoverage.sourceCollections
   );
   const aggregatedBlockers = mergeObservationBlockers(
     evaluations.map((row) => ({ blockers: row && row.observationBlockers, slice: row && row.slice }))
@@ -287,6 +330,7 @@ function buildPatrolKpis(params) {
     summary: buildSummary(metrics, issueCandidateMetrics, evaluations.length, normalizeSliceCounts(evaluations), aggregatedBlockers),
     metrics,
     issueCandidateMetrics,
+    transcriptCoverage,
     observationBlockers: aggregatedBlockers,
     provenance: KPI_PROVENANCE,
     sourceCollections

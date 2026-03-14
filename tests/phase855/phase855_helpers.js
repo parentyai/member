@@ -148,6 +148,23 @@ function createKpiResult() {
         bySlice: { broad: { value: 1, sampleCount: 1, missingCount: 0, falseCount: 0, blockedCount: 0, unavailableCount: 0, status: 'fail' } }
       }
     },
+    transcriptCoverage: {
+      observedCount: 1,
+      writtenCount: 1,
+      skippedCount: 0,
+      failedCount: 0,
+      transcriptWriteOutcomeCounts: {
+        written: 1,
+        skipped_flag_disabled: 0,
+        skipped_missing_line_user_key: 0,
+        skipped_unreviewable_transcript: 0,
+        failed_repo_write: 0,
+        failed_unknown: 0
+      },
+      transcriptWriteFailureReasons: {},
+      transcriptCoverageStatus: 'ready',
+      sourceCollections: ['llm_action_logs']
+    },
     observationBlockers: [],
     provenance: 'review_unit_evaluator',
     sourceCollections: ['conversation_review_snapshots', 'llm_action_logs']

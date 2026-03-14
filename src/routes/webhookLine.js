@@ -1950,6 +1950,62 @@ async function appendLlmActionLogBestEffort(data) {
     routeDecisionSource: payload.routeDecisionSource
       || (typeof payload.routerReason === 'string' && payload.routerReason.trim() ? 'conversation_router' : 'webhook_route')
   });
+  const messageText = normalizeReplyText(payload.messageText || payload.text || '');
+  const replyText = normalizeReplyText(payload.replyText || payload.finalReplyText || '');
+  let transcriptSnapshotResult = null;
+
+  try {
+    transcriptSnapshotResult = await appendConversationReviewSnapshot({
+      lineUserId,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      routeKind: routeCoverageMeta.routeKind,
+      domainIntent: qualityMeta.domainIntent || payload.domainIntent || 'general',
+      strategy: typeof payload.strategy === 'string' && payload.strategy.trim()
+        ? payload.strategy.trim()
+        : (qualityMeta.strategyReason || null),
+      selectedCandidateKind: typeof payload.selectedCandidateKind === 'string' && payload.selectedCandidateKind.trim()
+        ? payload.selectedCandidateKind.trim()
+        : (qualityMeta.selectedCandidateKind || null),
+      fallbackTemplateKind: typeof payload.fallbackTemplateKind === 'string' && payload.fallbackTemplateKind.trim()
+        ? payload.fallbackTemplateKind.trim()
+        : (qualityMeta.fallbackTemplateKind || null),
+      replyTemplateFingerprint: typeof payload.replyTemplateFingerprint === 'string' && payload.replyTemplateFingerprint.trim()
+        ? payload.replyTemplateFingerprint.trim()
+        : (qualityMeta.replyTemplateFingerprint || null),
+      priorContextUsed: payload.priorContextUsed === true || qualityMeta.priorContextUsed === true,
+      followupResolvedFromHistory: payload.followupResolvedFromHistory === true || qualityMeta.followupResolvedFromHistory === true,
+      knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true || qualityMeta.knowledgeCandidateUsed === true,
+      readinessDecision: payload.readinessDecision || readinessTelemetry.readiness.decision || null,
+      genericFallbackSlice: typeof payload.genericFallbackSlice === 'string' && payload.genericFallbackSlice.trim()
+        ? payload.genericFallbackSlice.trim()
+        : (qualityMeta.genericFallbackSlice || null),
+      userMessageText: messageText,
+      assistantReplyText: replyText,
+      priorContextSummaryText: typeof payload.priorContextSummaryText === 'string'
+        ? payload.priorContextSummaryText
+        : null,
+      contextSnapshot: payload.contextSnapshot || null,
+      contextResumeDomain: typeof payload.contextResumeDomain === 'string' ? payload.contextResumeDomain : null,
+      followupIntent: typeof payload.followupIntent === 'string'
+        ? payload.followupIntent
+        : (qualityMeta.followupIntent || null),
+      recentUserGoal: typeof payload.recentUserGoal === 'string' ? payload.recentUserGoal : null
+    });
+  } catch (_err) {
+    transcriptSnapshotResult = {
+      ok: false,
+      written: false,
+      skipped: false,
+      failed: true,
+      outcome: 'failed_unknown',
+      reason: 'unknown_snapshot_error',
+      transcriptSnapshotLineUserKeyAvailable: false,
+      transcriptSnapshotUserMessageAvailable: false,
+      transcriptSnapshotAssistantReplyAvailable: false,
+      transcriptSnapshotPriorContextSummaryAvailable: false
+    };
+  }
 
   try {
     await llmActionLogsRepo.appendLlmActionLog({
@@ -2291,53 +2347,22 @@ async function appendLlmActionLogBestEffort(data) {
       committedFollowupQuestion: typeof payload.committedFollowupQuestion === 'string'
         ? payload.committedFollowupQuestion
         : null,
-      recentUserGoal: typeof payload.recentUserGoal === 'string' ? payload.recentUserGoal : null
+      recentUserGoal: typeof payload.recentUserGoal === 'string' ? payload.recentUserGoal : null,
+      transcriptSnapshotOutcome: transcriptSnapshotResult && transcriptSnapshotResult.outcome ? transcriptSnapshotResult.outcome : null,
+      transcriptSnapshotReason: transcriptSnapshotResult && transcriptSnapshotResult.reason ? transcriptSnapshotResult.reason : null,
+      transcriptSnapshotLineUserKeyAvailable: transcriptSnapshotResult
+        ? transcriptSnapshotResult.transcriptSnapshotLineUserKeyAvailable === true
+        : null,
+      transcriptSnapshotUserMessageAvailable: transcriptSnapshotResult
+        ? transcriptSnapshotResult.transcriptSnapshotUserMessageAvailable === true
+        : null,
+      transcriptSnapshotAssistantReplyAvailable: transcriptSnapshotResult
+        ? transcriptSnapshotResult.transcriptSnapshotAssistantReplyAvailable === true
+        : null,
+      transcriptSnapshotPriorContextSummaryAvailable: transcriptSnapshotResult
+        ? transcriptSnapshotResult.transcriptSnapshotPriorContextSummaryAvailable === true
+        : null
     });
-  } catch (_err) {
-    // best effort only
-  }
-  try {
-    const messageText = normalizeReplyText(payload.messageText || payload.text || '');
-    const replyText = normalizeReplyText(payload.replyText || payload.finalReplyText || '');
-    if (messageText || replyText) {
-      await appendConversationReviewSnapshot({
-        lineUserId,
-        traceId: payload.traceId || null,
-        requestId: payload.requestId || null,
-        routeKind: routeCoverageMeta.routeKind,
-        domainIntent: qualityMeta.domainIntent || payload.domainIntent || 'general',
-        strategy: typeof payload.strategy === 'string' && payload.strategy.trim()
-          ? payload.strategy.trim()
-          : (qualityMeta.strategyReason || null),
-        selectedCandidateKind: typeof payload.selectedCandidateKind === 'string' && payload.selectedCandidateKind.trim()
-          ? payload.selectedCandidateKind.trim()
-          : (qualityMeta.selectedCandidateKind || null),
-        fallbackTemplateKind: typeof payload.fallbackTemplateKind === 'string' && payload.fallbackTemplateKind.trim()
-          ? payload.fallbackTemplateKind.trim()
-          : (qualityMeta.fallbackTemplateKind || null),
-        replyTemplateFingerprint: typeof payload.replyTemplateFingerprint === 'string' && payload.replyTemplateFingerprint.trim()
-          ? payload.replyTemplateFingerprint.trim()
-          : (qualityMeta.replyTemplateFingerprint || null),
-        priorContextUsed: payload.priorContextUsed === true || qualityMeta.priorContextUsed === true,
-        followupResolvedFromHistory: payload.followupResolvedFromHistory === true || qualityMeta.followupResolvedFromHistory === true,
-        knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true || qualityMeta.knowledgeCandidateUsed === true,
-        readinessDecision: payload.readinessDecision || readinessTelemetry.readiness.decision || null,
-        genericFallbackSlice: typeof payload.genericFallbackSlice === 'string' && payload.genericFallbackSlice.trim()
-          ? payload.genericFallbackSlice.trim()
-          : (qualityMeta.genericFallbackSlice || null),
-        userMessageText: messageText,
-        assistantReplyText: replyText,
-        priorContextSummaryText: typeof payload.priorContextSummaryText === 'string'
-          ? payload.priorContextSummaryText
-          : null,
-        contextSnapshot: payload.contextSnapshot || null,
-        contextResumeDomain: typeof payload.contextResumeDomain === 'string' ? payload.contextResumeDomain : null,
-        followupIntent: typeof payload.followupIntent === 'string'
-          ? payload.followupIntent
-          : (qualityMeta.followupIntent || null),
-        recentUserGoal: typeof payload.recentUserGoal === 'string' ? payload.recentUserGoal : null
-      });
-    }
   } catch (_err) {
     // best effort only
   }

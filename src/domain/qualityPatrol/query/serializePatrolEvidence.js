@@ -33,6 +33,26 @@ function serializeMetricEvidence(metrics, audience, rows, seen) {
   });
 }
 
+function serializeTranscriptCoverageEvidence(transcriptCoverage, audience, rows, seen) {
+  const payload = transcriptCoverage && typeof transcriptCoverage === 'object' ? transcriptCoverage : null;
+  if (!payload || payload.transcriptCoverageStatus === 'ready' || Number(payload.observedCount || 0) <= 0) return;
+  const outcomeCounts = payload.transcriptWriteOutcomeCounts && typeof payload.transcriptWriteOutcomeCounts === 'object'
+    ? payload.transcriptWriteOutcomeCounts
+    : {};
+  const failureReasons = payload.transcriptWriteFailureReasons && typeof payload.transcriptWriteFailureReasons === 'object'
+    ? payload.transcriptWriteFailureReasons
+    : {};
+  const summary = audience === 'human'
+    ? '会話レビュー用 transcript 証跡の保存結果に欠落または失敗があり、一部の評価が保留です。'
+    : `transcriptCoverage status=${payload.transcriptCoverageStatus} observed=${payload.observedCount} outcomes=${JSON.stringify(outcomeCounts)} reasons=${JSON.stringify(failureReasons)}`;
+  pushEvidence(rows, seen, {
+    kind: 'summary',
+    summary,
+    provenance: 'quality_patrol_transcript_coverage',
+    traceId: null
+  });
+}
+
 function serializeIssueEvidence(issues, audience, rows, seen) {
   (Array.isArray(issues) ? issues : []).forEach((issue) => {
     (Array.isArray(issue && issue.supportingEvidence) ? issue.supportingEvidence : []).forEach((evidence) => {
@@ -82,6 +102,7 @@ function serializePatrolEvidence(params) {
   const seen = new Set();
 
   serializeMetricEvidence(payload.metrics, audience, rows, seen);
+  serializeTranscriptCoverageEvidence(payload.transcriptCoverage, audience, rows, seen);
   serializeIssueEvidence(payload.issues, audience, rows, seen);
   serializeRootCauseEvidence(payload.rootCauseReports, audience, rows, seen);
 
