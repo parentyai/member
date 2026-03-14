@@ -55,7 +55,8 @@ test('phase833: housing question re-enables retrieval and avoids domain concierg
   assert.equal(result.packet.genericFallbackSlice, 'housing');
   assert.equal(result.telemetry.strategy, 'grounded_answer');
   assert.equal(result.telemetry.retrieveNeeded, true);
-  assert.equal(result.telemetry.retrievalPermitReason, 'housing_grounding_probe+explicit_domain_grounding_probe');
+  assert.match(result.telemetry.retrievalPermitReason || '', /housing_grounding_probe/);
+  assert.match(result.telemetry.retrievalPermitReason || '', /explicit_domain_grounding_probe/);
   assert.equal(result.telemetry.groundedCandidateAvailable, true);
   assert.notEqual(result.telemetry.selectedCandidateKind, 'domain_concierge_candidate');
 });

@@ -183,6 +183,20 @@ function normalizeReplyText(value) {
   return value.trim();
 }
 
+function normalizeReasonList(value, limit) {
+  const rows = Array.isArray(value) ? value : [];
+  const max = Number.isFinite(Number(limit)) ? Math.max(0, Math.floor(Number(limit))) : 8;
+  const out = [];
+  rows.forEach((item) => {
+    const normalized = normalizeReplyText(item).toLowerCase();
+    if (!normalized) return;
+    if (out.includes(normalized)) return;
+    if (out.length >= max) return;
+    out.push(normalized);
+  });
+  return out;
+}
+
 function normalizeJourneyMessage(value) {
   const row = value && typeof value === 'object' && !Array.isArray(value) ? value : null;
   if (!row || typeof row.type !== 'string' || !row.type.trim()) return null;
@@ -1202,6 +1216,7 @@ function buildConversationQualityMeta(params) {
     knowledgeCandidateCountBySource,
     knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true,
     knowledgeCandidateRejectedReason: normalizeReplyText(payload.knowledgeCandidateRejectedReason).toLowerCase() || null,
+    knowledgeRejectedReasons: normalizeReasonList(payload.knowledgeRejectedReasons, 8),
     cityPackCandidateAvailable: payload.cityPackCandidateAvailable === true,
     cityPackRejectedReason: normalizeReplyText(payload.cityPackRejectedReason).toLowerCase() || null,
     cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true,
@@ -1721,6 +1736,9 @@ async function appendLlmGateDecisionBestEffort(data) {
         knowledgeCandidateRejectedReason: typeof payload.knowledgeCandidateRejectedReason === 'string' && payload.knowledgeCandidateRejectedReason.trim()
           ? payload.knowledgeCandidateRejectedReason.trim().toLowerCase()
           : (qualityMeta.knowledgeCandidateRejectedReason || null),
+        knowledgeRejectedReasons: Array.isArray(payload.knowledgeRejectedReasons)
+          ? normalizeReasonList(payload.knowledgeRejectedReasons, 8)
+          : (Array.isArray(qualityMeta.knowledgeRejectedReasons) ? normalizeReasonList(qualityMeta.knowledgeRejectedReasons, 8) : []),
         cityPackCandidateAvailable: payload.cityPackCandidateAvailable === true || qualityMeta.cityPackCandidateAvailable === true,
         cityPackRejectedReason: typeof payload.cityPackRejectedReason === 'string' && payload.cityPackRejectedReason.trim()
           ? payload.cityPackRejectedReason.trim().toLowerCase()
@@ -2224,6 +2242,9 @@ async function appendLlmActionLogBestEffort(data) {
       knowledgeCandidateRejectedReason: typeof payload.knowledgeCandidateRejectedReason === 'string' && payload.knowledgeCandidateRejectedReason.trim()
         ? payload.knowledgeCandidateRejectedReason.trim().toLowerCase()
         : (qualityMeta.knowledgeCandidateRejectedReason || null),
+      knowledgeRejectedReasons: Array.isArray(payload.knowledgeRejectedReasons)
+        ? normalizeReasonList(payload.knowledgeRejectedReasons, 8)
+        : (Array.isArray(qualityMeta.knowledgeRejectedReasons) ? normalizeReasonList(qualityMeta.knowledgeRejectedReasons, 8) : []),
       cityPackCandidateAvailable: payload.cityPackCandidateAvailable === true || qualityMeta.cityPackCandidateAvailable === true,
       cityPackRejectedReason: typeof payload.cityPackRejectedReason === 'string' && payload.cityPackRejectedReason.trim()
         ? payload.cityPackRejectedReason.trim().toLowerCase()
@@ -2504,6 +2525,7 @@ async function tryHandlePaidOrchestratorV2(params) {
     knowledgeCandidateCountBySource: orchestrated.telemetry ? orchestrated.telemetry.knowledgeCandidateCountBySource : null,
     knowledgeCandidateUsed: orchestrated.telemetry ? orchestrated.telemetry.knowledgeCandidateUsed === true : false,
     knowledgeCandidateRejectedReason: orchestrated.telemetry ? orchestrated.telemetry.knowledgeCandidateRejectedReason : null,
+    knowledgeRejectedReasons: orchestrated.telemetry ? orchestrated.telemetry.knowledgeRejectedReasons : [],
     cityPackCandidateAvailable: orchestrated.telemetry ? orchestrated.telemetry.cityPackCandidateAvailable === true : false,
     cityPackRejectedReason: orchestrated.telemetry ? orchestrated.telemetry.cityPackRejectedReason : null,
     cityPackUsedInAnswer: orchestrated.telemetry ? orchestrated.telemetry.cityPackUsedInAnswer === true : false,

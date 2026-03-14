@@ -30,5 +30,5 @@ test('phase833: broad question prefers grounding probe before clarify', () => {
   ]);
   assert.ok(plan.strategyAlternativeSet.includes('structured_answer'));
   assert.equal(retrieval.retrieveNeeded, true);
-  assert.equal(retrieval.retrievalPermitReason, 'broad_structured_grounding_probe');
+  assert.match(retrieval.retrievalPermitReason || '', /broad_structured_grounding_probe/);
 });

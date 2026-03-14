@@ -157,6 +157,7 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'knowledgeCandidateCountBySource',
   'knowledgeCandidateUsed',
   'knowledgeCandidateRejectedReason',
+  'knowledgeRejectedReasons',
   'cityPackCandidateAvailable',
   'cityPackRejectedReason',
   'cityPackUsedInAnswer',

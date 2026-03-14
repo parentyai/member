@@ -248,6 +248,7 @@ function buildKnowledgeUsageMeta(selected) {
 function createEmptyKnowledgeTelemetry() {
   return {
     knowledgeCandidateRejectedReason: null,
+    knowledgeRejectedReasons: [],
     cityPackCandidateAvailable: false,
     cityPackRejectedReason: null,
     savedFaqCandidateAvailable: false,
@@ -1163,6 +1164,11 @@ async function runPaidConversationOrchestrator(params) {
       knowledgeCandidateRejectedReason: candidateSet.knowledgeTelemetry
         ? candidateSet.knowledgeTelemetry.knowledgeCandidateRejectedReason || null
         : null,
+      knowledgeRejectedReasons: candidateSet.knowledgeTelemetry
+        ? (Array.isArray(candidateSet.knowledgeTelemetry.knowledgeRejectedReasons)
+          ? candidateSet.knowledgeTelemetry.knowledgeRejectedReasons.slice(0, 8)
+          : [])
+        : [],
       cityPackCandidateAvailable: candidateSet.knowledgeTelemetry
         ? candidateSet.knowledgeTelemetry.cityPackCandidateAvailable === true
         : false,

@@ -175,6 +175,7 @@ const LLM_GATE_KEYS = new Set([
   'knowledgeCandidateCountBySource',
   'knowledgeCandidateUsed',
   'knowledgeCandidateRejectedReason',
+  'knowledgeRejectedReasons',
   'cityPackCandidateAvailable',
   'cityPackRejectedReason',
   'cityPackUsedInAnswer',

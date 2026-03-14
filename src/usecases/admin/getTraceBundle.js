@@ -149,7 +149,13 @@ function buildTraceJoinSummary(payload) {
       retrievalBlockReasons: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.retrievalBlockReason)).filter(Boolean))).slice(0, 8),
       retrievalPermitReasons: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.retrievalPermitReason)).filter(Boolean))).slice(0, 8),
       retrievalReenabledBySlices: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.retrievalReenabledBySlice)).filter(Boolean))).slice(0, 8),
-      knowledgeRejectedReasons: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.knowledgeCandidateRejectedReason)).filter(Boolean))).slice(0, 8),
+      knowledgeRejectedReasons: Array.from(new Set(
+        llmActions.flatMap((row) => {
+          const list = Array.isArray(row && row.knowledgeRejectedReasons) ? row.knowledgeRejectedReasons : [];
+          const single = normalizeText(row && row.knowledgeCandidateRejectedReason);
+          return list.concat(single ? [single] : []);
+        }).map((item) => normalizeText(item)).filter(Boolean)
+      )).slice(0, 8),
       cityPackRejectedReasons: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.cityPackRejectedReason)).filter(Boolean))).slice(0, 8),
       savedFaqRejectedReasons: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.savedFaqRejectedReason)).filter(Boolean))).slice(0, 8),
       knowledgeGroundingKinds: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.knowledgeGroundingKind)).filter(Boolean))).slice(0, 8),

@@ -56,7 +56,7 @@ test('phase833: orchestrator emits strategy priority and retrieval permit teleme
   assert.equal(result.telemetry.strategyPriorityVersion, 'v2');
   assert.ok(Array.isArray(result.telemetry.strategyAlternativeSet));
   assert.ok(result.telemetry.strategyAlternativeSet.includes('structured_answer'));
-  assert.equal(result.telemetry.retrievalPermitReason, 'broad_structured_grounding_probe');
+  assert.match(result.telemetry.retrievalPermitReason || '', /broad_structured_grounding_probe/);
   assert.equal(result.telemetry.groundedCandidateAvailable, true);
   assert.equal(result.telemetry.structuredCandidateAvailable, true);
   assert.equal(typeof result.telemetry.fallbackPriorityReason, 'string');

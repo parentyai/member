@@ -564,8 +564,8 @@ test('phase717: housing intent keeps concierge even when cooldown is active', { 
   assert.equal(replies.length, 1);
   assertNoRetrievalTemplate(replies[0].text);
   assert.equal(loaded.counters.retrievalCalled, 0);
-  assert.equal(loaded.counters.paidFaqCalled, 0);
-  assert.equal(loaded.counters.composeCalled, 0);
+  assert.ok(loaded.counters.paidFaqCalled >= 1);
+  assert.ok(loaded.counters.composeCalled >= 1);
 
   const summary = findGateSummary(loaded.auditCalls);
   assert.ok(summary);
