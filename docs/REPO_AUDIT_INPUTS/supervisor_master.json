@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-13T21:39:12-04:00",
-  "gitCommit": "3b23d490489ca0a879e4a2ec966529b73842272c",
-  "branch": "codex/llm-strategy-diversification-r834",
-  "sourceDigest": "1d17356576dbe832a3f282cc0ba77f0e159bb9f95e1791921857cb2a7537658e",
+  "generatedAt": "2026-03-13T22:56:15-04:00",
+  "gitCommit": "143204ef7c9e7d43da8ff7736323f7d761bd60b9",
+  "branch": "codex/llm-retrieval-activation-r835",
+  "sourceDigest": "7e3335bcb9121e994328b2bfce89bbc6a4e79b38e15d950824dc45012d74bfd9",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

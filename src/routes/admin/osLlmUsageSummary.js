@@ -318,8 +318,15 @@ function normalizeTelemetryRow(row) {
     continuationReason: normalizeReason(payload.continuationReason),
     knowledgeCandidateCountBySource: normalizeKnowledgeCandidateCountBySource(payload.knowledgeCandidateCountBySource),
     knowledgeCandidateUsed: toOptionalBoolean(payload.knowledgeCandidateUsed),
+    knowledgeCandidateRejectedReason: normalizeReason(payload.knowledgeCandidateRejectedReason),
+    cityPackCandidateAvailable: toOptionalBoolean(payload.cityPackCandidateAvailable),
+    cityPackRejectedReason: normalizeReason(payload.cityPackRejectedReason),
     cityPackUsedInAnswer: toOptionalBoolean(payload.cityPackUsedInAnswer),
+    savedFaqCandidateAvailable: toOptionalBoolean(payload.savedFaqCandidateAvailable),
+    savedFaqRejectedReason: normalizeReason(payload.savedFaqRejectedReason),
     savedFaqUsedInAnswer: toOptionalBoolean(payload.savedFaqUsedInAnswer),
+    sourceReadinessDecisionSource: normalizeReason(payload.sourceReadinessDecisionSource),
+    knowledgeGroundingKind: normalizeReason(payload.knowledgeGroundingKind),
     groundedCandidateAvailable: toOptionalBoolean(payload.groundedCandidateAvailable),
     structuredCandidateAvailable: toOptionalBoolean(payload.structuredCandidateAvailable),
     continuationCandidateAvailable: toOptionalBoolean(payload.continuationCandidateAvailable),
@@ -891,6 +898,11 @@ function buildConversationQualitySummary(actionRows) {
   const retrievalBlockReasons = new Map();
   const retrievalPermitReasons = new Map();
   const retrievalReenabledBySlices = new Map();
+  const knowledgeRejectedReasons = new Map();
+  const cityPackRejectedReasons = new Map();
+  const savedFaqRejectedReasons = new Map();
+  const knowledgeGroundingKinds = new Map();
+  const sourceReadinessDecisionSources = new Map();
   const verificationOutcomes = new Map();
   const judgeWinners = new Map();
   const selectedCandidateKinds = new Map();
@@ -983,8 +995,12 @@ function buildConversationQualitySummary(actionRows) {
   let clarifySelectionCount = 0;
   let knowledgeCandidateUsedSeenCount = 0;
   let knowledgeCandidateUsedCount = 0;
+  let cityPackCandidateAvailableSeenCount = 0;
+  let cityPackCandidateAvailableCount = 0;
   let cityPackUsedInAnswerSeenCount = 0;
   let cityPackUsedInAnswerCount = 0;
+  let savedFaqCandidateAvailableSeenCount = 0;
+  let savedFaqCandidateAvailableCount = 0;
   let savedFaqUsedInAnswerSeenCount = 0;
   let savedFaqUsedInAnswerCount = 0;
   let genericFallbackSliceSampleCount = 0;
@@ -1020,6 +1036,11 @@ function buildConversationQualitySummary(actionRows) {
     const retrievalBlockReason = normalizeReason(row && row.retrievalBlockReason ? row.retrievalBlockReason : 'none');
     const retrievalPermitReason = normalizeReason(row && row.retrievalPermitReason ? row.retrievalPermitReason : 'none');
     const retrievalReenabledBySlice = normalizeReason(row && row.retrievalReenabledBySlice ? row.retrievalReenabledBySlice : 'none');
+    const knowledgeCandidateRejectedReason = normalizeReason(row && row.knowledgeCandidateRejectedReason ? row.knowledgeCandidateRejectedReason : 'none');
+    const cityPackRejectedReason = normalizeReason(row && row.cityPackRejectedReason ? row.cityPackRejectedReason : 'none');
+    const savedFaqRejectedReason = normalizeReason(row && row.savedFaqRejectedReason ? row.savedFaqRejectedReason : 'none');
+    const knowledgeGroundingKind = normalizeReason(row && row.knowledgeGroundingKind ? row.knowledgeGroundingKind : 'none');
+    const sourceReadinessDecisionSource = normalizeReason(row && row.sourceReadinessDecisionSource ? row.sourceReadinessDecisionSource : 'none');
     const verificationOutcome = normalizeReason(row && row.verificationOutcome ? row.verificationOutcome : 'none');
     const judgeWinner = normalizeReason(row && row.judgeWinner ? row.judgeWinner : 'none');
     const selectedCandidateKind = normalizeReason(row && row.selectedCandidateKind ? row.selectedCandidateKind : 'none');
@@ -1073,7 +1094,9 @@ function buildConversationQualitySummary(actionRows) {
     const structuredCandidateAvailable = row && row.structuredCandidateAvailable === true;
     const continuationCandidateAvailable = row && row.continuationCandidateAvailable === true;
     const knowledgeCandidateUsed = row && row.knowledgeCandidateUsed === true;
+    const cityPackCandidateAvailable = row && row.cityPackCandidateAvailable === true;
     const cityPackUsedInAnswer = row && row.cityPackUsedInAnswer === true;
+    const savedFaqCandidateAvailable = row && row.savedFaqCandidateAvailable === true;
     const savedFaqUsedInAnswer = row && row.savedFaqUsedInAnswer === true;
     const recoverySignal = row && row.recoverySignal === true;
     const contextCarryScore = Number.isFinite(Number(row && row.contextCarryScore)) ? Number(row.contextCarryScore) : null;
@@ -1100,6 +1123,26 @@ function buildConversationQualitySummary(actionRows) {
     retrievalReenabledBySlices.set(
       retrievalReenabledBySlice,
       (retrievalReenabledBySlices.get(retrievalReenabledBySlice) || 0) + 1
+    );
+    knowledgeRejectedReasons.set(
+      knowledgeCandidateRejectedReason,
+      (knowledgeRejectedReasons.get(knowledgeCandidateRejectedReason) || 0) + 1
+    );
+    cityPackRejectedReasons.set(
+      cityPackRejectedReason,
+      (cityPackRejectedReasons.get(cityPackRejectedReason) || 0) + 1
+    );
+    savedFaqRejectedReasons.set(
+      savedFaqRejectedReason,
+      (savedFaqRejectedReasons.get(savedFaqRejectedReason) || 0) + 1
+    );
+    knowledgeGroundingKinds.set(
+      knowledgeGroundingKind,
+      (knowledgeGroundingKinds.get(knowledgeGroundingKind) || 0) + 1
+    );
+    sourceReadinessDecisionSources.set(
+      sourceReadinessDecisionSource,
+      (sourceReadinessDecisionSources.get(sourceReadinessDecisionSource) || 0) + 1
     );
     verificationOutcomes.set(verificationOutcome, (verificationOutcomes.get(verificationOutcome) || 0) + 1);
     judgeWinners.set(judgeWinner, (judgeWinners.get(judgeWinner) || 0) + 1);
@@ -1202,9 +1245,17 @@ function buildConversationQualitySummary(actionRows) {
       knowledgeCandidateUsedSeenCount += 1;
       if (knowledgeCandidateUsed) knowledgeCandidateUsedCount += 1;
     }
+    if (Object.prototype.hasOwnProperty.call(row, 'cityPackCandidateAvailable')) {
+      cityPackCandidateAvailableSeenCount += 1;
+      if (cityPackCandidateAvailable) cityPackCandidateAvailableCount += 1;
+    }
     if (Object.prototype.hasOwnProperty.call(row, 'cityPackUsedInAnswer')) {
       cityPackUsedInAnswerSeenCount += 1;
       if (cityPackUsedInAnswer) cityPackUsedInAnswerCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'savedFaqCandidateAvailable')) {
+      savedFaqCandidateAvailableSeenCount += 1;
+      if (savedFaqCandidateAvailable) savedFaqCandidateAvailableCount += 1;
     }
     if (Object.prototype.hasOwnProperty.call(row, 'savedFaqUsedInAnswer')) {
       savedFaqUsedInAnswerSeenCount += 1;
@@ -1365,6 +1416,11 @@ function buildConversationQualitySummary(actionRows) {
     retrievalBlockReasons: sortCountEntries(retrievalBlockReasons, 'retrievalBlockReason', 12),
     retrievalPermitReasons: sortCountEntries(retrievalPermitReasons, 'retrievalPermitReason', 12),
     retrievalReenabledBySlices: sortCountEntries(retrievalReenabledBySlices, 'retrievalReenabledBySlice', 8),
+    knowledgeRejectedReasons: sortCountEntries(knowledgeRejectedReasons, 'knowledgeCandidateRejectedReason', 12),
+    cityPackRejectedReasons: sortCountEntries(cityPackRejectedReasons, 'cityPackRejectedReason', 12),
+    savedFaqRejectedReasons: sortCountEntries(savedFaqRejectedReasons, 'savedFaqRejectedReason', 12),
+    knowledgeGroundingKinds: sortCountEntries(knowledgeGroundingKinds, 'knowledgeGroundingKind', 8),
+    sourceReadinessDecisionSources: sortCountEntries(sourceReadinessDecisionSources, 'sourceReadinessDecisionSource', 8),
     verificationOutcomes: sortCountEntries(verificationOutcomes, 'verificationOutcome', 10),
     judgeWinners: sortCountEntries(judgeWinners, 'judgeWinner', 10),
     selectedCandidateKinds: sortCountEntries(selectedCandidateKinds, 'selectedCandidateKind', 10),
@@ -1462,11 +1518,20 @@ function buildConversationQualitySummary(actionRows) {
     knowledgeCandidateUsedRate: knowledgeCandidateUsedSeenCount > 0
       ? Math.round((knowledgeCandidateUsedCount / knowledgeCandidateUsedSeenCount) * 10000) / 10000
       : 0,
+    cityPackCandidateActivationRate: cityPackCandidateAvailableSeenCount > 0
+      ? Math.round((cityPackCandidateAvailableCount / cityPackCandidateAvailableSeenCount) * 10000) / 10000
+      : 0,
     cityPackUsedInAnswerRate: cityPackUsedInAnswerSeenCount > 0
       ? Math.round((cityPackUsedInAnswerCount / cityPackUsedInAnswerSeenCount) * 10000) / 10000
       : 0,
+    savedFaqCandidateActivationRate: savedFaqCandidateAvailableSeenCount > 0
+      ? Math.round((savedFaqCandidateAvailableCount / savedFaqCandidateAvailableSeenCount) * 10000) / 10000
+      : 0,
     savedFaqUsedInAnswerRate: savedFaqUsedInAnswerSeenCount > 0
       ? Math.round((savedFaqUsedInAnswerCount / savedFaqUsedInAnswerSeenCount) * 10000) / 10000
+      : 0,
+    knowledgeActivationRate: knowledgeCandidateUsedSeenCount > 0
+      ? Math.round((knowledgeCandidateUsedCount / knowledgeCandidateUsedSeenCount) * 10000) / 10000
       : 0,
     contextualResumeHandledRate: contextResumeSeenCount > 0
       ? Math.round((contextResumeHandledCount / contextResumeSeenCount) * 10000) / 10000

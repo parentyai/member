@@ -21,6 +21,7 @@ const { resolveIntentRiskTier } = require('../policy/resolveIntentRiskTier');
 const { evaluateParentYamlRoutingInvariant } = require('../policy/parentYamlRoutingContract');
 const { evaluateRequiredCoreFactsGate } = require('../policy/evaluateRequiredCoreFactsGate');
 const { computeSourceReadiness } = require('../knowledge/computeSourceReadiness');
+const { buildRuntimeKnowledgeCandidates } = require('../knowledge/buildRuntimeKnowledgeCandidates');
 const { runAnswerReadinessGateV2 } = require('../quality/runAnswerReadinessGateV2');
 const { resolveJourneyActionSignals } = require('../quality/resolveJourneyActionSignals');
 const { resolveRuntimeCityPackSignals } = require('../quality/resolveRuntimeCityPackSignals');
@@ -241,6 +242,18 @@ function buildKnowledgeUsageMeta(selected) {
       || (auditMeta && (auditMeta.cityPackGrounded === true || auditMeta.cityPackContext === true)),
     savedFaqUsedInAnswer: payload.savedFaqReused === true
       || (auditMeta && auditMeta.savedFaqReused === true)
+  };
+}
+
+function createEmptyKnowledgeTelemetry() {
+  return {
+    knowledgeCandidateRejectedReason: null,
+    cityPackCandidateAvailable: false,
+    cityPackRejectedReason: null,
+    savedFaqCandidateAvailable: false,
+    savedFaqRejectedReason: null,
+    sourceReadinessDecisionSource: null,
+    knowledgeGroundingKind: null
   };
 }
 
@@ -584,12 +597,14 @@ function shouldBuildContinuationCandidate(packet, strategyPlan) {
   ) && normalizeText(payload.normalizedConversationIntent).toLowerCase() !== 'general';
 }
 
-async function buildCandidateSet(packet, strategyPlan, deps) {
+async function buildCandidateSet(packet, strategyPlan, deps, options) {
   const candidates = [];
   const strategy = strategyPlan.strategy;
   let groundedResult = null;
   let retrievalQuality = 'none';
   let domainResult = null;
+  let knowledgeTelemetry = createEmptyKnowledgeTelemetry();
+  const config = options && typeof options === 'object' ? options : {};
   const candidateSet = Array.isArray(strategyPlan.candidateSet) ? strategyPlan.candidateSet : [];
   const wantsDomainFallback = candidateSet.includes('domain_concierge_candidate');
   const wantsClarify = candidateSet.includes('clarify_candidate');
@@ -631,7 +646,7 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
     if (packet.intentDecision && packet.intentDecision.reason !== 'greeting_detected') {
       candidates.push(buildClarifyCandidate(packet, strategy));
     }
-    return { candidates, groundedResult, retrievalQuality };
+    return { candidates, groundedResult, retrievalQuality, knowledgeTelemetry };
   }
 
   if (strategyPlan.retrieveNeeded === true) {
@@ -657,6 +672,17 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
     }
   }
 
+  const runtimeKnowledge = await buildRuntimeKnowledgeCandidates({
+    packet,
+    locale: config.locale || 'ja',
+    intentRiskTier: config.intentRiskTier || 'low'
+  }, deps);
+  knowledgeTelemetry = runtimeKnowledge && runtimeKnowledge.telemetry
+    ? Object.assign(createEmptyKnowledgeTelemetry(), runtimeKnowledge.telemetry)
+    : createEmptyKnowledgeTelemetry();
+  (Array.isArray(runtimeKnowledge && runtimeKnowledge.candidates) ? runtimeKnowledge.candidates : [])
+    .forEach((candidate) => pushUniqueCandidate(candidate));
+
   if (strategy === 'domain_concierge' || strategy === 'concierge' || wantsDomainFallback || continuationPreferred) {
     const currentDomainResult = await ensureDomainResult();
     const continuationCandidate = continuationPreferred
@@ -671,7 +697,7 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
 
   if (strategy === 'domain_concierge' || strategy === 'concierge') {
     if (wantsClarify || candidates.length === 0) appendClarifyCandidates(candidates, packet, strategy);
-    return { candidates, groundedResult, retrievalQuality };
+    return { candidates, groundedResult, retrievalQuality, knowledgeTelemetry };
   }
 
   if (strategy === 'clarify') {
@@ -706,7 +732,7 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
     pushUniqueCandidate(fallbackCandidate);
   }
 
-  return { candidates, groundedResult, retrievalQuality };
+  return { candidates, groundedResult, retrievalQuality, knowledgeTelemetry };
 }
 
 function resolveLoopSafeCandidate(packet, selected, candidates) {
@@ -816,11 +842,14 @@ async function runPaidConversationOrchestrator(params) {
   });
   const actionClass = resolveActionClassForOrchestrator(packet, strategyPlan, payload);
 
-  const candidateSet = await buildCandidateSet(packet, strategyPlan, deps);
+  const candidateSet = await buildCandidateSet(packet, strategyPlan, deps, {
+    intentRiskTier: riskSnapshot.intentRiskTier,
+    locale: 'ja'
+  });
   const groundedResult = candidateSet.groundedResult && typeof candidateSet.groundedResult === 'object'
     ? candidateSet.groundedResult
     : null;
-  const sourceReadiness = computeSourceReadiness({
+  const baseSourceReadiness = computeSourceReadiness({
     intentRiskTier: riskSnapshot.intentRiskTier,
     candidates: groundedResult && Array.isArray(groundedResult.citations)
       ? groundedResult.citations.map((sourceId) => ({ sourceId }))
@@ -831,30 +860,12 @@ async function runPaidConversationOrchestrator(params) {
       ? groundedResult.assistantQuality.evidenceCoverage
       : 0
   });
-  const readinessSourceAuthorityScore = strategyPlan.retrieveNeeded === true
-    ? sourceReadiness.sourceAuthorityScore
-    : 1;
-  const readinessSourceFreshnessScore = strategyPlan.retrieveNeeded === true
-    ? sourceReadiness.sourceFreshnessScore
-    : 1;
-  const readinessSourceDecision = strategyPlan.retrieveNeeded === true
-    ? sourceReadiness.sourceReadinessDecision
-    : 'allow';
-  const readinessSourceReasons = strategyPlan.retrieveNeeded === true
-    ? sourceReadiness.reasonCodes
-    : ['no_retrieval_strategy'];
-  const readinessOfficialOnlySatisfied = strategyPlan.retrieveNeeded === true
-    ? sourceReadiness.officialOnlySatisfied === true
-    : true;
   const evidenceSufficiency = judgeEvidenceSufficiency({
     strategy: strategyPlan.strategy,
     retrieveNeeded: strategyPlan.retrieveNeeded,
     retrievalQuality: candidateSet.retrievalQuality,
     blockedReason: candidateSet.groundedResult && candidateSet.groundedResult.blockedReason
   });
-  const effectiveEvidenceSufficiency = sourceReadiness.sourceReadinessDecision === 'refuse'
-    ? 'refuse'
-    : (sourceReadiness.sourceReadinessDecision === 'clarify' ? 'clarify' : evidenceSufficiency);
   const judged = judgeCandidates({
     packet,
     strategy: strategyPlan.strategy,
@@ -884,18 +895,63 @@ async function runPaidConversationOrchestrator(params) {
     }
   }
   const loopResolved = resolveLoopSafeCandidate(packet, selectedCandidate, candidateSet.candidates);
+  const selectedForReadiness = loopResolved.selected && typeof loopResolved.selected === 'object'
+    ? loopResolved.selected
+    : null;
+  const selectedHasKnowledgeReadiness = Boolean(
+    selectedForReadiness
+    && typeof selectedForReadiness.sourceReadinessDecision === 'string'
+    && normalizeText(selectedForReadiness.knowledgeGroundingKind)
+  );
+  const selectedKnowledgeGroundingKind = selectedHasKnowledgeReadiness
+    ? normalizeText(selectedForReadiness.knowledgeGroundingKind).toLowerCase()
+    : (normalizeText(candidateSet.knowledgeTelemetry && candidateSet.knowledgeTelemetry.knowledgeGroundingKind).toLowerCase() || null);
+  const readinessSourceAuthorityScore = selectedHasKnowledgeReadiness
+    ? Number(selectedForReadiness.sourceAuthorityScore || 0)
+    : (strategyPlan.retrieveNeeded === true ? baseSourceReadiness.sourceAuthorityScore : 1);
+  const readinessSourceFreshnessScore = selectedHasKnowledgeReadiness
+    ? Number(selectedForReadiness.sourceFreshnessScore || 0)
+    : (strategyPlan.retrieveNeeded === true ? baseSourceReadiness.sourceFreshnessScore : 1);
+  const readinessSourceDecision = selectedHasKnowledgeReadiness
+    ? selectedForReadiness.sourceReadinessDecision
+    : (strategyPlan.retrieveNeeded === true ? baseSourceReadiness.sourceReadinessDecision : 'allow');
+  const readinessSourceReasons = selectedHasKnowledgeReadiness
+    ? uniqueReasonCodes([]
+      .concat(selectedForReadiness.raw && selectedForReadiness.raw.auditMeta && Array.isArray(selectedForReadiness.raw.auditMeta.sourceReadinessReasons)
+        ? selectedForReadiness.raw.auditMeta.sourceReadinessReasons
+        : []))
+    : (strategyPlan.retrieveNeeded === true ? baseSourceReadiness.reasonCodes : ['no_retrieval_strategy']);
+  const readinessOfficialOnlySatisfied = selectedHasKnowledgeReadiness
+    ? selectedForReadiness.officialOnlySatisfied === true
+    : (strategyPlan.retrieveNeeded === true ? baseSourceReadiness.officialOnlySatisfied === true : true);
+  const sourceReadinessDecisionSource = selectedHasKnowledgeReadiness
+    ? 'selected_knowledge_candidate'
+    : (strategyPlan.retrieveNeeded === true ? 'grounded_retrieval_citations' : 'strategy_no_retrieval_default');
+  const knowledgeCanAnswer = selectedHasKnowledgeReadiness
+    && readinessSourceDecision === 'allow'
+    && (riskSnapshot.intentRiskTier !== 'high' || readinessOfficialOnlySatisfied === true);
+  let effectiveEvidenceSufficiency = readinessSourceDecision === 'refuse'
+    ? 'refuse'
+    : (readinessSourceDecision === 'clarify' ? 'clarify' : evidenceSufficiency);
+  if (knowledgeCanAnswer && (effectiveEvidenceSufficiency === 'clarify' || effectiveEvidenceSufficiency === 'answer_with_hedge')) {
+    effectiveEvidenceSufficiency = selectedForReadiness.retrievalQuality === 'good' ? 'answer' : 'answer_with_hedge';
+  }
   const verified = verifyCandidate({
     packet,
     selected: loopResolved.selected,
     evidenceSufficiency: effectiveEvidenceSufficiency
   });
-  const evidenceCoverage = groundedResult && groundedResult.assistantQuality
-    ? Number(groundedResult.assistantQuality.evidenceCoverage) || 0
-    : 0;
+  const evidenceCoverage = selectedHasKnowledgeReadiness && Number.isFinite(Number(selectedForReadiness.evidenceCoverage))
+    ? Number(selectedForReadiness.evidenceCoverage)
+    : (groundedResult && groundedResult.assistantQuality
+      ? Number(groundedResult.assistantQuality.evidenceCoverage) || 0
+      : 0);
   const unsupportedClaimCount = (Array.isArray(verified.contradictionFlags) ? verified.contradictionFlags : [])
     .filter((item) => typeof item === 'string' && item.toLowerCase().includes('unsupported'))
     .length;
-  const readinessEvidenceCoverage = strategyPlan.retrieveNeeded === true ? evidenceCoverage : 1;
+  const readinessEvidenceCoverage = strategyPlan.retrieveNeeded === true || selectedHasKnowledgeReadiness === true
+    ? evidenceCoverage
+    : 1;
   const requiredCoreFacts = evaluateRequiredCoreFactsGate({
     contextSnapshot: packet.contextSnapshot,
     domainIntent: packet.normalizedConversationIntent,
@@ -1104,8 +1160,25 @@ async function runPaidConversationOrchestrator(params) {
       replyTemplateFingerprint: finalized.finalMeta ? finalized.finalMeta.replyTemplateFingerprint || null : null,
       knowledgeCandidateCountBySource,
       knowledgeCandidateUsed: knowledgeUsageMeta.knowledgeCandidateUsed === true,
+      knowledgeCandidateRejectedReason: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.knowledgeCandidateRejectedReason || null
+        : null,
+      cityPackCandidateAvailable: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.cityPackCandidateAvailable === true
+        : false,
+      cityPackRejectedReason: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.cityPackRejectedReason || null
+        : null,
       cityPackUsedInAnswer: knowledgeUsageMeta.cityPackUsedInAnswer === true,
+      savedFaqCandidateAvailable: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.savedFaqCandidateAvailable === true
+        : false,
+      savedFaqRejectedReason: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.savedFaqRejectedReason || null
+        : null,
       savedFaqUsedInAnswer: knowledgeUsageMeta.savedFaqUsedInAnswer === true,
+      sourceReadinessDecisionSource,
+      knowledgeGroundingKind: selectedKnowledgeGroundingKind,
       sourceAuthorityScore: readinessSourceAuthorityScore,
       sourceFreshnessScore: readinessSourceFreshnessScore,
       sourceReadinessDecision: readinessSourceDecision,

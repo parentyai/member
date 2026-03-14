@@ -33,7 +33,7 @@ function resolveCandidatePriority(packet, candidate) {
   if (kind === 'structured_answer_candidate') {
     return context.genericFallbackSlice === 'broad' || context.genericFallbackSlice === 'followup' ? 95 : 90;
   }
-  if (kind === 'knowledge_backed_candidate' || kind === 'housing_knowledge_candidate') return 89;
+  if (kind === 'knowledge_backed_candidate' || kind === 'housing_knowledge_candidate' || kind === 'saved_faq_candidate') return 89;
   if (kind === 'composed_concierge_candidate') return 88;
   if (kind === 'domain_concierge_candidate') {
     if (context.domainIntent === 'ssn' || context.domainIntent === 'banking') return 84;
@@ -57,6 +57,7 @@ function isDirectAnswerEligibleCandidate(packet, candidate) {
       || kind === 'city_pack_backed_candidate'
       || kind === 'structured_answer_candidate'
       || kind === 'knowledge_backed_candidate'
+      || kind === 'saved_faq_candidate'
       || kind === 'housing_knowledge_candidate';
   }
   return false;
@@ -83,6 +84,9 @@ function resolveFallbackPriorityReason(packet, selected, candidates) {
   if (selectedKind === 'city_grounded_candidate') return 'prefer_city_grounding';
   if (selectedKind === 'grounded_candidate') return hasDomainConcierge ? 'prefer_grounded_over_domain_concierge' : 'prefer_grounded_answer';
   if (selectedKind === 'structured_answer_candidate') return hasClarify ? 'prefer_structured_over_clarify' : 'prefer_structured_answer';
+  if (selectedKind === 'housing_knowledge_candidate') return 'prefer_housing_knowledge_activation';
+  if (selectedKind === 'knowledge_backed_candidate') return 'prefer_runtime_knowledge_activation';
+  if (selectedKind === 'saved_faq_candidate') return 'prefer_saved_faq_activation';
   if (selectedKind === 'domain_concierge_candidate') {
     if (context.domainIntent === 'ssn' || context.domainIntent === 'banking') return 'preserve_high_risk_domain_concierge';
     if (!hasGrounded && !hasStructured && !hasContinuation) return 'fallback_to_domain_concierge_after_grounding_probe';
