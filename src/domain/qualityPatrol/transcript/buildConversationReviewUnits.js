@@ -49,6 +49,23 @@ function pickBoolean() {
   return null;
 }
 
+function pickNumber() {
+  for (const candidate of arguments) {
+    const numeric = Number(candidate);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+  return null;
+}
+
+function pickStringList() {
+  for (const candidate of arguments) {
+    if (!Array.isArray(candidate)) continue;
+    const normalized = candidate.map((value) => normalizeText(value)).filter(Boolean);
+    if (normalized.length > 0) return normalized;
+  }
+  return [];
+}
+
 function reviewUnitIdFor(seed) {
   return `review_unit_${crypto.createHash('sha256').update(seed, 'utf8').digest('hex').slice(0, 24)}`;
 }
@@ -110,7 +127,12 @@ function buildTelemetrySignals(snapshot, latestAction) {
     strategyReason: pickToken(latestAction && latestAction.strategyReason),
     selectedCandidateKind: pickToken(latestAction && latestAction.selectedCandidateKind, snapshot && snapshot.selectedCandidateKind),
     fallbackTemplateKind: pickToken(latestAction && latestAction.fallbackTemplateKind, snapshot && snapshot.fallbackTemplateKind),
+    finalizerTemplateKind: pickToken(latestAction && latestAction.finalizerTemplateKind),
     genericFallbackSlice: normalizeReviewSlice(pickToken(latestAction && latestAction.genericFallbackSlice, snapshot && snapshot.genericFallbackSlice)),
+    retrievalBlockedByStrategy: pickBoolean(
+      hasOwn(latestAction, 'retrievalBlockedByStrategy') ? latestAction.retrievalBlockedByStrategy === true : null
+    ),
+    retrievalPermitReason: pickToken(latestAction && latestAction.retrievalPermitReason),
     priorContextUsed: pickBoolean(
       hasOwn(latestAction, 'priorContextUsed') ? latestAction.priorContextUsed === true : null,
       snapshot ? snapshot.priorContextUsed === true : null
@@ -122,6 +144,9 @@ function buildTelemetrySignals(snapshot, latestAction) {
     knowledgeCandidateUsed: pickBoolean(
       hasOwn(latestAction, 'knowledgeCandidateUsed') ? latestAction.knowledgeCandidateUsed === true : null,
       snapshot ? snapshot.knowledgeCandidateUsed === true : null
+    ),
+    groundedCandidateAvailable: pickBoolean(
+      hasOwn(latestAction, 'groundedCandidateAvailable') ? latestAction.groundedCandidateAvailable === true : null
     ),
     cityPackCandidateAvailable: pickBoolean(
       hasOwn(latestAction, 'cityPackCandidateAvailable') ? latestAction.cityPackCandidateAvailable === true : null
@@ -137,7 +162,20 @@ function buildTelemetrySignals(snapshot, latestAction) {
     ),
     knowledgeGroundingKind: pickToken(latestAction && latestAction.knowledgeGroundingKind),
     readinessDecision: pickToken(latestAction && latestAction.readinessDecision, snapshot && snapshot.readinessDecision),
-    replyTemplateFingerprint: pickString(latestAction && latestAction.replyTemplateFingerprint, snapshot && snapshot.replyTemplateFingerprint)
+    replyTemplateFingerprint: pickString(latestAction && latestAction.replyTemplateFingerprint, snapshot && snapshot.replyTemplateFingerprint),
+    repeatRiskScore: pickNumber(latestAction && latestAction.repeatRiskScore),
+    contextCarryScore: pickNumber(latestAction && latestAction.contextCarryScore),
+    directAnswerApplied: pickBoolean(
+      hasOwn(latestAction, 'directAnswerApplied') ? latestAction.directAnswerApplied === true : null
+    ),
+    repetitionPrevented: pickBoolean(
+      hasOwn(latestAction, 'repetitionPrevented') ? latestAction.repetitionPrevented === true : null
+    ),
+    conciseModeApplied: pickBoolean(
+      hasOwn(latestAction, 'conciseModeApplied') ? latestAction.conciseModeApplied === true : null
+    ),
+    committedNextActions: pickStringList(latestAction && latestAction.committedNextActions),
+    committedFollowupQuestion: pickString(latestAction && latestAction.committedFollowupQuestion)
   };
 }
 

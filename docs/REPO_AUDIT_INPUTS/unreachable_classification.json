@@ -234,6 +234,149 @@
         "docs/QUALITY_PATROL_REVIEW_UNITS_RUNBOOK.md",
         "scripts/check_structural_cleanup.js"
       ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/buildConversationQualityEvidence.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; evaluator evidence builder is intentionally caller-less until KPI and detection layers land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/constants.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; evaluator constants remain isolated until future patrol layers consume them",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/evaluateConversationQuality.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; evaluator entrypoint is intentionally not wired to registry, UI, or jobs yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/issueCandidates.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; issue candidate helper is reserved for future detector and registry callers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/scoreHelpers.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; evaluator score helpers stay isolated until future patrol callers reuse them",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/signals/evaluateContinuitySignals.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; continuity evaluator is intentionally caller-limited until KPI and detection layers land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/signals/evaluateFallbackRepetitionSignals.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; fallback repetition evaluator is reserved for later detector/query consumers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/signals/evaluateKnowledgeUseSignals.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; knowledge-use evaluator is intentionally isolated until registry and KPI layers land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/signals/evaluateNaturalnessSignals.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; naturalness evaluator is intentionally isolated until later patrol callers adopt it",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/signals/evaluateProceduralUtilitySignals.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; procedural utility evaluator is reserved for later KPI and detector wiring",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/signals/evaluateSpecificitySignals.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; specificity evaluator is intentionally not runtime-wired yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/signals/evaluateToneSafetySignals.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; tone safety helper stays internal until later evaluator wiring broadens",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/usecases/qualityPatrol/evaluateConversationReviewUnits.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-3 foundation only; evaluator usecase is intentionally not wired to routes, jobs, or registry upserts yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
     }
   ]
 }
