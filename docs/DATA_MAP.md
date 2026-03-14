@@ -81,6 +81,19 @@ Notes:
 - sources: `conversation_review_snapshots`, `llm_action_logs`, `faq_answer_logs`, `trace_bundle`
 - review units are not persisted; they are derived read-only outputs for downstream evaluator/detection PRs.
 
+### Quality Patrol evaluator outputs (derived, read-only)
+Purpose: deterministic conversation quality assessment over review units without writing issue registry or backlog records.
+
+Typical fields:
+- `reviewUnitId`, `slice`, `status`, `observationBlockers`
+- `signals.naturalness`, `signals.continuity`, `signals.specificity`
+- `signals.proceduralUtility`, `signals.knowledgeUse`, `signals.fallbackRepetition`
+- `issueCandidates`, `supportingEvidence`, `provenance`, `sourceCollections`
+
+Notes:
+- evaluator outputs are not persisted in PR-3.
+- issue candidates remain read-only hints until a later detection/registry PR consumes them.
+
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
 

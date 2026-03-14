@@ -9,6 +9,7 @@
 - extractor usecase: `src/usecases/qualityPatrol/buildConversationReviewUnitsFromSources.js`
 - domain builder: `src/domain/qualityPatrol/transcript/buildConversationReviewUnits.js`
 - review units normalize masked transcript fields, telemetry signals, slice classification, and observation blockers.
+- PR-3 evaluator reads review units via `src/usecases/qualityPatrol/evaluateConversationReviewUnits.js` and does not persist a second transcript artifact.
 
 ## Slice classification
 - deterministic priority:
