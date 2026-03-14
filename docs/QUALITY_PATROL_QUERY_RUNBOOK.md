@@ -32,10 +32,21 @@
 - `summary` includes `overallStatus`, `topFindings`, `topPriorityCount`, `observationBlockerCount`
 - `issues[]` includes query-facing severity/status/category summaries
 - `observationBlockers[]` keeps blocker title, slices, and recommended action
+  - add-only precision fields: `code`, `category`, `evidenceSource`, `privacySensitivity`, `detailVisibility`
 - `evidence[]` includes read-only metric/signal/trace/snapshot/summary references
 - `traceRefs[]` may be returned for operator audience only
 - `recommendedPr[]` includes proposal priority, objective, risk, and blockers
 - `observationStatus` remains `ready`, `blocked`, `insufficient_evidence`, or `unavailable`
+
+## Precision taxonomy
+- query-facing blockers are more precise than the raw review-unit blocker codes; the top-level response shape stays unchanged.
+- precision groups:
+  - `observation_gap`: multiple observation blockers are still preventing runtime attribution
+  - `transcript_write_coverage_missing`: masked transcript snapshot coverage is missing or still unobserved
+  - `action_trace_join_limited`: action/trace evidence exists but review-unit hydration or anchor conditions limit how far it can be joined
+  - `action_log_source_missing` / `trace_source_missing`: the source itself is missing for anchored review units
+  - `insufficient_runtime_evidence`: some evidence exists, but it is still too thin for confident runtime judgement
+- human responses keep the same facts but mark `detailVisibility=privacy_hidden_detail` instead of exposing internal ids or low-level codes directly.
 
 ## Security and privacy
 - route is under `/api/admin/*` and therefore inherits admin token protection from the protection matrix.

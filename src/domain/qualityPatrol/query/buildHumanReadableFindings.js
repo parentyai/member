@@ -25,7 +25,9 @@ function buildHumanReadableFindings(params) {
       : `newly-detected: proposals=${newPr} issues=${newIssues}`);
   }
 
-  if (issues[0]) {
+  if (audience === 'human' && blockers[0]) {
+    findings.push(blockers[0].summary);
+  } else if (issues[0]) {
     findings.push(audience === 'human'
       ? `${issues[0].title}。${issues[0].summary}`
       : `${issues[0].title} [${issues[0].severity}/${issues[0].status}] ${issues[0].summary}`);
@@ -33,7 +35,9 @@ function buildHumanReadableFindings(params) {
 
   if (recommendedPr[0]) {
     findings.push(audience === 'human'
-      ? `次に見る候補は「${recommendedPr[0].title}」です。${recommendedPr[0].objective}`
+      ? (blockers[0]
+        ? `次に優先するのは、${blockers[0].recommendedAction}`
+        : `次に見る候補は「${recommendedPr[0].title}」です。${recommendedPr[0].objective}`)
       : `next proposal=${recommendedPr[0].title} priority=${recommendedPr[0].priority} risk=${recommendedPr[0].riskLevel}`);
   }
 

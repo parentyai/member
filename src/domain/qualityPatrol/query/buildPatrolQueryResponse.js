@@ -27,7 +27,12 @@ function buildPatrolQueryResponse(params) {
     audience,
     rootCauseReports: payload.rootCauseReports,
     planObservationBlockers: payload.planObservationBlockers,
-    issues: payload.issues
+    issues: payload.issues,
+    recommendedPr: payload.recommendedPr,
+    planningStatus: payload.planningStatus,
+    transcriptCoverage: payload.transcriptCoverage,
+    joinDiagnostics: payload.joinDiagnostics,
+    reviewUnits: payload.reviewUnits
   });
   const issues = serializePatrolIssues({
     audience,
