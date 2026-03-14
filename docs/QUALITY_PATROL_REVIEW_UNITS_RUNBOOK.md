@@ -34,6 +34,13 @@
   - `missing_action_log_evidence`
   - `missing_faq_evidence`
   - `transcript_not_reviewable`
+- these are raw review-unit blocker codes. PR-C keeps them for internal evaluation/root-cause inputs, then query-facing serializers regroup them into more precise operator/human blocker rows such as:
+  - `transcript_write_coverage_missing`
+  - `action_trace_join_limited`
+  - `action_log_source_missing`
+  - `trace_source_missing`
+  - `insufficient_runtime_evidence`
+  - `observation_gap`
 
 ## Privacy and retention
 - extractor consumes masked transcript snapshots only.

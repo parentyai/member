@@ -69,6 +69,7 @@ test('phase853: blocker-first rule prioritizes observation blockers over runtime
   });
 
   assert.equal(result.summary.overallStatus, 'blocked');
-  assert.equal(result.observationBlockers.length, 1);
+  assert.equal(result.observationBlockers[0].code, 'observation_gap');
+  assert.ok(result.observationBlockers.some((item) => item.code === 'insufficient_runtime_evidence'));
   assert.equal(result.recommendedPr[0].proposalType, 'blocked_by_observation_gap');
 });

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-14T17:30:24-04:00",
-  "gitCommit": "9c7b4155b0dba3c9835b85d4b9c1955614f6030a",
-  "branch": "HEAD",
-  "sourceDigest": "6f27627173ab0f0bdad598bf2ec7a46e96797eb9fadb4e74e159af89e970c0fc",
+  "generatedAt": "2026-03-14T17:35:15-04:00",
+  "gitCommit": "474a3d33cced3ed62e6f7691ebf69726c27ba463",
+  "branch": "codex/quality-patrol-prC-T001",
+  "sourceDigest": "25769038c78d5d6bf6fd9c14105d429fc4c5cbcbbe2fdadc55db12bc727fa9b2",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

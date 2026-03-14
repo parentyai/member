@@ -158,6 +158,7 @@ Typical fields:
 - `summary.overallStatus`, `summary.topFindings`, `summary.topPriorityCount`, `summary.observationBlockerCount`
 - `issues[]`, `observationBlockers[]`, `evidence[]`, `traceRefs[]`, `recommendedPr[]`
 - `observationStatus`, `provenance`, `sourceCollections`
+- `observationBlockers[]` may also include add-only precision fields such as `code`, `category`, `evidenceSource`, `privacySensitivity`, and `detailVisibility`
 
 Notes:
 - query responses are not persisted in PR-8.
