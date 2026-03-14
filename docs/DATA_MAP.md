@@ -146,6 +146,21 @@ Notes:
 - planner is deterministic only and returns suggestions; it does not write registry/backlog state or change runtime behavior.
 - observation-gap-led plans stay in observation-only families until evidence quality improves.
 
+### Quality Patrol query responses (derived, read-only)
+Purpose: expose read-only operator/human query views over the quality patrol foundations without adding a scheduler artifact yet.
+
+Typical fields:
+- `queryVersion`, `generatedAt`, `audience`
+- `summary.overallStatus`, `summary.topFindings`, `summary.topPriorityCount`, `summary.observationBlockerCount`
+- `issues[]`, `observationBlockers[]`, `evidence[]`, `traceRefs[]`, `recommendedPr[]`
+- `observationStatus`, `provenance`, `sourceCollections`
+
+Notes:
+- query responses are not persisted in PR-8.
+- route: `GET /api/admin/quality-patrol`
+- query is read-only and uses the existing review-unit, evaluator, KPI, detection, root-cause, and planner foundations as inputs.
+- operator audience may receive trace refs and denser evidence; human audience hides raw trace ids and compresses internal metadata.
+
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
 

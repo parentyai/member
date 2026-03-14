@@ -2476,6 +2476,17 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'GET' && (pathname === '/api/admin/quality-patrol' || pathname === '/api/admin/quality-patrol/')) {
+    const { handleQualityPatrolQuery } = require('./routes/admin/qualityPatrol');
+    (async () => {
+      await handleQualityPatrolQuery(req, res);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/admin/kb/')) {
     const {
       handleList: handleKbList,

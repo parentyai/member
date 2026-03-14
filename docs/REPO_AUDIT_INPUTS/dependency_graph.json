@@ -517,6 +517,7 @@
       "stripeWebhookEventsRepo",
       "userSubscriptionsRepo"
     ],
+    "queryLatestPatrolInsights": [],
     "recordClickAndRedirect": [
       "deliveriesRepo",
       "linkRegistryRepo",
@@ -1220,6 +1221,10 @@
     ],
     "src/routes/admin/productReadiness.js": [
       "appendAuditLog"
+    ],
+    "src/routes/admin/qualityPatrol.js": [
+      "appendAuditLog",
+      "queryLatestPatrolInsights"
     ],
     "src/routes/admin/readModel.js": [
       "appendAuditLog",
