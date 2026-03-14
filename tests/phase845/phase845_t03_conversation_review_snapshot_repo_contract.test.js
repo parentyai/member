@@ -35,7 +35,7 @@ test('phase845: conversationReviewSnapshotsRepo writes masked row with retention
     const repo = require(repoPath);
 
     const result = await repo.appendConversationReviewSnapshot({
-      lineUserKey: 'abc123def456ghi789jkl012',
+      lineUserKey: 'userkey_phase845_repo_001',
       traceId: 'trace_phase845_repo',
       userMessageMasked: 'こんにちは',
       assistantReplyMasked: 'まずは次の一手を確認しましょう。',
@@ -52,7 +52,7 @@ test('phase845: conversationReviewSnapshotsRepo writes masked row with retention
     assert.equal(writes.length, 1);
     const row = writes[0];
     assert.equal(Object.prototype.hasOwnProperty.call(row, 'lineUserId'), false);
-    assert.equal(row.lineUserKey, 'abc123def456ghi789jkl012');
+    assert.equal(row.lineUserKey, 'userkey_phase845_repo_001');
     assert.equal(row.createdAt, 'SERVER_TS');
     assert.ok(row.recordEnvelope && typeof row.recordEnvelope === 'object');
     assert.equal(row.recordEnvelope.record_type, 'conversation_review_snapshot');
