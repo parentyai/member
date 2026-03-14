@@ -646,6 +646,7 @@ async function appendLlmActionLog(params) {
     knowledgeCandidateCountBySource: normalizeKnowledgeCandidateCountBySource(payload.knowledgeCandidateCountBySource),
     knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true,
     knowledgeCandidateRejectedReason: normalizeString(payload.knowledgeCandidateRejectedReason, null),
+    knowledgeRejectedReasons: normalizeReasonList(payload.knowledgeRejectedReasons, 8),
     cityPackCandidateAvailable: payload.cityPackCandidateAvailable === true,
     cityPackRejectedReason: normalizeString(payload.cityPackRejectedReason, null),
     cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true,

@@ -175,6 +175,20 @@ function normalizeReason(value) {
   return text || 'none';
 }
 
+function normalizeReasonList(value, limit) {
+  const rows = Array.isArray(value) ? value : [];
+  const max = Number.isFinite(Number(limit)) ? Math.max(0, Math.floor(Number(limit))) : 8;
+  const out = [];
+  rows.forEach((item) => {
+    const normalized = normalizeReason(item);
+    if (!normalized || normalized === 'none') return;
+    if (out.includes(normalized)) return;
+    if (out.length >= max) return;
+    out.push(normalized);
+  });
+  return out;
+}
+
 function hasOwn(object, key) {
   return Boolean(object) && Object.prototype.hasOwnProperty.call(object, key);
 }
@@ -319,6 +333,7 @@ function normalizeTelemetryRow(row) {
     knowledgeCandidateCountBySource: normalizeKnowledgeCandidateCountBySource(payload.knowledgeCandidateCountBySource),
     knowledgeCandidateUsed: toOptionalBoolean(payload.knowledgeCandidateUsed),
     knowledgeCandidateRejectedReason: normalizeReason(payload.knowledgeCandidateRejectedReason),
+    knowledgeRejectedReasons: normalizeReasonList(payload.knowledgeRejectedReasons, 8),
     cityPackCandidateAvailable: toOptionalBoolean(payload.cityPackCandidateAvailable),
     cityPackRejectedReason: normalizeReason(payload.cityPackRejectedReason),
     cityPackUsedInAnswer: toOptionalBoolean(payload.cityPackUsedInAnswer),
@@ -1037,6 +1052,7 @@ function buildConversationQualitySummary(actionRows) {
     const retrievalPermitReason = normalizeReason(row && row.retrievalPermitReason ? row.retrievalPermitReason : 'none');
     const retrievalReenabledBySlice = normalizeReason(row && row.retrievalReenabledBySlice ? row.retrievalReenabledBySlice : 'none');
     const knowledgeCandidateRejectedReason = normalizeReason(row && row.knowledgeCandidateRejectedReason ? row.knowledgeCandidateRejectedReason : 'none');
+    const knowledgeRejectedReasonList = normalizeReasonList(row && row.knowledgeRejectedReasons, 8);
     const cityPackRejectedReason = normalizeReason(row && row.cityPackRejectedReason ? row.cityPackRejectedReason : 'none');
     const savedFaqRejectedReason = normalizeReason(row && row.savedFaqRejectedReason ? row.savedFaqRejectedReason : 'none');
     const knowledgeGroundingKind = normalizeReason(row && row.knowledgeGroundingKind ? row.knowledgeGroundingKind : 'none');
@@ -1124,10 +1140,16 @@ function buildConversationQualitySummary(actionRows) {
       retrievalReenabledBySlice,
       (retrievalReenabledBySlices.get(retrievalReenabledBySlice) || 0) + 1
     );
-    knowledgeRejectedReasons.set(
-      knowledgeCandidateRejectedReason,
-      (knowledgeRejectedReasons.get(knowledgeCandidateRejectedReason) || 0) + 1
-    );
+    if (knowledgeRejectedReasonList.length > 0) {
+      knowledgeRejectedReasonList.forEach((reason) => {
+        knowledgeRejectedReasons.set(reason, (knowledgeRejectedReasons.get(reason) || 0) + 1);
+      });
+    } else {
+      knowledgeRejectedReasons.set(
+        knowledgeCandidateRejectedReason,
+        (knowledgeRejectedReasons.get(knowledgeCandidateRejectedReason) || 0) + 1
+      );
+    }
     cityPackRejectedReasons.set(
       cityPackRejectedReason,
       (cityPackRejectedReasons.get(cityPackRejectedReason) || 0) + 1

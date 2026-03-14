@@ -24,16 +24,17 @@ function resolveCandidatePriority(packet, candidate) {
   const payload = candidate && typeof candidate === 'object' ? candidate : {};
   const kind = normalizeText(payload.kind).toLowerCase();
 
-  if (kind === 'city_pack_backed_candidate') return 110;
-  if (kind === 'city_grounded_candidate') return 105;
-  if (kind === 'continuation_candidate') {
-    return context.priorContextUsed || context.followupResolvedFromHistory ? 103 : 92;
-  }
-  if (kind === 'grounded_candidate') return 98;
+  if (kind === 'city_pack_backed_candidate') return 120;
+  if (kind === 'city_grounded_candidate') return 115;
+  if (kind === 'saved_faq_candidate') return 110;
+  if (kind === 'knowledge_grounded_candidate' || kind === 'knowledge_backed_candidate' || kind === 'housing_knowledge_candidate') return 106;
+  if (kind === 'grounded_candidate') return 102;
   if (kind === 'structured_answer_candidate') {
-    return context.genericFallbackSlice === 'broad' || context.genericFallbackSlice === 'followup' ? 95 : 90;
+    return context.genericFallbackSlice === 'broad' || context.genericFallbackSlice === 'followup' ? 100 : 96;
   }
-  if (kind === 'knowledge_backed_candidate' || kind === 'housing_knowledge_candidate' || kind === 'saved_faq_candidate') return 89;
+  if (kind === 'continuation_candidate') {
+    return context.priorContextUsed || context.followupResolvedFromHistory ? 94 : 90;
+  }
   if (kind === 'composed_concierge_candidate') return 88;
   if (kind === 'domain_concierge_candidate') {
     if (context.domainIntent === 'ssn' || context.domainIntent === 'banking') return 84;

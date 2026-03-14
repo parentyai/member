@@ -42,7 +42,7 @@ test('phase731: orchestrator probes grounding before broad paid fallback', async
   assert.equal(groundedCalls, 1);
   assert.equal(result.telemetry.strategy, 'grounded_answer');
   assert.equal(result.telemetry.retrieveNeeded, true);
-  assert.equal(result.telemetry.retrievalPermitReason, 'broad_structured_grounding_probe');
+  assert.match(result.telemetry.retrievalPermitReason || '', /broad_structured_grounding_probe/);
   assert.equal(result.telemetry.selectedCandidateKind, 'domain_concierge_candidate');
   assert.equal(result.telemetry.fallbackPriorityReason, 'fallback_to_domain_concierge_after_grounding_probe');
   assert.equal(result.telemetry.verificationOutcome, 'clarify');

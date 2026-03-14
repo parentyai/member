@@ -43,7 +43,7 @@ test('phase758: clarify candidate avoids repeating recent generic clarification 
   );
   assert.equal(result.telemetry.retrieveNeeded, true);
   assert.equal(result.telemetry.retrievalBlockedByStrategy, false);
-  assert.equal(result.telemetry.retrievalPermitReason, 'broad_structured_grounding_probe');
+  assert.match(result.telemetry.retrievalPermitReason || '', /broad_structured_grounding_probe/);
   if (result.telemetry.selectedCandidateKind === 'knowledge_backed_candidate') {
     assert.equal(result.telemetry.knowledgeCandidateUsed, true);
   }
@@ -130,7 +130,7 @@ test('phase758: recovery signal preserves domain context before high-risk safety
   assert.equal(result.telemetry.directAnswerApplied, true);
   assert.equal(result.telemetry.strategyReason, 'recovery_signal_domain_resume');
   assert.equal(result.telemetry.priorContextUsed, true);
-  assert.equal(result.telemetry.retrievalPermitReason, 'followup_context_grounding_probe');
+  assert.match(result.telemetry.retrievalPermitReason || '', /followup_context_grounding_probe/);
   assert.equal(result.telemetry.selectedCandidateKind, 'clarify_candidate');
   assert.equal(result.telemetry.readinessDecision, 'refuse');
   assert.equal(result.telemetry.officialOnlySatisfied, false);

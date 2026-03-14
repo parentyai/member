@@ -28,6 +28,14 @@ function uniqueStrings(values, limit) {
   return out.slice(0, Number.isFinite(Number(limit)) ? Math.max(0, Math.floor(Number(limit))) : 8);
 }
 
+function appendReason(target, key, reason) {
+  if (!target || typeof target !== 'object') return;
+  const normalized = normalizeText(reason).toLowerCase().replace(/\s+/g, '_');
+  if (!normalized) return;
+  if (!Array.isArray(target[key])) target[key] = [];
+  if (!target[key].includes(normalized)) target[key].push(normalized);
+}
+
 function toMillis(value) {
   if (!value) return null;
   if (value instanceof Date && Number.isFinite(value.getTime())) return value.getTime();
@@ -294,6 +302,7 @@ async function buildRuntimeKnowledgeCandidates(params, deps) {
   const candidates = [];
   const telemetry = {
     knowledgeCandidateRejectedReason: null,
+    knowledgeRejectedReasons: [],
     cityPackCandidateAvailable: false,
     cityPackRejectedReason: null,
     savedFaqCandidateAvailable: false,
@@ -304,16 +313,19 @@ async function buildRuntimeKnowledgeCandidates(params, deps) {
 
   if (intentRiskTier === 'high') {
     telemetry.knowledgeCandidateRejectedReason = 'knowledge_runtime_disabled_high_risk';
+    appendReason(telemetry, 'knowledgeRejectedReasons', telemetry.knowledgeCandidateRejectedReason);
     return { candidates, telemetry };
   }
 
   const faqResult = await resolveFaqArticle(knowledgeQuery, locale, resolvedDeps);
   if (!faqResult.article) {
     telemetry.knowledgeCandidateRejectedReason = faqResult.rejectReason || 'no_faq_match';
+    appendReason(telemetry, 'knowledgeRejectedReasons', telemetry.knowledgeCandidateRejectedReason);
   } else {
     const faqReadiness = buildSourceReadinessFromArticle(faqResult.article, intentRiskTier);
     if (faqReadiness.sourceReadinessDecision !== 'allow') {
       telemetry.knowledgeCandidateRejectedReason = `faq_${faqReadiness.sourceReadinessDecision}`;
+      appendReason(telemetry, 'knowledgeRejectedReasons', telemetry.knowledgeCandidateRejectedReason);
     } else {
       const summary = extractSummary(faqResult.article.body || faqResult.article.title);
       const faqCandidateKind = normalizeText(packet.genericFallbackSlice).toLowerCase() === 'housing'
@@ -390,6 +402,11 @@ async function buildRuntimeKnowledgeCandidates(params, deps) {
     }
   } else {
     telemetry.cityPackRejectedReason = 'no_city_pack_match';
+  }
+
+  if (telemetry.knowledgeCandidateRejectedReason === null && candidates.length === 0) {
+    telemetry.knowledgeCandidateRejectedReason = 'no_runtime_knowledge_candidates';
+    appendReason(telemetry, 'knowledgeRejectedReasons', telemetry.knowledgeCandidateRejectedReason);
   }
 
   return {

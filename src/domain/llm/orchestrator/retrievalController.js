@@ -44,6 +44,10 @@ function resolveRetrievalDecision(packet, strategyPlan) {
     || payload.contextResume === true
     || payload.followupResolvedFromHistory === true
     || Boolean(followupIntent);
+  const broadQuestion = genericFallbackSlice === 'broad'
+    || broadSignals.costQuestion === true
+    || broadSignals.timelineQuestion === true
+    || broadSignals.checklistQuestion === true;
   const housingGrounding = (domainIntent === 'housing' || genericFallbackSlice === 'housing')
     && strategyReason === 'explicit_domain_grounded_answer';
   const cityGrounding = genericFallbackSlice === 'city'
@@ -68,12 +72,16 @@ function resolveRetrievalDecision(packet, strategyPlan) {
     };
   }
 
+  if (strategy === 'grounded_answer') permitReason.push('grounded_answer_strategy');
+  if (domainIntent !== 'general') permitReason.push('domain_intent_activation');
+  if (broadQuestion) permitReason.push('broad_question_activation');
+  if (payload.followupResolvedFromHistory === true) permitReason.push('followup_history_activation');
   if (housingGrounding) permitReason.push('housing_grounding_probe');
   if (cityGrounding) permitReason.push('city_grounding_probe');
-  if (explicitDomainGrounding && !highRiskDomain) permitReason.push('explicit_domain_grounding_probe');
+  if (explicitDomainGrounding) permitReason.push('explicit_domain_grounding_probe');
   if (broadGrounding) permitReason.push('broad_structured_grounding_probe');
   if (followupGrounding) permitReason.push('followup_context_grounding_probe');
-  if (continuationContext && domainIntent !== 'general' && !highRiskDomain) {
+  if (continuationContext && domainIntent !== 'general') {
     permitReason.push('domain_continuation_grounding_probe');
   }
 
@@ -105,16 +113,6 @@ function resolveRetrievalDecision(packet, strategyPlan) {
       retrievalBlockedByStrategy: false,
       retrievalBlockReason: null,
       retrievalPermitReason: 'strategy_default',
-      retrievalReenabledBySlice: null
-    };
-  }
-
-  if (highRiskDomain && blockedStrategies.has(strategy)) {
-    return {
-      retrieveNeeded: false,
-      retrievalBlockedByStrategy: true,
-      retrievalBlockReason: `strategy_${strategy}_high_risk`,
-      retrievalPermitReason: null,
       retrievalReenabledBySlice: null
     };
   }
