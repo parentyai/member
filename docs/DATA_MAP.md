@@ -160,6 +160,7 @@ Notes:
 - route: `GET /api/admin/quality-patrol`
 - query is read-only and uses the existing review-unit, evaluator, KPI, detection, root-cause, and planner foundations as inputs.
 - operator audience may receive trace refs and denser evidence; human audience hides raw trace ids and compresses internal metadata.
+- PR-9 admin UI consumes the same route in `pane-quality-patrol` with `mode` and `audience` selectors; no additional write path is introduced.
 
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
