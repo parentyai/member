@@ -247,6 +247,17 @@
       ]
     },
     {
+      "file": "src/domain/qualityPatrol/buildPatrolKpis.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-4 foundation only; KPI builder is intentionally not wired to detector, query, or scheduler layers yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_KPI_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
       "file": "src/domain/qualityPatrol/constants.js",
       "status": "monitor",
       "reachability": "non_reachable_runtime",
@@ -276,6 +287,83 @@
       "reason": "PR-3 foundation only; issue candidate helper is reserved for future detector and registry callers",
       "ssot_refs": [
         "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/kpi/aggregateIssueCandidateMetric.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-4 foundation only; issue-candidate KPI aggregation is reserved for later detector and query consumers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_KPI_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/kpi/aggregateSignalMetric.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-4 foundation only; signal aggregation stays isolated until future patrol KPI callers land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_KPI_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/kpi/buildMetricEnvelope.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-4 foundation only; KPI envelope builder is intentionally caller-limited until detector and query layers reuse it",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_KPI_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/kpi/constants.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-4 foundation only; KPI thresholds remain isolated until later patrol layers tune them",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_KPI_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/kpi/groupBySlice.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-4 foundation only; slice grouping helper is reserved for later KPI/query consumers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_KPI_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/kpi/mergeObservationBlockers.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-4 foundation only; blocker aggregation helper is intentionally isolated until detector/query layers adopt it",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_KPI_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/kpi/resolveMetricStatus.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-4 foundation only; KPI status resolver is reserved for later detector and query callers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_KPI_RUNBOOK.md",
         "scripts/check_structural_cleanup.js"
       ]
     },
@@ -375,6 +463,17 @@
       "reason": "PR-3 foundation only; evaluator usecase is intentionally not wired to routes, jobs, or registry upserts yet",
       "ssot_refs": [
         "docs/QUALITY_PATROL_EVALUATOR_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/usecases/qualityPatrol/buildPatrolKpisFromEvaluations.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-4 foundation only; KPI usecase is intentionally not wired to registry, routes, or scheduler yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_KPI_RUNBOOK.md",
         "scripts/check_structural_cleanup.js"
       ]
     }
