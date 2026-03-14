@@ -26,3 +26,4 @@
 ## Future integration
 - PR-5 should consume KPI envelopes and issue candidate rates for deterministic detection.
 - PR-8 query/read layers should reuse KPI envelopes without changing this contract.
+- PR-5 detector reuse keeps KPI envelopes read-only and performs registry/backlog writes only through an explicit wrapper usecase.

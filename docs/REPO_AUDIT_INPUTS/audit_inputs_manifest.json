@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-14T15:22:36.282Z",
-  "gitCommit": "26181b9089e3e914c9301805a7fea9719151d937",
-  "branch": "codex/quality-patrol-pr4-T001",
-  "sourceDigest": "c3bc21ba1fa740b5b8bdbe9e4d24503fca1c8af9d4d30d29ffa0b89baf263a68",
+  "generatedAt": "2026-03-14T15:49:37.868Z",
+  "gitCommit": "7f5aabd0db4e3c1ee682e9b1b0ae748c164a31d2",
+  "branch": "codex/quality-patrol-pr5-T001",
+  "sourceDigest": "6c74124e6edb5ac4cb23fb45672db031c14259ed62ddb5deb4d8e810094e7f05",
   "counts": {
     "endpoints": 291,
     "routes": 130,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "141ed665c87837af29fa4913b8bbddb2be6704c1b30b75efbfa2570dd5b08720",
+      "sha256": "bc7c212167691c6ca59b7265cba5971ac5788a1f228bc7bc3a3667593fc06e39",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "7b92bb1d3cedaae3825e7d7307de11350b2e089bc2396cbf3d5710da5ae8705a",
+      "sha256": "d3ba8b0945c0d8716a592e724a2d3b562a21fdc2f5032a891a6d70575591bb74",
       "bytes": 487
     },
     {
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "1b55752369aa0f8199d3edc70b0a0256862ceff22a4f0bee4b3e3ef55528dba0",
+      "sha256": "7ca58e923d2ab729c12e85a1ff23656f085efe20b400443572e0846a2ce3de57",
       "bytes": 450323
     },
     {
@@ -171,13 +171,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "6c6e54138729d112648e5a7afa4a6b80b61df941e4ec6bc696bf309fa04e497a",
+      "sha256": "77baf8821da02857b9ce47824f18b85284aeea3c0c70ca11c7625a6b3abb28e7",
       "bytes": 2415
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",
-      "sha256": "034e19dd6fbbfeab30d45ba3bd4185c8c9a916761476f513f2a983975b5a995d",
-      "bytes": 19537
+      "sha256": "c666f2bd8356c9da82b8d844911598cd9a9c76ed10339dcb4fa2d62bc3982f47",
+      "bytes": 24678
     }
   ],
   "diff_detection_rules": [
