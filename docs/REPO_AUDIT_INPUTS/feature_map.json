@@ -2657,6 +2657,27 @@
       "completion": "completed"
     },
     {
+      "feature": "qualityPatrol",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog",
+        "queryLatestPatrolInsights"
+      ],
+      "repos": [
+        "auditLogsRepo"
+      ],
+      "collections": [
+        "audit_logs"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 103,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
       "feature": "readModel",
       "entrypoints": [],
       "usecases": [

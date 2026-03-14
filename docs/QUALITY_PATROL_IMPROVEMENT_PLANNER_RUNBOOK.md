@@ -36,3 +36,4 @@
 ## Future integration
 - PR-8 query and PR-10 scheduler can read `recommendedPr[]` directly.
 - backlog persistence, if needed later, should consume this plan output rather than inventing a new contract.
+- query serialization may shorten or hide internal planner rationale for human audience, but it must not rewrite proposal priorities or planning status.
