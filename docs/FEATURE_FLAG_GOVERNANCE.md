@@ -1,9 +1,9 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-14T01:33:20.768Z
-- gitCommit: ab7858f97b5b439ba18d2c4b941d9a0912957280
-- branch: codex/llm-traceable-routing-diagnosis-r833
-- flagCount: 90
+- generatedAt: 2026-03-14T13:54:48.937Z
+- gitCommit: 20e2dced500683efbe8abef97565e18c228f05aa
+- branch: codex/quality-patrol-pr0-T002
+- flagCount: 91
 - source: src/**/*.js
 - check: `npm run feature-flags:check`
 
@@ -71,6 +71,7 @@
 | ENABLE_PAID_OPPORTUNITY_ENGINE_V1 | assistant-paid | false | 2026-09-30 | user_facing | Runtime gate for enable_paid_opportunity_engine_v1 | src/routes/webhookLine.js:379 |
 | ENABLE_PAID_ORCHESTRATOR_V2 | assistant-paid | false | 2026-09-30 | user_facing | Runtime gate for enable_paid_orchestrator_v2 | src/routes/webhookLine.js:387 |
 | ENABLE_PRO_PREDICTIVE_ACTIONS_V1 | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_pro_predictive_actions_v1 | src/routes/webhookLine.js:375 |
+| ENABLE_QUALITY_PATROL_TRANSCRIPT_SNAPSHOTS_V1 | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_quality_patrol_transcript_snapshots_v1 | src/usecases/qualityPatrol/appendConversationReviewSnapshot.js:9 |
 | ENABLE_REACTION_RESPONSE_TEXT_STORE_V1 | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_reaction_response_text_store_v1 | src/usecases/phase37/sanitizeReactionResponseText.js:13 |
 | ENABLE_RETRY_QUEUE_GIVEUP_V1 | platform-core | true | 2026-09-30 | cross_module | Runtime gate for enable_retry_queue_giveup_v1 | src/routes/phase73RetryQueue.js:43 |
 | ENABLE_RICH_MENU_DYNAMIC | platform-core | true | 2026-09-30 | cross_module | Runtime gate for enable_rich_menu_dynamic | src/routes/admin/journeyPolicyConfig.js:67<br>src/usecases/journey/applyPersonalizedRichMenu.js:23 |

@@ -209,6 +209,22 @@
       "fullscan_risk": "LOW"
     },
     {
+      "collection": "conversation_review_snapshots",
+      "repos": [
+        "conversationReviewSnapshotsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/conversationReviewSnapshotsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/conversationReviewSnapshotsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
       "collection": "decision_drifts",
       "repos": [
         "decisionDriftsRepo"

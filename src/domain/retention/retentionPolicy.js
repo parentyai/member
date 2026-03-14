@@ -27,6 +27,7 @@ const RETENTION_POLICY = Object.freeze({
   'emergency_snapshots': Object.freeze({ kind: 'evidence', retentionDays: 365, deletable: 'NO', recomputable: false }),
   'emergency_unmapped_events': Object.freeze({ kind: 'evidence', retentionDays: 365, deletable: 'NO', recomputable: false }),
   'events': Object.freeze({ kind: 'event', retentionDays: 180, deletable: 'CONDITIONAL', recomputable: true }),
+  'conversation_review_snapshots': Object.freeze({ kind: 'event', retentionDays: 180, deletable: 'CONDITIONAL', recomputable: true }),
   'faq_answer_logs': Object.freeze({ kind: 'event', retentionDays: 180, deletable: 'CONDITIONAL', recomputable: true }),
   'faq_articles': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'journey_branch_queue': Object.freeze({ kind: 'event', retentionDays: 180, deletable: 'CONDITIONAL', recomputable: true }),

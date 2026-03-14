@@ -8226,6 +8226,7 @@
         "city_pack_feedback",
         "city_pack_requests",
         "city_packs",
+        "conversation_review_snapshots",
         "events",
         "journey_todo_items",
         "link_registry",
