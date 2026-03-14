@@ -59,3 +59,8 @@
 - admin UI can consume this route without redefining the response shape.
 - scheduler can reuse the usecase output for snapshot-style reporting later.
 - query continues to rely on read-side synthesis until a scheduled patrol artifact is introduced.
+
+## PR-10 job integration
+- PR-10 introduces CLI-first patrol jobs that reuse the same query contract for artifact output.
+- jobs remain read-only by default and do not change route semantics.
+- external scheduler wiring is still not part of the contract; `/tmp` or explicit output paths are used until cron/internal orchestration is added.
