@@ -75,6 +75,11 @@ const { selectConversationStyle } = require('../domain/llm/conversation/styleRou
 const { composeConversationDraftFromSignals } = require('../domain/llm/conversation/conversationComposer');
 const { humanizeConversationMessage } = require('../domain/llm/conversation/styleHumanizer');
 const { sanitizePaidMainReply, containsLegacyTemplateTerms } = require('../domain/llm/conversation/paidReplyGuard');
+const {
+  buildReplyTemplateFingerprint,
+  classifyReplyTemplateKind,
+  resolveGenericFallbackSlice
+} = require('../domain/llm/conversation/replyTemplateTelemetry');
 const { resolveFreeContextualFollowup } = require('../domain/llm/conversation/freeContextualFollowup');
 const { searchCityPackCandidates } = require('../usecases/assistant/retrieval/searchCityPackCandidates');
 const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
@@ -319,7 +324,13 @@ function guardPaidMainReplyText(value, options) {
     pitfallIncluded: guardResult ? guardResult.pitfallIncluded === true : detectPitfallIncluded(guardedText),
     followupQuestionIncluded: guardResult
       ? guardResult.followupQuestionIncluded === true
-      : detectFollowupQuestionIncluded(guardedText)
+      : detectFollowupQuestionIncluded(guardedText),
+    fallbackTemplateKind: guardResult && typeof guardResult.templateKind === 'string'
+      ? guardResult.templateKind
+      : classifyReplyTemplateKind({ replyText: guardedText }),
+    replyTemplateFingerprint: guardResult && typeof guardResult.replyTemplateFingerprint === 'string'
+      ? guardResult.replyTemplateFingerprint
+      : buildReplyTemplateFingerprint(guardedText)
   };
 }
 
@@ -741,6 +752,7 @@ async function buildPaidDomainConciergeResult(params) {
   const replyText = guardedReply.replyText;
   const conversationQuality = buildConversationQualityMeta({
     replyText,
+    messageText: text,
     domainIntent,
     nextActions: domainAtoms && Array.isArray(domainAtoms.nextActions)
       ? domainAtoms.nextActions
@@ -754,7 +766,39 @@ async function buildPaidDomainConciergeResult(params) {
     followupQuestionIncluded: guardedReply.followupQuestionIncluded === true,
     conversationNaturalnessVersion: payload.conversationNaturalnessVersion || 'v2',
     conciseModeApplied: domainReply && domainReply.conciseModeApplied === true,
-    followupIntent: domainReply && typeof domainReply.followupIntent === 'string' ? domainReply.followupIntent : null
+    followupIntent: domainReply && typeof domainReply.followupIntent === 'string' ? domainReply.followupIntent : null,
+    strategyReason: payload.blockedReason ? 'domain_concierge_fallback' : 'explicit_domain_intent',
+    selectedCandidateKind: 'domain_concierge_candidate',
+    selectedByDirectAnswerFirst: true,
+    retrievalBlockedByStrategy: true,
+    retrievalBlockReason: 'strategy_domain_concierge',
+    fallbackTemplateKind: guardedReply.fallbackTemplateKind,
+    finalizerTemplateKind: guardedReply.fallbackTemplateKind,
+    replyTemplateFingerprint: guardedReply.replyTemplateFingerprint,
+    priorContextUsed: typeof payload.contextResumeDomain === 'string' && payload.contextResumeDomain.trim().length > 0,
+    followupResolvedFromHistory: payload.followupCarryFromHistory === true,
+    continuationReason: payload.contextResumeDomain ? 'context_resume_domain' : null,
+    knowledgeCandidateCountBySource: {
+      faq: 0,
+      savedFaq: 0,
+      cityPack: cityPackSignals && cityPackSignals.cityPackGrounded === true ? 1 : 0,
+      sourceRefs: Array.isArray(cityPackSignals && cityPackSignals.sourceSnapshotRefs)
+        ? cityPackSignals.sourceSnapshotRefs.length
+        : 0,
+      webSearch: 0
+    },
+    knowledgeCandidateUsed: cityPackSignals && cityPackSignals.cityPackGrounded === true,
+    cityPackUsedInAnswer: cityPackSignals && cityPackSignals.cityPackGrounded === true,
+    savedFaqUsedInAnswer: false,
+    genericFallbackSlice: resolveGenericFallbackSlice({
+      messageText: text,
+      domainIntent,
+      followupIntent: domainReply && typeof domainReply.followupIntent === 'string' ? domainReply.followupIntent : null,
+      routerReason: payload.routerReason || null,
+      priorContextUsed: typeof payload.contextResumeDomain === 'string' && payload.contextResumeDomain.trim().length > 0,
+      followupResolvedFromHistory: payload.followupCarryFromHistory === true,
+      continuationReason: payload.contextResumeDomain ? 'context_resume_domain' : null
+    })
   });
   return {
     ok: true,
@@ -766,6 +810,24 @@ async function buildPaidDomainConciergeResult(params) {
     atoms: domainAtoms,
     followupIntent: domainReply && typeof domainReply.followupIntent === 'string' ? domainReply.followupIntent : null,
     conciseModeApplied: domainReply && domainReply.conciseModeApplied === true,
+    telemetry: {
+      strategyReason: conversationQuality.strategyReason,
+      selectedCandidateKind: conversationQuality.selectedCandidateKind,
+      selectedByDirectAnswerFirst: conversationQuality.selectedByDirectAnswerFirst,
+      retrievalBlockedByStrategy: conversationQuality.retrievalBlockedByStrategy,
+      retrievalBlockReason: conversationQuality.retrievalBlockReason,
+      fallbackTemplateKind: conversationQuality.fallbackTemplateKind,
+      finalizerTemplateKind: conversationQuality.finalizerTemplateKind,
+      replyTemplateFingerprint: conversationQuality.replyTemplateFingerprint,
+      priorContextUsed: conversationQuality.priorContextUsed,
+      followupResolvedFromHistory: conversationQuality.followupResolvedFromHistory,
+      continuationReason: conversationQuality.continuationReason,
+      knowledgeCandidateCountBySource: conversationQuality.knowledgeCandidateCountBySource,
+      knowledgeCandidateUsed: conversationQuality.knowledgeCandidateUsed,
+      cityPackUsedInAnswer: conversationQuality.cityPackUsedInAnswer,
+      savedFaqUsedInAnswer: conversationQuality.savedFaqUsedInAnswer,
+      genericFallbackSlice: conversationQuality.genericFallbackSlice
+    },
     integrationSignals: Object.assign({}, journeySignals, cityPackSignals, emergencySignals, {
       savedFaqReused: false,
       savedFaqReusePass: false,
@@ -1055,6 +1117,34 @@ function buildConversationQualityMeta(params) {
   const repeatRiskScore = Number.isFinite(Number(payload.repeatRiskScore))
     ? Math.max(0, Math.min(1, Number(payload.repeatRiskScore)))
     : 0;
+  const fallbackTemplateKind = normalizeReplyText(payload.fallbackTemplateKind).toLowerCase()
+    || classifyReplyTemplateKind({
+      replyText,
+      candidateKind: payload.selectedCandidateKind || null,
+      readinessDecision: payload.readinessDecision || null,
+      conciseModeApplied
+    });
+  const finalizerTemplateKind = normalizeReplyText(payload.finalizerTemplateKind).toLowerCase()
+    || classifyReplyTemplateKind({
+      replyText,
+      candidateKind: payload.selectedCandidateKind || null,
+      readinessDecision: payload.readinessDecision || null,
+      conciseModeApplied
+    });
+  const genericFallbackSlice = normalizeReplyText(payload.genericFallbackSlice).toLowerCase()
+    || resolveGenericFallbackSlice({
+      messageText: payload.messageText || '',
+      domainIntent,
+      followupIntent,
+      routerReason: payload.routerReason || null,
+      priorContextUsed: payload.priorContextUsed === true,
+      followupResolvedFromHistory: payload.followupResolvedFromHistory === true,
+      continuationReason: payload.continuationReason || null
+    });
+  const knowledgeCandidateCountBySource = payload.knowledgeCandidateCountBySource
+    && typeof payload.knowledgeCandidateCountBySource === 'object'
+    ? Object.assign({}, payload.knowledgeCandidateCountBySource)
+    : null;
   return {
     conversationNaturalnessVersion,
     legacyTemplateHit,
@@ -1071,7 +1161,23 @@ function buildConversationQualityMeta(params) {
     clarifySuppressed,
     misunderstandingRecovered,
     contextCarryScore,
-    repeatRiskScore
+    repeatRiskScore,
+    strategyReason: normalizeReplyText(payload.strategyReason).toLowerCase() || null,
+    selectedCandidateKind: normalizeReplyText(payload.selectedCandidateKind).toLowerCase() || null,
+    selectedByDirectAnswerFirst: payload.selectedByDirectAnswerFirst === true,
+    retrievalBlockedByStrategy: payload.retrievalBlockedByStrategy === true,
+    retrievalBlockReason: normalizeReplyText(payload.retrievalBlockReason).toLowerCase() || null,
+    fallbackTemplateKind,
+    finalizerTemplateKind,
+    replyTemplateFingerprint: normalizeReplyText(payload.replyTemplateFingerprint) || buildReplyTemplateFingerprint(replyText),
+    priorContextUsed: payload.priorContextUsed === true,
+    followupResolvedFromHistory: payload.followupResolvedFromHistory === true,
+    continuationReason: normalizeReplyText(payload.continuationReason).toLowerCase() || null,
+    knowledgeCandidateCountBySource,
+    knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true,
+    cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true,
+    savedFaqUsedInAnswer: payload.savedFaqUsedInAnswer === true,
+    genericFallbackSlice
   };
 }
 
@@ -1526,6 +1632,43 @@ async function appendLlmGateDecisionBestEffort(data) {
         repeatRiskScore: Number.isFinite(Number(payload.repeatRiskScore))
           ? Number(payload.repeatRiskScore)
           : Number(qualityMeta.repeatRiskScore || 0),
+        strategyReason: typeof payload.strategyReason === 'string' && payload.strategyReason.trim()
+          ? payload.strategyReason.trim().toLowerCase()
+          : (qualityMeta.strategyReason || null),
+        selectedCandidateKind: typeof payload.selectedCandidateKind === 'string' && payload.selectedCandidateKind.trim()
+          ? payload.selectedCandidateKind.trim().toLowerCase()
+          : (qualityMeta.selectedCandidateKind || null),
+        selectedByDirectAnswerFirst: payload.selectedByDirectAnswerFirst === true || qualityMeta.selectedByDirectAnswerFirst === true,
+        retrievalBlockedByStrategy: payload.retrievalBlockedByStrategy === true || qualityMeta.retrievalBlockedByStrategy === true,
+        retrievalBlockReason: typeof payload.retrievalBlockReason === 'string' && payload.retrievalBlockReason.trim()
+          ? payload.retrievalBlockReason.trim().toLowerCase()
+          : (qualityMeta.retrievalBlockReason || null),
+        fallbackTemplateKind: typeof payload.fallbackTemplateKind === 'string' && payload.fallbackTemplateKind.trim()
+          ? payload.fallbackTemplateKind.trim().toLowerCase()
+          : (qualityMeta.fallbackTemplateKind || null),
+        finalizerTemplateKind: typeof payload.finalizerTemplateKind === 'string' && payload.finalizerTemplateKind.trim()
+          ? payload.finalizerTemplateKind.trim().toLowerCase()
+          : (qualityMeta.finalizerTemplateKind || null),
+        replyTemplateFingerprint: typeof payload.replyTemplateFingerprint === 'string' && payload.replyTemplateFingerprint.trim()
+          ? payload.replyTemplateFingerprint.trim()
+          : (qualityMeta.replyTemplateFingerprint || null),
+        priorContextUsed: payload.priorContextUsed === true || qualityMeta.priorContextUsed === true,
+        followupResolvedFromHistory: payload.followupResolvedFromHistory === true || qualityMeta.followupResolvedFromHistory === true,
+        continuationReason: typeof payload.continuationReason === 'string' && payload.continuationReason.trim()
+          ? payload.continuationReason.trim().toLowerCase()
+          : (qualityMeta.continuationReason || null),
+        knowledgeCandidateCountBySource: payload.knowledgeCandidateCountBySource
+          && typeof payload.knowledgeCandidateCountBySource === 'object'
+          ? Object.assign({}, payload.knowledgeCandidateCountBySource)
+          : (qualityMeta.knowledgeCandidateCountBySource && typeof qualityMeta.knowledgeCandidateCountBySource === 'object'
+            ? Object.assign({}, qualityMeta.knowledgeCandidateCountBySource)
+            : null),
+        knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true || qualityMeta.knowledgeCandidateUsed === true,
+        cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true || qualityMeta.cityPackUsedInAnswer === true,
+        savedFaqUsedInAnswer: payload.savedFaqUsedInAnswer === true || qualityMeta.savedFaqUsedInAnswer === true,
+        genericFallbackSlice: typeof payload.genericFallbackSlice === 'string' && payload.genericFallbackSlice.trim()
+          ? payload.genericFallbackSlice.trim().toLowerCase()
+          : (qualityMeta.genericFallbackSlice || null),
         legacyTemplateHit: payload.legacyTemplateHit === true || qualityMeta.legacyTemplateHit === true,
         followupQuestionIncluded: payload.followupQuestionIncluded === true || qualityMeta.followupQuestionIncluded === true,
         actionCount: Number.isFinite(Number(payload.actionCount))
@@ -1719,6 +1862,7 @@ async function appendLlmActionLogBestEffort(data) {
     await llmActionLogsRepo.appendLlmActionLog({
       traceId: payload.traceId || null,
       requestId: payload.requestId || null,
+      entryType: routeCoverageMeta.entryType,
       lineUserId,
       plan: payload.plan || 'free',
       userTier: conciergeMeta.userTier || (payload.plan === 'pro' ? 'paid' : 'free'),
@@ -1953,6 +2097,43 @@ async function appendLlmActionLogBestEffort(data) {
       repeatRiskScore: Number.isFinite(Number(payload.repeatRiskScore))
         ? Number(payload.repeatRiskScore)
         : Number(qualityMeta.repeatRiskScore || 0),
+      strategyReason: typeof payload.strategyReason === 'string' && payload.strategyReason.trim()
+        ? payload.strategyReason.trim().toLowerCase()
+        : (qualityMeta.strategyReason || null),
+      selectedCandidateKind: typeof payload.selectedCandidateKind === 'string' && payload.selectedCandidateKind.trim()
+        ? payload.selectedCandidateKind.trim().toLowerCase()
+        : (qualityMeta.selectedCandidateKind || null),
+      selectedByDirectAnswerFirst: payload.selectedByDirectAnswerFirst === true || qualityMeta.selectedByDirectAnswerFirst === true,
+      retrievalBlockedByStrategy: payload.retrievalBlockedByStrategy === true || qualityMeta.retrievalBlockedByStrategy === true,
+      retrievalBlockReason: typeof payload.retrievalBlockReason === 'string' && payload.retrievalBlockReason.trim()
+        ? payload.retrievalBlockReason.trim().toLowerCase()
+        : (qualityMeta.retrievalBlockReason || null),
+      fallbackTemplateKind: typeof payload.fallbackTemplateKind === 'string' && payload.fallbackTemplateKind.trim()
+        ? payload.fallbackTemplateKind.trim().toLowerCase()
+        : (qualityMeta.fallbackTemplateKind || null),
+      finalizerTemplateKind: typeof payload.finalizerTemplateKind === 'string' && payload.finalizerTemplateKind.trim()
+        ? payload.finalizerTemplateKind.trim().toLowerCase()
+        : (qualityMeta.finalizerTemplateKind || null),
+      replyTemplateFingerprint: typeof payload.replyTemplateFingerprint === 'string' && payload.replyTemplateFingerprint.trim()
+        ? payload.replyTemplateFingerprint.trim()
+        : (qualityMeta.replyTemplateFingerprint || null),
+      priorContextUsed: payload.priorContextUsed === true || qualityMeta.priorContextUsed === true,
+      followupResolvedFromHistory: payload.followupResolvedFromHistory === true || qualityMeta.followupResolvedFromHistory === true,
+      continuationReason: typeof payload.continuationReason === 'string' && payload.continuationReason.trim()
+        ? payload.continuationReason.trim().toLowerCase()
+        : (qualityMeta.continuationReason || null),
+      knowledgeCandidateCountBySource: payload.knowledgeCandidateCountBySource
+        && typeof payload.knowledgeCandidateCountBySource === 'object'
+        ? Object.assign({}, payload.knowledgeCandidateCountBySource)
+        : (qualityMeta.knowledgeCandidateCountBySource && typeof qualityMeta.knowledgeCandidateCountBySource === 'object'
+          ? Object.assign({}, qualityMeta.knowledgeCandidateCountBySource)
+          : null),
+      knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true || qualityMeta.knowledgeCandidateUsed === true,
+      cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true || qualityMeta.cityPackUsedInAnswer === true,
+      savedFaqUsedInAnswer: payload.savedFaqUsedInAnswer === true || qualityMeta.savedFaqUsedInAnswer === true,
+      genericFallbackSlice: typeof payload.genericFallbackSlice === 'string' && payload.genericFallbackSlice.trim()
+        ? payload.genericFallbackSlice.trim().toLowerCase()
+        : (qualityMeta.genericFallbackSlice || null),
       fallbackType: qualityMeta.fallbackType || null,
       interventionSuppressedBy: qualityMeta.interventionSuppressedBy || null,
       responseContractConformant: responseContractConformance.conformant === true,
@@ -2180,7 +2361,9 @@ async function tryHandlePaidOrchestratorV2(params) {
   await payload.replyFn(payload.replyToken, { type: 'text', text: orchestratedReplyText });
   const conversationQuality = buildConversationQualityMeta({
     replyText: orchestratedReplyText,
+    messageText: payload.text,
     domainIntent: orchestrated.domainIntent,
+    routerReason: orchestrated.routerReason,
     nextActions: orchestrated.finalMeta && Array.isArray(orchestrated.finalMeta.committedNextActions)
       ? orchestrated.finalMeta.committedNextActions
       : [],
@@ -2195,6 +2378,22 @@ async function tryHandlePaidOrchestratorV2(params) {
     repetitionPrevented: orchestrated.telemetry ? orchestrated.telemetry.repetitionPrevented === true : false,
     directAnswerApplied: orchestrated.telemetry ? orchestrated.telemetry.directAnswerApplied === true : false,
     clarifySuppressed: orchestrated.telemetry ? orchestrated.telemetry.clarifySuppressed === true : false,
+    strategyReason: orchestrated.telemetry ? orchestrated.telemetry.strategyReason : null,
+    selectedCandidateKind: orchestrated.telemetry ? orchestrated.telemetry.selectedCandidateKind : null,
+    selectedByDirectAnswerFirst: orchestrated.telemetry ? orchestrated.telemetry.selectedByDirectAnswerFirst === true : false,
+    retrievalBlockedByStrategy: orchestrated.telemetry ? orchestrated.telemetry.retrievalBlockedByStrategy === true : false,
+    retrievalBlockReason: orchestrated.telemetry ? orchestrated.telemetry.retrievalBlockReason : null,
+    fallbackTemplateKind: orchestrated.telemetry ? orchestrated.telemetry.fallbackTemplateKind : null,
+    finalizerTemplateKind: orchestrated.telemetry ? orchestrated.telemetry.finalizerTemplateKind : null,
+    replyTemplateFingerprint: orchestrated.telemetry ? orchestrated.telemetry.replyTemplateFingerprint : null,
+    priorContextUsed: orchestrated.telemetry ? orchestrated.telemetry.priorContextUsed === true : false,
+    followupResolvedFromHistory: orchestrated.telemetry ? orchestrated.telemetry.followupResolvedFromHistory === true : false,
+    continuationReason: orchestrated.telemetry ? orchestrated.telemetry.continuationReason : null,
+    knowledgeCandidateCountBySource: orchestrated.telemetry ? orchestrated.telemetry.knowledgeCandidateCountBySource : null,
+    knowledgeCandidateUsed: orchestrated.telemetry ? orchestrated.telemetry.knowledgeCandidateUsed === true : false,
+    cityPackUsedInAnswer: orchestrated.telemetry ? orchestrated.telemetry.cityPackUsedInAnswer === true : false,
+    savedFaqUsedInAnswer: orchestrated.telemetry ? orchestrated.telemetry.savedFaqUsedInAnswer === true : false,
+    genericFallbackSlice: orchestrated.telemetry ? orchestrated.telemetry.genericFallbackSlice : null,
     contextCarryScore: orchestrated.telemetry ? orchestrated.telemetry.contextCarryScore : 0,
     repeatRiskScore: orchestrated.telemetry ? orchestrated.telemetry.repeatRiskScore : 0
   });

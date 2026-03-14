@@ -145,6 +145,99 @@ function resolveReadinessClarifyText(selected, requiredCoreFacts) {
   return 'まず対象手続きと期限を1つずつ教えてください。そこから次の一手を絞ります。';
 }
 
+function createEmptyKnowledgeCandidateCountBySource() {
+  return {
+    faq: 0,
+    savedFaq: 0,
+    cityPack: 0,
+    sourceRefs: 0,
+    webSearch: 0
+  };
+}
+
+function incrementKnowledgeCount(target, key, amount) {
+  if (!target || !Object.prototype.hasOwnProperty.call(target, key)) return;
+  const numeric = Number(amount);
+  if (!Number.isFinite(numeric) || numeric <= 0) return;
+  target[key] += Math.floor(numeric);
+}
+
+function extractAuditMeta(result) {
+  if (result && result.auditMeta && typeof result.auditMeta === 'object') return result.auditMeta;
+  if (result && result.conciergeMeta && typeof result.conciergeMeta === 'object') return result.conciergeMeta;
+  if (result && result.raw && result.raw.auditMeta && typeof result.raw.auditMeta === 'object') return result.raw.auditMeta;
+  return null;
+}
+
+function accumulateKnowledgeCandidateCounts(target, row) {
+  const payload = row && typeof row === 'object' ? row : {};
+  const auditMeta = extractAuditMeta(payload);
+  const citations = Array.isArray(payload.citations)
+    ? payload.citations
+    : (payload.raw && Array.isArray(payload.raw.citations) ? payload.raw.citations : []);
+  incrementKnowledgeCount(target, 'faq', citations.length);
+
+  const sourceSnapshotRefs = auditMeta && Array.isArray(auditMeta.sourceSnapshotRefs)
+    ? auditMeta.sourceSnapshotRefs
+    : [];
+  incrementKnowledgeCount(target, 'sourceRefs', sourceSnapshotRefs.length);
+
+  const selectedUrls = auditMeta && Array.isArray(auditMeta.urls) ? auditMeta.urls : [];
+  selectedUrls.forEach((item) => {
+    const source = normalizeText(item && item.source).toLowerCase();
+    if (source.includes('city_pack')) incrementKnowledgeCount(target, 'cityPack', 1);
+    else if (source.includes('web')) incrementKnowledgeCount(target, 'webSearch', 1);
+    else if (source.includes('stored') || source.includes('source_ref')) incrementKnowledgeCount(target, 'sourceRefs', 1);
+  });
+
+  const cityPackGrounded = payload.cityPackGrounded === true
+    || (auditMeta && auditMeta.cityPackGrounded === true)
+    || (auditMeta && auditMeta.cityPackContext === true)
+    || (auditMeta && typeof auditMeta.cityPackPackId === 'string' && auditMeta.cityPackPackId.trim());
+  if (cityPackGrounded) incrementKnowledgeCount(target, 'cityPack', 1);
+
+  const savedFaqReused = payload.savedFaqReused === true
+    || (auditMeta && auditMeta.savedFaqReused === true);
+  if (savedFaqReused) incrementKnowledgeCount(target, 'savedFaq', 1);
+}
+
+function buildKnowledgeCandidateCountBySource(candidateSet) {
+  const counts = createEmptyKnowledgeCandidateCountBySource();
+  const payload = candidateSet && typeof candidateSet === 'object' ? candidateSet : {};
+  if (payload.groundedResult && typeof payload.groundedResult === 'object') {
+    accumulateKnowledgeCandidateCounts(counts, payload.groundedResult);
+  }
+  (Array.isArray(payload.candidates) ? payload.candidates : []).forEach((candidate) => {
+    accumulateKnowledgeCandidateCounts(counts, candidate);
+  });
+  return counts;
+}
+
+function hasKnowledgeUsage(row) {
+  const payload = row && typeof row === 'object' ? row : {};
+  const auditMeta = extractAuditMeta(payload);
+  const citations = Array.isArray(payload.citations)
+    ? payload.citations
+    : (payload.raw && Array.isArray(payload.raw.citations) ? payload.raw.citations : []);
+  const sourceSnapshotRefs = auditMeta && Array.isArray(auditMeta.sourceSnapshotRefs)
+    ? auditMeta.sourceSnapshotRefs
+    : [];
+  const selectedUrls = auditMeta && Array.isArray(auditMeta.urls) ? auditMeta.urls : [];
+  return citations.length > 0 || sourceSnapshotRefs.length > 0 || selectedUrls.length > 0;
+}
+
+function buildKnowledgeUsageMeta(selected) {
+  const payload = selected && typeof selected === 'object' ? selected : {};
+  const auditMeta = extractAuditMeta(payload);
+  return {
+    knowledgeCandidateUsed: hasKnowledgeUsage(payload),
+    cityPackUsedInAnswer: payload.cityPackGrounded === true
+      || (auditMeta && (auditMeta.cityPackGrounded === true || auditMeta.cityPackContext === true)),
+    savedFaqUsedInAnswer: payload.savedFaqReused === true
+      || (auditMeta && auditMeta.savedFaqReused === true)
+  };
+}
+
 const DOMAIN_CLARIFY_VARIANTS = Object.freeze({
   school: [
     '学校手続きを進めるため、学年か希望エリアを1つ教えてください。',
@@ -385,6 +478,7 @@ function buildComposedCandidate(result, packet) {
     domainIntent: packet.normalizedConversationIntent || 'general',
     retrievalQuality: result.auditMeta && result.auditMeta.evidenceOutcome === 'SUPPORTED' ? 'good' : 'mixed',
     conciergeMeta: result.auditMeta || null,
+    raw: result,
     atoms: {}
   };
 }
@@ -407,6 +501,7 @@ function buildDomainCandidate(result, packet) {
     followupIntent: typeof result.followupIntent === 'string' ? result.followupIntent : null,
     directAnswerCandidate: typeof result.followupIntent === 'string' && result.followupIntent.trim().length > 0,
     conciseModeApplied: result.conciseModeApplied === true,
+    raw: result,
     atoms: result.atoms && typeof result.atoms === 'object' ? result.atoms : {}
   };
 }
@@ -658,11 +753,15 @@ async function runPaidConversationOrchestrator(params) {
     candidates: candidateSet.candidates
   });
   let selectedCandidate = judged.selected;
+  let selectedByDirectAnswerFirst = false;
   if (strategyPlan.directAnswerFirst === true) {
     const directAnswerCandidate = Array.isArray(candidateSet.candidates)
       ? candidateSet.candidates.find((item) => item && item.kind === 'domain_concierge_candidate')
       : null;
-    if (directAnswerCandidate) selectedCandidate = directAnswerCandidate;
+    if (directAnswerCandidate) {
+      selectedCandidate = directAnswerCandidate;
+      selectedByDirectAnswerFirst = true;
+    }
   }
   const loopResolved = resolveLoopSafeCandidate(packet, selectedCandidate, candidateSet.candidates);
   const verified = verifyCandidate({
@@ -778,8 +877,16 @@ async function runPaidConversationOrchestrator(params) {
     readinessClarifyText,
     fallbackText: '状況を整理しながら進めます。優先する手続きを1つ決めましょう。'
   });
+  const retrievalBlockedByStrategy = ['casual', 'clarify', 'domain_concierge', 'concierge'].includes(strategyPlan.strategy);
+  const retrievalBlockReason = strategyPlan.retrieveNeeded === true
+    ? null
+    : (retrievalBlockedByStrategy
+      ? `strategy_${strategyPlan.strategy}`
+      : 'message_too_short');
+  const knowledgeCandidateCountBySource = buildKnowledgeCandidateCountBySource(candidateSet);
 
   const selected = verified.selected && typeof verified.selected === 'object' ? verified.selected : {};
+  const knowledgeUsageMeta = buildKnowledgeUsageMeta(selected);
   const assistantQuality = groundedResult && groundedResult.assistantQuality
     ? groundedResult.assistantQuality
     : {
@@ -836,22 +943,40 @@ async function runPaidConversationOrchestrator(params) {
     tokensOut: groundedResult ? groundedResult.tokensOut || 0 : 0,
     telemetry: {
       strategy: strategyPlan.strategy,
+      strategyReason: strategyPlan.strategyReason || null,
       directAnswerApplied,
+      selectedCandidateKind: finalized.finalMeta && finalized.finalMeta.candidateKind
+        ? finalized.finalMeta.candidateKind
+        : null,
+      selectedByDirectAnswerFirst,
       clarifySuppressed,
       recoverySignal: packet.recoverySignal === true,
       recoveryFollowupIntent: packet.recoveryFollowupIntent || null,
       followupIntentReason: packet.followupIntentReason || null,
       followupCarryFromHistory: packet.followupCarryFromHistory === true,
+      followupResolvedFromHistory: packet.followupResolvedFromHistory === true,
       retrieveNeeded: strategyPlan.retrieveNeeded === true,
+      retrievalBlockedByStrategy,
+      retrievalBlockReason,
       retrievalQuality: candidateSet.retrievalQuality,
       orchestratorPathUsed: true,
       contextResumeDomain: packet.contextResumeDomain || null,
+      priorContextUsed: packet.priorContextUsed === true,
+      continuationReason: packet.continuationReason || null,
+      genericFallbackSlice: packet.genericFallbackSlice || 'other',
       contextCarryScore: Number.isFinite(Number(packet.contextCarryScore)) ? Number(packet.contextCarryScore) : 0,
       loopBreakApplied: loopResolved.loopBreakApplied === true,
       repeatRiskScore: Number.isFinite(Number(loopResolved.repeatRiskScore)) ? Number(loopResolved.repeatRiskScore) : 0,
       followupIntent: followupIntent || null,
       conciseModeApplied,
       repetitionPrevented: loopResolved.repetitionPrevented === true,
+      fallbackTemplateKind: finalized.finalMeta ? finalized.finalMeta.fallbackTemplateKind || null : null,
+      finalizerTemplateKind: finalized.finalMeta ? finalized.finalMeta.finalizerTemplateKind || null : null,
+      replyTemplateFingerprint: finalized.finalMeta ? finalized.finalMeta.replyTemplateFingerprint || null : null,
+      knowledgeCandidateCountBySource,
+      knowledgeCandidateUsed: knowledgeUsageMeta.knowledgeCandidateUsed === true,
+      cityPackUsedInAnswer: knowledgeUsageMeta.cityPackUsedInAnswer === true,
+      savedFaqUsedInAnswer: knowledgeUsageMeta.savedFaqUsedInAnswer === true,
       sourceAuthorityScore: readinessSourceAuthorityScore,
       sourceFreshnessScore: readinessSourceFreshnessScore,
       sourceReadinessDecision: readinessSourceDecision,

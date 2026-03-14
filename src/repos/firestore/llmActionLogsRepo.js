@@ -5,6 +5,7 @@ const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRec
 const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
 
 const COLLECTION = 'llm_action_logs';
+const ENTRY_TYPES = new Set(['webhook', 'admin', 'compat', 'job', 'unknown']);
 const CONVERSATION_MODES = new Set(['casual', 'concierge']);
 const ACTION_CLASSES = new Set(['lookup', 'draft', 'assist', 'human_only']);
 const ACTION_GATEWAY_DECISIONS = new Set(['allow', 'clarify', 'block', 'bypass']);
@@ -12,6 +13,25 @@ const OPPORTUNITY_TYPES = new Set(['none', 'action', 'blocked', 'life']);
 const STRATEGIES = new Set(['casual', 'domain_concierge', 'concierge', 'recommendation', 'clarify', 'grounded_answer']);
 const RETRIEVAL_QUALITIES = new Set(['none', 'good', 'mixed', 'bad']);
 const VERIFICATION_OUTCOMES = new Set(['passed', 'hedged', 'clarify', 'refuse']);
+const CANDIDATE_KINDS = new Set([
+  'none',
+  'grounded_candidate',
+  'clarify_candidate',
+  'domain_concierge_candidate',
+  'composed_concierge_candidate',
+  'conversation_candidate',
+  'casual_candidate',
+  'refuse_candidate'
+]);
+const TEMPLATE_KINDS = new Set([
+  'generic_fallback',
+  'domain_concierge_template',
+  'clarify_template',
+  'grounded_answer_template',
+  'casual_template',
+  'refuse_template'
+]);
+const GENERIC_FALLBACK_SLICES = new Set(['broad', 'housing', 'city', 'followup', 'other']);
 const INTENT_RISK_TIERS = new Set(['low', 'medium', 'high']);
 const SOURCE_READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refuse']);
 const READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refuse']);
@@ -170,6 +190,12 @@ function normalizeConversationMode(value) {
   return CONVERSATION_MODES.has(normalized) ? normalized : null;
 }
 
+function normalizeEntryType(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return 'unknown';
+  return ENTRY_TYPES.has(normalized) ? normalized : 'unknown';
+}
+
 function normalizeActionClass(value) {
   const normalized = normalizeString(value, '').toLowerCase();
   if (!normalized) return null;
@@ -232,6 +258,24 @@ function normalizeVerificationOutcome(value) {
   return VERIFICATION_OUTCOMES.has(normalized) ? normalized : null;
 }
 
+function normalizeCandidateKind(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return CANDIDATE_KINDS.has(normalized) ? normalized : null;
+}
+
+function normalizeTemplateKind(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return TEMPLATE_KINDS.has(normalized) ? normalized : null;
+}
+
+function normalizeGenericFallbackSlice(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return GENERIC_FALLBACK_SLICES.has(normalized) ? normalized : 'other';
+}
+
 function normalizeSourceReadinessDecision(value) {
   const normalized = normalizeString(value, '').toLowerCase();
   if (!normalized) return null;
@@ -254,6 +298,22 @@ function normalizeFollowupIntent(value) {
   const normalized = normalizeString(value, '').toLowerCase();
   if (!normalized) return null;
   return FOLLOWUP_INTENTS.has(normalized) ? normalized : null;
+}
+
+function normalizeKnowledgeCandidateCountBySource(value) {
+  const payload = value && typeof value === 'object' ? value : {};
+  const clampCount = (input) => {
+    const num = Number(input);
+    if (!Number.isFinite(num)) return 0;
+    return Math.max(0, Math.min(50, Math.floor(num)));
+  };
+  return {
+    faq: clampCount(payload.faq),
+    savedFaq: clampCount(payload.savedFaq),
+    cityPack: clampCount(payload.cityPack),
+    sourceRefs: clampCount(payload.sourceRefs),
+    webSearch: clampCount(payload.webSearch)
+  };
 }
 
 function normalizeParentIntentType(value) {
@@ -419,6 +479,7 @@ async function appendLlmActionLog(params) {
   const data = {
     traceId: normalizeString(payload.traceId, null),
     requestId: normalizeString(payload.requestId, null),
+    entryType: normalizeEntryType(payload.entryType),
     lineUserId: normalizeString(payload.lineUserId, ''),
     plan: normalizeString(payload.plan, 'free'),
     userTier: normalizeString(payload.userTier, 'free'),
@@ -552,6 +613,22 @@ async function appendLlmActionLog(params) {
     contextResumeDomain: normalizeContextResumeDomain(payload.contextResumeDomain),
     loopBreakApplied: payload.loopBreakApplied === true,
     followupIntent: normalizeFollowupIntent(payload.followupIntent),
+    strategyReason: normalizeString(payload.strategyReason, null),
+    selectedCandidateKind: normalizeCandidateKind(payload.selectedCandidateKind),
+    selectedByDirectAnswerFirst: payload.selectedByDirectAnswerFirst === true,
+    retrievalBlockedByStrategy: payload.retrievalBlockedByStrategy === true,
+    retrievalBlockReason: normalizeString(payload.retrievalBlockReason, null),
+    fallbackTemplateKind: normalizeTemplateKind(payload.fallbackTemplateKind),
+    finalizerTemplateKind: normalizeTemplateKind(payload.finalizerTemplateKind),
+    replyTemplateFingerprint: normalizeString(payload.replyTemplateFingerprint, null),
+    priorContextUsed: payload.priorContextUsed === true,
+    followupResolvedFromHistory: payload.followupResolvedFromHistory === true,
+    continuationReason: normalizeString(payload.continuationReason, null),
+    knowledgeCandidateCountBySource: normalizeKnowledgeCandidateCountBySource(payload.knowledgeCandidateCountBySource),
+    knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true,
+    cityPackUsedInAnswer: payload.cityPackUsedInAnswer === true,
+    savedFaqUsedInAnswer: payload.savedFaqUsedInAnswer === true,
+    genericFallbackSlice: normalizeGenericFallbackSlice(payload.genericFallbackSlice),
     parentIntentType: normalizeParentIntentType(payload.parentIntentType),
     parentAnswerMode: normalizeParentAnswerMode(payload.parentAnswerMode),
     parentLifecycleStage: normalizeParentLifecycleStage(payload.parentLifecycleStage),

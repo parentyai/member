@@ -28,7 +28,8 @@ const KPI_THRESHOLDS = Object.freeze({
   evidenceCoverage: { operator: 'min', value: 0.8 },
   officialSourceUsageRate: { operator: 'min', value: 0.95, tier: 'high' },
   fallbackRateByCause: { operator: 'max', value: 0.2, warnAbove: 0.1 },
-  compatShareWindow: { operator: 'max', value: 0.15 }
+  compatShareWindow: { operator: 'max', value: 0.15 },
+  genericFallbackRepeatRate: { operator: 'max', value: 0.3, warnAbove: 0.2 }
 });
 
 function normalizeAuditError(error) {
@@ -338,6 +339,23 @@ function buildRuntimeAuditReport(input) {
     ['llm_gate.decision', 'llm_action_logs'],
     { missingCount: 0 }
   );
+  const genericFallbackRepeatRate = buildRateKpi(
+    'genericFallbackRepeatRate',
+    conversation.genericFallbackRepeatRate,
+    Number(conversation.genericFallbackSliceSampleCount || 0),
+    KPI_THRESHOLDS.genericFallbackRepeatRate,
+    ['llm_action_logs'],
+    {
+      missingCount: 0,
+      provenance: 'live_runtime',
+      bySlice: Array.isArray(conversation.genericFallbackRepeatRateBySlice)
+        ? conversation.genericFallbackRepeatRateBySlice
+        : [],
+      topRepeatedFallbackFingerprints: Array.isArray(conversation.topRepeatedFallbackFingerprints)
+        ? conversation.topRepeatedFallbackFingerprints
+        : []
+    }
+  );
 
   const kpis = {
     contradictionRate,
@@ -347,6 +365,7 @@ function buildRuntimeAuditReport(input) {
     officialSourceUsageRate,
     fallbackRateByCause,
     compatShareWindow,
+    genericFallbackRepeatRate,
     cityPackGroundingRate: Object.assign({ sourceCollections: ['llm_action_logs', 'faq_answer_logs'], provenance: 'live_runtime', missingCount: 0 }, qualityLoopV2.integrationKpis.cityPackGroundingRate || {}),
     staleSourceBlockRate: Object.assign({ sourceCollections: ['llm_action_logs', 'faq_answer_logs'], provenance: 'live_runtime', missingCount: 0 }, qualityLoopV2.integrationKpis.staleSourceBlockRate || {}),
     emergencyOfficialSourceRate: Object.assign({ sourceCollections: ['llm_action_logs', 'faq_answer_logs'], provenance: 'live_runtime', missingCount: 0 }, qualityLoopV2.integrationKpis.emergencyOfficialSourceRate || {}),
@@ -358,11 +377,44 @@ function buildRuntimeAuditReport(input) {
   };
   const routeCoverage = {
     routerReasons: Array.isArray(conversation.routerReasons) ? conversation.routerReasons : [],
+    strategyReasons: Array.isArray(conversation.strategyReasons) ? conversation.strategyReasons : [],
+    selectedCandidateKinds: Array.isArray(conversation.selectedCandidateKinds) ? conversation.selectedCandidateKinds : [],
+    retrievalBlockReasons: Array.isArray(conversation.retrievalBlockReasons) ? conversation.retrievalBlockReasons : [],
     routeKinds: Array.isArray(conversation.routeKinds) ? conversation.routeKinds : [],
     fallbackTypes: Array.isArray(conversation.fallbackTypes) ? conversation.fallbackTypes : [],
+    fallbackTemplateKinds: Array.isArray(conversation.fallbackTemplateKinds) ? conversation.fallbackTemplateKinds : [],
+    finalizerTemplateKinds: Array.isArray(conversation.finalizerTemplateKinds) ? conversation.finalizerTemplateKinds : [],
+    genericFallbackSlices: Array.isArray(conversation.genericFallbackSlices) ? conversation.genericFallbackSlices : [],
     compatFallbackReasons: Array.isArray(conversation.compatFallbackReasons) ? conversation.compatFallbackReasons : [],
     sharedReadinessBridges: Array.isArray(conversation.sharedReadinessBridges) ? conversation.sharedReadinessBridges : [],
     routeDecisionSources: Array.isArray(conversation.routeDecisionSources) ? conversation.routeDecisionSources : [],
+    priorContextUsedRate: Number.isFinite(Number(conversation.priorContextUsedRate))
+      ? Number(conversation.priorContextUsedRate)
+      : 0,
+    followupResolvedFromHistoryRate: Number.isFinite(Number(conversation.followupResolvedFromHistoryRate))
+      ? Number(conversation.followupResolvedFromHistoryRate)
+      : 0,
+    selectedByDirectAnswerFirstRate: Number.isFinite(Number(conversation.selectedByDirectAnswerFirstRate))
+      ? Number(conversation.selectedByDirectAnswerFirstRate)
+      : 0,
+    retrievalBlockedByStrategyRate: Number.isFinite(Number(conversation.retrievalBlockedByStrategyRate))
+      ? Number(conversation.retrievalBlockedByStrategyRate)
+      : 0,
+    knowledgeCandidateUsedRate: Number.isFinite(Number(conversation.knowledgeCandidateUsedRate))
+      ? Number(conversation.knowledgeCandidateUsedRate)
+      : 0,
+    cityPackUsedInAnswerRate: Number.isFinite(Number(conversation.cityPackUsedInAnswerRate))
+      ? Number(conversation.cityPackUsedInAnswerRate)
+      : 0,
+    savedFaqUsedInAnswerRate: Number.isFinite(Number(conversation.savedFaqUsedInAnswerRate))
+      ? Number(conversation.savedFaqUsedInAnswerRate)
+      : 0,
+    genericFallbackRepeatRateBySlice: Array.isArray(conversation.genericFallbackRepeatRateBySlice)
+      ? conversation.genericFallbackRepeatRateBySlice
+      : [],
+    topRepeatedFallbackFingerprints: Array.isArray(conversation.topRepeatedFallbackFingerprints)
+      ? conversation.topRepeatedFallbackFingerprints
+      : [],
     routerReasonObservedRate: Number.isFinite(Number(conversation.routerReasonObservedRate))
       ? Number(conversation.routerReasonObservedRate)
       : 0,
@@ -384,6 +436,7 @@ function buildRuntimeAuditReport(input) {
     'evidenceCoverage',
     'officialSourceUsageRate',
     'compatShareWindow',
+    'genericFallbackRepeatRate',
     'cityPackGroundingRate',
     'staleSourceBlockRate',
     'emergencyOfficialSourceRate',

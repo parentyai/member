@@ -1,6 +1,10 @@
 'use strict';
 
 const { sanitizePaidMainReply } = require('../conversation/paidReplyGuard');
+const {
+  buildReplyTemplateFingerprint,
+  classifyReplyTemplateKind
+} = require('../conversation/replyTemplateTelemetry');
 const { applyAnswerReadinessDecision } = require('../quality/applyAnswerReadinessDecision');
 
 function normalizeText(value) {
@@ -61,6 +65,19 @@ function finalizeCandidate(params) {
     refuseText: 'この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを整理します。'
   });
   const replyText = trimForPaidLineMessage(readinessApplied.replyText) || fallbackText;
+  const fallbackTemplateKind = guardResult && typeof guardResult.templateKind === 'string'
+    ? guardResult.templateKind
+    : classifyReplyTemplateKind({
+      replyText: guardedReplyText,
+      candidateKind: selected.kind || null,
+      conciseModeApplied: selected.conciseModeApplied === true
+    });
+  const finalizerTemplateKind = classifyReplyTemplateKind({
+    replyText,
+    candidateKind: selected.kind || null,
+    readinessDecision: readinessApplied.decision,
+    conciseModeApplied: selected.conciseModeApplied === true
+  });
 
   return {
     replyText,
@@ -75,6 +92,9 @@ function finalizeCandidate(params) {
       contradictionFlags: contradictionFlags.slice(0, 8),
       candidateId: selected.id || selected.kind || null,
       candidateKind: selected.kind || null,
+      fallbackTemplateKind,
+      finalizerTemplateKind,
+      replyTemplateFingerprint: buildReplyTemplateFingerprint(replyText),
       readinessDecision: readinessApplied.decision,
       readinessSafeResponseMode,
       readinessEnforced: readinessApplied.enforced === true

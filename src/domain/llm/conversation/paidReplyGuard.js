@@ -4,6 +4,10 @@ const LEGACY_TEMPLATE_PATTERN = /(FAQ候補|CityPack候補|根拠キー|根拠\s
 const DEFAULT_SITUATION_LINE = '状況を整理しながら進めましょう。';
 const DEFAULT_QUESTION_LINE = 'まず最優先で進めたい手続きを1つ教えてください。';
 const PITFALL_PATTERN = /(詰まりやすい|注意|リスク|気をつけ|ボトルネック)/;
+const {
+  buildReplyTemplateFingerprint,
+  classifyReplyTemplateKind
+} = require('./replyTemplateTelemetry');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -134,6 +138,7 @@ function sanitizePaidMainReply(text, options) {
     return true;
   });
   const outputLines = [sanitizeLine(situationLine) || DEFAULT_SITUATION_LINE];
+  const insertedNextStepIntro = conciseMode !== true && dedupedActions.length > 0;
   if (conciseMode) {
     if (dedupedActions.length) {
       outputLines.push(toConciseActionLine(dedupedActions[0]));
@@ -171,7 +176,13 @@ function sanitizePaidMainReply(text, options) {
     legacyTemplateHit: containsLegacyTemplateTerms(raw),
     actionCount: dedupedActions.length,
     pitfallIncluded: Boolean(pitfallLine),
-    followupQuestionIncluded: Boolean(followupQuestion)
+    followupQuestionIncluded: Boolean(followupQuestion),
+    insertedNextStepIntro,
+    templateKind: classifyReplyTemplateKind({
+      replyText: sanitizedText || DEFAULT_SITUATION_LINE,
+      conciseModeApplied: conciseMode
+    }),
+    replyTemplateFingerprint: buildReplyTemplateFingerprint(sanitizedText || DEFAULT_SITUATION_LINE)
   };
 }
 

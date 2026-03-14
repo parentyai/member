@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-13T11:26:23-04:00",
-  "gitCommit": "8ac4fc4d3d1bdb96ad89e720ad0ccc97c6f4e1df",
-  "branch": "codex/llm-integration-governance-live-report-r831",
-  "sourceDigest": "8c7f2310ffec0067a2312e95854303a095de385f8ec4c2d8ee5bc977235990b0",
+  "generatedAt": "2026-03-13T20:27:21-04:00",
+  "gitCommit": "ab7858f97b5b439ba18d2c4b941d9a0912957280",
+  "branch": "codex/llm-traceable-routing-diagnosis-r833",
+  "sourceDigest": "239c64ee3ad30866a9faa4481eda04bed9f40e6e03fd0ef8321eae958f1097a9",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

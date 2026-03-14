@@ -3,6 +3,7 @@
 const { detectIntent } = require('../router/detectIntent');
 const { normalizeConversationIntent } = require('../router/normalizeConversationIntent');
 const { resolveFollowupIntent } = require('./followupIntentResolver');
+const { resolveGenericFallbackSlice } = require('../conversation/replyTemplateTelemetry');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -233,6 +234,13 @@ function buildConversationPacket(params) {
     || recoveryFollowupIntent
     || ((contextResume && normalizedConversationIntent !== 'general') ? 'next_step' : null);
   const followupCarryFromHistory = followupIntentReason === 'history_followup_carry';
+  const priorContextUsed = contextResume === true || followupCarryFromHistory === true;
+  const followupResolvedFromHistory = followupCarryFromHistory === true;
+  const continuationReason = followupCarryFromHistory
+    ? 'history_followup_carry'
+    : (contextResume
+      ? 'contextual_domain_resume'
+      : (recoverySignal ? 'recovery_signal' : null));
   const contextCarryScore = computeContextCarryScore({
     contextResume,
     lowInformationMessage,
@@ -245,6 +253,15 @@ function buildConversationPacket(params) {
     unresolvedTaskCount,
     recentAssistantCommitmentCount: recentHistory.assistantCommitments.length,
     recentFollowupIntentCount: recentHistory.recentFollowupIntents.length
+  });
+  const genericFallbackSlice = resolveGenericFallbackSlice({
+    messageText,
+    domainIntent: normalizedConversationIntent,
+    followupIntent,
+    routerReason,
+    priorContextUsed,
+    followupResolvedFromHistory,
+    continuationReason
   });
 
   return {
@@ -268,9 +285,13 @@ function buildConversationPacket(params) {
     followupIntent,
     followupIntentReason,
     followupCarryFromHistory,
+    followupResolvedFromHistory,
     recoveryFollowupIntent,
     lowInformationMessage,
     unresolvedTaskCount,
+    priorContextUsed,
+    continuationReason,
+    genericFallbackSlice,
     contextCarryScore,
     llmFlags: {
       llmConciergeEnabled: llmFlags.llmConciergeEnabled === true,

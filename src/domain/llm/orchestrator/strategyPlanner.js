@@ -40,6 +40,7 @@ function buildStrategyPlan(params) {
         verifyNeeded: false,
         candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
         fallbackType: 'recovery_domain_resume',
+        strategyReason: 'recovery_signal_domain_resume',
         directAnswerFirst: true,
         clarifySuppressed: false
       };
@@ -52,6 +53,7 @@ function buildStrategyPlan(params) {
         verifyNeeded: false,
         candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
         fallbackType: 'followup_direct_answer',
+        strategyReason: 'followup_intent_domain_resume',
         directAnswerFirst: true,
         clarifySuppressed: true
       };
@@ -64,6 +66,7 @@ function buildStrategyPlan(params) {
         verifyNeeded: false,
         candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
         fallbackType: 'history_followup_carry',
+        strategyReason: 'history_followup_carry',
         directAnswerFirst: true,
         clarifySuppressed: true
       };
@@ -76,6 +79,7 @@ function buildStrategyPlan(params) {
         verifyNeeded: false,
         candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
         fallbackType: 'contextual_domain_resume',
+        strategyReason: 'contextual_domain_resume',
         directAnswerFirst: true,
         clarifySuppressed: true
       };
@@ -89,6 +93,7 @@ function buildStrategyPlan(params) {
         verifyNeeded: false,
         candidateSet: ['clarify_candidate', 'conversation_candidate'],
         fallbackType: 'low_information_clarify',
+        strategyReason: 'low_information_clarify',
         directAnswerFirst: false,
         clarifySuppressed: false
       };
@@ -100,6 +105,7 @@ function buildStrategyPlan(params) {
       verifyNeeded: false,
       candidateSet: ['conversation_candidate'],
       fallbackType: null,
+      strategyReason: 'casual_default',
       directAnswerFirst: false,
       clarifySuppressed: false
     };
@@ -114,6 +120,7 @@ function buildStrategyPlan(params) {
         verifyNeeded: false,
         candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
         fallbackType: 'recovery_domain_resume',
+        strategyReason: 'recovery_signal_domain_resume',
         directAnswerFirst: true,
         clarifySuppressed: false
       };
@@ -125,6 +132,7 @@ function buildStrategyPlan(params) {
       verifyNeeded: false,
       candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
       fallbackType: null,
+      strategyReason: 'explicit_domain_intent',
       directAnswerFirst: directAnswerHint,
       clarifySuppressed: directAnswerHint
     };
@@ -138,6 +146,7 @@ function buildStrategyPlan(params) {
       verifyNeeded: false,
       candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
       fallbackType: null,
+      strategyReason: 'router_problem_concierge',
       directAnswerFirst: false,
       clarifySuppressed: false
     };
@@ -151,6 +160,7 @@ function buildStrategyPlan(params) {
       verifyNeeded: true,
       candidateSet: ['grounded_candidate', 'conversation_candidate', 'clarify_candidate'],
       fallbackType: null,
+      strategyReason: 'router_activity_recommendation',
       directAnswerFirst: false,
       clarifySuppressed: false
     };
@@ -165,6 +175,7 @@ function buildStrategyPlan(params) {
         verifyNeeded: false,
         candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
         fallbackType: 'recovery_domain_resume',
+        strategyReason: 'recovery_signal_domain_resume',
         directAnswerFirst: true,
         clarifySuppressed: false
       };
@@ -177,6 +188,7 @@ function buildStrategyPlan(params) {
         verifyNeeded: false,
         candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
         fallbackType: 'followup_direct_answer',
+        strategyReason: 'followup_intent_domain_resume',
         directAnswerFirst: true,
         clarifySuppressed: true
       };
@@ -189,6 +201,7 @@ function buildStrategyPlan(params) {
         verifyNeeded: false,
         candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
         fallbackType: 'history_followup_carry',
+        strategyReason: 'history_followup_carry',
         directAnswerFirst: true,
         clarifySuppressed: true
       };
@@ -205,6 +218,7 @@ function buildStrategyPlan(params) {
         ? ['clarify_candidate', 'conversation_candidate']
         : ['grounded_candidate', 'composed_concierge_candidate', 'clarify_candidate'],
       fallbackType: clarifyFirst ? 'low_specificity_clarify' : null,
+      strategyReason: clarifyFirst ? 'broad_question_clarify' : 'question_grounded_answer',
       directAnswerFirst: !clarifyFirst,
       clarifySuppressed: false
     };
@@ -218,6 +232,7 @@ function buildStrategyPlan(params) {
       verifyNeeded: false,
       candidateSet: ['clarify_candidate', 'conversation_candidate'],
       fallbackType: 'recovery_clarify',
+      strategyReason: 'recovery_clarify',
       directAnswerFirst: false,
       clarifySuppressed: false
     };
@@ -230,6 +245,7 @@ function buildStrategyPlan(params) {
     verifyNeeded: true,
     candidateSet: ['grounded_candidate', 'clarify_candidate'],
     fallbackType: null,
+    strategyReason: 'default_grounded_answer',
     directAnswerFirst: false,
     clarifySuppressed: false
   };
