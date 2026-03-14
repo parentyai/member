@@ -162,6 +162,26 @@ Notes:
 - operator audience may receive trace refs and denser evidence; human audience hides raw trace ids and compresses internal metadata.
 - PR-9 admin UI consumes the same route in `pane-quality-patrol` with `mode` and `audience` selectors; no additional write path is introduced.
 
+### Quality Patrol job artifacts (derived, filesystem, read-only by default)
+Purpose: allow manual or cron-friendly patrol runs to materialize stable JSON artifacts without introducing a scheduler service yet.
+
+Typical files:
+- `/tmp/quality_patrol_latest.json`
+- `/tmp/quality_patrol_metrics.json`
+- `/tmp/quality_patrol_detection.json`
+- `/tmp/quality_patrol_planning.json`
+
+Typical fields:
+- `summary`, `issues[]`, `observationBlockers[]`, `evidence[]`, `traceRefs[]`, `recommendedPr[]`
+- `mode`, `audience`, `generatedAt`
+- `planningStatus`, `analysisStatus`, `observationStatus`
+- `runtimeFetchStatus`, `writeStatus`, `sourceWindow`, `sourceCollections`
+
+Notes:
+- PR-10 jobs are CLI first and read-only by default.
+- `--write-issues` and `--write-backlog` are explicit opt-in flags.
+- no new Firestore collection is introduced for these artifacts in PR-10.
+
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
 

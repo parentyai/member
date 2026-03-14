@@ -120,6 +120,10 @@
     "llm:quality:runtime-summary:prepare": "node tools/llm_quality/prepare_runtime_summary.js --output tmp/llm_usage_summary.json --seed tools/llm_quality/fixtures/usage_summary_candidate.v1.json",
     "llm:quality:runtime-summary:prepare:strict": "node tools/llm_quality/prepare_runtime_summary.js --strict-runtime true --output tmp/llm_usage_summary.json --seed benchmarks/frozen/v1/runtime_summary_snapshot.v1.json"
     ,
-    "llm:spec-contract:freeze:check": "node scripts/check_llm_spec_contract_freeze.js --check"
+    "llm:spec-contract:freeze:check": "node scripts/check_llm_spec_contract_freeze.js --check",
+    "quality-patrol:run": "node tools/run_quality_patrol.js",
+    "quality-patrol:metrics": "node tools/run_quality_patrol_metrics.js",
+    "quality-patrol:detection": "node tools/run_quality_patrol_detection.js",
+    "quality-patrol:planning": "node tools/run_quality_patrol_planning.js"
   }
 }
