@@ -131,6 +131,21 @@ Notes:
 - root cause reports are not persisted in PR-6.
 - analyzer is deterministic only and does not update issue registry or backlog state.
 
+### Quality Patrol improvement plans (derived, read-only)
+Purpose: convert ranked root-cause reports into deterministic proposal bundles for future query and scheduler layers.
+
+Typical fields:
+- `planVersion`, `generatedAt`, `planningStatus`, `summary`
+- `recommendedPr[]` with `proposalKey`, `proposalType`, `priority`, `title`, `objective`
+- `whyNow`, `whyNotOthers`, `rootCauseRefs`, `targetFiles`, `expectedImpact`
+- `riskLevel`, `rollbackPlan`, `preconditions`, `blockedBy`, `confidence`
+- `observationBlockers`, `provenance`, `sourceCollections`
+
+Notes:
+- improvement plans are not persisted in PR-7.
+- planner is deterministic only and returns suggestions; it does not write registry/backlog state or change runtime behavior.
+- observation-gap-led plans stay in observation-only families until evidence quality improves.
+
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
 

@@ -31,3 +31,4 @@
 ## Future integration
 - PR-7 should consume ranked `causeCandidates` directly for improvement planning.
 - planner should use `analysisStatus`, `observationBlockers`, and `evidenceGaps` before proposing implementation work.
+- planner should keep `cause` and `proposal` separate: root cause reports explain why an issue happens, while improvement plans suggest the next reversible PR family.
