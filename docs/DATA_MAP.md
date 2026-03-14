@@ -119,6 +119,18 @@ Notes:
 - detection results are not stored by default in PR-5.
 - `detectAndUpsertQualityIssues` may reuse existing `quality_issue_registry` and `quality_improvement_backlog` foundations only when explicit persistence is requested.
 
+### Quality Patrol root cause reports (derived, read-only)
+Purpose: map deterministic detection issues into ranked cause candidates with supporting evidence and evidence gaps for future planning layers.
+
+Typical fields:
+- `rootCauseReports[]` with `issueKey`, `issueType`, `slice`, `analysisStatus`, `rootCauseSummary`
+- `causeCandidates[]` with `causeType`, `rank`, `confidence`, `supportingSignals`, `supportingEvidence`, `evidenceGaps`
+- `observationBlockers`, `provenance`, `sourceCollections`
+
+Notes:
+- root cause reports are not persisted in PR-6.
+- analyzer is deterministic only and does not update issue registry or backlog state.
+
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
 

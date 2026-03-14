@@ -597,6 +597,149 @@
         "docs/QUALITY_PATROL_DETECTION_RUNBOOK.md",
         "scripts/check_structural_cleanup.js"
       ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/analyzeRootCauses.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; root cause analyzer entrypoint stays isolated until planner, query, or jobs consume it",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/rootCause/buildRootCauseReport.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; per-issue root cause report builder remains caller-limited until future patrol surfaces land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/rootCause/collectCauseEvidence.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; evidence collection helper is intentionally read-only and isolated from runtime callers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/rootCause/constants.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; root cause constants stay isolated until planner/query layers tune them",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/rootCause/detectContinuityCauses.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; continuity cause detector remains reserved for future root cause consumers",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/rootCause/detectFinalizerTemplateCauses.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; finalizer cause detector stays isolated until planner/query surfaces adopt it",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/rootCause/detectKnowledgeSelectionCauses.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; knowledge selection cause detector is intentionally detached from runtime mutation paths",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/rootCause/detectObservationCauses.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; observation cause detector remains internal until later planning and query callers land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/rootCause/detectReadinessCauses.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; readiness cause detector is intentionally caller-limited and read-only",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/rootCause/detectRetrievalCauses.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; retrieval cause detector remains isolated until root cause outputs are consumed downstream",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/rootCause/detectSpecificityCauses.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; specificity/procedural cause detector is intentionally not route-wired yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/domain/qualityPatrol/rootCause/resolveCauseConfidence.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; root cause confidence resolver stays internal until planner consumers land",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
+      "file": "src/usecases/qualityPatrol/analyzeQualityIssues.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "PR-6 foundation only; read-only analyzer wrapper is intentionally not wired to routes, registry writes, or scheduler yet",
+      "ssot_refs": [
+        "docs/QUALITY_PATROL_ROOT_CAUSE_RUNBOOK.md",
+        "scripts/check_structural_cleanup.js"
+      ]
     }
   ]
 }
