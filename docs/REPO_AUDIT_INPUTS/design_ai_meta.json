@@ -13,6 +13,7 @@
     "cityPacksRepo",
     "cityPackTemplateLibraryRepo",
     "cityPackUpdateProposalsRepo",
+    "conversationReviewSnapshotsRepo",
     "ctaStatsRepo",
     "decisionDriftsRepo",
     "decisionLogsRepo",

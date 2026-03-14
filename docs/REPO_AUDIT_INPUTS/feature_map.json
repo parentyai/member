@@ -2991,7 +2991,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": false,
-      "tests_count": 73,
+      "tests_count": 75,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -3205,6 +3205,7 @@
       "entrypoints": [],
       "usecases": [
         "appendAuditLog",
+        "appendConversationReviewSnapshot",
         "appendLlmGateDecision",
         "buildConciergeContextSnapshot",
         "classifyPaidIntent",
@@ -3243,6 +3244,7 @@
         "cityPackFeedbackRepo",
         "cityPackRequestsRepo",
         "cityPacksRepo",
+        "conversationReviewSnapshotsRepo",
         "deliveriesRepo",
         "eventsRepo",
         "journeyTodoItemsRepo",
@@ -3269,6 +3271,7 @@
         "city_pack_feedback",
         "city_pack_requests",
         "city_packs",
+        "conversation_review_snapshots",
         "events",
         "journey_todo_items",
         "link_registry",
@@ -3294,7 +3297,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 86,
+      "tests_count": 81,
       "ssot_refs": [],
       "completion": "completed"
     },

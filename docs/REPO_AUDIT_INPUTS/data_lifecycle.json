@@ -142,6 +142,18 @@
     ]
   },
   {
+    "collection": "conversation_review_snapshots",
+    "kind": "event",
+    "recomputable": true,
+    "retention": "180d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/conversationReviewSnapshotsRepo.js:7",
+      "src/repos/firestore/conversationReviewSnapshotsRepo.js:71",
+      "src/domain/retention/retentionPolicy.js:30"
+    ]
+  },
+  {
     "collection": "decision_drifts",
     "kind": "config",
     "recomputable": false,

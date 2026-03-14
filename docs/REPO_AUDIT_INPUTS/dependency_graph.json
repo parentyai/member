@@ -20,6 +20,9 @@
     "appendAuditLog": [
       "auditLogsRepo"
     ],
+    "appendConversationReviewSnapshot": [
+      "conversationReviewSnapshotsRepo"
+    ],
     "appendDecision": [
       "decisionLogsRepo"
     ],
@@ -750,6 +753,9 @@
     "cityPacksRepo": [
       "city_packs"
     ],
+    "conversationReviewSnapshotsRepo": [
+      "conversation_review_snapshots"
+    ],
     "decisionDriftsRepo": [
       "decision_drifts"
     ],
@@ -1458,6 +1464,7 @@
     ],
     "src/routes/webhookLine.js": [
       "appendAuditLog",
+      "appendConversationReviewSnapshot",
       "appendLlmGateDecision",
       "buildConciergeContextSnapshot",
       "classifyPaidIntent",
