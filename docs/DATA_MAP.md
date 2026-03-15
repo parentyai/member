@@ -105,6 +105,9 @@ Typical fields:
 - `summary.overallStatus`, `summary.reviewUnitCount`, `summary.sliceCounts`
 - `metrics.*` with `value`, `sampleCount`, `missingCount`, `falseCount`, `blockedCount`, `unavailableCount`, `status`
 - `issueCandidateMetrics.*`
+- `decayAwareReadiness.recentWindowStatus`, `historicalBacklogStatus`, `overallReadinessStatus`
+- `decayAwareReadiness.recentWindow`, `fullWindow`, `previousFullWindow`, `deltaFromPreviousFullWindow`
+- `decayAwareReadiness.historicalDebt`, `currentRuntimeHealth`
 - `observationBlockers`, `provenance`, `sourceCollections`
 
 Notes:
@@ -180,6 +183,7 @@ Typical fields:
 - `summary`, `issues[]`, `observationBlockers[]`, `evidence[]`, `traceRefs[]`, `recommendedPr[]`
 - `mode`, `audience`, `generatedAt`
 - `planningStatus`, `analysisStatus`, `observationStatus`
+- `decayAwareReadiness`
 - `runtimeFetchStatus`, `writeStatus`, `sourceWindow`, `sourceCollections`
 
 Notes:

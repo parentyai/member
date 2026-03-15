@@ -34,6 +34,7 @@
 - `observationBlockers[]` keeps blocker title, slices, and recommended action
   - add-only precision fields: `code`, `category`, `evidenceSource`, `privacySensitivity`, `detailVisibility`
 - `evidence[]` includes read-only metric/signal/trace/snapshot/summary references
+- `evidence[]` may include decay-aware readiness summaries that separate recent runtime health from historical backlog debt without changing the top-level response shape
 - `traceRefs[]` may be returned for operator audience only
 - `recommendedPr[]` includes proposal priority, objective, risk, and blockers
 - `observationStatus` remains `ready`, `blocked`, `insufficient_evidence`, or `unavailable`
@@ -47,6 +48,9 @@
   - `action_log_source_missing` / `trace_source_missing`: the source itself is missing for anchored review units
   - `insufficient_runtime_evidence`: some evidence exists, but it is still too thin for confident runtime judgement
 - human responses keep the same facts but mark `detailVisibility=privacy_hidden_detail` instead of exposing internal ids or low-level codes directly.
+- decay-aware readiness evidence keeps the same audience split:
+  - operator: recent/full window counts, delta, and backlog-vs-runtime status
+  - human: compact explanation that current runtime health and historical backlog are separated, without raw internal taxonomy strings
 
 ## Security and privacy
 - route is under `/api/admin/*` and therefore inherits admin token protection from the protection matrix.

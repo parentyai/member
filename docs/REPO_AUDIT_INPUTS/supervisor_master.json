@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T00:14:45-04:00",
-  "gitCommit": "7b7085ac1622ba74d101c0280a70d1cdb9e34dc8",
-  "branch": "HEAD",
-  "sourceDigest": "3cb6f84ffab67556c34600db2cf10bde39bb67e021aae32a0b378f1c084d0cd2",
+  "generatedAt": "2026-03-15T00:19:01-04:00",
+  "gitCommit": "9907fbe00cfa586b9e61daa114d346887f764aa1",
+  "branch": "codex/quality-patrol-decay-gate-T001",
+  "sourceDigest": "3b693c23b848ae0c0a12bb1af805a9dc87e1de7192f99e2facfeb55ba5538373",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
