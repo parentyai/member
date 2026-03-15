@@ -34,8 +34,13 @@
 - `observationBlockers[]` keeps blocker title, slices, and recommended action
   - add-only precision fields: `code`, `category`, `evidenceSource`, `privacySensitivity`, `detailVisibility`
 - `evidence[]` includes read-only metric/signal/trace/snapshot/summary references
+- add-only `backlogSeparation` may be returned as a structured view over:
+  - `currentRuntime`
+  - `historicalDebt`
+  - `backlogSeparationGate`
 - `evidence[]` may include decay-aware readiness summaries that separate recent runtime health from historical backlog debt without changing the top-level response shape
 - `evidence[]` may include decay-aware ops gate summaries that convert recent/full/overall facts into `GO` / `NO_GO` / `OBSERVATION_CONTINUE` without changing the top-level response shape
+- `evidence[]` may include `quality_patrol_backlog_separation` with add-only `structuredSummary`
 - `traceRefs[]` may be returned for operator audience only
 - `recommendedPr[]` includes proposal priority, objective, risk, and blockers
 - `observationStatus` remains `ready`, `blocked`, `insufficient_evidence`, or `unavailable`
@@ -55,6 +60,9 @@
 - decay-aware ops gate evidence keeps the same audience split:
   - operator: `decision`, `decisionReasonCode`, `operatorAction`, and `prDStatus`
   - human: compact readiness explanation only, without internal rule codes
+- backlog separation structured view keeps the same audience split:
+  - operator: exposes raw `reasonCode`, `operatorAction`, and debt counts so historical backlog debt can be separated from current runtime health
+  - human: keeps the split visible but suppresses internal taxonomy codes and detailed debt breakdowns
 - operator action rule:
   - `decision=NO_GO` and `decisionReasonCode=current_runtime_or_current_join_problem` => fix runtime or current join path
   - `decision=NO_GO` and `decisionReasonCode=historical_backlog_dominant` => treat as historical debt and keep PR-D deferred

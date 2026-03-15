@@ -2,6 +2,9 @@
 
 const crypto = require('node:crypto');
 const { resolveAudienceView } = require('./resolveAudienceView');
+const {
+  buildPatrolBacklogSeparation
+} = require('./buildPatrolBacklogSeparation');
 
 function buildEvidenceKey(seed) {
   return `qpe_${crypto.createHash('sha256').update(seed, 'utf8').digest('hex').slice(0, 16)}`;
@@ -195,6 +198,35 @@ function serializeDecayAwareOpsGate(decayAwareOpsGate, audience, rows, seen) {
   });
 }
 
+function serializeBacklogSeparation(decayAwareReadiness, decayAwareOpsGate, audience, rows, seen) {
+  const structuredSummary = buildPatrolBacklogSeparation({
+    audience,
+    decayAwareReadiness,
+    decayAwareOpsGate
+  });
+  const currentRuntime = structuredSummary && structuredSummary.currentRuntime && typeof structuredSummary.currentRuntime === 'object'
+    ? structuredSummary.currentRuntime
+    : null;
+  const historicalDebt = structuredSummary && structuredSummary.historicalDebt && typeof structuredSummary.historicalDebt === 'object'
+    ? structuredSummary.historicalDebt
+    : null;
+  const gate = structuredSummary && structuredSummary.backlogSeparationGate && typeof structuredSummary.backlogSeparationGate === 'object'
+    ? structuredSummary.backlogSeparationGate
+    : null;
+  if (!currentRuntime || !historicalDebt || !gate) return;
+
+  const summary = audience === 'human'
+    ? `現在の runtime は ${currentRuntime.status}、過去期間の負債は ${historicalDebt.status}、判定は ${gate.decision} です。`
+    : `backlogSeparation decision=${gate.decision} currentRuntime=${currentRuntime.status} historicalDebt=${historicalDebt.status} debtCounts=${JSON.stringify(historicalDebt.debtCounts || {})} prD=${gate.prDStatus}`;
+  pushEvidence(rows, seen, {
+    kind: 'summary',
+    summary,
+    structuredSummary,
+    provenance: 'quality_patrol_backlog_separation',
+    traceId: null
+  });
+}
+
 function serializePatrolEvidence(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const audience = resolveAudienceView(payload.audience);
@@ -204,6 +236,7 @@ function serializePatrolEvidence(params) {
 
   serializeDecayAwareReadiness(payload.decayAwareReadiness, audience, rows, seen);
   serializeDecayAwareOpsGate(payload.decayAwareOpsGate, audience, rows, seen);
+  serializeBacklogSeparation(payload.decayAwareReadiness, payload.decayAwareOpsGate, audience, rows, seen);
   serializeJoinDiagnostics(payload.joinDiagnostics, audience, rows, seen);
   serializeMetricEvidence(payload.metrics, audience, rows, seen);
   serializeTranscriptCoverageEvidence(payload.transcriptCoverage, audience, rows, seen);

@@ -236,6 +236,13 @@ function resolveOverallReadinessStatus(fullWindow, recentWindow, deltaFromPrevio
 function buildHistoricalDebt(fullWindow, recentWindow, deltaFromPreviousFullWindow) {
   const full = fullWindow && typeof fullWindow === 'object' ? fullWindow : emptyWindow();
   const recent = recentWindow && typeof recentWindow === 'object' ? recentWindow : emptyWindow();
+  const debtCounts = {
+    skipped_unreviewable_transcript: Math.max(0, full.skipped_unreviewable_transcript - recent.skipped_unreviewable_transcript),
+    assistant_reply_missing: Math.max(0, full.assistant_reply_missing - recent.assistant_reply_missing),
+    faq_only_rows_skipped: Math.max(0, full.faqOnlyRowsSkipped - recent.faqOnlyRowsSkipped),
+    action_trace_join_limited: Math.max(0, full.traceHydrationLimitedCount - recent.traceHydrationLimitedCount),
+    blocker_count: Math.max(0, full.blockerCount - recent.blockerCount)
+  };
   const transcriptDebtCount = Math.max(0, full.skipped_unreviewable_transcript - recent.skipped_unreviewable_transcript)
     + Math.max(0, full.assistant_reply_missing - recent.assistant_reply_missing);
   const joinDebtCount = Math.max(0, full.faqOnlyRowsSkipped - recent.faqOnlyRowsSkipped)
@@ -245,6 +252,14 @@ function buildHistoricalDebt(fullWindow, recentWindow, deltaFromPreviousFullWind
     trend: deltaFromPreviousFullWindow && deltaFromPreviousFullWindow.available
       ? deltaFromPreviousFullWindow.status
       : 'unavailable',
+    sourceWindow: {
+      fromAt: full && full.sourceWindow ? full.sourceWindow.fromAt || null : null,
+      toAt: full && full.sourceWindow ? full.sourceWindow.toAt || null : null
+    },
+    observedCount: Number(full.observedCount || 0),
+    reviewUnitCount: Number(full.reviewUnitCount || 0),
+    debtCounts,
+    totalDebtCount: Object.values(debtCounts).reduce((sum, value) => sum + Number(value || 0), 0),
     transcriptDebtCount,
     joinDebtCount,
     dominantDebt: transcriptDebtCount >= joinDebtCount ? 'transcript_coverage' : 'join_limit',
@@ -256,6 +271,10 @@ function buildCurrentRuntimeHealth(recentWindow) {
   const recentStatus = resolveRecentWindowStatus(recentWindow);
   return {
     status: recentStatus,
+    sourceWindow: {
+      fromAt: recentWindow && recentWindow.sourceWindow ? recentWindow.sourceWindow.fromAt || null : null,
+      toAt: recentWindow && recentWindow.sourceWindow ? recentWindow.sourceWindow.toAt || null : null
+    },
     observedCount: Number(recentWindow && recentWindow.observedCount || 0),
     reviewUnitCount: Number(recentWindow && recentWindow.reviewUnitCount || 0),
     transcriptWriteCoverageHealthy: Number(recentWindow && recentWindow.skipped_unreviewable_transcript || 0) <= 0
@@ -291,6 +310,20 @@ function createEmptyDecayAwareReadiness() {
     historicalDebt: {
       status: 'unavailable',
       trend: 'unavailable',
+      sourceWindow: {
+        fromAt: null,
+        toAt: null
+      },
+      observedCount: 0,
+      reviewUnitCount: 0,
+      debtCounts: {
+        skipped_unreviewable_transcript: 0,
+        assistant_reply_missing: 0,
+        faq_only_rows_skipped: 0,
+        action_trace_join_limited: 0,
+        blocker_count: 0
+      },
+      totalDebtCount: 0,
       transcriptDebtCount: 0,
       joinDebtCount: 0,
       dominantDebt: 'transcript_coverage',
@@ -298,6 +331,10 @@ function createEmptyDecayAwareReadiness() {
     },
     currentRuntimeHealth: {
       status: 'unavailable',
+      sourceWindow: {
+        fromAt: null,
+        toAt: null
+      },
       observedCount: 0,
       reviewUnitCount: 0,
       transcriptWriteCoverageHealthy: false,

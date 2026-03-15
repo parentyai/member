@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T09:38:11-04:00",
-  "gitCommit": "86edf6112b72288fb75288c2a12abac7c69fa854",
-  "branch": "codex/quality-patrol-ops-gate-T001",
-  "sourceDigest": "fce09edfe8ca50baeada04d0f24c6dbd3781d4845e47d437da2a46babb9459a0",
+  "generatedAt": "2026-03-15T10:25:53-04:00",
+  "gitCommit": "28722c6509654630660ae6e74d5852038ea134f7",
+  "branch": "codex/quality-patrol-backlog-separation-T001",
+  "sourceDigest": "4a56e5225496e18c9910eb8ce35720c05416ad08e5e58b8594714707a0195a79",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
