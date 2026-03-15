@@ -65,6 +65,7 @@ async function queryLatestPatrolInsights(params, deps) {
   let joinDiagnostics = payload.joinDiagnostics && typeof payload.joinDiagnostics === 'object'
     ? payload.joinDiagnostics
     : null;
+  let llmActionLogs = Array.isArray(payload.llmActionLogs) ? payload.llmActionLogs : null;
 
   if (!reviewUnits) {
     const extracted = await extractor(payload, deps);
@@ -74,6 +75,7 @@ async function queryLatestPatrolInsights(params, deps) {
     joinDiagnostics = extracted && extracted.joinDiagnostics && typeof extracted.joinDiagnostics === 'object'
       ? extracted.joinDiagnostics
       : joinDiagnostics;
+    llmActionLogs = Array.isArray(extracted && extracted.llmActionLogs) ? extracted.llmActionLogs : llmActionLogs;
   }
 
   let evaluations = Array.isArray(payload.evaluations) ? payload.evaluations : null;
@@ -85,7 +87,12 @@ async function queryLatestPatrolInsights(params, deps) {
 
   const kpiResult = payload.kpiResult
     ? payload.kpiResult
-    : await kpiBuilder(Object.assign({}, payload, { reviewUnits, evaluations }), deps);
+    : await kpiBuilder(Object.assign({}, payload, {
+      reviewUnits,
+      evaluations,
+      joinDiagnostics,
+      llmActionLogs
+    }), deps);
   sourceCollections = uniqueStrings([].concat(sourceCollections, kpiResult && kpiResult.sourceCollections));
 
   const detectionResult = payload.detectionResult
@@ -130,6 +137,7 @@ async function queryLatestPatrolInsights(params, deps) {
     evaluations,
     metrics: kpiResult && kpiResult.metrics ? Object.assign({}, kpiResult.metrics, kpiResult.issueCandidateMetrics || {}) : {},
     transcriptCoverage: kpiResult && kpiResult.transcriptCoverage ? kpiResult.transcriptCoverage : null,
+    decayAwareReadiness: kpiResult && kpiResult.decayAwareReadiness ? kpiResult.decayAwareReadiness : null,
     kpiSummary: kpiResult && kpiResult.summary ? kpiResult.summary : null,
     issues: detectionResult && Array.isArray(detectionResult.issueCandidates) ? detectionResult.issueCandidates : [],
     rootCauseReports: rootCauseResult && Array.isArray(rootCauseResult.rootCauseReports) ? rootCauseResult.rootCauseReports : [],

@@ -129,6 +129,52 @@ function serializeJoinDiagnostics(joinDiagnostics, audience, rows, seen) {
   });
 }
 
+function serializeDecayAwareReadiness(decayAwareReadiness, audience, rows, seen) {
+  const payload = decayAwareReadiness && typeof decayAwareReadiness === 'object' ? decayAwareReadiness : null;
+  if (!payload) return;
+  const recent = payload.recentWindow && typeof payload.recentWindow === 'object' ? payload.recentWindow : null;
+  const full = payload.fullWindow && typeof payload.fullWindow === 'object' ? payload.fullWindow : null;
+  const delta = payload.deltaFromPreviousFullWindow && typeof payload.deltaFromPreviousFullWindow === 'object'
+    ? payload.deltaFromPreviousFullWindow
+    : null;
+  if (!recent || !full) return;
+
+  const summary = audience === 'human'
+    ? (payload.overallReadinessStatus === 'historical_backlog_dominant'
+      ? '最近の観測では現在の応答経路は安定していますが、過去期間の証跡不足が残っています。'
+      : (payload.overallReadinessStatus === 'observation_continue_backlog_decay'
+        ? '最近の観測では現在の応答経路は安定しており、過去期間の証跡不足も少しずつ減っています。'
+        : (payload.overallReadinessStatus === 'current_runtime_or_current_join_problem'
+          ? '最近の観測でも現在の応答経路または証跡結合に不足が残っています。'
+          : '最近と全体の観測が安定し、readiness の再判定候補です。')))
+    : `decayAwareReadiness overall=${payload.overallReadinessStatus} recent=${payload.recentWindowStatus} historical=${payload.historicalBacklogStatus} recentWindow=${JSON.stringify({
+      observedCount: recent.observedCount,
+      written: recent.written,
+      skipped_unreviewable_transcript: recent.skipped_unreviewable_transcript,
+      assistant_reply_missing: recent.assistant_reply_missing,
+      reviewUnitCount: recent.reviewUnitCount,
+      faqOnlyRowsSkipped: recent.faqOnlyRowsSkipped,
+      traceHydrationLimitedCount: recent.traceHydrationLimitedCount,
+      blockerCount: recent.blockerCount
+    })} fullWindow=${JSON.stringify({
+      observedCount: full.observedCount,
+      written: full.written,
+      skipped_unreviewable_transcript: full.skipped_unreviewable_transcript,
+      assistant_reply_missing: full.assistant_reply_missing,
+      reviewUnitCount: full.reviewUnitCount,
+      faqOnlyRowsSkipped: full.faqOnlyRowsSkipped,
+      traceHydrationLimitedCount: full.traceHydrationLimitedCount,
+      blockerCount: full.blockerCount
+    })} delta=${JSON.stringify(delta || {})}`;
+
+  pushEvidence(rows, seen, {
+    kind: 'summary',
+    summary,
+    provenance: 'quality_patrol_decay_readiness',
+    traceId: null
+  });
+}
+
 function serializePatrolEvidence(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const audience = resolveAudienceView(payload.audience);
@@ -136,6 +182,7 @@ function serializePatrolEvidence(params) {
   const rows = [];
   const seen = new Set();
 
+  serializeDecayAwareReadiness(payload.decayAwareReadiness, audience, rows, seen);
   serializeJoinDiagnostics(payload.joinDiagnostics, audience, rows, seen);
   serializeMetricEvidence(payload.metrics, audience, rows, seen);
   serializeTranscriptCoverageEvidence(payload.transcriptCoverage, audience, rows, seen);

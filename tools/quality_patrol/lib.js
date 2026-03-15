@@ -14,6 +14,7 @@ const { detectAndUpsertQualityIssues } = require('../../src/usecases/qualityPatr
 const { listOpenIssues } = require('../../src/usecases/qualityPatrol/listOpenIssues');
 const { listTopPriorityBacklog } = require('../../src/usecases/qualityPatrol/listTopPriorityBacklog');
 const { buildPatrolQueryResponse } = require('../../src/domain/qualityPatrol/query/buildPatrolQueryResponse');
+const { createEmptyDecayAwareReadiness } = require('../../src/domain/qualityPatrol/buildDecayAwareReadiness');
 
 const MAIN_ARTIFACT_VERSION = 'quality_patrol_job_v1';
 const METRICS_ARTIFACT_VERSION = 'quality_patrol_metrics_job_v1';
@@ -113,6 +114,7 @@ function createEmptyExtractorResult(payload) {
     ok: false,
     sourceWindow: createSourceWindow(payload),
     reviewUnits: [],
+    llmActionLogs: [],
     sourceCollections: [],
     counts: {
       snapshots: 0,
@@ -195,6 +197,7 @@ function createEmptyKpiResult() {
       transcriptCoverageStatus: 'unavailable',
       sourceCollections: ['llm_action_logs']
     },
+    decayAwareReadiness: createEmptyDecayAwareReadiness(),
     observationBlockers: [],
     provenance: 'review_unit_evaluator',
     sourceCollections: []
@@ -283,6 +286,7 @@ function buildFallbackQueryArtifact(payload) {
     evaluations: payload.evaluations,
     metrics: Object.assign({}, payload.kpiResult.metrics || {}, payload.kpiResult.issueCandidateMetrics || {}),
     transcriptCoverage: payload.kpiResult.transcriptCoverage || null,
+    decayAwareReadiness: payload.kpiResult.decayAwareReadiness || null,
     kpiSummary: payload.kpiResult.summary || null,
     issues: payload.detectionResult.issueCandidates || [],
     rootCauseReports: payload.rootCauseResult.rootCauseReports || [],
@@ -303,6 +307,7 @@ function buildMainArtifact(job) {
     planningStatus: job.planResult.planningStatus || 'insufficient_evidence',
     analysisStatus: summarizeAnalysisStatus(job.rootCauseResult),
     transcriptCoverage: job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage,
+    decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
     provenance: JOB_PROVENANCE,
     sourceWindow: job.sourceWindow,
     runtimeFetchStatus: job.runtimeFetchStatus,
@@ -320,6 +325,7 @@ function buildMetricsArtifact(job) {
     metrics: job.kpiResult.metrics || {},
     issueCandidateMetrics: job.kpiResult.issueCandidateMetrics || {},
     transcriptCoverage: job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage,
+    decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
     observationBlockers: job.kpiResult.observationBlockers || [],
     provenance: 'quality_patrol_job_metrics',
     sourceCollections: job.kpiResult.sourceCollections || [],
@@ -399,6 +405,7 @@ async function runQualityPatrolPipeline(input, deps) {
     error: extractorStage.error
   };
   const reviewUnits = Array.isArray(extractorStage.result.reviewUnits) ? extractorStage.result.reviewUnits : [];
+  const llmActionLogs = Array.isArray(extractorStage.result.llmActionLogs) ? extractorStage.result.llmActionLogs : [];
   const sourceWindow = extractorStage.result.sourceWindow || createSourceWindow(options);
 
   const evaluationStage = await runStage(
@@ -418,6 +425,10 @@ async function runQualityPatrolPipeline(input, deps) {
     () => (deps && deps.buildPatrolKpisFromEvaluations ? deps.buildPatrolKpisFromEvaluations : buildPatrolKpisFromEvaluations)(Object.assign({}, options, {
       reviewUnits,
       evaluations,
+      llmActionLogs,
+      joinDiagnostics: extractorStage.result && extractorStage.result.joinDiagnostics
+        ? extractorStage.result.joinDiagnostics
+        : null,
       transcriptCoverage: extractorStage.result && extractorStage.result.transcriptCoverage
         ? extractorStage.result.transcriptCoverage
         : null

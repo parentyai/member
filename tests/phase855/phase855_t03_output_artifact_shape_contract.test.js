@@ -33,6 +33,7 @@ test('phase855: patrol job emits query-aligned output artifact shape', async () 
   assert.ok(artifact.analysisStatus);
   assert.ok(artifact.transcriptCoverage);
   assert.ok(artifact.transcriptCoverage.transcriptWriteOutcomeCounts);
+  assert.ok(artifact.decayAwareReadiness);
   assert.equal(artifact.provenance, 'quality_patrol_job');
   assert.ok(artifact.runtimeFetchStatus);
 

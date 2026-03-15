@@ -84,6 +84,7 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
       toAt: payload.toAt || null
     },
     reviewUnits,
+    llmActionLogs,
     transcriptCoverage,
     sourceCollections: ['conversation_review_snapshots', 'llm_action_logs', 'faq_answer_logs', 'trace_bundle'],
     counts: {

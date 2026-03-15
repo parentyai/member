@@ -35,6 +35,16 @@
   - `transcriptWriteFailureReasons`
   - `snapshotInputDiagnostics`
   - `transcriptCoverageStatus`
+- decay-aware readiness surfaces may expose:
+  - `recentWindowStatus`
+  - `historicalBacklogStatus`
+  - `overallReadinessStatus`
+  - `recentWindow`
+  - `fullWindow`
+  - `previousFullWindow`
+  - `deltaFromPreviousFullWindow`
+  - `historicalDebt`
+  - `currentRuntimeHealth`
 - `snapshotInputDiagnostics` may include:
   - `assistantReplyPresent`
   - `assistantReplyLength`
@@ -45,4 +55,9 @@
   - `userMessageAvailableRate`
   - `assistantReplyAvailableRate`
   - `reviewableTranscriptRate`
+- decay-aware readiness keeps recent runtime health separate from full-window backlog debt:
+  - recent healthy + full unhealthy => `historical_backlog_dominant`
+  - recent unhealthy => `current_runtime_or_current_join_problem`
+  - recent healthy + full improving => `observation_continue_backlog_decay`
+  - recent healthy + full healthy => `readiness_candidate`
 - transcript coverage diagnostics do not widen retention and do not persist raw transcript text.
