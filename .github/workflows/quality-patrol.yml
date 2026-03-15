@@ -81,8 +81,80 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "OPENAI_API_KEY=$TOKEN" >> "$GITHUB_ENV"
 
+      - name: Materialize Firebase Admin ADC
+        run: |
+          set -euo pipefail
+          if [ -z "${GOOGLE_GHA_CREDS_PATH:-}" ] || [ ! -r "${GOOGLE_GHA_CREDS_PATH:-}" ]; then
+            echo "::error title=Missing gha credential file::GOOGLE_GHA_CREDS_PATH is unavailable"
+            exit 1
+          fi
+          ADC_PATH="${HOME}/.config/gcloud/application_default_credentials.json"
+          gcloud auth application-default login \
+            --impersonate-service-account="$DEPLOY_SA_EMAIL" \
+            --quiet
+          if [ ! -s "$ADC_PATH" ]; then
+            echo "::error title=ADC materialization failed::${ADC_PATH} was not created"
+            exit 1
+          fi
+          ADC_TYPE="$(node -e "const fs=require('fs'); const payload=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); process.stdout.write(String(payload.type || ''));" "$ADC_PATH")"
+          case "$ADC_TYPE" in
+            impersonated_service_account|service_account|authorized_user)
+              ;;
+            *)
+              echo "::error title=Unsupported ADC type::type=${ADC_TYPE:-missing}"
+              exit 1
+              ;;
+          esac
+          gcloud auth application-default print-access-token >/dev/null
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$ADC_PATH" >> "$GITHUB_ENV"
+          echo "GOOGLE_GHA_CREDS_PATH=" >> "$GITHUB_ENV"
+          echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=" >> "$GITHUB_ENV"
+          echo "QUALITY_PATROL_ADC_PATH=$ADC_PATH" >> "$GITHUB_ENV"
+          echo "QUALITY_PATROL_ADC_TYPE=$ADC_TYPE" >> "$GITHUB_ENV"
+          {
+            echo "### Quality Patrol auth materialization"
+            echo ""
+            echo "- adcPath: $ADC_PATH"
+            echo "- adcType: $ADC_TYPE"
+            echo "- deployServiceAccount: $DEPLOY_SA_EMAIL"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Install dependencies
         run: npm install
+
+      - name: Diagnose Firebase Admin ADC
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const admin = require('firebase-admin');
+
+          async function main() {
+            const adcPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+            const projectId = process.env.FIRESTORE_PROJECT_ID;
+            if (!adcPath) throw new Error('adc_path_missing');
+            if (!projectId) throw new Error('firestore_project_id_missing');
+            const payload = JSON.parse(fs.readFileSync(adcPath, 'utf8'));
+            admin.initializeApp({ projectId });
+            const snap = await admin.firestore().doc('__quality_patrol_adc_probe__/noop').get();
+            process.stdout.write(`${JSON.stringify({
+              ok: true,
+              adcPath,
+              adcType: payload.type || null,
+              projectId,
+              exists: snap.exists
+            }, null, 2)}\n`);
+          }
+
+          main().catch((error) => {
+            process.stderr.write(`${JSON.stringify({
+              ok: false,
+              code: error && error.code ? error.code : 'firebase_admin_adc_probe_failed',
+              message: error && error.message ? error.message : String(error)
+            }, null, 2)}\n`);
+            process.exit(1);
+          });
+          NODE
 
       - name: Run quality patrol cycle
         run: npm run quality-patrol:cycle
