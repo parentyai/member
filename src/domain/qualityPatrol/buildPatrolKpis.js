@@ -58,6 +58,18 @@ function normalizeTranscriptCoverage(reviewUnits, input) {
       : {},
     snapshotInputDiagnostics: diagnostics.snapshotInputDiagnostics && typeof diagnostics.snapshotInputDiagnostics === 'object'
       ? Object.assign({}, defaultDiagnostics.snapshotInputDiagnostics, diagnostics.snapshotInputDiagnostics, {
+        assistant_reply_missing: Number.isFinite(Number(diagnostics.snapshotInputDiagnostics.assistant_reply_missing))
+          ? Math.max(0, Math.floor(Number(diagnostics.snapshotInputDiagnostics.assistant_reply_missing)))
+          : defaultDiagnostics.snapshotInputDiagnostics.assistant_reply_missing,
+        sanitized_reply_empty: Number.isFinite(Number(diagnostics.snapshotInputDiagnostics.sanitized_reply_empty))
+          ? Math.max(0, Math.floor(Number(diagnostics.snapshotInputDiagnostics.sanitized_reply_empty)))
+          : defaultDiagnostics.snapshotInputDiagnostics.sanitized_reply_empty,
+        masking_removed_text: Number.isFinite(Number(diagnostics.snapshotInputDiagnostics.masking_removed_text))
+          ? Math.max(0, Math.floor(Number(diagnostics.snapshotInputDiagnostics.masking_removed_text)))
+          : defaultDiagnostics.snapshotInputDiagnostics.masking_removed_text,
+        region_prompt_fallback: Number.isFinite(Number(diagnostics.snapshotInputDiagnostics.region_prompt_fallback))
+          ? Math.max(0, Math.floor(Number(diagnostics.snapshotInputDiagnostics.region_prompt_fallback)))
+          : defaultDiagnostics.snapshotInputDiagnostics.region_prompt_fallback,
         assistantReplyPresent: Object.assign(
           {},
           defaultDiagnostics.snapshotInputDiagnostics.assistantReplyPresent,

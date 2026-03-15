@@ -53,6 +53,10 @@ test('phase845: transcript coverage diagnostics aggregate snapshot input skip ta
   assert.equal(diagnostics.transcriptWriteOutcomeCounts.skipped_unreviewable_transcript, 4);
   assert.equal(diagnostics.snapshotInputDiagnostics.assistantReplyPresent.trueCount, 3);
   assert.equal(diagnostics.snapshotInputDiagnostics.assistantReplyPresent.falseCount, 1);
+  assert.equal(diagnostics.snapshotInputDiagnostics.assistant_reply_missing, 1);
+  assert.equal(diagnostics.snapshotInputDiagnostics.sanitized_reply_empty, 1);
+  assert.equal(diagnostics.snapshotInputDiagnostics.masking_removed_text, 1);
+  assert.equal(diagnostics.snapshotInputDiagnostics.region_prompt_fallback, 1);
   assert.equal(diagnostics.snapshotInputDiagnostics.snapshotBuildAttempted.trueCount, 4);
   assert.equal(diagnostics.snapshotInputDiagnostics.snapshotBuildSkippedReason.assistant_reply_missing, 1);
   assert.equal(diagnostics.snapshotInputDiagnostics.snapshotBuildSkippedReason.sanitized_reply_empty, 1);

@@ -163,6 +163,10 @@ function createKpiResult() {
       },
       transcriptWriteFailureReasons: {},
       snapshotInputDiagnostics: {
+        assistant_reply_missing: 0,
+        sanitized_reply_empty: 0,
+        masking_removed_text: 0,
+        region_prompt_fallback: 0,
         assistantReplyPresent: {
           trueCount: 1,
           falseCount: 0
