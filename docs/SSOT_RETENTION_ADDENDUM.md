@@ -11,7 +11,7 @@
 | --- | --- |
 | aggregate | 13 |
 | config | 52 |
-| event | 9 |
+| event | 10 |
 | evidence | 16 |
 | transient | 3 |
 
@@ -31,6 +31,7 @@
 | `city_pack_template_library` | config | INDEFINITE | false | false |
 | `city_pack_update_proposals` | config | INDEFINITE | false | false |
 | `city_packs` | config | INDEFINITE | false | false |
+| `conversation_review_snapshots` | event | 180d | CONDITIONAL | true |
 | `decision_drifts` | config | INDEFINITE | false | false |
 | `decision_logs` | evidence | 365d | false | false |
 | `decision_timeline` | evidence | 365d | false | false |

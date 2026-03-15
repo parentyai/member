@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "daf987ad64e087ef7f38155f66cd8a33f2efdc39",
+      "hash": "b182be196916ed07eebd6004b6550d8217fc1bb8",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 1398
+    "testCount": 1402
   },
   "systemOverview": {
     "what": [
@@ -891,19 +891,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqAnswerLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqArticlesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
             "/Users/parentyai.com/Projects/Member/src/routes/internal/llmActionRewardFinalizeJob.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqAnswerLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqArticlesRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqArticlesRepo.js:1"
           ]
         },
         {
@@ -1023,19 +1023,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqAnswerLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqArticlesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
             "/Users/parentyai.com/Projects/Member/src/routes/internal/llmActionRewardFinalizeJob.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqAnswerLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqArticlesRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqArticlesRepo.js:1"
           ]
         }
       ]
@@ -1819,19 +1819,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackBulletinsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyBulletinsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyEventsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqAnswerLogsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyBranchQueueRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqAnswerLogsRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackBulletinsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackBulletinsRepo.js:1"
           ]
         }
       ]
@@ -2424,19 +2424,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmActionLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmBanditStateRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmContextualBanditStateRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/internal/llmActionRewardFinalizeJob.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmActionLogsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js:1"
           ]
         },
         {
@@ -3910,9 +3910,9 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackFeedbackRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackRequestsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/conversationReviewSnapshotsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/eventsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/eventsRepo.js"
           ],
           "evidence": [
             "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
@@ -9511,7 +9511,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 73,
+              "testsCount": 75,
               "killSwitchDependent": false,
               "auditDependent": false,
               "canDo": [
@@ -9744,7 +9744,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 86,
+              "testsCount": 81,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9764,20 +9764,20 @@
                 "cityPackFeedbackRepo",
                 "cityPackRequestsRepo",
                 "cityPacksRepo",
+                "conversationReviewSnapshotsRepo",
                 "deliveriesRepo",
                 "eventsRepo",
-                "journeyTodoItemsRepo",
-                "linkRegistryRepo"
+                "journeyTodoItemsRepo"
               ],
               "relatedCollections": [
                 "audit_logs",
                 "city_pack_feedback",
                 "city_pack_requests",
                 "city_packs",
+                "conversation_review_snapshots",
                 "events",
                 "journey_todo_items",
-                "link_registry",
-                "llm_action_logs"
+                "link_registry"
               ],
               "entrypoints": [
                 "src/routes/admin/cityPackBulletins.js",

@@ -15,6 +15,7 @@ const RETENTION_POLICY = Object.freeze({
   'city_pack_template_library': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'city_pack_update_proposals': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'city_packs': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
+  'conversation_review_snapshots': Object.freeze({ kind: 'event', retentionDays: 180, deletable: 'CONDITIONAL', recomputable: true }),
   'decision_drifts': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'decision_logs': Object.freeze({ kind: 'evidence', retentionDays: 365, deletable: 'NO', recomputable: false }),
   'decision_timeline': Object.freeze({ kind: 'evidence', retentionDays: 365, deletable: 'NO', recomputable: false }),

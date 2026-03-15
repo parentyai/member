@@ -55,6 +55,19 @@ Fields:
 - `payloadSummary` (should not contain plaintext secrets or full membership ids)
 - `createdAt`
 
+### `llm_action_logs/{id}` / `faq_answer_logs/{id}` / `conversation_review_snapshots/{id}`
+Purpose: LLM runtime quality telemetry and masked conversation review evidence.
+
+Typical fields:
+- `llm_action_logs`: route/strategy/readiness/fallback telemetry, template fingerprints, trace linkage
+- `faq_answer_logs`: question hash, matched FAQ ids, saved FAQ / readiness telemetry
+- `conversation_review_snapshots`: `lineUserKey`, `traceId`, `requestId`, `routeKind`, `strategy`, `selectedCandidateKind`, `fallbackTemplateKind`, `replyTemplateFingerprint`, `priorContextUsed`, `followupResolvedFromHistory`, `knowledgeCandidateUsed`, `readinessDecision`, `userMessageMasked`, `assistantReplyMasked`, `priorContextSummaryMasked`, `textPolicy`
+
+Notes:
+- `conversation_review_snapshots` stores masked and length-capped review text only.
+- plaintext user/assistant transcript is not durably stored in this collection.
+- review snapshots are add-only and retention-bound for patrol use.
+
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
 
