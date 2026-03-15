@@ -1,0 +1,13 @@
+{
+  "clusters": [
+    {
+      "category": "readiness",
+      "severity": "high",
+      "signals": [
+        {
+          "signal": "contradictionRate"
+        }
+      ]
+    }
+  ]
+}
