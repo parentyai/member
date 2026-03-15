@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T12:05:59-04:00",
-  "gitCommit": "c8fd40a2a8decc97d6d3bd5bf0b2a19b37782253",
-  "branch": "codex/quality-patrol-replay-harness-T001",
-  "sourceDigest": "42fb003b4644b64f9f0cbeaa86e673fc31f0eea43bb439449c6fa9671b777fa6",
+  "generatedAt": "2026-03-15T13:31:30-04:00",
+  "gitCommit": "1955143a70f7e78cdb8d0d4b04c4230c97bac303",
+  "branch": "codex/quality-patrol-human-surface-T001",
+  "sourceDigest": "60bc20ee23a4ed4008b3beaef3dc058b5d72e105f041ab272738d70c8f846737",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

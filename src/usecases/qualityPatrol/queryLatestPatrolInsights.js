@@ -10,6 +10,9 @@ const { listOpenIssues } = require('./listOpenIssues');
 const { listTopPriorityBacklog } = require('./listTopPriorityBacklog');
 const { buildPatrolQueryResponse } = require('../../domain/qualityPatrol/query/buildPatrolQueryResponse');
 const { resolveAudienceView } = require('../../domain/qualityPatrol/query/resolveAudienceView');
+const {
+  buildHumanSafePatrolSurface
+} = require('../../domain/qualityPatrol/query/buildHumanSafePatrolSurface');
 
 const QUERY_MODES = new Set([
   'latest',
@@ -151,6 +154,17 @@ async function queryLatestPatrolInsights(params, deps) {
     sourceCollections
   });
 
+  const humanSurface = audience === 'human'
+    ? buildHumanSafePatrolSurface({
+      transcriptCoverage: kpiResult && kpiResult.transcriptCoverage ? kpiResult.transcriptCoverage : null,
+      decayAwareReadiness: kpiResult && kpiResult.decayAwareReadiness ? kpiResult.decayAwareReadiness : null,
+      decayAwareOpsGate: kpiResult && kpiResult.decayAwareOpsGate ? kpiResult.decayAwareOpsGate : null,
+      rootCauseResult,
+      planResult,
+      backlogSeparation: response.backlogSeparation
+    })
+    : null;
+
   return Object.assign({
     ok: true,
     mode,
@@ -159,8 +173,8 @@ async function queryLatestPatrolInsights(params, deps) {
     reviewUnitCount: reviewUnits.length,
     existingIssueCount: Array.isArray(existingIssues) ? existingIssues.length : 0,
     existingBacklogCount: Array.isArray(existingBacklog) ? existingBacklog.length : 0,
-    rootCauseResult,
-    planResult
+    rootCauseResult: humanSurface ? humanSurface.rootCauseResult : rootCauseResult,
+    planResult: humanSurface ? humanSurface.planResult : planResult
   }, response);
 }
 

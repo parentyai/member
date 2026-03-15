@@ -32,7 +32,8 @@
 - `summary` includes `overallStatus`, `topFindings`, `topPriorityCount`, `observationBlockerCount`
 - `issues[]` includes query-facing severity/status/category summaries
 - `observationBlockers[]` keeps blocker title, slices, and recommended action
-  - add-only precision fields: `code`, `category`, `evidenceSource`, `privacySensitivity`, `detailVisibility`
+  - operator audience may include add-only precision fields: `code`, `category`, `evidenceSource`, `privacySensitivity`, `detailVisibility`
+  - human audience keeps the same top-level array but removes raw blocker code fields and returns privacy-safe summaries only
 - `evidence[]` includes read-only metric/signal/trace/snapshot/summary references
 - add-only `backlogSeparation` may be returned as a structured view over:
   - `currentRuntime`
@@ -44,6 +45,7 @@
 - `traceRefs[]` may be returned for operator audience only
 - `recommendedPr[]` includes proposal priority, objective, risk, and blockers
 - `observationStatus` remains `ready`, `blocked`, `insufficient_evidence`, or `unavailable`
+- when `audience=human`, top-level `transcriptCoverage`, `decayAwareReadiness`, `decayAwareOpsGate`, `rootCauseResult`, and `planResult` stay present but switch to compressed summaries that avoid internal taxonomy / reason-code exposure
 
 ## Precision taxonomy
 - query-facing blockers are more precise than the raw review-unit blocker codes; the top-level response shape stays unchanged.
@@ -63,6 +65,9 @@
 - backlog separation structured view keeps the same audience split:
   - operator: exposes raw `reasonCode`, `operatorAction`, and debt counts so historical backlog debt can be separated from current runtime health
   - human: keeps the split visible but suppresses internal taxonomy codes and detailed debt breakdowns
+- query wrapper / CLI artifact audience split also keeps:
+  - operator: raw `rootCauseResult`, `planResult`, and precision blocker fields for diagnosis
+  - human: compressed `rootCauseResult`, `planResult`, and blocker summaries without raw blocker codes, internal reason codes, or backlog debt keys
 - operator action rule:
   - `decision=NO_GO` and `decisionReasonCode=current_runtime_or_current_join_problem` => fix runtime or current join path
   - `decision=NO_GO` and `decisionReasonCode=historical_backlog_dominant` => treat as historical debt and keep PR-D deferred

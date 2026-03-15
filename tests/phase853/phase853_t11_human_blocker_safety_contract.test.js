@@ -57,4 +57,8 @@ test('phase853: human blocker wording stays privacy-safe and avoids misleading i
   assert.ok(result.summary.topFindings.every((item) => !/Knowledge judgement is blocked|Masked user message snapshot/.test(item)));
   assert.ok(result.summary.topFindings.some((item) => item.includes('証跡不足')));
   assert.ok(result.observationBlockers.every((item) => !('sourceCodes' in item)));
+  assert.ok(result.observationBlockers.every((item) => !('code' in item)));
+  assert.ok(result.observationBlockers.every((item) => !('blockerKey' in item)));
+  assert.ok(result.observationBlockers.every((item) => !('category' in item)));
+  assert.ok(result.observationBlockers.every((item) => !('evidenceSource' in item)));
 });
