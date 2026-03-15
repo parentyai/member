@@ -2410,6 +2410,51 @@ async function appendLlmActionLogBestEffort(data) {
     // best effort only
   }
   try {
+    const messageText = normalizeReplyText(payload.messageText || payload.text || '');
+    const replyText = normalizeReplyText(payload.replyText || payload.finalReplyText || '');
+    if (messageText || replyText) {
+      await appendConversationReviewSnapshot({
+        lineUserId,
+        traceId: payload.traceId || null,
+        requestId: payload.requestId || null,
+        routeKind: routeCoverageMeta.routeKind,
+        domainIntent: qualityMeta.domainIntent || payload.domainIntent || 'general',
+        strategy: typeof payload.strategy === 'string' && payload.strategy.trim()
+          ? payload.strategy.trim()
+          : (qualityMeta.strategyReason || null),
+        selectedCandidateKind: typeof payload.selectedCandidateKind === 'string' && payload.selectedCandidateKind.trim()
+          ? payload.selectedCandidateKind.trim()
+          : (qualityMeta.selectedCandidateKind || null),
+        fallbackTemplateKind: typeof payload.fallbackTemplateKind === 'string' && payload.fallbackTemplateKind.trim()
+          ? payload.fallbackTemplateKind.trim()
+          : (qualityMeta.fallbackTemplateKind || null),
+        replyTemplateFingerprint: typeof payload.replyTemplateFingerprint === 'string' && payload.replyTemplateFingerprint.trim()
+          ? payload.replyTemplateFingerprint.trim()
+          : (qualityMeta.replyTemplateFingerprint || null),
+        priorContextUsed: payload.priorContextUsed === true || qualityMeta.priorContextUsed === true,
+        followupResolvedFromHistory: payload.followupResolvedFromHistory === true || qualityMeta.followupResolvedFromHistory === true,
+        knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true || qualityMeta.knowledgeCandidateUsed === true,
+        readinessDecision: payload.readinessDecision || readinessTelemetry.readiness.decision || null,
+        genericFallbackSlice: typeof payload.genericFallbackSlice === 'string' && payload.genericFallbackSlice.trim()
+          ? payload.genericFallbackSlice.trim()
+          : (qualityMeta.genericFallbackSlice || null),
+        userMessageText: messageText,
+        assistantReplyText: replyText,
+        priorContextSummaryText: typeof payload.priorContextSummaryText === 'string'
+          ? payload.priorContextSummaryText
+          : null,
+        contextSnapshot: payload.contextSnapshot || null,
+        contextResumeDomain: typeof payload.contextResumeDomain === 'string' ? payload.contextResumeDomain : null,
+        followupIntent: typeof payload.followupIntent === 'string'
+          ? payload.followupIntent
+          : (qualityMeta.followupIntent || null),
+        recentUserGoal: typeof payload.recentUserGoal === 'string' ? payload.recentUserGoal : null
+      });
+    }
+  } catch (_err) {
+    // best effort only
+  }
+  try {
     const followupIntent = typeof payload.followupIntent === 'string' && payload.followupIntent.trim()
       ? payload.followupIntent.trim().toLowerCase()
       : (qualityMeta.followupIntent || null);
@@ -2751,6 +2796,7 @@ async function tryHandlePaidOrchestratorV2(params) {
     plan: payload.planInfo.plan,
     traceId: payload.traceId,
     requestId: payload.requestId,
+    messageText: payload.text,
     replyText: orchestratedReplyText,
     conciergeMeta: orchestrated.conciergeMeta,
     llmBanditEnabled: payload.llmBanditEnabled,
@@ -2822,6 +2868,7 @@ async function tryHandlePaidOrchestratorV2(params) {
     recentUserGoal: Array.isArray(orchestrated.packet && orchestrated.packet.recentUserGoals)
       ? (orchestrated.packet.recentUserGoals[0] || null)
       : null,
+    contextSnapshot: payload.contextSnapshot || null,
     responseContractConformance: orchestratedReplyEnvelope.responseContractConformance
   });
   await appendJourneyEventBestEffort({
@@ -3968,6 +4015,7 @@ async function handleAssistantMessage(params) {
         ? domainConcierge.integrationSignals.crossSystemConflictDetected === true
         : false,
       domainIntent: normalizedConversationIntent,
+      contextSnapshot,
       conversationQuality: domainConcierge && domainConcierge.conversationQuality
         ? domainConcierge.conversationQuality
         : buildConversationQualityMeta({
@@ -4089,6 +4137,7 @@ async function handleAssistantMessage(params) {
         conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
         repetitionPrevented: false,
         domainIntent: normalizedConversationIntent,
+        contextSnapshot,
         conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
           replyText: fallback && fallback.replyText ? fallback.replyText : '',
           domainIntent: normalizedConversationIntent,
@@ -4402,6 +4451,7 @@ async function handleAssistantMessage(params) {
     answerReadinessV2Stage: readinessTelemetry.answerReadinessV2Stage || null,
     answerReadinessV2EnforcementReason: readinessTelemetry.answerReadinessV2EnforcementReason || null,
     legalSnapshot,
+    contextSnapshot,
     responseContractConformance: semanticReplyEnvelope.responseContractConformance
   });
 

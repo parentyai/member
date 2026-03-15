@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T19:14:03.069Z",
-  "gitCommit": "92e93936385af21f778fc9119059a4dfc52b1b6a",
-  "branch": "codex/quality-patrol-auth-fix-T001",
-  "sourceDigest": "a6d8a49f407d8cdcec599b33f408fba01259cbbacc0dd4de1f166a1a82753f20",
+  "generatedAt": "2026-03-15T22:20:53.615Z",
+  "gitCommit": "669763af5fac731199a802911d3d5c4d87eef31f",
+  "branch": "codex/quality-patrol-pr0-merge-T002",
+  "sourceDigest": "11ab4b0ad29e3af712ac6fb97e8e20975d2aef587f231a997d06dc31995f7d4c",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "b8b4e4c04d4747b242eb86266ef47c5083c5147f5b926669adb8e0f2e684f23b",
+      "sha256": "2d95c9d4e17286745503f0c5b683cb5f89cd31e664e35d07ca8d8320a13416a9",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "1cb025c5b903c49cc22dc3245c79f3390119c859cbd901925109f7a8dbc16ab5",
+      "sha256": "d7c50148776604b68c8a27194ffd9eb15c2c4f8f76ef497a1eb335a473a83092",
       "bytes": 487
     },
     {
@@ -151,7 +151,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "1b399b0d92521999dc499233ebbdd9d56123e8e2273e3e8c76a60a7e22755e15",
+      "sha256": "4ed1aa39f7150512fdb0fd66eea91b28cee9019da01575c7fbbf64868479ed1e",
       "bytes": 740
     },
     {
@@ -166,13 +166,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "0a5009d971e32c67818b3662ca876fcc0c845715dd4e3f76b96b439b4c484230",
+      "sha256": "1e733947e3ac2ae0bbb6a8e13e6883485a7d68e1552c9111f89835291ef85aa1",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "691078abd0b4885e3f974e0548674e20cbf4702feb543685c7f9cd620876fb76",
-      "bytes": 2420
+      "sha256": "c3e79eb74f7c85fc4d3fbb825471eee4db57115347a09dc2fbbf36ce47187ff8",
+      "bytes": 2421
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",

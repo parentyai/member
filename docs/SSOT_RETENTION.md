@@ -82,4 +82,4 @@ Note: Quality Patrol review units are derived read-only outputs in PR-2. They ar
 ## Policy Source (Add-only)
 - 実行時ポリシー定義: `src/domain/retention/retentionPolicy.js`
 - 監査入力との突合基準: `docs/REPO_AUDIT_INPUTS/data_lifecycle.json`
-- coverage: 82 collections（2026-03-03 時点）
+- coverage: 94 collections（2026-03-14 時点）
