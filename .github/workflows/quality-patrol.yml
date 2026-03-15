@@ -89,8 +89,9 @@ jobs:
             exit 1
           fi
           ADC_PATH="${HOME}/.config/gcloud/application_default_credentials.json"
-          gcloud auth application-default login \
-            --impersonate-service-account="$DEPLOY_SA_EMAIL" \
+          gcloud auth login \
+            --cred-file="$GOOGLE_GHA_CREDS_PATH" \
+            --update-adc \
             --quiet
           if [ ! -s "$ADC_PATH" ]; then
             echo "::error title=ADC materialization failed::${ADC_PATH} was not created"

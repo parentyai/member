@@ -19,8 +19,9 @@ test('phase856: quality patrol workflow runs hourly with OIDC auth and artifact 
   assert.ok(workflow.includes('create_credentials_file: true'));
   assert.ok(workflow.includes('Materialize Firebase Admin ADC'));
   assert.ok(workflow.includes('Diagnose Firebase Admin ADC'));
-  assert.ok(workflow.includes('gcloud auth application-default login'));
-  assert.ok(workflow.includes('--impersonate-service-account="$DEPLOY_SA_EMAIL"'));
+  assert.ok(workflow.includes('gcloud auth login'));
+  assert.ok(workflow.includes('--cred-file="$GOOGLE_GHA_CREDS_PATH"'));
+  assert.ok(workflow.includes('--update-adc'));
   assert.ok(workflow.includes('gcloud auth application-default print-access-token >/dev/null'));
   assert.ok(workflow.includes('GOOGLE_APPLICATION_CREDENTIALS=$ADC_PATH'));
   assert.ok(workflow.includes('npm install'));

@@ -88,7 +88,7 @@ Output path is controlled by `--output`. If omitted, the job writes to `/tmp`.
 - the scheduled workflow runs hourly and uploads `/tmp/quality_patrol_cycle_*.json`.
 - the GitHub Actions caller materializes a Firebase Admin compatible ADC before `npm run quality-patrol:cycle`.
   - source auth remains OIDC/WIF via `google-github-actions/auth@v2`
-  - the workflow then runs `gcloud auth application-default login --impersonate-service-account="$DEPLOY_SA_EMAIL"` and rewires `GOOGLE_APPLICATION_CREDENTIALS` to the generated ADC file
+  - the workflow then runs `gcloud auth login --cred-file="$GOOGLE_GHA_CREDS_PATH" --update-adc` and rewires `GOOGLE_APPLICATION_CREDENTIALS` to the generated ADC file
   - if this materialization fails, treat it as a CI auth/materialization fault before inspecting patrol logic
 - automation stays read-only apart from replay writes that already travel through the normal webhook -> action-log -> snapshot path.
 
