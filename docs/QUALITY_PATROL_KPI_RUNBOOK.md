@@ -61,6 +61,12 @@
   - `transcriptCoverage`: counts + coverage summary only
   - `decayAwareReadiness`: recent/full summary without raw debt keys or internal readiness taxonomy
   - `decayAwareOpsGate`: `decision`, human-readable `operatorAction`, `prDStatus`
+- canonical audit reading order is:
+  - `backlogSeparation.currentRuntime.status` first for current runtime health
+  - `backlogSeparation.historicalDebt.status` first for historical backlog state
+  - `backlogSeparation.backlogSeparationGate.decision` / `prDStatus` for the separated final gate
+  - `decayAwareOpsGate.historicalBacklogStatus` / `overallReadinessStatus` as supporting explanation
+- `currentRuntimeHealth.status`, top-level `historicalBacklogStatus`, and top-level `overallReadinessStatus` remain supporting readiness fields when they are present, but they are not the primary audit lookup path once `backlogSeparation` exists.
 - `snapshotInputDiagnostics` may include:
   - `assistantReplyPresent`
   - `assistantReplyLength`
@@ -87,9 +93,10 @@
   - current runtime healthy + historical debt decaying => `OBSERVATION_CONTINUE`
   - current runtime healthy + historical debt cleared => `GO`
 - PR-D is allowed only when:
-  - `currentRuntimeHealth.status = healthy`
-  - `historicalBacklogStatus = cleared`
-  - `overallReadinessStatus = readiness_candidate`
+  - `backlogSeparation.currentRuntime.status = healthy`
+  - `backlogSeparation.historicalDebt.status = cleared`
+  - `backlogSeparation.backlogSeparationGate.decision = GO`
+  - `decayAwareOpsGate.prDStatus = eligible`
 - transcript coverage diagnostics do not widen retention and do not persist raw transcript text.
 
 ## Post-merge reproducibility

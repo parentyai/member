@@ -47,6 +47,18 @@
 - `observationStatus` remains `ready`, `blocked`, `insufficient_evidence`, or `unavailable`
 - when `audience=human`, top-level `transcriptCoverage`, `decayAwareReadiness`, `decayAwareOpsGate`, `rootCauseResult`, and `planResult` stay present but switch to compressed summaries that avoid internal taxonomy / reason-code exposure
 
+## Canonical read paths for audits
+- when `backlogSeparation` is present, it is the canonical read-side split for runtime vs historical debt:
+  - `backlogSeparation.currentRuntime.status` => current runtime status
+  - `backlogSeparation.historicalDebt.status` => historical backlog status
+  - `backlogSeparation.backlogSeparationGate.decision` / `prDStatus` => final separated decision for audit and readiness review
+- use `decayAwareOpsGate` as the operator-facing explanation layer:
+  - `decayAwareOpsGate.decision`
+  - `decayAwareOpsGate.historicalBacklogStatus`
+  - `decayAwareOpsGate.overallReadinessStatus`
+  - `decayAwareOpsGate.prDStatus`
+- if top-level `currentRuntimeHealth.status`, `historicalBacklogStatus`, or `overallReadinessStatus` are absent in query/CLI artifacts, read the nested canonical paths above instead of treating the artifact as broken.
+
 ## Precision taxonomy
 - query-facing blockers are more precise than the raw review-unit blocker codes; the top-level response shape stays unchanged.
 - precision groups:
@@ -74,9 +86,10 @@
   - `decision=OBSERVATION_CONTINUE` => continue backlog decay observation
   - `decision=GO` => readiness review may proceed
 - PR-D condition:
-  - `currentRuntimeHealth=healthy`
-  - `historicalBacklogStatus=cleared`
-  - `overallReadinessStatus=readiness_candidate`
+  - `backlogSeparation.currentRuntime.status=healthy`
+  - `backlogSeparation.historicalDebt.status=cleared`
+  - `backlogSeparation.backlogSeparationGate.decision=GO`
+  - `decayAwareOpsGate.prDStatus=eligible`
   - no non-copy blocker remains in the overall gate
 
 ## Security and privacy
