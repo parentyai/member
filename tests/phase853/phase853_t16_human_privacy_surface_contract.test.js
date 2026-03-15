@@ -149,7 +149,7 @@ function buildPlanResult() {
       runtimeFixCount: 0
     },
     recommendedPr: [{
-      proposalKey: 'proposal_observation_gap_001',
+      proposalKey: 'observation-gap-followup',
       proposalType: 'blocked_by_observation_gap',
       title: 'Observation gap follow-up',
       priority: 'P1',
