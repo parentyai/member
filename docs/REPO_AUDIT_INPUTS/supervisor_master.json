@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T12:58:55-04:00",
-  "gitCommit": "64e4b2b49df5c65e7739f26b3278ac67159fac50",
+  "generatedAt": "2026-03-15T13:31:30-04:00",
+  "gitCommit": "1955143a70f7e78cdb8d0d4b04c4230c97bac303",
   "branch": "codex/quality-patrol-human-surface-T001",
-  "sourceDigest": "b33ba7307d387e0b9a5cae4ebcae89f11b817058c35f606074ff001e2eea54f1",
+  "sourceDigest": "60bc20ee23a4ed4008b3beaef3dc058b5d72e105f041ab272738d70c8f846737",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

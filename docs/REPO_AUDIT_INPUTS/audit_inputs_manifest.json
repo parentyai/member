@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T17:30:55.635Z",
-  "gitCommit": "64e4b2b49df5c65e7739f26b3278ac67159fac50",
+  "generatedAt": "2026-03-15T17:32:45.707Z",
+  "gitCommit": "1955143a70f7e78cdb8d0d4b04c4230c97bac303",
   "branch": "codex/quality-patrol-human-surface-T001",
-  "sourceDigest": "f9e135a4547ba5f803acdc0938d644abec6d4fd43b2bd475997a19916ee1bc30",
+  "sourceDigest": "63f86b26e92461f0a04748430c504fb157b0b0ef2e0e0581a6cb0f5f560d9734",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "0fa8592c95096acf9ccffd8cf44966f61aeebeca5265135daac059a56e7f92e2",
+      "sha256": "90802815ee4b3b0f41e6730315d3be75ab59eedbfe329c7c39159ae2ac786a05",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "3c07b4c908e0e99b1d4f942755e5c2ff3fda588e03013bb84e61d2f75ac1db9a",
+      "sha256": "f17b0382b215f853d751817a39584fcf0fd73d783729cf41d90ca17e6384b34f",
       "bytes": 487
     },
     {
@@ -151,7 +151,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "8bb4e31b1c58c60c545f644d2f8705d17c01c1fbc540d122653044b0b5bde9bc",
+      "sha256": "da5e4f8667d006e3d8fa1f95a65e88352bae7d84e9b3584da205abb6d7f38b18",
       "bytes": 740
     },
     {
@@ -166,12 +166,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "6b1e985431b97be7ca90aaa735b44b7c75f2a8a4414ffc85f77222e89cb27670",
+      "sha256": "0d4da3c52e8543d6ffbd305350f35d4fafacc55d98aabb65e1aeba521d4a86ac",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "7eaed2211fdbee8ddf0c6cc96d58a91685d85676211ec9dd980c8d74edbc585f",
+      "sha256": "8fd867147ad2add6101edbe45d70bbdbdc4e9226fbb14cf75bd466700123d667",
       "bytes": 2425
     },
     {

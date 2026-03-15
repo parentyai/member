@@ -398,7 +398,9 @@ function buildDetectionArtifact(job) {
     issueCandidates: job.options.audience === 'human'
       ? (job.queryResult.issues || [])
       : (job.detectionResult.issueCandidates || []),
-    backlogCandidates: job.detectionResult.backlogCandidates || [],
+    backlogCandidates: job.options.audience === 'human'
+      ? (job.queryResult.recommendedPr || [])
+      : (job.detectionResult.backlogCandidates || []),
     observationBlockers: job.queryResult.observationBlockers || [],
     analysisStatus: summarizeAnalysisStatus(job.rootCauseResult),
     planningStatus: job.planResult.planningStatus || 'insufficient_evidence',
