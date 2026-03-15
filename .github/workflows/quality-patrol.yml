@@ -82,6 +82,7 @@ jobs:
           echo "OPENAI_API_KEY=$TOKEN" >> "$GITHUB_ENV"
 
       - name: Prepare Firebase Admin external-account bridge
+        id: firebase_bridge
         run: |
           set -euo pipefail
           if [ -z "${GOOGLE_GHA_CREDS_PATH:-}" ] || [ ! -r "${GOOGLE_GHA_CREDS_PATH:-}" ]; then
@@ -150,7 +151,7 @@ jobs:
             echo "::error title=Auth bridge missing::${BRIDGE_PATH} was not created"
             exit 1
           fi
-          echo "NODE_OPTIONS=--require=$BRIDGE_PATH" >> "$GITHUB_ENV"
+          echo "bridge_path=$BRIDGE_PATH" >> "$GITHUB_OUTPUT"
           echo "QUALITY_PATROL_AUTH_BRIDGE=external_account" >> "$GITHUB_ENV"
           {
             echo "### Quality Patrol auth bridge"
@@ -164,6 +165,8 @@ jobs:
         run: npm install
 
       - name: Diagnose Firebase Admin bridge
+        env:
+          NODE_OPTIONS: --require=${{ steps.firebase_bridge.outputs.bridge_path }}
         run: |
           set -euo pipefail
           node - <<'NODE'
@@ -193,6 +196,8 @@ jobs:
           NODE
 
       - name: Run quality patrol cycle
+        env:
+          NODE_OPTIONS: --require=${{ steps.firebase_bridge.outputs.bridge_path }}
         run: npm run quality-patrol:cycle
 
       - name: Upload artifacts

@@ -12,7 +12,8 @@ test('phase856: quality patrol workflow prepares an external-account bridge befo
   assert.match(workflow, /ExternalAccountClient/);
   assert.match(workflow, /ExternalAccountCredential extends ComputeEngineCredential/);
   assert.match(workflow, /QUALITY_PATROL_AUTH_BRIDGE=external_account/);
-  assert.match(workflow, /NODE_OPTIONS=--require=\$BRIDGE_PATH/);
+  assert.match(workflow, /id:\s+firebase_bridge/);
+  assert.match(workflow, /NODE_OPTIONS: --require=\$\{\{ steps\.firebase_bridge\.outputs\.bridge_path \}\}/);
 });
 
 test('phase856: quality patrol workflow probes Firebase Admin before cycle artifacts', () => {
