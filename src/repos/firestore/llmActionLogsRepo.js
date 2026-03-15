@@ -5,7 +5,8 @@ const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRec
 const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
 const {
   normalizeTranscriptSnapshotOutcome,
-  normalizeTranscriptSnapshotReason
+  normalizeTranscriptSnapshotReason,
+  normalizeTranscriptSnapshotBuildSkippedReason
 } = require('../../domain/qualityPatrol/transcript/buildTranscriptCoverageDiagnostics');
 
 const COLLECTION = 'llm_action_logs';
@@ -658,6 +659,15 @@ async function appendLlmActionLog(params) {
     transcriptSnapshotUserMessageAvailable: normalizeNullableBoolean(payload.transcriptSnapshotUserMessageAvailable),
     transcriptSnapshotAssistantReplyAvailable: normalizeNullableBoolean(payload.transcriptSnapshotAssistantReplyAvailable),
     transcriptSnapshotPriorContextSummaryAvailable: normalizeNullableBoolean(payload.transcriptSnapshotPriorContextSummaryAvailable),
+    transcriptSnapshotAssistantReplyPresent: normalizeNullableBoolean(payload.transcriptSnapshotAssistantReplyPresent),
+    transcriptSnapshotAssistantReplyLength: Number.isFinite(Number(payload.transcriptSnapshotAssistantReplyLength))
+      ? Math.max(0, Math.floor(Number(payload.transcriptSnapshotAssistantReplyLength)))
+      : null,
+    transcriptSnapshotSanitizedReplyLength: Number.isFinite(Number(payload.transcriptSnapshotSanitizedReplyLength))
+      ? Math.max(0, Math.floor(Number(payload.transcriptSnapshotSanitizedReplyLength)))
+      : null,
+    transcriptSnapshotBuildAttempted: normalizeNullableBoolean(payload.transcriptSnapshotBuildAttempted),
+    transcriptSnapshotBuildSkippedReason: normalizeTranscriptSnapshotBuildSkippedReason(payload.transcriptSnapshotBuildSkippedReason),
     knowledgeCandidateCountBySource: normalizeKnowledgeCandidateCountBySource(payload.knowledgeCandidateCountBySource),
     knowledgeCandidateUsed: payload.knowledgeCandidateUsed === true,
     knowledgeCandidateRejectedReason: normalizeString(payload.knowledgeCandidateRejectedReason, null),

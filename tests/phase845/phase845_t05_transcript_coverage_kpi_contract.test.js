@@ -36,6 +36,36 @@ test('phase845: transcript coverage diagnostics stay separate from transcript av
         line_user_key_missing: 1,
         repo_write_failed: 1
       },
+      snapshotInputDiagnostics: {
+        assistantReplyPresent: {
+          trueCount: 1,
+          falseCount: 0
+        },
+        assistantReplyLength: {
+          observedCount: 1,
+          min: 24,
+          max: 24,
+          avg: 24
+        },
+        sanitizedReplyLength: {
+          observedCount: 1,
+          min: 18,
+          max: 18,
+          avg: 18
+        },
+        snapshotBuildAttempted: {
+          trueCount: 2,
+          falseCount: 1
+        },
+        snapshotBuildSkippedReason: {
+          feature_flag_off: 0,
+          line_user_key_missing: 1,
+          assistant_reply_missing: 0,
+          sanitized_reply_empty: 0,
+          masking_removed_text: 0,
+          region_prompt_fallback: 0
+        }
+      },
       transcriptCoverageStatus: 'warn',
       sourceCollections: ['llm_action_logs']
     }
@@ -47,5 +77,8 @@ test('phase845: transcript coverage diagnostics stay separate from transcript av
   assert.equal(result.transcriptCoverage.transcriptWriteOutcomeCounts.failed_repo_write, 1);
   assert.equal(result.transcriptCoverage.transcriptWriteOutcomeCounts.skipped_missing_line_user_key, 1);
   assert.equal(result.transcriptCoverage.transcriptWriteFailureReasons.repo_write_failed, 1);
+  assert.equal(result.transcriptCoverage.snapshotInputDiagnostics.assistantReplyPresent.trueCount, 1);
+  assert.equal(result.transcriptCoverage.snapshotInputDiagnostics.snapshotBuildAttempted.trueCount, 2);
+  assert.equal(result.transcriptCoverage.snapshotInputDiagnostics.snapshotBuildSkippedReason.line_user_key_missing, 1);
   assert.equal(result.transcriptCoverage.transcriptCoverageStatus, 'warn');
 });

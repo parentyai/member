@@ -29,6 +29,20 @@ Masked transcript foundation for Member Quality Patrol v1.1 (add-only).
   - `failed_repo_write`
   - `failed_unknown`
 - skip/failure reasons are surfaced through add-only `llm_action_logs` metadata so patrol jobs can distinguish write omission from read-side gaps without storing new raw transcript content.
+- input diagnostics are also surfaced through add-only `llm_action_logs` metadata:
+  - `transcriptSnapshotAssistantReplyPresent`
+  - `transcriptSnapshotAssistantReplyLength`
+  - `transcriptSnapshotSanitizedReplyLength`
+  - `transcriptSnapshotBuildAttempted`
+  - `transcriptSnapshotBuildSkippedReason`
+- `transcriptSnapshotBuildSkippedReason` is telemetry-only and currently classifies:
+  - `feature_flag_off`
+  - `line_user_key_missing`
+  - `assistant_reply_missing`
+  - `sanitized_reply_empty`
+  - `masking_removed_text`
+  - `region_prompt_fallback`
+- this diagnostics surface does not widen transcript retention and does not change runtime reply behavior.
 
 ## Masking Rules
 - replace emails with `[email]`

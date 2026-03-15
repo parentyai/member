@@ -97,7 +97,12 @@ test('phase719: llm action log schema includes conversation quality metadata fie
     'sharedReadinessBridgeObserved',
     'routeDecisionSource',
     'transcriptSnapshotOutcome',
-    'transcriptSnapshotReason'
+    'transcriptSnapshotReason',
+    'transcriptSnapshotAssistantReplyPresent',
+    'transcriptSnapshotAssistantReplyLength',
+    'transcriptSnapshotSanitizedReplyLength',
+    'transcriptSnapshotBuildAttempted',
+    'transcriptSnapshotBuildSkippedReason'
   ].forEach((token) => {
     assert.ok(repo.includes(token), token);
   });

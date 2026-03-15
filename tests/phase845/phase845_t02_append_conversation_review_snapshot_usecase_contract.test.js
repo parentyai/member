@@ -39,6 +39,11 @@ test('phase845: appendConversationReviewSnapshot builds masked snapshot and appe
   assert.equal(result.skipped, false);
   assert.equal(result.failed, false);
   assert.equal(result.id, 'review_snapshot_phase845');
+  assert.equal(result.transcriptSnapshotBuildAttempted, true);
+  assert.equal(result.transcriptSnapshotBuildSkippedReason, null);
+  assert.equal(result.transcriptSnapshotAssistantReplyPresent, true);
+  assert.equal(result.transcriptSnapshotAssistantReplyLength > 0, true);
+  assert.equal(result.transcriptSnapshotSanitizedReplyLength > 0, true);
   assert.equal(writes.length, 1);
   assert.equal(writes[0].userMessageMasked.includes('foo@example.com'), false);
   assert.match(writes[0].userMessageMasked, /\[email\]/);
@@ -66,6 +71,8 @@ test('phase845: appendConversationReviewSnapshot is disabled by rollback flag', 
   assert.equal(result.skipped, true);
   assert.equal(result.reason, 'feature_flag_off');
   assert.equal(result.outcome, 'skipped_flag_disabled');
+  assert.equal(result.transcriptSnapshotBuildAttempted, false);
+  assert.equal(result.transcriptSnapshotBuildSkippedReason, 'feature_flag_off');
   assert.equal(called, 0);
 });
 
@@ -86,6 +93,9 @@ test('phase845: appendConversationReviewSnapshot surfaces missing line user key 
   assert.equal(result.skipped, true);
   assert.equal(result.outcome, 'skipped_missing_line_user_key');
   assert.equal(result.reason, 'line_user_key_missing');
+  assert.equal(result.transcriptSnapshotBuildAttempted, true);
+  assert.equal(result.transcriptSnapshotBuildSkippedReason, 'line_user_key_missing');
+  assert.equal(result.transcriptSnapshotAssistantReplyPresent, true);
 });
 
 test('phase845: appendConversationReviewSnapshot keeps unreviewable transcript skipped after masking', async () => {
@@ -107,6 +117,11 @@ test('phase845: appendConversationReviewSnapshot keeps unreviewable transcript s
   assert.equal(result.reason, 'transcript_unavailable');
   assert.equal(result.transcriptSnapshotUserMessageAvailable, false);
   assert.equal(result.transcriptSnapshotAssistantReplyAvailable, false);
+  assert.equal(result.transcriptSnapshotBuildAttempted, true);
+  assert.equal(result.transcriptSnapshotBuildSkippedReason, 'assistant_reply_missing');
+  assert.equal(result.transcriptSnapshotAssistantReplyPresent, false);
+  assert.equal(result.transcriptSnapshotAssistantReplyLength, 0);
+  assert.equal(result.transcriptSnapshotSanitizedReplyLength, 0);
 });
 
 test('phase845: appendConversationReviewSnapshot classifies repo write failure without throwing main flow', async () => {
@@ -128,6 +143,8 @@ test('phase845: appendConversationReviewSnapshot classifies repo write failure w
   assert.equal(result.failed, true);
   assert.equal(result.outcome, 'failed_repo_write');
   assert.equal(result.reason, 'repo_write_failed');
+  assert.equal(result.transcriptSnapshotBuildAttempted, true);
+  assert.equal(result.transcriptSnapshotBuildSkippedReason, null);
   assert.equal(result.error.code, 'permission-denied');
   assert.match(result.error.message, /firestore write denied/);
 });

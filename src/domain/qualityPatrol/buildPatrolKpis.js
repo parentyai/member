@@ -26,9 +26,10 @@ function mergeSourceCollections() {
 }
 
 function normalizeTranscriptCoverage(reviewUnits, input) {
+  const defaultDiagnostics = createEmptyTranscriptCoverageDiagnostics();
   const diagnostics = input && typeof input === 'object'
-    ? Object.assign({}, createEmptyTranscriptCoverageDiagnostics(), input)
-    : createEmptyTranscriptCoverageDiagnostics();
+    ? Object.assign({}, defaultDiagnostics, input)
+    : defaultDiagnostics;
   if ((!diagnostics || Number(diagnostics.observedCount || 0) <= 0) && Array.isArray(reviewUnits) && reviewUnits.length > 0) {
     return buildTranscriptCoverageDiagnostics({
       llmActionLogs: reviewUnits
@@ -55,6 +56,35 @@ function normalizeTranscriptCoverage(reviewUnits, input) {
           .sort((left, right) => left[0].localeCompare(right[0], 'ja'))
       )
       : {},
+    snapshotInputDiagnostics: diagnostics.snapshotInputDiagnostics && typeof diagnostics.snapshotInputDiagnostics === 'object'
+      ? Object.assign({}, defaultDiagnostics.snapshotInputDiagnostics, diagnostics.snapshotInputDiagnostics, {
+        assistantReplyPresent: Object.assign(
+          {},
+          defaultDiagnostics.snapshotInputDiagnostics.assistantReplyPresent,
+          diagnostics.snapshotInputDiagnostics.assistantReplyPresent || {}
+        ),
+        assistantReplyLength: Object.assign(
+          {},
+          defaultDiagnostics.snapshotInputDiagnostics.assistantReplyLength,
+          diagnostics.snapshotInputDiagnostics.assistantReplyLength || {}
+        ),
+        sanitizedReplyLength: Object.assign(
+          {},
+          defaultDiagnostics.snapshotInputDiagnostics.sanitizedReplyLength,
+          diagnostics.snapshotInputDiagnostics.sanitizedReplyLength || {}
+        ),
+        snapshotBuildAttempted: Object.assign(
+          {},
+          defaultDiagnostics.snapshotInputDiagnostics.snapshotBuildAttempted,
+          diagnostics.snapshotInputDiagnostics.snapshotBuildAttempted || {}
+        ),
+        snapshotBuildSkippedReason: Object.assign(
+          {},
+          defaultDiagnostics.snapshotInputDiagnostics.snapshotBuildSkippedReason,
+          diagnostics.snapshotInputDiagnostics.snapshotBuildSkippedReason || {}
+        )
+      })
+      : defaultDiagnostics.snapshotInputDiagnostics,
     transcriptCoverageStatus: typeof diagnostics.transcriptCoverageStatus === 'string'
       ? diagnostics.transcriptCoverageStatus
       : 'unavailable',
