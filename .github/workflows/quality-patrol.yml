@@ -176,7 +176,7 @@ jobs:
           async function main() {
             const projectId = process.env.FIRESTORE_PROJECT_ID;
             if (!projectId) throw new Error('firestore_project_id_missing');
-            const snap = await admin.firestore().doc('__quality_patrol_adc_probe__/noop').get();
+            const snap = await admin.firestore().doc('quality_patrol_adc_probe/noop').get();
             process.stdout.write(`${JSON.stringify({
               ok: true,
               authBridge: process.env.QUALITY_PATROL_AUTH_BRIDGE || null,

@@ -22,6 +22,6 @@ test('phase856: quality patrol workflow probes Firebase Admin before cycle artif
 
   assert.match(workflow, /name:\s+Diagnose Firebase Admin bridge/);
   assert.match(workflow, /require\('firebase-admin'\)/);
-  assert.match(workflow, /__quality_patrol_adc_probe__\/noop/);
+  assert.match(workflow, /quality_patrol_adc_probe\/noop/);
   assert.ok(workflow.indexOf('Diagnose Firebase Admin bridge') < workflow.indexOf('Run quality patrol cycle'));
 });
