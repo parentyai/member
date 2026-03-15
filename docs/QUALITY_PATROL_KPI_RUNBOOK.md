@@ -96,11 +96,20 @@
 - post-merge quality patrol verification uses repo-local replay tooling instead of external `/tmp/*.js` harnesses.
 - replay harness path: `tools/quality_patrol/replay_same_traffic_set.js`
 - verification harness path: `tools/quality_patrol/verify_postmerge_runtime_window.js`
+- observation automation path: `tools/quality_patrol/run_quality_patrol_cycle.js`
 - replay result artifact defaults to `/tmp/quality_patrol_replay_result.json`
 - verification artifact defaults to `/tmp/quality_patrol_postmerge_verify.json`
+- automated cycle artifacts default to:
+  - `/tmp/quality_patrol_cycle_replay.json`
+  - `/tmp/quality_patrol_cycle_metrics.json`
+  - `/tmp/quality_patrol_cycle_latest.json`
+  - `/tmp/quality_patrol_cycle_operator.json`
+  - `/tmp/quality_patrol_cycle_human.json`
+  - `/tmp/quality_patrol_cycle_verify.json`
 - KPI rerun stays read-only and uses the existing patrol jobs:
   - `node tools/run_quality_patrol_metrics.js --output /tmp/quality_patrol_metrics_postmerge_verify.json`
   - `node tools/run_quality_patrol.js --mode latest --output /tmp/quality_patrol_latest_postmerge_verify.json`
+- scheduled automation reuses the same jobs hourly via `.github/workflows/quality-patrol.yml`.
 - replay verification is successful only when:
   - `currentRuntime.window.toAt > mergedAt`
   - `recentWindow.written >= 5`

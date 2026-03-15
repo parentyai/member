@@ -89,7 +89,8 @@
 - default UI state is `mode=latest` and `audience=operator`.
 - UI keeps the blocker-first rule: `observationBlockers[]` render before `recommendedPr[]`.
 - operator view shows denser evidence and trace handoff buttons; human view keeps the summary compact and suppresses direct trace refs.
-- scheduler is not wired yet. `latest` remains live synthesis from the read-side foundations.
+- scheduled observation automation now reuses the same read-only query/CLI foundations through `.github/workflows/quality-patrol.yml` and `tools/quality_patrol/run_quality_patrol_cycle.js`.
+- `latest` remains live synthesis from the same read-side foundations; automation does not change route semantics.
 
 ## Non-goals in PR-8
 - no admin UI pane
@@ -105,7 +106,8 @@
 ## PR-10 job integration
 - PR-10 introduces CLI-first patrol jobs that reuse the same query contract for artifact output.
 - jobs remain read-only by default and do not change route semantics.
-- external scheduler wiring is still not part of the contract; `/tmp` or explicit output paths are used until cron/internal orchestration is added.
+- PR-11 adds hourly cron/internal orchestration by calling the same CLI entrypoints and uploading `/tmp/quality_patrol_cycle_*.json`.
+- scheduler wiring does not change the query top-level contract or route response shape.
 
 ## Post-merge replay verification
 - repo-local replay harness is available at `tools/quality_patrol/replay_same_traffic_set.js`.

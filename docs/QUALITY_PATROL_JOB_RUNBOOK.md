@@ -8,6 +8,10 @@
   - `node tools/run_quality_patrol_planning.js`
 - shared runner helper:
   - `tools/quality_patrol/lib.js`
+- cycle runner:
+  - `tools/quality_patrol/run_quality_patrol_cycle.js`
+- scheduled workflow:
+  - `.github/workflows/quality-patrol.yml`
 
 ## Job modes
 - `latest`
@@ -17,7 +21,7 @@
 - `next-best-pr`
 
 ## Default behavior
-- PR-10 is CLI first. No external scheduler or new route is introduced here.
+- PR-10 remains CLI first, and PR-11 adds an hourly GitHub Actions caller that reuses the same CLI/read-side foundations.
 - default mode is read-only.
 - default audience is `operator`.
 - jobs reuse the existing read-side foundations:
@@ -57,8 +61,32 @@ Write mode is allowed only after the read-only pipeline finishes and review unit
 - metrics-only artifact
 - detection-only artifact
 - planning-only artifact
+- cycle artifacts:
+  - `/tmp/quality_patrol_cycle_replay.json`
+  - `/tmp/quality_patrol_cycle_metrics.json`
+  - `/tmp/quality_patrol_cycle_latest.json`
+  - `/tmp/quality_patrol_cycle_operator.json`
+  - `/tmp/quality_patrol_cycle_human.json`
+  - `/tmp/quality_patrol_cycle_verify.json`
 
 Output path is controlled by `--output`. If omitted, the job writes to `/tmp`.
+
+## Observation automation
+- `npm run quality-patrol:cycle` runs the same fixed sequence every time:
+  1. replay same traffic set
+  2. metrics artifact
+  3. latest artifact
+  4. operator newly-detected-improvements artifact
+  5. human newly-detected-improvements artifact
+  6. post-merge/runtime-window verification artifact
+- the cycle runner prints a compressed decision log:
+  - `QUALITY PATROL STATUS`
+  - `runtime`
+  - `backlog`
+  - `decision`
+  - `prD`
+- the scheduled workflow runs hourly and uploads `/tmp/quality_patrol_cycle_*.json`.
+- automation stays read-only apart from replay writes that already travel through the normal webhook -> action-log -> snapshot path.
 
 ## Degraded / unavailable semantics
 - transcript unavailable
@@ -77,19 +105,21 @@ These states remain explicit in `runtimeFetchStatus`, `observationStatus`, `plan
   - `node tools/run_quality_patrol_detection.js --output /tmp/quality_patrol_detection.json`
 - planning snapshot:
   - `node tools/run_quality_patrol_planning.js --output /tmp/quality_patrol_planning.json`
+- automated cycle:
+  - `npm run quality-patrol:cycle`
 
 ## Stop / rollback
 - immediate stop:
   - stop running the CLI jobs
+  - disable `.github/workflows/quality-patrol.yml`
   - do not pass `--write-issues` or `--write-backlog`
 - staged rollback:
   - stop job callers first
   - keep the foundation contracts intact
 - full rollback:
-  - revert PR-10
+  - revert the automation PR that introduced `quality-patrol:cycle` and `.github/workflows/quality-patrol.yml`
 
 ## Non-goals in PR-10
-- no external scheduler configuration
 - no admin UI contract change
 - no query route shape change
 - no runtime answer behavior change

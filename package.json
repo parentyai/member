@@ -123,6 +123,7 @@
     "llm:spec-contract:freeze:check": "node scripts/check_llm_spec_contract_freeze.js --check",
     "quality-patrol:run": "node tools/run_quality_patrol.js",
     "quality-patrol:metrics": "node tools/run_quality_patrol_metrics.js",
+    "quality-patrol:cycle": "node tools/quality_patrol/run_quality_patrol_cycle.js",
     "quality-patrol:detection": "node tools/run_quality_patrol_detection.js",
     "quality-patrol:planning": "node tools/run_quality_patrol_planning.js"
   }
