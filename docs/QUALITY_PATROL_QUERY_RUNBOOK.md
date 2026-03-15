@@ -101,3 +101,19 @@
 - PR-10 introduces CLI-first patrol jobs that reuse the same query contract for artifact output.
 - jobs remain read-only by default and do not change route semantics.
 - external scheduler wiring is still not part of the contract; `/tmp` or explicit output paths are used until cron/internal orchestration is added.
+
+## Post-merge replay verification
+- repo-local replay harness is available at `tools/quality_patrol/replay_same_traffic_set.js`.
+- the harness replays the fixed five-message traffic set through `handleLineWebhook` using trusted payloads shaped as `{ destination, events: [event] }`.
+- replay only stubs `replyFn`, `pushFn`, and `sendWelcomeFn`; action-log and snapshot writes stay on the normal webhook path.
+- replay output is written to `/tmp/quality_patrol_replay_result.json` by default and includes per-event request/trace linkage, snapshot outcome telemetry, and supplied-vs-persisted trace counts.
+- post-merge verification is available at `tools/quality_patrol/verify_postmerge_runtime_window.js`.
+- verification combines replay output with:
+  - `tools/run_quality_patrol_metrics.js`
+  - `tools/run_quality_patrol.js --mode latest`
+- verification output is written to `/tmp/quality_patrol_postmerge_verify.json` by default and confirms:
+  - `currentRuntime.window.toAt > mergedAt`
+  - `recentWindow.written >= 5`
+  - `backlogSeparation.currentRuntime`
+  - `backlogSeparation.historicalDebt`
+  - `backlogSeparation.backlogSeparationGate`
