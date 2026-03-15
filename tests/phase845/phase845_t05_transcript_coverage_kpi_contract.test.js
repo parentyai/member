@@ -78,6 +78,10 @@ test('phase845: transcript coverage diagnostics stay separate from transcript av
   assert.equal(result.transcriptCoverage.transcriptWriteOutcomeCounts.skipped_missing_line_user_key, 1);
   assert.equal(result.transcriptCoverage.transcriptWriteFailureReasons.repo_write_failed, 1);
   assert.equal(result.transcriptCoverage.snapshotInputDiagnostics.assistantReplyPresent.trueCount, 1);
+  assert.equal(result.transcriptCoverage.snapshotInputDiagnostics.assistant_reply_missing, 0);
+  assert.equal(result.transcriptCoverage.snapshotInputDiagnostics.sanitized_reply_empty, 0);
+  assert.equal(result.transcriptCoverage.snapshotInputDiagnostics.masking_removed_text, 0);
+  assert.equal(result.transcriptCoverage.snapshotInputDiagnostics.region_prompt_fallback, 0);
   assert.equal(result.transcriptCoverage.snapshotInputDiagnostics.snapshotBuildAttempted.trueCount, 2);
   assert.equal(result.transcriptCoverage.snapshotInputDiagnostics.snapshotBuildSkippedReason.line_user_key_missing, 1);
   assert.equal(result.transcriptCoverage.transcriptCoverageStatus, 'warn');

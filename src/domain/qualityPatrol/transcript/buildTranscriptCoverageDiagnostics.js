@@ -65,6 +65,10 @@ function createLengthStats() {
 
 function createSnapshotInputDiagnostics() {
   return {
+    assistant_reply_missing: 0,
+    sanitized_reply_empty: 0,
+    masking_removed_text: 0,
+    region_prompt_fallback: 0,
     assistantReplyPresent: {
       trueCount: 0,
       falseCount: 0
@@ -127,6 +131,14 @@ function createEmptyTranscriptCoverageDiagnostics() {
   };
 }
 
+function recordSnapshotBuildSkippedReason(target, skippedReason) {
+  if (!skippedReason) return;
+  target.snapshotBuildSkippedReason[skippedReason] += 1;
+  if (Object.prototype.hasOwnProperty.call(target, skippedReason)) {
+    target[skippedReason] += 1;
+  }
+}
+
 function buildTranscriptCoverageDiagnostics(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const llmActionLogs = Array.isArray(payload.llmActionLogs) ? payload.llmActionLogs : [];
@@ -158,9 +170,7 @@ function buildTranscriptCoverageDiagnostics(params) {
     recordBooleanCounts(snapshotInputDiagnostics.snapshotBuildAttempted, snapshotBuildAttempted);
     recordLengthStat(snapshotInputDiagnostics.assistantReplyLength, row && row.transcriptSnapshotAssistantReplyLength);
     recordLengthStat(snapshotInputDiagnostics.sanitizedReplyLength, row && row.transcriptSnapshotSanitizedReplyLength);
-    if (skippedReason) {
-      snapshotInputDiagnostics.snapshotBuildSkippedReason[skippedReason] += 1;
-    }
+    recordSnapshotBuildSkippedReason(snapshotInputDiagnostics, skippedReason);
   });
 
   const writtenCount = Number(transcriptWriteOutcomeCounts.written || 0);
