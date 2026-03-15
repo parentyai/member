@@ -2,6 +2,7 @@
 
 const crypto = require('node:crypto');
 const { maskConversationReviewText } = require('./maskConversationReviewText');
+const { regionPrompt, regionInvalid } = require('../../regionLineMessages');
 
 const SNAPSHOT_VERSION = 'quality_patrol_review_snapshot_v1';
 
@@ -9,6 +10,13 @@ const TEXT_LENGTH_CAPS = Object.freeze({
   userMessage: 240,
   assistantReply: 420,
   priorContextSummary: 240
+});
+
+const SNAPSHOT_BUILD_SKIPPED_REASON = Object.freeze({
+  assistantReplyMissing: 'assistant_reply_missing',
+  sanitizedReplyEmpty: 'sanitized_reply_empty',
+  maskingRemovedText: 'masking_removed_text',
+  regionPromptFallback: 'region_prompt_fallback'
 });
 
 function normalizeText(value) {
@@ -28,6 +36,49 @@ function buildLineUserKey(lineUserId) {
 
 function toBoolean(value) {
   return value === true;
+}
+
+function countReplacements(rows) {
+  return (Array.isArray(rows) ? rows : []).reduce((sum, item) => {
+    const count = Number(item && item.count);
+    return Number.isFinite(count) ? sum + Math.max(0, Math.floor(count)) : sum;
+  }, 0);
+}
+
+function createEmptySnapshotInputDiagnostics() {
+  return {
+    assistantReplyPresent: null,
+    assistantReplyLength: null,
+    sanitizedReplyLength: null,
+    snapshotBuildAttempted: false,
+    snapshotBuildSkippedReason: null
+  };
+}
+
+function resolveSnapshotBuildSkippedReason(assistantReply, assistantReplySourceText) {
+  const rawAssistantReply = normalizeText(assistantReplySourceText);
+  const assistantReplyPresent = Boolean(rawAssistantReply);
+  const sanitizedReplyLength = Number(assistantReply && assistantReply.storedLength) || 0;
+  if (!assistantReplyPresent) return SNAPSHOT_BUILD_SKIPPED_REASON.assistantReplyMissing;
+  if ([regionPrompt(), regionInvalid()].map(normalizeText).includes(rawAssistantReply)) {
+    return SNAPSHOT_BUILD_SKIPPED_REASON.regionPromptFallback;
+  }
+  if (sanitizedReplyLength > 0) return null;
+  if (countReplacements(assistantReply && assistantReply.replacements) > 0) {
+    return SNAPSHOT_BUILD_SKIPPED_REASON.maskingRemovedText;
+  }
+  return SNAPSHOT_BUILD_SKIPPED_REASON.sanitizedReplyEmpty;
+}
+
+function buildSnapshotInputDiagnostics(assistantReply, assistantReplySourceText) {
+  const rawAssistantReply = normalizeText(assistantReplySourceText);
+  return {
+    assistantReplyPresent: Boolean(rawAssistantReply),
+    assistantReplyLength: rawAssistantReply.length,
+    sanitizedReplyLength: Number(assistantReply && assistantReply.storedLength) || 0,
+    snapshotBuildAttempted: true,
+    snapshotBuildSkippedReason: resolveSnapshotBuildSkippedReason(assistantReply, assistantReplySourceText)
+  };
 }
 
 function extractTaskLines(contextSnapshot) {
@@ -86,6 +137,10 @@ function buildMaskedConversationReviewSnapshot(params) {
     text: priorContextSummarySource,
     maxLength: TEXT_LENGTH_CAPS.priorContextSummary
   });
+  const snapshotInputDiagnostics = buildSnapshotInputDiagnostics(
+    assistantReply,
+    payload.assistantReplyText || ''
+  );
 
   return {
     snapshotVersion: SNAPSHOT_VERSION,
@@ -129,13 +184,16 @@ function buildMaskedConversationReviewSnapshot(params) {
         replacements: priorContextSummary.replacements
       }
     },
+    snapshotInputDiagnostics,
     createdAt: normalizeText(payload.createdAt) || null
   };
 }
 
 module.exports = {
   SNAPSHOT_VERSION,
+  SNAPSHOT_BUILD_SKIPPED_REASON,
   TEXT_LENGTH_CAPS,
+  createEmptySnapshotInputDiagnostics,
   buildMaskedConversationReviewSnapshot,
   buildLineUserKey
 };

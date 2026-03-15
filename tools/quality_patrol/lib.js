@@ -162,6 +162,36 @@ function createEmptyKpiResult() {
         failed_unknown: 0
       },
       transcriptWriteFailureReasons: {},
+      snapshotInputDiagnostics: {
+        assistantReplyPresent: {
+          trueCount: 0,
+          falseCount: 0
+        },
+        assistantReplyLength: {
+          observedCount: 0,
+          min: null,
+          max: null,
+          avg: 0
+        },
+        sanitizedReplyLength: {
+          observedCount: 0,
+          min: null,
+          max: null,
+          avg: 0
+        },
+        snapshotBuildAttempted: {
+          trueCount: 0,
+          falseCount: 0
+        },
+        snapshotBuildSkippedReason: {
+          feature_flag_off: 0,
+          line_user_key_missing: 0,
+          assistant_reply_missing: 0,
+          sanitized_reply_empty: 0,
+          masking_removed_text: 0,
+          region_prompt_fallback: 0
+        }
+      },
       transcriptCoverageStatus: 'unavailable',
       sourceCollections: ['llm_action_logs']
     },

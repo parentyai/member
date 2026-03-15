@@ -33,7 +33,14 @@
 - operator/read-side surfaces may expose:
   - `transcriptWriteOutcomeCounts`
   - `transcriptWriteFailureReasons`
+  - `snapshotInputDiagnostics`
   - `transcriptCoverageStatus`
+- `snapshotInputDiagnostics` may include:
+  - `assistantReplyPresent`
+  - `assistantReplyLength`
+  - `sanitizedReplyLength`
+  - `snapshotBuildAttempted`
+  - `snapshotBuildSkippedReason`
 - these diagnostics explain snapshot write-path coverage and stay separate from:
   - `userMessageAvailableRate`
   - `assistantReplyAvailableRate`

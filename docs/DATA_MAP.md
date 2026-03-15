@@ -59,7 +59,7 @@ Fields:
 Purpose: LLM runtime quality telemetry and masked conversation review evidence.
 
 Typical fields:
-- `llm_action_logs`: route/strategy/readiness/fallback telemetry, template fingerprints, trace linkage, transcript snapshot outcome telemetry (`transcriptSnapshotOutcome`, `transcriptSnapshotReason`, availability booleans without raw transcript text)
+- `llm_action_logs`: route/strategy/readiness/fallback telemetry, template fingerprints, trace linkage, transcript snapshot outcome telemetry (`transcriptSnapshotOutcome`, `transcriptSnapshotReason`, availability booleans, input diagnostics such as `transcriptSnapshotAssistantReplyPresent`, `transcriptSnapshotAssistantReplyLength`, `transcriptSnapshotSanitizedReplyLength`, `transcriptSnapshotBuildAttempted`, `transcriptSnapshotBuildSkippedReason` without raw transcript text)
 - `faq_answer_logs`: question hash, matched FAQ ids, saved FAQ / readiness telemetry
 - `conversation_review_snapshots`: `lineUserKey`, `traceId`, `requestId`, `routeKind`, `strategy`, `selectedCandidateKind`, `fallbackTemplateKind`, `replyTemplateFingerprint`, `priorContextUsed`, `followupResolvedFromHistory`, `knowledgeCandidateUsed`, `readinessDecision`, `userMessageMasked`, `assistantReplyMasked`, `priorContextSummaryMasked`, `textPolicy`
 
@@ -81,7 +81,7 @@ Typical fields:
 Notes:
 - sources: `conversation_review_snapshots`, `llm_action_logs`, `faq_answer_logs`, `trace_bundle`
 - review units are not persisted; they are derived read-only outputs for downstream evaluator/detection PRs.
-- transcript coverage diagnostics are derived from `llm_action_logs` outcome telemetry and stay separate from transcript availability rates.
+- transcript coverage diagnostics are derived from `llm_action_logs` outcome/input telemetry and stay separate from transcript availability rates.
 - `faq_answer_logs` are auxiliary evidence and do not create standalone review units without a snapshot/action anchor.
 - extractor responses may include add-only `joinDiagnostics` such as `faqOnlyRowsSkipped`, `traceHydrationLimitedCount`, and `reviewUnitAnchorKindCounts`.
 

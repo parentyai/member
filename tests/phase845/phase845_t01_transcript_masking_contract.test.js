@@ -7,6 +7,10 @@ const {
   maskConversationReviewText
 } = require('../../src/domain/qualityPatrol/transcriptMasking/maskConversationReviewText');
 const {
+  regionPrompt,
+  regionInvalid
+} = require('../../src/domain/regionLineMessages');
+const {
   TEXT_LENGTH_CAPS,
   buildLineUserKey,
   buildMaskedConversationReviewSnapshot
@@ -70,4 +74,28 @@ test('phase845: masked conversation snapshot stores hashed user key and structur
   assert.equal(snapshot.userMessageMasked.length <= TEXT_LENGTH_CAPS.userMessage, true);
   assert.equal(snapshot.assistantReplyMasked.length <= TEXT_LENGTH_CAPS.assistantReply, true);
   assert.equal(snapshot.priorContextSummaryMasked.length <= TEXT_LENGTH_CAPS.priorContextSummary, true);
+  assert.equal(snapshot.snapshotInputDiagnostics.assistantReplyPresent, true);
+  assert.equal(snapshot.snapshotInputDiagnostics.assistantReplyLength > 0, true);
+  assert.equal(snapshot.snapshotInputDiagnostics.sanitizedReplyLength > 0, true);
+  assert.equal(snapshot.snapshotInputDiagnostics.snapshotBuildAttempted, true);
+  assert.equal(snapshot.snapshotInputDiagnostics.snapshotBuildSkippedReason, null);
+});
+
+test('phase845: masked conversation snapshot input diagnostics classify region fallback and empty sanitized reply candidates', () => {
+  const regionPromptSnapshot = buildMaskedConversationReviewSnapshot({
+    lineUserId: 'U_PHASE845_REGION_PROMPT',
+    assistantReplyText: regionPrompt()
+  });
+  const regionInvalidSnapshot = buildMaskedConversationReviewSnapshot({
+    lineUserId: 'U_PHASE845_REGION_INVALID',
+    assistantReplyText: regionInvalid()
+  });
+  const missingReplySnapshot = buildMaskedConversationReviewSnapshot({
+    lineUserId: 'U_PHASE845_REPLY_MISSING',
+    assistantReplyText: '   '
+  });
+
+  assert.equal(regionPromptSnapshot.snapshotInputDiagnostics.snapshotBuildSkippedReason, 'region_prompt_fallback');
+  assert.equal(regionInvalidSnapshot.snapshotInputDiagnostics.snapshotBuildSkippedReason, 'region_prompt_fallback');
+  assert.equal(missingReplySnapshot.snapshotInputDiagnostics.snapshotBuildSkippedReason, 'assistant_reply_missing');
 });

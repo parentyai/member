@@ -2361,6 +2361,21 @@ async function appendLlmActionLogBestEffort(data) {
         : null,
       transcriptSnapshotPriorContextSummaryAvailable: transcriptSnapshotResult
         ? transcriptSnapshotResult.transcriptSnapshotPriorContextSummaryAvailable === true
+        : null,
+      transcriptSnapshotAssistantReplyPresent: transcriptSnapshotResult
+        ? transcriptSnapshotResult.transcriptSnapshotAssistantReplyPresent
+        : null,
+      transcriptSnapshotAssistantReplyLength: transcriptSnapshotResult
+        ? transcriptSnapshotResult.transcriptSnapshotAssistantReplyLength
+        : null,
+      transcriptSnapshotSanitizedReplyLength: transcriptSnapshotResult
+        ? transcriptSnapshotResult.transcriptSnapshotSanitizedReplyLength
+        : null,
+      transcriptSnapshotBuildAttempted: transcriptSnapshotResult
+        ? transcriptSnapshotResult.transcriptSnapshotBuildAttempted === true
+        : null,
+      transcriptSnapshotBuildSkippedReason: transcriptSnapshotResult
+        ? transcriptSnapshotResult.transcriptSnapshotBuildSkippedReason
         : null
     });
   } catch (_err) {
