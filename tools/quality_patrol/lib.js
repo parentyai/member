@@ -18,6 +18,9 @@ const {
   buildPatrolBacklogSeparation,
   createEmptyPatrolBacklogSeparation
 } = require('../../src/domain/qualityPatrol/query/buildPatrolBacklogSeparation');
+const {
+  buildHumanSafePatrolSurface
+} = require('../../src/domain/qualityPatrol/query/buildHumanSafePatrolSurface');
 const { createEmptyDecayAwareReadiness } = require('../../src/domain/qualityPatrol/buildDecayAwareReadiness');
 const { createEmptyDecayAwareOpsGate } = require('../../src/domain/qualityPatrol/buildDecayAwareOpsGate');
 
@@ -314,14 +317,24 @@ function buildMainArtifact(job) {
     decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
     decayAwareOpsGate: job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate()
   });
+  const humanSurface = job.options.audience === 'human'
+    ? buildHumanSafePatrolSurface({
+      transcriptCoverage: job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage,
+      decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
+      decayAwareOpsGate: job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate(),
+      rootCauseResult: job.rootCauseResult,
+      planResult: job.planResult,
+      backlogSeparation
+    })
+    : null;
   return Object.assign({}, job.queryResult, {
     artifactVersion: MAIN_ARTIFACT_VERSION,
     mode: job.options.mode,
     planningStatus: job.planResult.planningStatus || 'insufficient_evidence',
     analysisStatus: summarizeAnalysisStatus(job.rootCauseResult),
-    transcriptCoverage: job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage,
-    decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
-    decayAwareOpsGate: job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate(),
+    transcriptCoverage: humanSurface ? humanSurface.transcriptCoverage : (job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage),
+    decayAwareReadiness: humanSurface ? humanSurface.decayAwareReadiness : (job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness()),
+    decayAwareOpsGate: humanSurface ? humanSurface.decayAwareOpsGate : (job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate()),
     backlogSeparation,
     provenance: JOB_PROVENANCE,
     sourceWindow: job.sourceWindow,
@@ -336,6 +349,16 @@ function buildMetricsArtifact(job) {
     decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
     decayAwareOpsGate: job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate()
   });
+  const humanSurface = job.options.audience === 'human'
+    ? buildHumanSafePatrolSurface({
+      transcriptCoverage: job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage,
+      decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
+      decayAwareOpsGate: job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate(),
+      rootCauseResult: job.rootCauseResult,
+      planResult: job.planResult,
+      backlogSeparation
+    })
+    : null;
   return {
     artifactVersion: METRICS_ARTIFACT_VERSION,
     generatedAt: job.generatedAt,
@@ -344,11 +367,13 @@ function buildMetricsArtifact(job) {
     summary: job.kpiResult.summary || { overallStatus: 'unavailable', reviewUnitCount: 0, sliceCounts: {} },
     metrics: job.kpiResult.metrics || {},
     issueCandidateMetrics: job.kpiResult.issueCandidateMetrics || {},
-    transcriptCoverage: job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage,
-    decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
-    decayAwareOpsGate: job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate(),
+    transcriptCoverage: humanSurface ? humanSurface.transcriptCoverage : (job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage),
+    decayAwareReadiness: humanSurface ? humanSurface.decayAwareReadiness : (job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness()),
+    decayAwareOpsGate: humanSurface ? humanSurface.decayAwareOpsGate : (job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate()),
     backlogSeparation,
-    observationBlockers: job.kpiResult.observationBlockers || [],
+    observationBlockers: job.options.audience === 'human'
+      ? (job.queryResult.observationBlockers || [])
+      : (job.kpiResult.observationBlockers || []),
     provenance: 'quality_patrol_job_metrics',
     sourceCollections: job.kpiResult.sourceCollections || [],
     sourceWindow: job.sourceWindow,
@@ -370,7 +395,9 @@ function buildDetectionArtifact(job) {
       byType: {},
       bySlice: {}
     },
-    issueCandidates: job.detectionResult.issueCandidates || [],
+    issueCandidates: job.options.audience === 'human'
+      ? (job.queryResult.issues || [])
+      : (job.detectionResult.issueCandidates || []),
     backlogCandidates: job.detectionResult.backlogCandidates || [],
     observationBlockers: job.queryResult.observationBlockers || [],
     analysisStatus: summarizeAnalysisStatus(job.rootCauseResult),
@@ -384,6 +411,15 @@ function buildDetectionArtifact(job) {
 }
 
 function buildPlanningArtifact(job) {
+  const humanSurface = job.options.audience === 'human'
+    ? buildHumanSafePatrolSurface({
+      transcriptCoverage: null,
+      decayAwareReadiness: null,
+      decayAwareOpsGate: null,
+      rootCauseResult: job.rootCauseResult,
+      planResult: job.planResult
+    })
+    : null;
   return {
     artifactVersion: PLANNING_ARTIFACT_VERSION,
     generatedAt: job.generatedAt,
@@ -394,8 +430,12 @@ function buildPlanningArtifact(job) {
       observationOnlyCount: 0,
       runtimeFixCount: 0
     },
-    recommendedPr: job.planResult.recommendedPr || [],
-    rootCauseReports: job.rootCauseResult.rootCauseReports || [],
+    recommendedPr: job.options.audience === 'human'
+      ? (humanSurface.planResult.recommendedPr || [])
+      : (job.planResult.recommendedPr || []),
+    rootCauseReports: job.options.audience === 'human'
+      ? (humanSurface.rootCauseResult.rootCauseReports || [])
+      : (job.rootCauseResult.rootCauseReports || []),
     observationBlockers: job.queryResult.observationBlockers || [],
     planningStatus: job.planResult.planningStatus || 'insufficient_evidence',
     analysisStatus: summarizeAnalysisStatus(job.rootCauseResult),

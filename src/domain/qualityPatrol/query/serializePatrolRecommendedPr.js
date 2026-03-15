@@ -62,18 +62,27 @@ function serializePatrolRecommendedPr(params) {
 
   let rows = (Array.isArray(payload.recommendedPr) ? payload.recommendedPr : []).map((item) => {
     const isNew = !existingBacklogSet.has(backlogMatchKey(item));
-    const row = {
-      proposalKey: item && item.proposalKey ? item.proposalKey : '',
-      title: item && item.title ? item.title : 'Quality Patrol proposal',
-      proposalType: item && item.proposalType ? item.proposalType : 'observation_only',
-      priority: item && item.priority ? item.priority : 'P2',
-      objective: item && item.objective ? item.objective : 'Improve Quality Patrol coverage or response quality.',
-      whyNow: item && item.whyNow ? item.whyNow : '',
-      riskLevel: item && item.riskLevel ? item.riskLevel : 'medium',
-      blockedBy: Array.isArray(item && item.blockedBy) ? item.blockedBy.slice() : [],
-      targetFiles: Array.isArray(item && item.targetFiles) ? item.targetFiles.slice() : [],
-      changeStatus: isNew ? 'new' : 'ongoing'
-    };
+    const row = audience === 'human'
+      ? {
+        title: item && item.title ? item.title : 'Quality Patrol proposal',
+        priority: item && item.priority ? item.priority : 'P2',
+        objective: item && item.objective ? item.objective : 'Improve Quality Patrol coverage or response quality.',
+        whyNow: item && item.whyNow ? item.whyNow : '',
+        riskLevel: item && item.riskLevel ? item.riskLevel : 'medium',
+        changeStatus: isNew ? 'new' : 'ongoing'
+      }
+      : {
+        proposalKey: item && item.proposalKey ? item.proposalKey : '',
+        title: item && item.title ? item.title : 'Quality Patrol proposal',
+        proposalType: item && item.proposalType ? item.proposalType : 'observation_only',
+        priority: item && item.priority ? item.priority : 'P2',
+        objective: item && item.objective ? item.objective : 'Improve Quality Patrol coverage or response quality.',
+        whyNow: item && item.whyNow ? item.whyNow : '',
+        riskLevel: item && item.riskLevel ? item.riskLevel : 'medium',
+        blockedBy: Array.isArray(item && item.blockedBy) ? item.blockedBy.slice() : [],
+        targetFiles: Array.isArray(item && item.targetFiles) ? item.targetFiles.slice() : [],
+        changeStatus: isNew ? 'new' : 'ongoing'
+      };
     if (audience === 'operator' && item && item.whyNotOthers) row.whyNotOthers = item.whyNotOthers;
     return row;
   });

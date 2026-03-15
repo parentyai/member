@@ -57,6 +57,10 @@
   - `backlogSeparation.historicalDebt`
   - `backlogSeparation.backlogSeparationGate`
 - backlog separation is read-side only and exists to prevent current runtime health from being collapsed into historical full-window debt.
+- human audience keeps these top-level KPI-derived objects but compresses them:
+  - `transcriptCoverage`: counts + coverage summary only
+  - `decayAwareReadiness`: recent/full summary without raw debt keys or internal readiness taxonomy
+  - `decayAwareOpsGate`: `decision`, human-readable `operatorAction`, `prDStatus`
 - `snapshotInputDiagnostics` may include:
   - `assistantReplyPresent`
   - `assistantReplyLength`

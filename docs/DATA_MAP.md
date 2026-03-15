@@ -162,8 +162,12 @@ Typical fields:
 - `summary.overallStatus`, `summary.topFindings`, `summary.topPriorityCount`, `summary.observationBlockerCount`
 - `issues[]`, `observationBlockers[]`, `evidence[]`, `traceRefs[]`, `recommendedPr[]`
 - `observationStatus`, `provenance`, `sourceCollections`
-- `observationBlockers[]` may also include add-only precision fields such as `code`, `category`, `evidenceSource`, `privacySensitivity`, and `detailVisibility`
+- operator `observationBlockers[]` may also include add-only precision fields such as `code`, `category`, `evidenceSource`, `privacySensitivity`, and `detailVisibility`
 - add-only `backlogSeparation.currentRuntime`, `backlogSeparation.historicalDebt`, and `backlogSeparation.backlogSeparationGate`
+- human audience keeps the same top-level query keys but compresses:
+  - `observationBlockers[]` to privacy-safe summaries without raw blocker codes
+  - `rootCauseResult` / `planResult` to summary-only shells
+  - `transcriptCoverage` / `decayAwareReadiness` / `decayAwareOpsGate` to compressed read-side summaries without internal taxonomy strings
 
 Notes:
 - query responses are not persisted in PR-8.
@@ -191,6 +195,13 @@ Typical fields:
 - `decayAwareOpsGate`
 - `backlogSeparation`
 - `runtimeFetchStatus`, `writeStatus`, `sourceWindow`, `sourceCollections`
+- human audience preserves the same top-level artifact keys but removes direct exposure of internal taxonomy / reason-code strings from:
+  - `observationBlockers[]`
+  - `transcriptCoverage`
+  - `decayAwareReadiness`
+  - `decayAwareOpsGate`
+  - `rootCauseResult`
+  - `planResult`
 
 Notes:
 - PR-10 jobs are CLI first and read-only by default.
