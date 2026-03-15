@@ -562,3 +562,41 @@ test('phase719: non-empty outbound paid reply keeps transcript snapshot assistan
   assert.equal(loaded.actionLogWrites[0].transcriptSnapshotAssistantReplyLength > 0, true);
   assert.notEqual(loaded.actionLogWrites[0].transcriptSnapshotBuildSkippedReason, 'assistant_reply_missing');
 });
+
+test('phase719: gate-blocked domain concierge fallback keeps transcript snapshot assistant reply telemetry present', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    budgetAllowed: false,
+    budgetBlockedReason: 'llm_disabled'
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const body = createWebhookBody('部屋探ししたい');
+  const replies = [];
+  const result = await loaded.handleLineWebhook({
+    body,
+    signature: signBody(body),
+    requestId: 'phase719_transcript_reply_handoff_gate_blocked',
+    logger: () => {},
+    allowWelcome: false,
+    replyFn: async (_replyToken, message) => {
+      replies.push(message);
+    }
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(replies.length, 1);
+  assert.equal(Boolean(replies[0].text && replies[0].text.trim()), true);
+  assert.equal(loaded.actionLogWrites.length > 0, true);
+  assert.equal(loaded.actionLogWrites[0].transcriptSnapshotAssistantReplyPresent, true);
+  assert.equal(loaded.actionLogWrites[0].transcriptSnapshotAssistantReplyLength > 0, true);
+  assert.notEqual(loaded.actionLogWrites[0].transcriptSnapshotBuildSkippedReason, 'assistant_reply_missing');
+});
