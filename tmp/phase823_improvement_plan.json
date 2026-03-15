@@ -1,0 +1,30 @@
+{
+  "planVersion": "v3",
+  "generatedAt": "2026-03-15T03:54:30.471Z",
+  "source": {
+    "clustersPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase823_failure_clusters.json"
+  },
+  "backlog": [
+    {
+      "priority": "high",
+      "category": "readiness",
+      "signals": [
+        "contradictionRate"
+      ],
+      "PR": "PR-readiness-hardening",
+      "objective": "Reduce unsupported claims, contradiction escapes, and over-clarification in final response decisions.",
+      "files": [
+        "src/domain/llm/quality/evaluateAnswerReadiness.js",
+        "src/domain/llm/quality/runAnswerReadinessGateV2.js",
+        "src/domain/llm/orchestrator/verifyCandidate.js"
+      ],
+      "tests": [
+        "tests/phase805/*.test.js",
+        "tests/phase815/*.test.js",
+        "tests/phase816/*.test.js"
+      ],
+      "risk": "Readiness tuning can shift clarify/refuse rates if applied too broadly.",
+      "rollback": "Turn off readiness v2 enforcement and revert the readiness PR."
+    }
+  ]
+}

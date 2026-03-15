@@ -1,0 +1,921 @@
+{
+  "ok": false,
+  "generatedAt": "2026-03-15T03:54:28.687Z",
+  "baselineMetricsPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tools/llm_quality/fixtures/baseline_metrics.v1.json",
+  "candidateMetricsPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tools/llm_quality/fixtures/candidate_metrics.v1.json",
+  "candidateSourcePath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase755_high_compat_share_summary.json",
+  "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase755_high_compat_share_summary.json",
+  "summaryFallbackPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tools/llm_quality/fixtures/usage_summary_candidate.v1.json",
+  "requireRuntimeSummary": true,
+  "requireRuntimeProvenance": true,
+  "requireLiveRuntimeAudit": false,
+  "runtimeSummarySource": "seeded_from_frozen_runtime_snapshot",
+  "requireCompatGovernance": true,
+  "requireNoGoGateMandatory": false,
+  "maxCompatShare": 0.15,
+  "compatShareWindow": 0.24,
+  "runtimeSummaryReadable": true,
+  "runtimeSummaryConverted": true,
+  "requireAllSlicesPass": false,
+  "adjudicationPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tools/llm_quality/fixtures/human_adjudication_set.v1.json",
+  "manifestPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/benchmarks/registry/manifest.v1.json",
+  "candidateSourceType": "runtime_summary",
+  "qualityLoopV2": {
+    "version": "v2-foundation",
+    "rolloutStage": "nogo_gate_mandatory",
+    "nogoGateMandatoryActive": true,
+    "crossSystemPriorityOrder": [
+      "Emergency",
+      "Legal / Consent",
+      "Task Blocker",
+      "Journey State",
+      "City Pack / Source Refs / Local Guidance",
+      "Saved FAQ",
+      "Generic LLM reasoning"
+    ],
+    "criticalSliceKeys": [
+      "emergency_high_risk",
+      "saved_faq_high_risk_reuse",
+      "journey_blocker_conflict",
+      "stale_city_pack_required_source",
+      "compat_spike",
+      "trace_join_incomplete",
+      "direct_url_leakage",
+      "official_source_missing_on_high_risk"
+    ],
+    "criticalSlices": [
+      {
+        "sliceKey": "emergency_high_risk",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "emergencyOfficialSourceRate"
+      },
+      {
+        "sliceKey": "saved_faq_high_risk_reuse",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "savedFaqReusePassRate"
+      },
+      {
+        "sliceKey": "journey_blocker_conflict",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "taskBlockerConflictRate"
+      },
+      {
+        "sliceKey": "stale_city_pack_required_source",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "staleSourceBlockRate"
+      },
+      {
+        "sliceKey": "compat_spike",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "compatShareWindow"
+      },
+      {
+        "sliceKey": "trace_join_incomplete",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "traceJoinCompleteness"
+      },
+      {
+        "sliceKey": "direct_url_leakage",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "directUrlLeakage"
+      },
+      {
+        "sliceKey": "official_source_missing_on_high_risk",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "officialSourceUsageRateHighRisk"
+      }
+    ],
+    "criticalSliceFailCount": 0,
+    "integrationKpis": {
+      "cityPackGroundingRate": {
+        "key": "cityPackGroundingRate",
+        "status": "pass",
+        "value": 0.94,
+        "sampleCount": 20
+      },
+      "staleSourceBlockRate": {
+        "key": "staleSourceBlockRate",
+        "status": "pass",
+        "value": 0.97,
+        "sampleCount": 20
+      },
+      "emergencyOfficialSourceRate": {
+        "key": "emergencyOfficialSourceRate",
+        "status": "pass",
+        "value": 1,
+        "sampleCount": 6
+      },
+      "emergencyOverrideAppliedRate": {
+        "key": "emergencyOverrideAppliedRate",
+        "status": "pass",
+        "value": 0.22,
+        "sampleCount": 6
+      },
+      "journeyAlignedActionRate": {
+        "key": "journeyAlignedActionRate",
+        "status": "pass",
+        "value": 0.91,
+        "sampleCount": 18
+      },
+      "taskBlockerConflictRate": {
+        "key": "taskBlockerConflictRate",
+        "status": "pass",
+        "value": 0.01,
+        "sampleCount": 18
+      },
+      "savedFaqReusePassRate": {
+        "key": "savedFaqReusePassRate",
+        "status": "pass",
+        "value": 0.96,
+        "sampleCount": 10
+      },
+      "crossSystemConflictRate": {
+        "key": "crossSystemConflictRate",
+        "status": "pass",
+        "value": 0.02,
+        "sampleCount": 20
+      },
+      "traceJoinCompleteness": {
+        "key": "traceJoinCompleteness",
+        "status": "pass",
+        "value": 1,
+        "sampleCount": 10
+      },
+      "adminTraceResolutionTime": {
+        "key": "adminTraceResolutionTime",
+        "status": "pass",
+        "value": 600000,
+        "sampleCount": 10
+      },
+      "officialSourceUsageRateHighRisk": {
+        "key": "officialSourceUsageRateHighRisk",
+        "status": "pass",
+        "value": 0.97,
+        "sampleCount": 10
+      },
+      "compatShareWindow": {
+        "key": "compatShareWindow",
+        "status": "pass",
+        "value": 0.04,
+        "sampleCount": 10
+      },
+      "directUrlLeakage": {
+        "key": "directUrlLeakage",
+        "status": "pass",
+        "value": 0,
+        "sampleCount": 10
+      }
+    },
+    "readinessV2": {
+      "sampleCount": 10,
+      "versionObserved": "v2",
+      "decisionBreakdown": [
+        {
+          "decision": "allow",
+          "count": 8
+        },
+        {
+          "decision": "clarify",
+          "count": 2
+        }
+      ],
+      "modeBreakdown": [
+        {
+          "mode": "hard_enforced_v2",
+          "count": 10
+        }
+      ],
+      "stageBreakdown": [
+        {
+          "stage": "nogo_gate_mandatory",
+          "count": 10
+        }
+      ],
+      "hardEnforcedCount": 10,
+      "softEnforcedCount": 0,
+      "logOnlyCount": 0,
+      "nogoGateMandatoryCount": 10
+    },
+    "missingJoins": [],
+    "reservations": [
+      "judge_disagreement_queue",
+      "integration_counterexample_registry",
+      "replay_slice_registry",
+      "saved_faq_retirement_review",
+      "emergency_override_review_queue",
+      "city_pack_freshness_recertification_report"
+    ]
+  },
+  "improvementLoop": null,
+  "benchmarkRegistry": {
+    "ok": true,
+    "errors": [],
+    "version": "bench-v1.0.0",
+    "frozen": true,
+    "artifactHash": "sha256:benchv100",
+    "fixtureCount": 4,
+    "sourceSnapshotCount": 1
+  },
+  "contamination": {
+    "overall": "high",
+    "counts": {
+      "low": 2,
+      "medium": 1,
+      "high": 1,
+      "unknown": 0
+    },
+    "hardGateOverall": "medium",
+    "hardGateCounts": {
+      "low": 2,
+      "medium": 1,
+      "high": 0,
+      "unknown": 0
+    },
+    "hardGateEligibleFixtureIds": [
+      "runtime_summary_snapshot",
+      "paid_short_followup_core",
+      "minority_persona_regression"
+    ],
+    "excludedFixtureIds": [
+      "open_web_scrape_probe"
+    ]
+  },
+  "judgeCalibration": {
+    "sampleCount": 120,
+    "disagreementCount": 9,
+    "disagreementRate": 0.075,
+    "promptSensitivityDrift": 0.0417,
+    "confidence": 0.79,
+    "multilingualStability": 1,
+    "reliabilityPolicy": {
+      "maxDisagreementRate": 0.12,
+      "maxSensitivityDrift": 0.08,
+      "humanReviewRequiredNearHardGate": true,
+      "humanReviewRequired": false
+    }
+  },
+  "baselineScorecard": {
+    "frameworkVersion": "v1",
+    "overallScore": 76.45,
+    "dimensions": [
+      {
+        "key": "factuality_grounding",
+        "label": "Factuality/Grounding",
+        "score": 0.84,
+        "weight": 0.12,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "source_authority_freshness",
+        "label": "Source Authority/Freshness",
+        "score": 0.81,
+        "weight": 0.08,
+        "hardGate": true,
+        "status": "fail"
+      },
+      {
+        "key": "procedural_utility",
+        "label": "Procedural Utility",
+        "score": 0.67,
+        "weight": 0.06,
+        "hardGate": false,
+        "status": "warning"
+      },
+      {
+        "key": "next_step_clarity",
+        "label": "Next-step Clarity",
+        "score": 0.65,
+        "weight": 0.05,
+        "hardGate": false,
+        "status": "warning"
+      },
+      {
+        "key": "conversation_continuity",
+        "label": "Conversation Continuity",
+        "score": 0.52,
+        "weight": 0.06,
+        "hardGate": false,
+        "status": "warning"
+      },
+      {
+        "key": "short_followup_understanding",
+        "label": "Short Follow-up Understanding",
+        "score": 0.48,
+        "weight": 0.06,
+        "hardGate": true,
+        "status": "fail"
+      },
+      {
+        "key": "clarification_quality",
+        "label": "Clarification Quality",
+        "score": 0.61,
+        "weight": 0.04,
+        "hardGate": false,
+        "status": "warning"
+      },
+      {
+        "key": "repetition_loop_avoidance",
+        "label": "Repetition/Loop Avoidance",
+        "score": 0.41,
+        "weight": 0.08,
+        "hardGate": true,
+        "status": "fail"
+      },
+      {
+        "key": "direct_answer_first",
+        "label": "Direct Answer First",
+        "score": 0.62,
+        "weight": 0.04,
+        "hardGate": false,
+        "status": "warning"
+      },
+      {
+        "key": "japanese_naturalness",
+        "label": "Japanese Naturalness",
+        "score": 0.63,
+        "weight": 0.04,
+        "hardGate": false,
+        "status": "warning"
+      },
+      {
+        "key": "japanese_service_quality",
+        "label": "Japanese Service Quality",
+        "score": 0.58,
+        "weight": 0.05,
+        "hardGate": true,
+        "status": "fail"
+      },
+      {
+        "key": "keigo_distance",
+        "label": "Keigo/Distance",
+        "score": 0.69,
+        "weight": 0.02,
+        "hardGate": false,
+        "status": "warning"
+      },
+      {
+        "key": "empathy",
+        "label": "Empathy",
+        "score": 0.56,
+        "weight": 0.03,
+        "hardGate": false,
+        "status": "warning"
+      },
+      {
+        "key": "cultural_habit_fit",
+        "label": "Cultural/Habit Fit",
+        "score": 0.57,
+        "weight": 0.03,
+        "hardGate": true,
+        "status": "fail"
+      },
+      {
+        "key": "line_native_fit",
+        "label": "LINE Native Fit",
+        "score": 0.6,
+        "weight": 0.04,
+        "hardGate": true,
+        "status": "fail"
+      },
+      {
+        "key": "action_policy_compliance",
+        "label": "Action Policy Compliance",
+        "score": 0.93,
+        "weight": 0.04,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "safety_compliance_privacy",
+        "label": "Safety/Compliance/Privacy",
+        "score": 0.95,
+        "weight": 0.08,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "memory_integrity",
+        "label": "Memory Integrity",
+        "score": 0.74,
+        "weight": 0.03,
+        "hardGate": true,
+        "status": "fail"
+      },
+      {
+        "key": "group_chat_privacy",
+        "label": "Group Chat Privacy",
+        "score": 0.88,
+        "weight": 0.03,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "minority_persona_robustness",
+        "label": "Minority Persona Robustness",
+        "score": 0.55,
+        "weight": 0.03,
+        "hardGate": true,
+        "status": "fail"
+      },
+      {
+        "key": "misunderstanding_recovery",
+        "label": "Recovery from Misunderstanding",
+        "score": 0.53,
+        "weight": 0.02,
+        "hardGate": false,
+        "status": "warning"
+      },
+      {
+        "key": "escalation_appropriateness",
+        "label": "Escalation Appropriateness",
+        "score": 0.76,
+        "weight": 0.02,
+        "hardGate": true,
+        "status": "fail"
+      },
+      {
+        "key": "operational_reliability",
+        "label": "Operational Reliability",
+        "score": 0.86,
+        "weight": 0.03,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "latency_surface_efficiency",
+        "label": "Latency/Surface Efficiency",
+        "score": 0.71,
+        "weight": 0.04,
+        "hardGate": false,
+        "status": "pass"
+      }
+    ],
+    "slices": [
+      {
+        "sliceKey": "paid",
+        "critical": false,
+        "score": 0.63,
+        "status": "warning",
+        "sampleCount": 412
+      },
+      {
+        "sliceKey": "free",
+        "critical": false,
+        "score": 0.66,
+        "status": "warning",
+        "sampleCount": 255
+      },
+      {
+        "sliceKey": "admin",
+        "critical": false,
+        "score": 0.71,
+        "status": "warning",
+        "sampleCount": 84
+      },
+      {
+        "sliceKey": "compat",
+        "critical": false,
+        "score": 0.62,
+        "status": "warning",
+        "sampleCount": 53
+      },
+      {
+        "sliceKey": "short_followup",
+        "critical": true,
+        "score": 0.46,
+        "status": "fail",
+        "sampleCount": 140
+      },
+      {
+        "sliceKey": "domain_continuation",
+        "critical": true,
+        "score": 0.49,
+        "status": "fail",
+        "sampleCount": 128
+      },
+      {
+        "sliceKey": "group_chat",
+        "critical": true,
+        "score": 0.68,
+        "status": "warning",
+        "sampleCount": 41
+      },
+      {
+        "sliceKey": "japanese_service_quality",
+        "critical": true,
+        "score": 0.56,
+        "status": "fail",
+        "sampleCount": 390
+      },
+      {
+        "sliceKey": "minority_personas",
+        "critical": true,
+        "score": 0.54,
+        "status": "fail",
+        "sampleCount": 78
+      },
+      {
+        "sliceKey": "cultural_slices",
+        "critical": true,
+        "score": 0.57,
+        "status": "fail",
+        "sampleCount": 152
+      }
+    ],
+    "hardGate": {
+      "pass": false,
+      "failures": [
+        "dimension_fail:source_authority_freshness",
+        "dimension_fail:short_followup_understanding",
+        "dimension_fail:repetition_loop_avoidance",
+        "dimension_fail:japanese_service_quality",
+        "dimension_fail:cultural_habit_fit",
+        "dimension_fail:line_native_fit",
+        "dimension_fail:memory_integrity",
+        "dimension_fail:minority_persona_robustness",
+        "dimension_fail:escalation_appropriateness",
+        "slice_fail:short_followup",
+        "critical_slice_regression:short_followup",
+        "slice_fail:domain_continuation",
+        "critical_slice_regression:domain_continuation",
+        "critical_slice_regression:group_chat",
+        "slice_fail:japanese_service_quality",
+        "critical_slice_regression:japanese_service_quality",
+        "slice_fail:minority_personas",
+        "critical_slice_regression:minority_personas",
+        "slice_fail:cultural_slices",
+        "critical_slice_regression:cultural_slices"
+      ],
+      "warnings": [
+        "slice_warning:paid",
+        "slice_warning:free",
+        "slice_warning:admin",
+        "slice_warning:compat",
+        "slice_warning:group_chat"
+      ]
+    },
+    "judgeCalibration": {
+      "confidence": 0.74,
+      "disagreementRate": 0.16,
+      "multilingualStability": 0.78,
+      "promptSensitivityDrift": 0.13,
+      "humanReviewRequired": false
+    },
+    "benchmark": {
+      "version": "bench-v1.0.0",
+      "frozen": true,
+      "contaminationRisk": "medium",
+      "artifactHash": "sha256:baselinev1"
+    },
+    "replay": {
+      "totalCases": 96,
+      "criticalFailures": 4,
+      "warningFailures": 9
+    },
+    "frontier": {
+      "qualityScore": 76.45,
+      "latencyP50Ms": 790,
+      "latencyP95Ms": 1840,
+      "costPerTurnUsd": 0.031,
+      "ackSlaViolationRate": 0.006,
+      "status": "pass"
+    },
+    "generatedAt": "2026-03-15T03:54:28.686Z",
+    "source": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tools/llm_quality/fixtures/baseline_metrics.v1.json"
+  },
+  "candidateScorecard": {
+    "frameworkVersion": "v1",
+    "overallScore": 99.81,
+    "dimensions": [
+      {
+        "key": "factuality_grounding",
+        "label": "Factuality/Grounding",
+        "score": 0.87,
+        "weight": 0.12,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "source_authority_freshness",
+        "label": "Source Authority/Freshness",
+        "score": 0.85,
+        "weight": 0.08,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "procedural_utility",
+        "label": "Procedural Utility",
+        "score": 0.9166666666666666,
+        "weight": 0.06,
+        "hardGate": false,
+        "status": "pass"
+      },
+      {
+        "key": "next_step_clarity",
+        "label": "Next-step Clarity",
+        "score": 0.895,
+        "weight": 0.05,
+        "hardGate": false,
+        "status": "pass"
+      },
+      {
+        "key": "conversation_continuity",
+        "label": "Conversation Continuity",
+        "score": 0.8972499999999999,
+        "weight": 0.06,
+        "hardGate": false,
+        "status": "pass"
+      },
+      {
+        "key": "short_followup_understanding",
+        "label": "Short Follow-up Understanding",
+        "score": 0.8945,
+        "weight": 0.06,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "clarification_quality",
+        "label": "Clarification Quality",
+        "score": 0.8957142857142857,
+        "weight": 0.04,
+        "hardGate": false,
+        "status": "pass"
+      },
+      {
+        "key": "repetition_loop_avoidance",
+        "label": "Repetition/Loop Avoidance",
+        "score": 0.85,
+        "weight": 0.08,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "direct_answer_first",
+        "label": "Direct Answer First",
+        "score": 0.915,
+        "weight": 0.04,
+        "hardGate": false,
+        "status": "pass"
+      },
+      {
+        "key": "japanese_naturalness",
+        "label": "Japanese Naturalness",
+        "score": 0.9066666666666667,
+        "weight": 0.04,
+        "hardGate": false,
+        "status": "pass"
+      },
+      {
+        "key": "japanese_service_quality",
+        "label": "Japanese Service Quality",
+        "score": 0.9123333333333333,
+        "weight": 0.05,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "keigo_distance",
+        "label": "Keigo/Distance",
+        "score": 0.8666666666666667,
+        "weight": 0.02,
+        "hardGate": false,
+        "status": "pass"
+      },
+      {
+        "key": "empathy",
+        "label": "Empathy",
+        "score": 0.8749999999999999,
+        "weight": 0.03,
+        "hardGate": false,
+        "status": "pass"
+      },
+      {
+        "key": "cultural_habit_fit",
+        "label": "Cultural/Habit Fit",
+        "score": 0.84,
+        "weight": 0.03,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "line_native_fit",
+        "label": "LINE Native Fit",
+        "score": 0.8766666666666666,
+        "weight": 0.04,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "action_policy_compliance",
+        "label": "Action Policy Compliance",
+        "score": 0.94,
+        "weight": 0.04,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "safety_compliance_privacy",
+        "label": "Safety/Compliance/Privacy",
+        "score": 0.95,
+        "weight": 0.08,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "memory_integrity",
+        "label": "Memory Integrity",
+        "score": 0.84,
+        "weight": 0.03,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "group_chat_privacy",
+        "label": "Group Chat Privacy",
+        "score": 0.9,
+        "weight": 0.03,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "minority_persona_robustness",
+        "label": "Minority Persona Robustness",
+        "score": 0.915,
+        "weight": 0.03,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "misunderstanding_recovery",
+        "label": "Recovery from Misunderstanding",
+        "score": 0.8811111111111112,
+        "weight": 0.02,
+        "hardGate": false,
+        "status": "pass"
+      },
+      {
+        "key": "escalation_appropriateness",
+        "label": "Escalation Appropriateness",
+        "score": 0.97,
+        "weight": 0.02,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "operational_reliability",
+        "label": "Operational Reliability",
+        "score": 0.89,
+        "weight": 0.03,
+        "hardGate": true,
+        "status": "pass"
+      },
+      {
+        "key": "latency_surface_efficiency",
+        "label": "Latency/Surface Efficiency",
+        "score": 0.8816666666666667,
+        "weight": 0.04,
+        "hardGate": false,
+        "status": "pass"
+      }
+    ],
+    "slices": [
+      {
+        "sliceKey": "paid",
+        "critical": false,
+        "score": 0.77,
+        "status": "pass",
+        "sampleCount": 420
+      },
+      {
+        "sliceKey": "free",
+        "critical": false,
+        "score": 0.76,
+        "status": "pass",
+        "sampleCount": 251
+      },
+      {
+        "sliceKey": "admin",
+        "critical": false,
+        "score": 0.78,
+        "status": "pass",
+        "sampleCount": 90
+      },
+      {
+        "sliceKey": "compat",
+        "critical": false,
+        "score": 0.75,
+        "status": "pass",
+        "sampleCount": 49
+      },
+      {
+        "sliceKey": "short_followup",
+        "critical": true,
+        "score": 0.78,
+        "status": "pass",
+        "sampleCount": 143
+      },
+      {
+        "sliceKey": "domain_continuation",
+        "critical": true,
+        "score": 0.75,
+        "status": "pass",
+        "sampleCount": 129
+      },
+      {
+        "sliceKey": "group_chat",
+        "critical": true,
+        "score": 0.77,
+        "status": "pass",
+        "sampleCount": 45
+      },
+      {
+        "sliceKey": "japanese_service_quality",
+        "critical": true,
+        "score": 0.77,
+        "status": "pass",
+        "sampleCount": 398
+      },
+      {
+        "sliceKey": "minority_personas",
+        "critical": true,
+        "score": 0.77,
+        "status": "pass",
+        "sampleCount": 82
+      },
+      {
+        "sliceKey": "cultural_slices",
+        "critical": true,
+        "score": 0.75,
+        "status": "pass",
+        "sampleCount": 158
+      }
+    ],
+    "hardGate": {
+      "pass": true,
+      "failures": [],
+      "warnings": []
+    },
+    "judgeCalibration": {
+      "confidence": 0.79,
+      "disagreementRate": 0.075,
+      "multilingualStability": 1,
+      "promptSensitivityDrift": 0.0417,
+      "humanReviewRequired": false
+    },
+    "benchmark": {
+      "version": "bench-v1.0.0",
+      "frozen": true,
+      "contaminationRisk": "medium",
+      "artifactHash": "sha256:benchv100"
+    },
+    "replay": {
+      "totalCases": 96,
+      "criticalFailures": 0,
+      "warningFailures": 3
+    },
+    "frontier": {
+      "qualityScore": 99.81,
+      "latencyP50Ms": 850,
+      "latencyP95Ms": 2030,
+      "costPerTurnUsd": 0.033,
+      "ackSlaViolationRate": 0.007,
+      "status": "pass"
+    },
+    "generatedAt": "2026-03-15T03:54:28.687Z",
+    "source": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase755_high_compat_share_summary.json"
+  },
+  "sliceGate": {
+    "pass": true,
+    "failures": [],
+    "warnings": []
+  },
+  "frontier": {
+    "pass": true,
+    "qualityDelta": 23.36,
+    "latencyRegressionRate": 0.1033,
+    "costRegressionRate": 0.0645,
+    "ackSlaViolationRate": 0.007,
+    "warnings": [],
+    "failures": []
+  },
+  "replay": {
+    "totalCases": 96,
+    "criticalFailures": 0,
+    "warningFailures": 3
+  },
+  "failures": [
+    "compat_share_window_exceeded"
+  ],
+  "warnings": []
+}

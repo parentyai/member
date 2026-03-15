@@ -1,0 +1,294 @@
+{
+  "auditVersion": "v2",
+  "generatedAt": "2026-03-15T03:54:30.238Z",
+  "source": {
+    "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase808_usage_summary.json",
+    "reportPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase808_quality_report.json",
+    "gatePath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase808_quality_gate.json"
+  },
+  "overallScore": 101.7,
+  "hardGatePass": false,
+  "hardGateFailures": [
+    "dimension_fail:cultural_habit_fit",
+    "quality_loop_v2_critical_slice_fail:saved_faq_high_risk_reuse",
+    "quality_loop_v2_critical_slice_fail:journey_blocker_conflict",
+    "quality_loop_v2_critical_slice_fail:stale_city_pack_required_source",
+    "quality_loop_v2_critical_slice_fail:trace_join_incomplete",
+    "quality_loop_v2_critical_slice_fail:direct_url_leakage"
+  ],
+  "criticalSliceFailures": [
+    {
+      "sliceKey": "saved_faq_high_risk_reuse",
+      "status": "fail",
+      "blocked": true,
+      "sourceMetric": "savedFaqReusePassRate"
+    },
+    {
+      "sliceKey": "journey_blocker_conflict",
+      "status": "fail",
+      "blocked": true,
+      "sourceMetric": "taskBlockerConflictRate"
+    }
+  ],
+  "integrationKpis": {
+    "evidenceCoverage": {
+      "key": "evidenceCoverage",
+      "value": null,
+      "sampleCount": 0,
+      "missingCount": 1,
+      "status": "missing",
+      "operator": "min",
+      "threshold": 0.8,
+      "note": "measurement_missing",
+      "provenance": "live_runtime",
+      "sourceCollections": [
+        "llm_action_logs",
+        "faq_answer_logs"
+      ]
+    },
+    "officialSourceUsageRate": {
+      "key": "officialSourceUsageRate",
+      "value": 1,
+      "sampleCount": 1,
+      "missingCount": 0,
+      "status": "pass",
+      "operator": "min",
+      "threshold": 0.95,
+      "note": null,
+      "provenance": "live_runtime",
+      "sourceCollections": [
+        "llm_action_logs",
+        "faq_answer_logs"
+      ]
+    },
+    "cityPackGroundingRate": {
+      "key": "cityPackGroundingRate",
+      "value": 1,
+      "sampleCount": 1,
+      "missingCount": 0,
+      "status": "pass",
+      "operator": "min",
+      "threshold": 0.9,
+      "note": null,
+      "provenance": "live_runtime",
+      "sourceCollections": [
+        "llm_action_logs",
+        "faq_answer_logs"
+      ]
+    },
+    "staleSourceBlockRate": {
+      "key": "staleSourceBlockRate",
+      "value": null,
+      "sampleCount": 0,
+      "missingCount": 0,
+      "status": "missing",
+      "operator": "min",
+      "threshold": 0.95,
+      "note": "measurement_missing",
+      "provenance": "live_runtime",
+      "sourceCollections": [
+        "llm_action_logs",
+        "faq_answer_logs"
+      ]
+    },
+    "emergencyOfficialSourceRate": {
+      "key": "emergencyOfficialSourceRate",
+      "value": 1,
+      "sampleCount": 1,
+      "missingCount": 0,
+      "status": "pass",
+      "operator": "exact",
+      "threshold": 1,
+      "note": null,
+      "provenance": "live_runtime",
+      "sourceCollections": [
+        "llm_action_logs",
+        "faq_answer_logs"
+      ]
+    },
+    "emergencyOverrideAppliedRate": {
+      "key": "emergencyOverrideAppliedRate",
+      "value": null,
+      "sampleCount": 0,
+      "missingCount": 1,
+      "status": "missing",
+      "operator": "min",
+      "threshold": 0,
+      "note": "measurement_missing",
+      "provenance": "live_runtime",
+      "sourceCollections": [
+        "llm_action_logs",
+        "faq_answer_logs",
+        "trace_search.view",
+        "trace_bundle"
+      ]
+    },
+    "journeyAlignedActionRate": {
+      "key": "journeyAlignedActionRate",
+      "value": 0,
+      "sampleCount": 1,
+      "missingCount": 0,
+      "status": "fail",
+      "operator": "min",
+      "threshold": 0.85,
+      "note": null,
+      "provenance": "live_runtime",
+      "sourceCollections": [
+        "llm_action_logs",
+        "faq_answer_logs"
+      ]
+    },
+    "taskBlockerConflictRate": {
+      "key": "taskBlockerConflictRate",
+      "value": 1,
+      "sampleCount": 1,
+      "missingCount": 0,
+      "status": "fail",
+      "operator": "max",
+      "threshold": 0.02,
+      "note": null,
+      "provenance": "live_runtime",
+      "sourceCollections": [
+        "llm_action_logs",
+        "faq_answer_logs"
+      ]
+    },
+    "savedFaqReusePassRate": {
+      "key": "savedFaqReusePassRate",
+      "value": 0,
+      "sampleCount": 1,
+      "missingCount": 0,
+      "status": "fail",
+      "operator": "min",
+      "threshold": 0.9,
+      "note": null,
+      "provenance": "live_runtime",
+      "sourceCollections": [
+        "llm_action_logs",
+        "faq_answer_logs"
+      ]
+    },
+    "crossSystemConflictRate": {
+      "key": "crossSystemConflictRate",
+      "value": 1,
+      "sampleCount": 1,
+      "missingCount": 0,
+      "status": "warning",
+      "operator": "max",
+      "threshold": 1,
+      "note": "review_on_spike",
+      "provenance": "live_runtime",
+      "sourceCollections": [
+        "llm_action_logs",
+        "faq_answer_logs"
+      ]
+    },
+    "traceJoinCompleteness": {
+      "key": "traceJoinCompleteness",
+      "value": null,
+      "sampleCount": 0,
+      "missingCount": 0,
+      "status": "missing",
+      "operator": "min",
+      "threshold": 0.9,
+      "note": "pending_cross_system_trace_join",
+      "provenance": "trace_bundle_probe",
+      "sourceCollections": [
+        "trace_search.view",
+        "trace_bundle"
+      ]
+    },
+    "adminTraceResolutionTime": {
+      "key": "adminTraceResolutionTime",
+      "valueMs": null,
+      "sampleCount": 0,
+      "missingCount": 0,
+      "status": "missing",
+      "operator": "max",
+      "thresholdMs": 900000,
+      "note": "pending_operator_trace_latency_wiring",
+      "provenance": "trace_bundle_probe",
+      "sourceCollections": [
+        "trace_search.view",
+        "trace_bundle"
+      ]
+    },
+    "adminTraceResolutionTimeMs": {
+      "key": "adminTraceResolutionTimeMs",
+      "valueMs": null,
+      "sampleCount": 0,
+      "missingCount": 0,
+      "status": "missing",
+      "operator": "max",
+      "thresholdMs": 900000,
+      "note": "pending_operator_trace_latency_wiring",
+      "provenance": "trace_bundle_probe",
+      "sourceCollections": [
+        "trace_search.view",
+        "trace_bundle"
+      ]
+    },
+    "officialSourceUsageRateHighRisk": {
+      "key": "officialSourceUsageRateHighRisk",
+      "value": 1,
+      "sampleCount": 1,
+      "missingCount": 0,
+      "status": "pass",
+      "operator": "min",
+      "threshold": 0.95,
+      "note": null,
+      "provenance": "live_runtime",
+      "sourceCollections": [
+        "llm_action_logs",
+        "faq_answer_logs"
+      ]
+    },
+    "compatShareWindow": {
+      "key": "compatShareWindow",
+      "value": 0.04,
+      "sampleCount": 12,
+      "missingCount": 0,
+      "status": "pass",
+      "operator": "max",
+      "threshold": 0.15,
+      "note": null,
+      "provenance": "live_runtime",
+      "sourceCollections": [
+        "llm_gate.decision",
+        "llm_action_logs"
+      ]
+    },
+    "directUrlLeakage": {
+      "key": "directUrlLeakage",
+      "value": null,
+      "sampleCount": 0,
+      "missingCount": 0,
+      "status": "missing",
+      "operator": "exact",
+      "threshold": 0,
+      "note": "pending_direct_url_runtime_signal",
+      "provenance": "pending_runtime_signal",
+      "sourceCollections": [
+        "llm_action_logs",
+        "faq_answer_logs"
+      ]
+    }
+  },
+  "missingMeasurements": [
+    "evidenceCoverage",
+    "staleSourceBlockRate",
+    "emergencyOverrideAppliedRate",
+    "traceJoinCompleteness",
+    "adminTraceResolutionTime",
+    "adminTraceResolutionTimeMs",
+    "directUrlLeakage"
+  ],
+  "releaseReady": true,
+  "topQualityFailures": [],
+  "topLoopCases": [],
+  "topContextLossCases": [],
+  "counterexampleQueueOpenCount": 10,
+  "nextAuditFocus": [
+    "missing_integration_measurements"
+  ]
+}

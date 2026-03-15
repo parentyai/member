@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "replay": {
+    "totalCases": 5,
+    "criticalFailures": 0,
+    "warningFailures": 0,
+    "failures": [],
+    "warnings": []
+  },
+  "perturbation": {
+    "totalCases": 6,
+    "criticalFailures": 0,
+    "warningFailures": 0,
+    "failures": [],
+    "warnings": []
+  },
+  "totals": {
+    "totalCases": 11,
+    "criticalFailures": 0,
+    "warningFailures": 0
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "overall_quality_score": 92.5,
+  "hard_gate_failures": [],
+  "top_10_quality_failures": [],
+  "top_10_loop_cases": [],
+  "top_10_context_loss_cases": [],
+  "top_10_japanese_service_failures": [],
+  "top_10_line_fit_failures": []
+}

@@ -1,0 +1,54 @@
+{
+  "registerVersion": "v1",
+  "updatedAt": "2026-03-15T03:54:29.178Z",
+  "source": {
+    "reportPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase771_quality_report.json",
+    "gatePath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase771_quality_gate.json"
+  },
+  "policy": {
+    "maxHistory": 30,
+    "perCategoryLimit": 10
+  },
+  "latest": {
+    "id": "failure_snapshot_2026-03-15T03:54:29.119Z",
+    "generatedAt": "2026-03-15T03:54:29.119Z",
+    "overallQualityScore": 0,
+    "hardGateFailures": [],
+    "gateFailures": [],
+    "entryCount": 0,
+    "entries": [],
+    "fingerprint": "9a1c0e8a27917eaee47c2ccd13495d885cd73a3251fe232fbb750daaa574639e"
+  },
+  "history": [
+    {
+      "id": "failure_snapshot_2026-03-15T03:54:29.119Z",
+      "generatedAt": "2026-03-15T03:54:29.119Z",
+      "overallQualityScore": 0,
+      "hardGateFailures": [],
+      "gateFailures": [],
+      "entryCount": 0,
+      "entries": [],
+      "fingerprint": "9a1c0e8a27917eaee47c2ccd13495d885cd73a3251fe232fbb750daaa574639e"
+    },
+    {
+      "id": "failure_snapshot_2026-03-15T03:53:41.751Z",
+      "generatedAt": "2026-03-15T03:53:41.751Z",
+      "overallQualityScore": 0,
+      "hardGateFailures": [],
+      "gateFailures": [],
+      "entryCount": 0,
+      "entries": [],
+      "fingerprint": "6f72e216ef3f8c7ac15d3b28bf7b451d596f054c5220994740348ba033cab3b8"
+    },
+    {
+      "id": "failure_snapshot_2026-03-15T03:52:55.427Z",
+      "generatedAt": "2026-03-15T03:52:55.427Z",
+      "overallQualityScore": 0,
+      "hardGateFailures": [],
+      "gateFailures": [],
+      "entryCount": 0,
+      "entries": [],
+      "fingerprint": "77b0a60d665b77e2b5079b4bf95d8112c4b4927e81e0a6a670a17179faf9d9a7"
+    }
+  ]
+}

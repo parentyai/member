@@ -1,0 +1,9 @@
+{
+  "summary": {
+    "conversationQuality": {
+      "defaultCasualRate": 0.01,
+      "directAnswerAppliedRate": 0.95,
+      "avgRepeatRiskScore": 0.1
+    }
+  }
+}

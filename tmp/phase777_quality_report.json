@@ -1,0 +1,354 @@
+{
+  "generatedAt": "2026-03-15T03:54:29.386Z",
+  "overall_quality_score": 91.99,
+  "baseline_overall_quality_score": 76.45,
+  "dimension_scores": [
+    {
+      "key": "action_policy_compliance",
+      "baseline": 0.93,
+      "candidate": 0.94,
+      "delta": 0.01,
+      "status": "pass"
+    },
+    {
+      "key": "clarification_quality",
+      "baseline": 0.61,
+      "candidate": 0.72,
+      "delta": 0.11,
+      "status": "pass"
+    },
+    {
+      "key": "conversation_continuity",
+      "baseline": 0.52,
+      "candidate": 0.72,
+      "delta": 0.2,
+      "status": "pass"
+    },
+    {
+      "key": "cultural_habit_fit",
+      "baseline": 0.57,
+      "candidate": 0.84,
+      "delta": 0.27,
+      "status": "pass"
+    },
+    {
+      "key": "direct_answer_first",
+      "baseline": 0.62,
+      "candidate": 0.74,
+      "delta": 0.12,
+      "status": "pass"
+    },
+    {
+      "key": "empathy",
+      "baseline": 0.56,
+      "candidate": 0.73,
+      "delta": 0.17,
+      "status": "pass"
+    },
+    {
+      "key": "escalation_appropriateness",
+      "baseline": 0.76,
+      "candidate": 0.83,
+      "delta": 0.07,
+      "status": "pass"
+    },
+    {
+      "key": "factuality_grounding",
+      "baseline": 0.84,
+      "candidate": 0.87,
+      "delta": 0.03,
+      "status": "pass"
+    },
+    {
+      "key": "group_chat_privacy",
+      "baseline": 0.88,
+      "candidate": 0.9,
+      "delta": 0.02,
+      "status": "pass"
+    },
+    {
+      "key": "japanese_naturalness",
+      "baseline": 0.63,
+      "candidate": 0.78,
+      "delta": 0.15,
+      "status": "pass"
+    },
+    {
+      "key": "japanese_service_quality",
+      "baseline": 0.58,
+      "candidate": 0.83,
+      "delta": 0.25,
+      "status": "pass"
+    },
+    {
+      "key": "keigo_distance",
+      "baseline": 0.69,
+      "candidate": 0.74,
+      "delta": 0.05,
+      "status": "pass"
+    },
+    {
+      "key": "latency_surface_efficiency",
+      "baseline": 0.71,
+      "candidate": 0.73,
+      "delta": 0.02,
+      "status": "pass"
+    },
+    {
+      "key": "line_native_fit",
+      "baseline": 0.6,
+      "candidate": 0.83,
+      "delta": 0.23,
+      "status": "pass"
+    },
+    {
+      "key": "memory_integrity",
+      "baseline": 0.74,
+      "candidate": 0.84,
+      "delta": 0.1,
+      "status": "pass"
+    },
+    {
+      "key": "minority_persona_robustness",
+      "baseline": 0.55,
+      "candidate": 0.84,
+      "delta": 0.29,
+      "status": "pass"
+    },
+    {
+      "key": "misunderstanding_recovery",
+      "baseline": 0.53,
+      "candidate": 0.71,
+      "delta": 0.18,
+      "status": "pass"
+    },
+    {
+      "key": "next_step_clarity",
+      "baseline": 0.65,
+      "candidate": 0.74,
+      "delta": 0.09,
+      "status": "pass"
+    },
+    {
+      "key": "operational_reliability",
+      "baseline": 0.86,
+      "candidate": 0.89,
+      "delta": 0.03,
+      "status": "pass"
+    },
+    {
+      "key": "procedural_utility",
+      "baseline": 0.67,
+      "candidate": 0.75,
+      "delta": 0.08,
+      "status": "pass"
+    },
+    {
+      "key": "repetition_loop_avoidance",
+      "baseline": 0.41,
+      "candidate": 0.85,
+      "delta": 0.44,
+      "status": "pass"
+    },
+    {
+      "key": "safety_compliance_privacy",
+      "baseline": 0.95,
+      "candidate": 0.95,
+      "delta": 0,
+      "status": "pass"
+    },
+    {
+      "key": "short_followup_understanding",
+      "baseline": 0.48,
+      "candidate": 0.84,
+      "delta": 0.36,
+      "status": "pass"
+    },
+    {
+      "key": "source_authority_freshness",
+      "baseline": 0.81,
+      "candidate": 0.85,
+      "delta": 0.04,
+      "status": "pass"
+    }
+  ],
+  "hard_gate_failures": [],
+  "top_10_quality_failures": [],
+  "soft_floor_threshold": 0.8,
+  "soft_floor_gaps": [
+    {
+      "key": "misunderstanding_recovery",
+      "score": 0.71,
+      "gap": 0.09
+    },
+    {
+      "key": "clarification_quality",
+      "score": 0.72,
+      "gap": 0.08
+    },
+    {
+      "key": "conversation_continuity",
+      "score": 0.72,
+      "gap": 0.08
+    },
+    {
+      "key": "empathy",
+      "score": 0.73,
+      "gap": 0.07
+    },
+    {
+      "key": "latency_surface_efficiency",
+      "score": 0.73,
+      "gap": 0.07
+    },
+    {
+      "key": "direct_answer_first",
+      "score": 0.74,
+      "gap": 0.06
+    },
+    {
+      "key": "keigo_distance",
+      "score": 0.74,
+      "gap": 0.06
+    },
+    {
+      "key": "next_step_clarity",
+      "score": 0.74,
+      "gap": 0.06
+    },
+    {
+      "key": "procedural_utility",
+      "score": 0.75,
+      "gap": 0.05
+    },
+    {
+      "key": "japanese_naturalness",
+      "score": 0.78,
+      "gap": 0.02
+    }
+  ],
+  "top_10_loop_cases": [],
+  "top_10_context_loss_cases": [],
+  "top_10_japanese_service_failures": [
+    {
+      "signal": "followupQuestionIncludedRate",
+      "value": 0.16,
+      "available": true
+    },
+    {
+      "signal": "conciseModeAppliedRate",
+      "value": 0.1,
+      "available": true
+    },
+    {
+      "signal": "defaultCasualRate",
+      "value": 0.012,
+      "available": true
+    },
+    {
+      "signal": "legacyTemplateHitRate",
+      "value": 0.003,
+      "available": true
+    }
+  ],
+  "top_10_line_fit_failures": [
+    {
+      "signal": "retrieveNeededRate",
+      "value": 0.2,
+      "available": true
+    },
+    {
+      "signal": "defaultCasualRate",
+      "value": 0.012,
+      "available": true
+    },
+    {
+      "signal": "avgActionCountOverBudget",
+      "value": 0,
+      "available": true
+    }
+  ],
+  "signal_coverage": {
+    "conversationQualityPresent": true,
+    "requiredSignalCount": 8,
+    "availableSignalCount": 8,
+    "missingSignalCount": 0,
+    "missingSignals": []
+  },
+  "current_quality_risk_map": {
+    "high": [],
+    "medium": [],
+    "low": [
+      {
+        "key": "action_policy_compliance",
+        "baseline": 0.93,
+        "candidate": 0.94,
+        "delta": 0.01,
+        "status": "pass"
+      },
+      {
+        "key": "clarification_quality",
+        "baseline": 0.61,
+        "candidate": 0.72,
+        "delta": 0.11,
+        "status": "pass"
+      },
+      {
+        "key": "conversation_continuity",
+        "baseline": 0.52,
+        "candidate": 0.72,
+        "delta": 0.2,
+        "status": "pass"
+      },
+      {
+        "key": "cultural_habit_fit",
+        "baseline": 0.57,
+        "candidate": 0.84,
+        "delta": 0.27,
+        "status": "pass"
+      },
+      {
+        "key": "direct_answer_first",
+        "baseline": 0.62,
+        "candidate": 0.74,
+        "delta": 0.12,
+        "status": "pass"
+      },
+      {
+        "key": "empathy",
+        "baseline": 0.56,
+        "candidate": 0.73,
+        "delta": 0.17,
+        "status": "pass"
+      },
+      {
+        "key": "escalation_appropriateness",
+        "baseline": 0.76,
+        "candidate": 0.83,
+        "delta": 0.07,
+        "status": "pass"
+      },
+      {
+        "key": "factuality_grounding",
+        "baseline": 0.84,
+        "candidate": 0.87,
+        "delta": 0.03,
+        "status": "pass"
+      },
+      {
+        "key": "group_chat_privacy",
+        "baseline": 0.88,
+        "candidate": 0.9,
+        "delta": 0.02,
+        "status": "pass"
+      },
+      {
+        "key": "japanese_naturalness",
+        "baseline": 0.63,
+        "candidate": 0.78,
+        "delta": 0.15,
+        "status": "pass"
+      }
+    ]
+  }
+}

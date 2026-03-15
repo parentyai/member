@@ -1,0 +1,1065 @@
+{
+  "summary": {
+    "releaseReadiness": {
+      "ready": true
+    },
+    "qualityFramework": {
+      "frameworkVersion": "v1",
+      "generatedAt": "2026-03-15T03:54:30.194Z",
+      "overallScore": 101.7,
+      "baselineScore": 54.9,
+      "qualityDelta": 46.8,
+      "categoryImprovementRate": 0.9583,
+      "categoryRegressionRate": 0.0417,
+      "improvedDimensions": [
+        "group_chat_privacy",
+        "safety_compliance_privacy",
+        "factuality_grounding",
+        "action_policy_compliance",
+        "operational_reliability",
+        "escalation_appropriateness"
+      ],
+      "regressedDimensions": [
+        "cultural_habit_fit"
+      ],
+      "unmetCategories": [
+        "cultural_habit_fit"
+      ],
+      "warningCategoryCount": 0,
+      "failCategoryCount": 1,
+      "dimensions": [
+        {
+          "key": "factuality_grounding",
+          "score": 0.98,
+          "weight": 0.12,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "source_authority_freshness",
+          "score": 0.91,
+          "weight": 0.08,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "procedural_utility",
+          "score": 0.87,
+          "weight": 0.06,
+          "hardGate": false,
+          "status": "pass"
+        },
+        {
+          "key": "next_step_clarity",
+          "score": 0.8575,
+          "weight": 0.05,
+          "hardGate": false,
+          "status": "pass"
+        },
+        {
+          "key": "conversation_continuity",
+          "score": 0.855,
+          "weight": 0.06,
+          "hardGate": false,
+          "status": "pass"
+        },
+        {
+          "key": "short_followup_understanding",
+          "score": 0.88,
+          "weight": 0.06,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "clarification_quality",
+          "score": 0.86,
+          "weight": 0.04,
+          "hardGate": false,
+          "status": "pass"
+        },
+        {
+          "key": "repetition_loop_avoidance",
+          "score": 0.935,
+          "weight": 0.08,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "direct_answer_first",
+          "score": 0.89,
+          "weight": 0.04,
+          "hardGate": false,
+          "status": "pass"
+        },
+        {
+          "key": "japanese_naturalness",
+          "score": 0.88,
+          "weight": 0.04,
+          "hardGate": false,
+          "status": "pass"
+        },
+        {
+          "key": "japanese_service_quality",
+          "score": 0.8867,
+          "weight": 0.05,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "keigo_distance",
+          "score": 0.88,
+          "weight": 0.02,
+          "hardGate": false,
+          "status": "pass"
+        },
+        {
+          "key": "empathy",
+          "score": 0.8367,
+          "weight": 0.03,
+          "hardGate": false,
+          "status": "pass"
+        },
+        {
+          "key": "cultural_habit_fit",
+          "score": 0.805,
+          "weight": 0.03,
+          "hardGate": true,
+          "status": "fail"
+        },
+        {
+          "key": "line_native_fit",
+          "score": 0.8867,
+          "weight": 0.04,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "action_policy_compliance",
+          "score": 0.96,
+          "weight": 0.04,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "safety_compliance_privacy",
+          "score": 1,
+          "weight": 0.08,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "memory_integrity",
+          "score": 0.91,
+          "weight": 0.03,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "group_chat_privacy",
+          "score": 1,
+          "weight": 0.03,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "minority_persona_robustness",
+          "score": 0.88,
+          "weight": 0.03,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "misunderstanding_recovery",
+          "score": 0.8256,
+          "weight": 0.02,
+          "hardGate": false,
+          "status": "pass"
+        },
+        {
+          "key": "escalation_appropriateness",
+          "score": 0.945,
+          "weight": 0.02,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "operational_reliability",
+          "score": 0.96,
+          "weight": 0.03,
+          "hardGate": true,
+          "status": "pass"
+        },
+        {
+          "key": "latency_surface_efficiency",
+          "score": 0.8617,
+          "weight": 0.04,
+          "hardGate": false,
+          "status": "pass"
+        }
+      ],
+      "slices": [
+        {
+          "sliceKey": "paid",
+          "critical": false,
+          "score": 0.9,
+          "status": "pass",
+          "sampleCount": 12
+        },
+        {
+          "sliceKey": "free",
+          "critical": false,
+          "score": 0.9228,
+          "status": "pass",
+          "sampleCount": 0
+        },
+        {
+          "sliceKey": "admin",
+          "critical": false,
+          "score": 0.928,
+          "status": "pass",
+          "sampleCount": 0
+        },
+        {
+          "sliceKey": "compat",
+          "critical": false,
+          "score": 0.9478,
+          "status": "pass",
+          "sampleCount": 0
+        },
+        {
+          "sliceKey": "short_followup",
+          "critical": true,
+          "score": 0.885,
+          "status": "pass",
+          "sampleCount": 12
+        },
+        {
+          "sliceKey": "domain_continuation",
+          "critical": true,
+          "score": 0.83,
+          "status": "pass",
+          "sampleCount": 12
+        },
+        {
+          "sliceKey": "group_chat",
+          "critical": true,
+          "score": 1,
+          "status": "pass",
+          "sampleCount": 12
+        },
+        {
+          "sliceKey": "japanese_service_quality",
+          "critical": true,
+          "score": 0.94,
+          "status": "pass",
+          "sampleCount": 12
+        },
+        {
+          "sliceKey": "minority_personas",
+          "critical": true,
+          "score": 0.88,
+          "status": "pass",
+          "sampleCount": 12
+        },
+        {
+          "sliceKey": "cultural_slices",
+          "critical": true,
+          "score": 0.805,
+          "status": "pass",
+          "sampleCount": 12
+        }
+      ],
+      "hardGate": {
+        "pass": false,
+        "failures": [
+          "dimension_fail:cultural_habit_fit",
+          "quality_loop_v2_critical_slice_fail:saved_faq_high_risk_reuse",
+          "quality_loop_v2_critical_slice_fail:journey_blocker_conflict",
+          "quality_loop_v2_critical_slice_fail:stale_city_pack_required_source",
+          "quality_loop_v2_critical_slice_fail:trace_join_incomplete",
+          "quality_loop_v2_critical_slice_fail:direct_url_leakage"
+        ],
+        "warnings": []
+      },
+      "top_10_quality_failures": [
+        {
+          "rank": 1,
+          "failure": "dimension_fail:cultural_habit_fit"
+        },
+        {
+          "rank": 2,
+          "failure": "quality_loop_v2_critical_slice_fail:saved_faq_high_risk_reuse"
+        },
+        {
+          "rank": 3,
+          "failure": "quality_loop_v2_critical_slice_fail:journey_blocker_conflict"
+        },
+        {
+          "rank": 4,
+          "failure": "quality_loop_v2_critical_slice_fail:stale_city_pack_required_source"
+        },
+        {
+          "rank": 5,
+          "failure": "quality_loop_v2_critical_slice_fail:trace_join_incomplete"
+        },
+        {
+          "rank": 6,
+          "failure": "quality_loop_v2_critical_slice_fail:direct_url_leakage"
+        }
+      ],
+      "top_10_loop_cases": [
+        {
+          "signal": "repetition_not_prevented",
+          "count": 1
+        }
+      ],
+      "top_10_context_loss_cases": [
+        {
+          "signal": "low_context_carry_score",
+          "count": 1
+        },
+        {
+          "signal": "missing_followup_intent_on_domain",
+          "count": 1
+        }
+      ],
+      "top_10_japanese_service_failures": [
+        {
+          "signal": "concise_mode_not_applied",
+          "count": 1
+        },
+        {
+          "signal": "followup_question_missing",
+          "count": 1
+        },
+        {
+          "signal": "pitfall_missing",
+          "count": 1
+        }
+      ],
+      "top_10_line_fit_failures": [],
+      "topQualityFailures": [
+        {
+          "rank": 1,
+          "failure": "dimension_fail:cultural_habit_fit"
+        },
+        {
+          "rank": 2,
+          "failure": "quality_loop_v2_critical_slice_fail:saved_faq_high_risk_reuse"
+        },
+        {
+          "rank": 3,
+          "failure": "quality_loop_v2_critical_slice_fail:journey_blocker_conflict"
+        },
+        {
+          "rank": 4,
+          "failure": "quality_loop_v2_critical_slice_fail:stale_city_pack_required_source"
+        },
+        {
+          "rank": 5,
+          "failure": "quality_loop_v2_critical_slice_fail:trace_join_incomplete"
+        },
+        {
+          "rank": 6,
+          "failure": "quality_loop_v2_critical_slice_fail:direct_url_leakage"
+        }
+      ],
+      "topLoopCases": [
+        {
+          "signal": "repetition_not_prevented",
+          "count": 1
+        }
+      ],
+      "topContextLossCases": [
+        {
+          "signal": "low_context_carry_score",
+          "count": 1
+        },
+        {
+          "signal": "missing_followup_intent_on_domain",
+          "count": 1
+        }
+      ],
+      "topJapaneseServiceFailures": [
+        {
+          "signal": "concise_mode_not_applied",
+          "count": 1
+        },
+        {
+          "signal": "followup_question_missing",
+          "count": 1
+        },
+        {
+          "signal": "pitfall_missing",
+          "count": 1
+        }
+      ],
+      "topLineFitFailures": [],
+      "counterexampleQueue": [
+        {
+          "counterexampleId": "CE-03",
+          "signal": "dimension_fail:cultural_habit_fit",
+          "category": "quality_failure",
+          "severity": "high",
+          "owner": "quality_eval",
+          "remediation": "extend minority/cultural fixtures and reweight slice checks",
+          "count": 1,
+          "status": "open"
+        },
+        {
+          "counterexampleId": "CE-06",
+          "signal": "repetition_not_prevented",
+          "category": "loop_case",
+          "severity": "high",
+          "owner": "conversation_orchestrator",
+          "remediation": "reduce generic clarify loops and prioritize contextual direct answers",
+          "count": 1,
+          "status": "open"
+        },
+        {
+          "counterexampleId": "CE-01",
+          "signal": "low_context_carry_score",
+          "category": "context_loss_case",
+          "severity": "high",
+          "owner": "memory_policy",
+          "remediation": "prioritize current turn and contextual lane over stale profile memory",
+          "count": 1,
+          "status": "open"
+        },
+        {
+          "counterexampleId": "CE-02",
+          "signal": "quality_loop_v2_critical_slice_fail:saved_faq_high_risk_reuse",
+          "category": "quality_failure",
+          "severity": "high",
+          "owner": "audit_traceability",
+          "remediation": "improve trace completeness and action-level evidence references",
+          "count": 1,
+          "status": "open"
+        },
+        {
+          "counterexampleId": "CE-01",
+          "signal": "missing_followup_intent_on_domain",
+          "category": "context_loss_case",
+          "severity": "high",
+          "owner": "memory_policy",
+          "remediation": "prioritize current turn and contextual lane over stale profile memory",
+          "count": 1,
+          "status": "open"
+        },
+        {
+          "counterexampleId": "CE-02",
+          "signal": "quality_loop_v2_critical_slice_fail:journey_blocker_conflict",
+          "category": "quality_failure",
+          "severity": "high",
+          "owner": "audit_traceability",
+          "remediation": "improve trace completeness and action-level evidence references",
+          "count": 1,
+          "status": "open"
+        },
+        {
+          "counterexampleId": "CE-08",
+          "signal": "quality_loop_v2_critical_slice_fail:stale_city_pack_required_source",
+          "category": "quality_failure",
+          "severity": "high",
+          "owner": "retrieval_verification",
+          "remediation": "tighten source freshness/authority checks and downgrade stale evidence",
+          "count": 1,
+          "status": "open"
+        },
+        {
+          "counterexampleId": "CE-02",
+          "signal": "quality_loop_v2_critical_slice_fail:trace_join_incomplete",
+          "category": "quality_failure",
+          "severity": "high",
+          "owner": "audit_traceability",
+          "remediation": "improve trace completeness and action-level evidence references",
+          "count": 1,
+          "status": "open"
+        },
+        {
+          "counterexampleId": "CE-02",
+          "signal": "quality_loop_v2_critical_slice_fail:direct_url_leakage",
+          "category": "quality_failure",
+          "severity": "high",
+          "owner": "audit_traceability",
+          "remediation": "improve trace completeness and action-level evidence references",
+          "count": 1,
+          "status": "open"
+        },
+        {
+          "counterexampleId": "CE-04",
+          "signal": "concise_mode_not_applied",
+          "category": "jp_service_failure",
+          "severity": "medium",
+          "owner": "style_engine",
+          "remediation": "enforce Japanese service style guard and concise natural phrasing",
+          "count": 1,
+          "status": "open"
+        }
+      ],
+      "counterexampleQueueOpenCount": 10,
+      "judgeCalibration": {
+        "confidence": 0,
+        "disagreementRate": 0,
+        "multilingualStability": 1,
+        "promptSensitivityDrift": 0,
+        "humanReviewRequired": false
+      },
+      "benchmark": {
+        "version": "bench-v1.0.0",
+        "frozen": true,
+        "contaminationRisk": "low"
+      },
+      "contractFreeze": {
+        "registryVersion": "v2.0.0",
+        "registryHash": "sha256:llm-spec-contract-v2-20260310-data-c01-postgres-sink-r794",
+        "requirementCount": 12,
+        "blockingConflictCount": 1,
+        "statusCounts": {
+          "aligned": 11,
+          "partial": 1
+        }
+      },
+      "replay": {
+        "totalCases": 12,
+        "criticalFailures": 0,
+        "warningFailures": 0
+      },
+      "frontier": {
+        "qualityScore": 101.7,
+        "latencyP50Ms": 0,
+        "latencyP95Ms": 0,
+        "costPerTurnUsd": 0,
+        "ackSlaViolationRate": 0,
+        "latencyRegressionRate": 0,
+        "costRegressionRate": 0,
+        "status": "pass"
+      },
+      "qualityLoopV2": {
+        "version": "v2-foundation",
+        "rolloutStage": "log_only",
+        "nogoGateMandatoryActive": false,
+        "crossSystemPriorityOrder": [
+          "Emergency",
+          "Legal / Consent",
+          "Task Blocker",
+          "Journey State",
+          "City Pack / Source Refs / Local Guidance",
+          "Saved FAQ",
+          "Generic LLM reasoning"
+        ],
+        "criticalSliceKeys": [
+          "emergency_high_risk",
+          "saved_faq_high_risk_reuse",
+          "journey_blocker_conflict",
+          "stale_city_pack_required_source",
+          "compat_spike",
+          "trace_join_incomplete",
+          "direct_url_leakage",
+          "official_source_missing_on_high_risk"
+        ],
+        "criticalSlices": [
+          {
+            "sliceKey": "emergency_high_risk",
+            "status": "pass",
+            "blocked": false,
+            "sourceMetric": "emergencyOfficialSourceRate"
+          },
+          {
+            "sliceKey": "saved_faq_high_risk_reuse",
+            "status": "fail",
+            "blocked": true,
+            "sourceMetric": "savedFaqReusePassRate"
+          },
+          {
+            "sliceKey": "journey_blocker_conflict",
+            "status": "fail",
+            "blocked": true,
+            "sourceMetric": "taskBlockerConflictRate"
+          },
+          {
+            "sliceKey": "stale_city_pack_required_source",
+            "status": "missing",
+            "blocked": false,
+            "sourceMetric": "staleSourceBlockRate"
+          },
+          {
+            "sliceKey": "compat_spike",
+            "status": "pass",
+            "blocked": false,
+            "sourceMetric": "compatShareWindow"
+          },
+          {
+            "sliceKey": "trace_join_incomplete",
+            "status": "missing",
+            "blocked": true,
+            "sourceMetric": "traceJoinCompleteness"
+          },
+          {
+            "sliceKey": "direct_url_leakage",
+            "status": "missing",
+            "blocked": true,
+            "sourceMetric": "directUrlLeakage"
+          },
+          {
+            "sliceKey": "official_source_missing_on_high_risk",
+            "status": "pass",
+            "blocked": false,
+            "sourceMetric": "officialSourceUsageRateHighRisk"
+          }
+        ],
+        "criticalSliceFailCount": 5,
+        "integrationKpis": {
+          "evidenceCoverage": {
+            "key": "evidenceCoverage",
+            "value": null,
+            "sampleCount": 0,
+            "missingCount": 1,
+            "status": "missing",
+            "operator": "min",
+            "threshold": 0.8,
+            "note": "measurement_missing",
+            "provenance": "live_runtime",
+            "sourceCollections": [
+              "llm_action_logs",
+              "faq_answer_logs"
+            ]
+          },
+          "officialSourceUsageRate": {
+            "key": "officialSourceUsageRate",
+            "value": 1,
+            "sampleCount": 1,
+            "missingCount": 0,
+            "status": "pass",
+            "operator": "min",
+            "threshold": 0.95,
+            "note": null,
+            "provenance": "live_runtime",
+            "sourceCollections": [
+              "llm_action_logs",
+              "faq_answer_logs"
+            ]
+          },
+          "cityPackGroundingRate": {
+            "key": "cityPackGroundingRate",
+            "value": 1,
+            "sampleCount": 1,
+            "missingCount": 0,
+            "status": "pass",
+            "operator": "min",
+            "threshold": 0.9,
+            "note": null,
+            "provenance": "live_runtime",
+            "sourceCollections": [
+              "llm_action_logs",
+              "faq_answer_logs"
+            ]
+          },
+          "staleSourceBlockRate": {
+            "key": "staleSourceBlockRate",
+            "value": null,
+            "sampleCount": 0,
+            "missingCount": 0,
+            "status": "missing",
+            "operator": "min",
+            "threshold": 0.95,
+            "note": "measurement_missing",
+            "provenance": "live_runtime",
+            "sourceCollections": [
+              "llm_action_logs",
+              "faq_answer_logs"
+            ]
+          },
+          "emergencyOfficialSourceRate": {
+            "key": "emergencyOfficialSourceRate",
+            "value": 1,
+            "sampleCount": 1,
+            "missingCount": 0,
+            "status": "pass",
+            "operator": "exact",
+            "threshold": 1,
+            "note": null,
+            "provenance": "live_runtime",
+            "sourceCollections": [
+              "llm_action_logs",
+              "faq_answer_logs"
+            ]
+          },
+          "emergencyOverrideAppliedRate": {
+            "key": "emergencyOverrideAppliedRate",
+            "value": null,
+            "sampleCount": 0,
+            "missingCount": 1,
+            "status": "missing",
+            "operator": "min",
+            "threshold": 0,
+            "note": "measurement_missing",
+            "provenance": "live_runtime",
+            "sourceCollections": [
+              "llm_action_logs",
+              "faq_answer_logs",
+              "trace_search.view",
+              "trace_bundle"
+            ]
+          },
+          "journeyAlignedActionRate": {
+            "key": "journeyAlignedActionRate",
+            "value": 0,
+            "sampleCount": 1,
+            "missingCount": 0,
+            "status": "fail",
+            "operator": "min",
+            "threshold": 0.85,
+            "note": null,
+            "provenance": "live_runtime",
+            "sourceCollections": [
+              "llm_action_logs",
+              "faq_answer_logs"
+            ]
+          },
+          "taskBlockerConflictRate": {
+            "key": "taskBlockerConflictRate",
+            "value": 1,
+            "sampleCount": 1,
+            "missingCount": 0,
+            "status": "fail",
+            "operator": "max",
+            "threshold": 0.02,
+            "note": null,
+            "provenance": "live_runtime",
+            "sourceCollections": [
+              "llm_action_logs",
+              "faq_answer_logs"
+            ]
+          },
+          "savedFaqReusePassRate": {
+            "key": "savedFaqReusePassRate",
+            "value": 0,
+            "sampleCount": 1,
+            "missingCount": 0,
+            "status": "fail",
+            "operator": "min",
+            "threshold": 0.9,
+            "note": null,
+            "provenance": "live_runtime",
+            "sourceCollections": [
+              "llm_action_logs",
+              "faq_answer_logs"
+            ]
+          },
+          "crossSystemConflictRate": {
+            "key": "crossSystemConflictRate",
+            "value": 1,
+            "sampleCount": 1,
+            "missingCount": 0,
+            "status": "warning",
+            "operator": "max",
+            "threshold": 1,
+            "note": "review_on_spike",
+            "provenance": "live_runtime",
+            "sourceCollections": [
+              "llm_action_logs",
+              "faq_answer_logs"
+            ]
+          },
+          "traceJoinCompleteness": {
+            "key": "traceJoinCompleteness",
+            "value": null,
+            "sampleCount": 0,
+            "missingCount": 0,
+            "status": "missing",
+            "operator": "min",
+            "threshold": 0.9,
+            "note": "pending_cross_system_trace_join",
+            "provenance": "trace_bundle_probe",
+            "sourceCollections": [
+              "trace_search.view",
+              "trace_bundle"
+            ]
+          },
+          "adminTraceResolutionTime": {
+            "key": "adminTraceResolutionTime",
+            "valueMs": null,
+            "sampleCount": 0,
+            "missingCount": 0,
+            "status": "missing",
+            "operator": "max",
+            "thresholdMs": 900000,
+            "note": "pending_operator_trace_latency_wiring",
+            "provenance": "trace_bundle_probe",
+            "sourceCollections": [
+              "trace_search.view",
+              "trace_bundle"
+            ]
+          },
+          "adminTraceResolutionTimeMs": {
+            "key": "adminTraceResolutionTimeMs",
+            "valueMs": null,
+            "sampleCount": 0,
+            "missingCount": 0,
+            "status": "missing",
+            "operator": "max",
+            "thresholdMs": 900000,
+            "note": "pending_operator_trace_latency_wiring",
+            "provenance": "trace_bundle_probe",
+            "sourceCollections": [
+              "trace_search.view",
+              "trace_bundle"
+            ]
+          },
+          "officialSourceUsageRateHighRisk": {
+            "key": "officialSourceUsageRateHighRisk",
+            "value": 1,
+            "sampleCount": 1,
+            "missingCount": 0,
+            "status": "pass",
+            "operator": "min",
+            "threshold": 0.95,
+            "note": null,
+            "provenance": "live_runtime",
+            "sourceCollections": [
+              "llm_action_logs",
+              "faq_answer_logs"
+            ]
+          },
+          "compatShareWindow": {
+            "key": "compatShareWindow",
+            "value": 0.04,
+            "sampleCount": 12,
+            "missingCount": 0,
+            "status": "pass",
+            "operator": "max",
+            "threshold": 0.15,
+            "note": null,
+            "provenance": "live_runtime",
+            "sourceCollections": [
+              "llm_gate.decision",
+              "llm_action_logs"
+            ]
+          },
+          "directUrlLeakage": {
+            "key": "directUrlLeakage",
+            "value": null,
+            "sampleCount": 0,
+            "missingCount": 0,
+            "status": "missing",
+            "operator": "exact",
+            "threshold": 0,
+            "note": "pending_direct_url_runtime_signal",
+            "provenance": "pending_runtime_signal",
+            "sourceCollections": [
+              "llm_action_logs",
+              "faq_answer_logs"
+            ]
+          }
+        },
+        "readinessV2": {
+          "sampleCount": 1,
+          "versionObserved": "v2",
+          "decisionBreakdown": [
+            {
+              "decision": "allow",
+              "count": 1
+            }
+          ],
+          "modeBreakdown": [
+            {
+              "mode": "unknown",
+              "count": 1
+            }
+          ],
+          "stageBreakdown": [
+            {
+              "stage": "unknown",
+              "count": 1
+            }
+          ],
+          "decisionSourceBreakdown": [
+            {
+              "decisionSource": "unknown",
+              "count": 1
+            }
+          ],
+          "hardeningVersionBreakdown": [
+            {
+              "version": "none",
+              "count": 1
+            }
+          ],
+          "hardEnforcedCount": 0,
+          "softEnforcedCount": 0,
+          "logOnlyCount": 0,
+          "nogoGateMandatoryCount": 0
+        },
+        "missingJoins": [
+          "evidenceCoverage",
+          "staleSourceBlockRate",
+          "emergencyOverrideAppliedRate",
+          "traceJoinCompleteness",
+          "adminTraceResolutionTime",
+          "adminTraceResolutionTimeMs",
+          "directUrlLeakage"
+        ],
+        "reservations": [
+          "judge_disagreement_queue",
+          "integration_counterexample_registry",
+          "replay_slice_registry",
+          "saved_faq_retirement_review",
+          "emergency_override_review_queue",
+          "city_pack_freshness_recertification_report"
+        ],
+        "runtimeAudit": {
+          "status": "ok",
+          "runtimeAuditUnavailable": false,
+          "runtimeFetchStatus": "ok",
+          "runtimeFetchErrorCode": null,
+          "runtimeFetchErrorMessage": null,
+          "recoveryActionCode": null,
+          "recoveryCommands": []
+        },
+        "improvementLoop": {
+          "qualityLoopStatus": "action_required",
+          "lastAuditAt": null,
+          "runtimeAuditUnavailable": false,
+          "runtimeAuditStatus": "ok",
+          "runtimeFetchStatus": "ok",
+          "runtimeFetchErrorCode": null,
+          "runtimeFetchErrorMessage": null,
+          "recoveryActionCode": null,
+          "recoveryCommands": [],
+          "topFailures": [
+            {
+              "signal": "savedFaqReusePassRate"
+            },
+            {
+              "signal": "taskBlockerConflictRate"
+            },
+            {
+              "signal": "staleSourceBlockRate"
+            },
+            {
+              "signal": "traceJoinCompleteness"
+            },
+            {
+              "signal": "evidenceCoverage"
+            }
+          ],
+          "improvementBacklog": [
+            {
+              "priority": "high",
+              "category": "knowledge",
+              "signals": [
+                "savedFaqReusePassRate"
+              ],
+              "PR": "PR-knowledge-hardening",
+              "objective": "Strengthen source readiness, City Pack grounding, and saved FAQ governance.",
+              "files": [
+                "src/domain/llm/knowledge/computeSourceReadiness.js",
+                "src/usecases/cityPack/validateCityPackSources.js",
+                "src/usecases/faq/answerFaqFromKb.js"
+              ],
+              "tests": [
+                "tests/phase804/*.test.js",
+                "tests/phase810/*.test.js",
+                "tests/phase813/*.test.js"
+              ],
+              "risk": "Higher refuse or clarify rates if source metadata is sparse.",
+              "rollback": "Disable source readiness enforcement flags and revert the knowledge hardening PR."
+            },
+            {
+              "priority": "high",
+              "category": "integration",
+              "signals": [
+                "taskBlockerConflictRate"
+              ],
+              "PR": "PR-integration-governance",
+              "objective": "Fix cross-system conflicts across City Pack, Emergency, Journey, FAQ, and trace-integrated runtime signals.",
+              "files": [
+                "src/routes/webhookLine.js",
+                "src/usecases/admin/getTraceBundle.js",
+                "src/usecases/emergency/adminEmergencyLayer.js",
+                "src/routes/admin/journeyGraphRuntime.js"
+              ],
+              "tests": [
+                "tests/phase810/*.test.js",
+                "tests/phase811/*.test.js",
+                "tests/phase812/*.test.js",
+                "tests/phase814/*.test.js"
+              ],
+              "risk": "Cross-system joins can add latency or expose stale upstream state.",
+              "rollback": "Disable integration feature flags and revert the integration PR."
+            },
+            {
+              "priority": "high",
+              "category": "telemetry",
+              "signals": [
+                "traceJoinCompleteness"
+              ],
+              "PR": "PR-telemetry-live-audit-restoration",
+              "objective": "Restore live runtime audit access, surface auth recovery guidance, and close logging/trace visibility gaps.",
+              "files": [
+                "tools/run_llm_runtime_audit.js",
+                "tools/run_llm_improvement_loop.js",
+                "tools/llm_quality/run_quality_gate.js",
+                "tools/llm_quality/enforce_release_policy.js",
+                "src/routes/admin/osLlmUsageSummary.js",
+                "src/usecases/admin/getTraceBundle.js",
+                "docs/LLM_RUNBOOK.md"
+              ],
+              "tests": [
+                "tests/phase821/*.test.js",
+                "tests/phase824/*.test.js",
+                "tests/phase825/*.test.js",
+                "tests/phase807/*.test.js",
+                "tests/phase809/*.test.js",
+                "tests/phase814/*.test.js"
+              ],
+              "risk": "Auth-path changes can hide real runtime failures if degraded and live modes are not kept distinct.",
+              "rollback": "Keep degraded mode active, disable live-runtime requirements, and revert the telemetry restoration PR."
+            },
+            {
+              "priority": "medium",
+              "category": "router",
+              "signals": [
+                "repetition_not_prevented"
+              ],
+              "PR": "PR-router-coverage",
+              "objective": "Improve route coverage and reduce compat-driven routing gaps.",
+              "files": [
+                "src/routes/webhookLine.js",
+                "src/domain/llm/quality/resolveSharedAnswerReadiness.js"
+              ],
+              "tests": [
+                "tests/phase731/*.test.js",
+                "tests/phase805/*.test.js"
+              ],
+              "risk": "Incorrect router changes can increase default fallback or compat load.",
+              "rollback": "Revert router coverage PR and keep v2 readiness in log-only mode."
+            },
+            {
+              "priority": "medium",
+              "category": "readiness",
+              "signals": [
+                "dimension_fail:cultural_habit_fit"
+              ],
+              "PR": "PR-readiness-hardening",
+              "objective": "Reduce unsupported claims, contradiction escapes, and over-clarification in final response decisions.",
+              "files": [
+                "src/domain/llm/quality/evaluateAnswerReadiness.js",
+                "src/domain/llm/quality/runAnswerReadinessGateV2.js",
+                "src/domain/llm/orchestrator/verifyCandidate.js"
+              ],
+              "tests": [
+                "tests/phase805/*.test.js",
+                "tests/phase815/*.test.js",
+                "tests/phase816/*.test.js"
+              ],
+              "risk": "Readiness tuning can shift clarify/refuse rates if applied too broadly.",
+              "rollback": "Turn off readiness v2 enforcement and revert the readiness PR."
+            }
+          ]
+        }
+      }
+    }
+  }
+}
