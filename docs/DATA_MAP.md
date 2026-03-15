@@ -163,6 +163,7 @@ Typical fields:
 - `issues[]`, `observationBlockers[]`, `evidence[]`, `traceRefs[]`, `recommendedPr[]`
 - `observationStatus`, `provenance`, `sourceCollections`
 - `observationBlockers[]` may also include add-only precision fields such as `code`, `category`, `evidenceSource`, `privacySensitivity`, and `detailVisibility`
+- add-only `backlogSeparation.currentRuntime`, `backlogSeparation.historicalDebt`, and `backlogSeparation.backlogSeparationGate`
 
 Notes:
 - query responses are not persisted in PR-8.
@@ -186,6 +187,7 @@ Typical fields:
 - `planningStatus`, `analysisStatus`, `observationStatus`
 - `decayAwareReadiness`
 - `decayAwareOpsGate`
+- `backlogSeparation`
 - `runtimeFetchStatus`, `writeStatus`, `sourceWindow`, `sourceCollections`
 
 Notes:

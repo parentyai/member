@@ -14,6 +14,10 @@ const { detectAndUpsertQualityIssues } = require('../../src/usecases/qualityPatr
 const { listOpenIssues } = require('../../src/usecases/qualityPatrol/listOpenIssues');
 const { listTopPriorityBacklog } = require('../../src/usecases/qualityPatrol/listTopPriorityBacklog');
 const { buildPatrolQueryResponse } = require('../../src/domain/qualityPatrol/query/buildPatrolQueryResponse');
+const {
+  buildPatrolBacklogSeparation,
+  createEmptyPatrolBacklogSeparation
+} = require('../../src/domain/qualityPatrol/query/buildPatrolBacklogSeparation');
 const { createEmptyDecayAwareReadiness } = require('../../src/domain/qualityPatrol/buildDecayAwareReadiness');
 const { createEmptyDecayAwareOpsGate } = require('../../src/domain/qualityPatrol/buildDecayAwareOpsGate');
 
@@ -200,6 +204,7 @@ function createEmptyKpiResult() {
     },
     decayAwareReadiness: createEmptyDecayAwareReadiness(),
     decayAwareOpsGate: createEmptyDecayAwareOpsGate(),
+    backlogSeparation: createEmptyPatrolBacklogSeparation('operator'),
     observationBlockers: [],
     provenance: 'review_unit_evaluator',
     sourceCollections: []
@@ -304,6 +309,11 @@ function buildFallbackQueryArtifact(payload) {
 }
 
 function buildMainArtifact(job) {
+  const backlogSeparation = buildPatrolBacklogSeparation({
+    audience: job.options.audience,
+    decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
+    decayAwareOpsGate: job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate()
+  });
   return Object.assign({}, job.queryResult, {
     artifactVersion: MAIN_ARTIFACT_VERSION,
     mode: job.options.mode,
@@ -312,6 +322,7 @@ function buildMainArtifact(job) {
     transcriptCoverage: job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage,
     decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
     decayAwareOpsGate: job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate(),
+    backlogSeparation,
     provenance: JOB_PROVENANCE,
     sourceWindow: job.sourceWindow,
     runtimeFetchStatus: job.runtimeFetchStatus,
@@ -320,6 +331,11 @@ function buildMainArtifact(job) {
 }
 
 function buildMetricsArtifact(job) {
+  const backlogSeparation = buildPatrolBacklogSeparation({
+    audience: job.options.audience,
+    decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
+    decayAwareOpsGate: job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate()
+  });
   return {
     artifactVersion: METRICS_ARTIFACT_VERSION,
     generatedAt: job.generatedAt,
@@ -331,6 +347,7 @@ function buildMetricsArtifact(job) {
     transcriptCoverage: job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage,
     decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
     decayAwareOpsGate: job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate(),
+    backlogSeparation,
     observationBlockers: job.kpiResult.observationBlockers || [],
     provenance: 'quality_patrol_job_metrics',
     sourceCollections: job.kpiResult.sourceCollections || [],

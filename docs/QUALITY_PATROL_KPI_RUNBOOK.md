@@ -52,6 +52,11 @@
   - `prDEligible`
   - `prDStatus`
   - `prDReasonCode`
+- add-only backlog separation surfaces may expose:
+  - `backlogSeparation.currentRuntime`
+  - `backlogSeparation.historicalDebt`
+  - `backlogSeparation.backlogSeparationGate`
+- backlog separation is read-side only and exists to prevent current runtime health from being collapsed into historical full-window debt.
 - `snapshotInputDiagnostics` may include:
   - `assistantReplyPresent`
   - `assistantReplyLength`
@@ -72,6 +77,11 @@
   - `historical_backlog_dominant` => `NO_GO`, treat the gap as historical debt and keep PR-D deferred
   - `observation_continue_backlog_decay` => `OBSERVATION_CONTINUE`
   - `readiness_candidate` => `GO`
+- backlog separation gate must keep the same rule ordering:
+  - current runtime unhealthy => runtime repair stays first
+  - current runtime healthy + historical debt stagnating => `NO_GO`
+  - current runtime healthy + historical debt decaying => `OBSERVATION_CONTINUE`
+  - current runtime healthy + historical debt cleared => `GO`
 - PR-D is allowed only when:
   - `currentRuntimeHealth.status = healthy`
   - `historicalBacklogStatus = cleared`

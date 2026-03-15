@@ -7,6 +7,9 @@ const { serializePatrolRecommendedPr } = require('./serializePatrolRecommendedPr
 const { serializePatrolObservationBlockers } = require('./serializePatrolObservationBlockers');
 const { serializePatrolSummary } = require('./serializePatrolSummary');
 const { buildTraceRefs } = require('./buildTraceRefs');
+const {
+  buildPatrolBacklogSeparation
+} = require('./buildPatrolBacklogSeparation');
 
 const QUERY_VERSION = 'quality_patrol_query_v1';
 
@@ -64,6 +67,11 @@ function buildPatrolQueryResponse(params) {
     rootCauseReports: payload.rootCauseReports,
     issues: payload.issues
   });
+  const backlogSeparation = buildPatrolBacklogSeparation({
+    audience,
+    decayAwareReadiness: payload.decayAwareReadiness,
+    decayAwareOpsGate: payload.decayAwareOpsGate
+  });
   const topPriorityCount = recommendedPr.filter((item) => item.priority === 'P0' || item.priority === 'P1').length;
   const hasEvidence = (Array.isArray(payload.reviewUnits) && payload.reviewUnits.length > 0)
     || (Array.isArray(payload.issues) && payload.issues.length > 0)
@@ -93,6 +101,7 @@ function buildPatrolQueryResponse(params) {
     issues,
     observationBlockers,
     evidence,
+    backlogSeparation,
     traceRefs,
     recommendedPr,
     observationStatus: resolveObservationStatus({
