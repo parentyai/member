@@ -92,6 +92,23 @@ Output path is controlled by `--output`. If omitted, the job writes to `/tmp`.
   - if this bridge step fails, treat it as a CI auth/materialization fault before inspecting patrol logic
 - automation stays read-only apart from replay writes that already travel through the normal webhook -> action-log -> snapshot path.
 
+## Canonical audit read paths
+- for cycle pass/fail confirmation, read `/tmp/quality_patrol_cycle_verify.json` first:
+  - `windowEndsAfterMerge`
+  - `recentWrittenAtLeast5`
+  - `currentRuntime.status`
+  - `historicalDebt.status`
+  - `backlogSeparationGate.decision`
+  - `backlogSeparationGate.prDStatus`
+- for artifact-level runtime/backlog interpretation, treat these as the canonical nested paths:
+  - `backlogSeparation.currentRuntime.status` => current runtime truth
+  - `backlogSeparation.historicalDebt.status` => historical backlog truth
+  - `backlogSeparation.backlogSeparationGate.decision` / `prDStatus` => final separated gate for audits
+  - `decayAwareOpsGate.decision` / `historicalBacklogStatus` / `overallReadinessStatus` / `prDStatus` => supporting operator explanation for why the gate resolved that way
+- do not require top-level `currentRuntimeHealth.status`, `historicalBacklogStatus`, or `overallReadinessStatus` in cycle artifacts.
+  - if they are absent, that is not a contract break.
+  - read the nested `backlogSeparation.*` and `decayAwareOpsGate.*` paths above instead.
+
 ## Degraded / unavailable semantics
 - transcript unavailable
 - fetch unavailable
