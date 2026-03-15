@@ -1,9 +1,9 @@
 {
   "ok": true,
-  "generatedAt": "2026-03-15T03:54:30.971Z",
-  "baselinePath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase816_release_pass_baseline_scorecard.json",
-  "candidatePath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase816_release_pass_candidate_scorecard.json",
-  "mustPassPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase816_release_pass_must_pass.json",
+  "generatedAt": "2026-03-15T03:56:51.112Z",
+  "baselinePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase816_release_pass_baseline_scorecard.json",
+  "candidatePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase816_release_pass_candidate_scorecard.json",
+  "mustPassPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase816_release_pass_must_pass.json",
   "releaseGatePolicy": {
     "overallImprovementRequired": true,
     "hardGateNoRegression": true,
@@ -240,7 +240,7 @@
       "pass": true
     }
   ],
-  "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase816_release_pass_summary.json",
+  "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase816_release_pass_summary.json",
   "runtimeSignals": {
     "defaultCasualRate": 0.012,
     "legacyTemplateHitRate": 0.003,

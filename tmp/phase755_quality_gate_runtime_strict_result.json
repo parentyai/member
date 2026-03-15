@@ -1,11 +1,11 @@
 {
   "ok": false,
-  "generatedAt": "2026-03-15T03:54:28.588Z",
-  "baselineMetricsPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tools/llm_quality/fixtures/baseline_metrics.v1.json",
-  "candidateMetricsPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tools/llm_quality/fixtures/candidate_metrics.v1.json",
-  "candidateSourcePath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tools/llm_quality/fixtures/usage_summary_candidate.v1.json",
-  "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase755_missing_summary.json",
-  "summaryFallbackPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tools/llm_quality/fixtures/usage_summary_candidate.v1.json",
+  "generatedAt": "2026-03-15T03:56:47.525Z",
+  "baselineMetricsPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tools/llm_quality/fixtures/baseline_metrics.v1.json",
+  "candidateMetricsPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tools/llm_quality/fixtures/candidate_metrics.v1.json",
+  "candidateSourcePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tools/llm_quality/fixtures/usage_summary_candidate.v1.json",
+  "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase755_missing_summary.json",
+  "summaryFallbackPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tools/llm_quality/fixtures/usage_summary_candidate.v1.json",
   "requireRuntimeSummary": true,
   "requireRuntimeProvenance": false,
   "requireLiveRuntimeAudit": false,
@@ -17,8 +17,8 @@
   "runtimeSummaryReadable": false,
   "runtimeSummaryConverted": false,
   "requireAllSlicesPass": false,
-  "adjudicationPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tools/llm_quality/fixtures/human_adjudication_set.v1.json",
-  "manifestPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/benchmarks/registry/manifest.v1.json",
+  "adjudicationPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tools/llm_quality/fixtures/human_adjudication_set.v1.json",
+  "manifestPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/benchmarks/registry/manifest.v1.json",
   "candidateSourceType": "frozen_summary_fallback",
   "qualityLoopV2": {
     "version": "v2-foundation",
@@ -589,8 +589,8 @@
       "ackSlaViolationRate": 0.006,
       "status": "pass"
     },
-    "generatedAt": "2026-03-15T03:54:28.587Z",
-    "source": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tools/llm_quality/fixtures/baseline_metrics.v1.json"
+    "generatedAt": "2026-03-15T03:56:47.523Z",
+    "source": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tools/llm_quality/fixtures/baseline_metrics.v1.json"
   },
   "candidateScorecard": {
     "frameworkVersion": "v1",
@@ -892,8 +892,8 @@
       "ackSlaViolationRate": 0.007,
       "status": "pass"
     },
-    "generatedAt": "2026-03-15T03:54:28.588Z",
-    "source": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tools/llm_quality/fixtures/usage_summary_candidate.v1.json"
+    "generatedAt": "2026-03-15T03:56:47.524Z",
+    "source": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tools/llm_quality/fixtures/usage_summary_candidate.v1.json"
   },
   "sliceGate": {
     "pass": true,

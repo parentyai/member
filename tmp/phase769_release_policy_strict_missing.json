@@ -1,9 +1,9 @@
 {
   "ok": false,
-  "generatedAt": "2026-03-15T03:54:29.269Z",
-  "baselinePath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase769_strict_baseline.json",
-  "candidatePath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase769_strict_candidate.json",
-  "mustPassPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase769_strict_must_pass.json",
+  "generatedAt": "2026-03-15T03:56:48.926Z",
+  "baselinePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase769_strict_baseline.json",
+  "candidatePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase769_strict_candidate.json",
+  "mustPassPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase769_strict_must_pass.json",
   "releaseGatePolicy": {
     "overallImprovementRequired": true,
     "hardGateNoRegression": true,
@@ -240,7 +240,7 @@
       "pass": true
     }
   ],
-  "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase769_strict_summary.json",
+  "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase769_strict_summary.json",
   "runtimeSignals": {
     "defaultCasualRate": null,
     "legacyTemplateHitRate": null,
