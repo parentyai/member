@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T10:25:53-04:00",
-  "gitCommit": "28722c6509654630660ae6e74d5852038ea134f7",
-  "branch": "codex/quality-patrol-backlog-separation-T001",
-  "sourceDigest": "4a56e5225496e18c9910eb8ce35720c05416ad08e5e58b8594714707a0195a79",
+  "generatedAt": "2026-03-15T12:05:59-04:00",
+  "gitCommit": "c8fd40a2a8decc97d6d3bd5bf0b2a19b37782253",
+  "branch": "codex/quality-patrol-replay-harness-T001",
+  "sourceDigest": "42fb003b4644b64f9f0cbeaa86e673fc31f0eea43bb439449c6fa9671b777fa6",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

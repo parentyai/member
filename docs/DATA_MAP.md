@@ -180,6 +180,8 @@ Typical files:
 - `/tmp/quality_patrol_metrics.json`
 - `/tmp/quality_patrol_detection.json`
 - `/tmp/quality_patrol_planning.json`
+- `/tmp/quality_patrol_replay_result.json`
+- `/tmp/quality_patrol_postmerge_verify.json`
 
 Typical fields:
 - `summary`, `issues[]`, `observationBlockers[]`, `evidence[]`, `traceRefs[]`, `recommendedPr[]`
@@ -195,6 +197,10 @@ Notes:
 - `--write-issues` and `--write-backlog` are explicit opt-in flags.
 - no new Firestore collection is introduced for these artifacts in PR-10.
 - operator/human query evidence may also expose `quality_patrol_decay_ops_gate` summaries; these remain derived and are not persisted.
+- post-merge replay verification is repo-local:
+  - replay harness: `tools/quality_patrol/replay_same_traffic_set.js`
+  - verify harness: `tools/quality_patrol/verify_postmerge_runtime_window.js`
+- replay harness writes through the normal webhook -> action log -> snapshot path and does not create a separate raw transcript store.
 
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.

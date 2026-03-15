@@ -87,3 +87,18 @@
   - `historicalBacklogStatus = cleared`
   - `overallReadinessStatus = readiness_candidate`
 - transcript coverage diagnostics do not widen retention and do not persist raw transcript text.
+
+## Post-merge reproducibility
+- post-merge quality patrol verification uses repo-local replay tooling instead of external `/tmp/*.js` harnesses.
+- replay harness path: `tools/quality_patrol/replay_same_traffic_set.js`
+- verification harness path: `tools/quality_patrol/verify_postmerge_runtime_window.js`
+- replay result artifact defaults to `/tmp/quality_patrol_replay_result.json`
+- verification artifact defaults to `/tmp/quality_patrol_postmerge_verify.json`
+- KPI rerun stays read-only and uses the existing patrol jobs:
+  - `node tools/run_quality_patrol_metrics.js --output /tmp/quality_patrol_metrics_postmerge_verify.json`
+  - `node tools/run_quality_patrol.js --mode latest --output /tmp/quality_patrol_latest_postmerge_verify.json`
+- replay verification is successful only when:
+  - `currentRuntime.window.toAt > mergedAt`
+  - `recentWindow.written >= 5`
+  - `currentRuntime.status = healthy`
+  - `historicalDebt.status` remains separated from current runtime facts
