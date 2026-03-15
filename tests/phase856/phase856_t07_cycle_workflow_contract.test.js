@@ -24,6 +24,7 @@ test('phase856: quality patrol workflow runs hourly with OIDC auth and artifact 
   assert.ok(workflow.includes("app/credential-internal.js"));
   assert.ok(workflow.includes('id: firebase_bridge'));
   assert.ok(workflow.includes('NODE_OPTIONS: --require=${{ steps.firebase_bridge.outputs.bridge_path }}'));
+  assert.ok(workflow.includes('NODE_PATH: ${{ github.workspace }}/node_modules'));
   assert.ok(workflow.includes('QUALITY_PATROL_AUTH_BRIDGE=external_account'));
   assert.ok(workflow.includes('npm install'));
   assert.ok(workflow.includes('npm run quality-patrol:cycle'));

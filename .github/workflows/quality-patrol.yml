@@ -167,6 +167,7 @@ jobs:
       - name: Diagnose Firebase Admin bridge
         env:
           NODE_OPTIONS: --require=${{ steps.firebase_bridge.outputs.bridge_path }}
+          NODE_PATH: ${{ github.workspace }}/node_modules
         run: |
           set -euo pipefail
           node - <<'NODE'
@@ -198,6 +199,7 @@ jobs:
       - name: Run quality patrol cycle
         env:
           NODE_OPTIONS: --require=${{ steps.firebase_bridge.outputs.bridge_path }}
+          NODE_PATH: ${{ github.workspace }}/node_modules
         run: npm run quality-patrol:cycle
 
       - name: Upload artifacts
