@@ -1177,6 +1177,7 @@ function buildConversationQualityMeta(params) {
     ? Object.assign({}, payload.knowledgeCandidateCountBySource)
     : null;
   return {
+    replyTextLineage: replyText || null,
     conversationNaturalnessVersion,
     legacyTemplateHit,
     followupQuestionIncluded,
@@ -1231,6 +1232,28 @@ function buildConversationQualityMeta(params) {
     continuationCandidateAvailable: payload.continuationCandidateAvailable === true,
     genericFallbackSlice
   };
+}
+
+function resolveTranscriptSnapshotAssistantReplyText(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const qualityMeta = payload.qualityMeta && typeof payload.qualityMeta === 'object'
+    ? payload.qualityMeta
+    : {};
+  const responseContractConformance = payload.responseContractConformance
+    && typeof payload.responseContractConformance === 'object'
+    ? payload.responseContractConformance
+    : {};
+  const candidates = [
+    payload.finalReplyText,
+    payload.replyText,
+    qualityMeta.replyTextLineage,
+    responseContractConformance.responseMarkdown
+  ];
+  for (const candidate of candidates) {
+    const normalized = normalizeReplyText(candidate);
+    if (normalized) return normalized;
+  }
+  return '';
 }
 
 function buildSemanticReplyEnvelope(params) {
@@ -1951,7 +1974,12 @@ async function appendLlmActionLogBestEffort(data) {
       || (typeof payload.routerReason === 'string' && payload.routerReason.trim() ? 'conversation_router' : 'webhook_route')
   });
   const messageText = normalizeReplyText(payload.messageText || payload.text || '');
-  const replyText = normalizeReplyText(payload.replyText || payload.finalReplyText || '');
+  const replyText = resolveTranscriptSnapshotAssistantReplyText({
+    replyText: payload.replyText,
+    finalReplyText: payload.finalReplyText,
+    qualityMeta,
+    responseContractConformance
+  });
   let transcriptSnapshotResult = null;
 
   try {
@@ -4884,5 +4912,6 @@ async function handleLineWebhook(options) {
 module.exports = {
   handleLineWebhook,
   verifyLineSignature,
-  extractUserIds
+  extractUserIds,
+  resolveTranscriptSnapshotAssistantReplyText
 };

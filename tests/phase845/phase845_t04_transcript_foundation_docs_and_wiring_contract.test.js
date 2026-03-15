@@ -39,7 +39,9 @@ test('phase845: webhook runtime wiring uses masked transcript append usecase', (
   assert.match(source, /userMessageText: messageText/);
   assert.match(source, /assistantReplyText: replyText/);
   assert.match(source, /payload\.messageText \|\| payload\.text/);
-  assert.match(source, /payload\.replyText \|\| payload\.finalReplyText/);
+  assert.match(source, /resolveTranscriptSnapshotAssistantReplyText/);
+  assert.match(source, /qualityMeta\.replyTextLineage/);
+  assert.match(source, /responseContractConformance\.responseMarkdown/);
   assert.match(source, /transcriptSnapshotOutcome/);
   assert.match(source, /transcriptSnapshotReason/);
 });
