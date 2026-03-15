@@ -42,9 +42,26 @@ function serializeTranscriptCoverageEvidence(transcriptCoverage, audience, rows,
   const failureReasons = payload.transcriptWriteFailureReasons && typeof payload.transcriptWriteFailureReasons === 'object'
     ? payload.transcriptWriteFailureReasons
     : {};
+  const snapshotInputDiagnostics = payload.snapshotInputDiagnostics && typeof payload.snapshotInputDiagnostics === 'object'
+    ? payload.snapshotInputDiagnostics
+    : {};
+  const diagnosticCounts = {
+    assistant_reply_missing: Number.isFinite(Number(snapshotInputDiagnostics.assistant_reply_missing))
+      ? Number(snapshotInputDiagnostics.assistant_reply_missing)
+      : Number(snapshotInputDiagnostics.snapshotBuildSkippedReason && snapshotInputDiagnostics.snapshotBuildSkippedReason.assistant_reply_missing || 0),
+    sanitized_reply_empty: Number.isFinite(Number(snapshotInputDiagnostics.sanitized_reply_empty))
+      ? Number(snapshotInputDiagnostics.sanitized_reply_empty)
+      : Number(snapshotInputDiagnostics.snapshotBuildSkippedReason && snapshotInputDiagnostics.snapshotBuildSkippedReason.sanitized_reply_empty || 0),
+    masking_removed_text: Number.isFinite(Number(snapshotInputDiagnostics.masking_removed_text))
+      ? Number(snapshotInputDiagnostics.masking_removed_text)
+      : Number(snapshotInputDiagnostics.snapshotBuildSkippedReason && snapshotInputDiagnostics.snapshotBuildSkippedReason.masking_removed_text || 0),
+    region_prompt_fallback: Number.isFinite(Number(snapshotInputDiagnostics.region_prompt_fallback))
+      ? Number(snapshotInputDiagnostics.region_prompt_fallback)
+      : Number(snapshotInputDiagnostics.snapshotBuildSkippedReason && snapshotInputDiagnostics.snapshotBuildSkippedReason.region_prompt_fallback || 0)
+  };
   const summary = audience === 'human'
     ? '会話レビュー用 transcript 証跡の保存結果に欠落または失敗があり、一部の評価が保留です。'
-    : `transcriptCoverage status=${payload.transcriptCoverageStatus} observed=${payload.observedCount} outcomes=${JSON.stringify(outcomeCounts)} reasons=${JSON.stringify(failureReasons)}`;
+    : `transcriptCoverage status=${payload.transcriptCoverageStatus} observed=${payload.observedCount} outcomes=${JSON.stringify(outcomeCounts)} reasons=${JSON.stringify(failureReasons)} snapshotDiagnostics=${JSON.stringify(diagnosticCounts)}`;
   pushEvidence(rows, seen, {
     kind: 'summary',
     summary,

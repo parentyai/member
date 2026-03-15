@@ -25,6 +25,10 @@ test('phase855: metrics artifact includes transcript coverage diagnostics', asyn
   const artifact = JSON.parse(fs.readFileSync(metricsPath, 'utf8'));
   assert.ok(artifact.transcriptCoverage);
   assert.equal(artifact.transcriptCoverage.transcriptWriteOutcomeCounts.written, 1);
+  assert.equal(artifact.transcriptCoverage.snapshotInputDiagnostics.assistant_reply_missing, 0);
+  assert.equal(artifact.transcriptCoverage.snapshotInputDiagnostics.sanitized_reply_empty, 0);
+  assert.equal(artifact.transcriptCoverage.snapshotInputDiagnostics.masking_removed_text, 0);
+  assert.equal(artifact.transcriptCoverage.snapshotInputDiagnostics.region_prompt_fallback, 0);
   assert.equal(artifact.transcriptCoverage.snapshotInputDiagnostics.snapshotBuildAttempted.trueCount, 1);
   assert.equal(artifact.transcriptCoverage.snapshotInputDiagnostics.assistantReplyPresent.trueCount, 1);
   assert.equal(artifact.transcriptCoverage.snapshotInputDiagnostics.snapshotBuildSkippedReason.assistant_reply_missing, 0);

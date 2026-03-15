@@ -415,7 +415,13 @@ async function runQualityPatrolPipeline(input, deps) {
 
   const kpiStage = await runStage(
     'metrics',
-    () => (deps && deps.buildPatrolKpisFromEvaluations ? deps.buildPatrolKpisFromEvaluations : buildPatrolKpisFromEvaluations)(Object.assign({}, options, { reviewUnits, evaluations }), deps),
+    () => (deps && deps.buildPatrolKpisFromEvaluations ? deps.buildPatrolKpisFromEvaluations : buildPatrolKpisFromEvaluations)(Object.assign({}, options, {
+      reviewUnits,
+      evaluations,
+      transcriptCoverage: extractorStage.result && extractorStage.result.transcriptCoverage
+        ? extractorStage.result.transcriptCoverage
+        : null
+    }), deps),
     () => createEmptyKpiResult()
   );
   runtimeFetchStatus.metrics = {
