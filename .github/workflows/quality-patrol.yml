@@ -81,10 +81,125 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "OPENAI_API_KEY=$TOKEN" >> "$GITHUB_ENV"
 
+      - name: Prepare Firebase Admin external-account bridge
+        id: firebase_bridge
+        run: |
+          set -euo pipefail
+          if [ -z "${GOOGLE_GHA_CREDS_PATH:-}" ] || [ ! -r "${GOOGLE_GHA_CREDS_PATH:-}" ]; then
+            echo "::error title=Missing gha credential file::GOOGLE_GHA_CREDS_PATH is unavailable"
+            exit 1
+          fi
+          BRIDGE_PATH="$RUNNER_TEMP/quality_patrol_external_account_bridge.cjs"
+          cat > "$BRIDGE_PATH" <<'NODE'
+          'use strict';
+
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const admin = require('firebase-admin');
+          const { ExternalAccountClient } = require('google-auth-library');
+          const adminMain = require.resolve('firebase-admin');
+          const { ComputeEngineCredential } = require(path.join(path.dirname(adminMain), 'app/credential-internal.js'));
+
+          function resolveProjectId() {
+            const keys = ['FIRESTORE_PROJECT_ID', 'GOOGLE_CLOUD_PROJECT', 'GCLOUD_PROJECT', 'GCP_PROJECT_ID', 'GCP_PROJECT'];
+            for (const key of keys) {
+              const value = typeof process.env[key] === 'string' ? process.env[key].trim() : '';
+              if (value) return value;
+            }
+            throw new Error('firestore_project_id_missing');
+          }
+
+          class ExternalAccountCredential extends ComputeEngineCredential {
+            async getAccessToken() {
+              const credentialsPath = typeof process.env.GOOGLE_APPLICATION_CREDENTIALS === 'string'
+                ? process.env.GOOGLE_APPLICATION_CREDENTIALS.trim()
+                : '';
+              if (!credentialsPath) throw new Error('external_account_credentials_path_missing');
+              const payload = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
+              const credentialType = typeof payload.type === 'string' ? payload.type.trim() : '';
+              if (credentialType !== 'external_account') {
+                throw new Error(`unexpected_credential_type:${credentialType || 'missing'}`);
+              }
+              const client = ExternalAccountClient.fromJSON(payload);
+              if (!client) throw new Error('external_account_client_missing');
+              const token = await client.getAccessToken();
+              const accessToken = token && (token.token || token.access_token || (token.res && token.res.data && (token.res.data.access_token || token.res.data.accessToken)));
+              const expireTime = token && token.res && token.res.data ? (token.res.data.expireTime || token.res.data.expire_time) : null;
+              const expiresInRaw = token && token.res && token.res.data ? token.res.data.expires_in : null;
+              if (!accessToken) throw new Error('external_account_access_token_missing');
+              let expiresIn = Number.isFinite(Number(expiresInRaw)) ? Number(expiresInRaw) : null;
+              if (!expiresIn && expireTime) {
+                const deltaSeconds = Math.floor((new Date(expireTime).getTime() - Date.now()) / 1000);
+                if (Number.isFinite(deltaSeconds) && deltaSeconds > 0) expiresIn = deltaSeconds;
+              }
+              return {
+                access_token: accessToken,
+                expires_in: expiresIn && expiresIn > 0 ? expiresIn : 300
+              };
+            }
+          }
+
+          if (admin.apps.length === 0) {
+            admin.initializeApp({
+              projectId: resolveProjectId(),
+              credential: new ExternalAccountCredential()
+            });
+          }
+          process.env.QUALITY_PATROL_AUTH_BRIDGE = 'external_account';
+          NODE
+          if [ ! -s "$BRIDGE_PATH" ]; then
+            echo "::error title=Auth bridge missing::${BRIDGE_PATH} was not created"
+            exit 1
+          fi
+          echo "bridge_path=$BRIDGE_PATH" >> "$GITHUB_OUTPUT"
+          echo "QUALITY_PATROL_AUTH_BRIDGE=external_account" >> "$GITHUB_ENV"
+          {
+            echo "### Quality Patrol auth bridge"
+            echo ""
+            echo "- bridgePath: $BRIDGE_PATH"
+            echo "- credentialSource: $GOOGLE_GHA_CREDS_PATH"
+            echo "- credentialType: external_account"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Install dependencies
         run: npm install
 
+      - name: Diagnose Firebase Admin bridge
+        env:
+          NODE_OPTIONS: --require=${{ steps.firebase_bridge.outputs.bridge_path }}
+          NODE_PATH: ${{ github.workspace }}/node_modules
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const admin = require('firebase-admin');
+
+          async function main() {
+            const projectId = process.env.FIRESTORE_PROJECT_ID;
+            if (!projectId) throw new Error('firestore_project_id_missing');
+            const snap = await admin.firestore().doc('quality_patrol_adc_probe/noop').get();
+            process.stdout.write(`${JSON.stringify({
+              ok: true,
+              authBridge: process.env.QUALITY_PATROL_AUTH_BRIDGE || null,
+              credentialsPath: process.env.GOOGLE_APPLICATION_CREDENTIALS || null,
+              projectId,
+              exists: snap.exists
+            }, null, 2)}\n`);
+          }
+
+          main().catch((error) => {
+            process.stderr.write(`${JSON.stringify({
+              ok: false,
+              code: error && error.code ? error.code : 'firebase_admin_bridge_probe_failed',
+              message: error && error.message ? error.message : String(error)
+            }, null, 2)}\n`);
+            process.exit(1);
+          });
+          NODE
+
       - name: Run quality patrol cycle
+        env:
+          NODE_OPTIONS: --require=${{ steps.firebase_bridge.outputs.bridge_path }}
+          NODE_PATH: ${{ github.workspace }}/node_modules
         run: npm run quality-patrol:cycle
 
       - name: Upload artifacts

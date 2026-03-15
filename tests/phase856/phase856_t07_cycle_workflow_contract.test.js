@@ -17,6 +17,15 @@ test('phase856: quality patrol workflow runs hourly with OIDC auth and artifact 
   assert.ok(workflow.includes('google-github-actions/auth@v2'));
   assert.ok(workflow.includes('google-github-actions/setup-gcloud@v2'));
   assert.ok(workflow.includes('create_credentials_file: true'));
+  assert.ok(workflow.includes('Prepare Firebase Admin external-account bridge'));
+  assert.ok(workflow.includes('Diagnose Firebase Admin bridge'));
+  assert.ok(workflow.includes("require('google-auth-library')"));
+  assert.ok(workflow.includes("require.resolve('firebase-admin')"));
+  assert.ok(workflow.includes("app/credential-internal.js"));
+  assert.ok(workflow.includes('id: firebase_bridge'));
+  assert.ok(workflow.includes('NODE_OPTIONS: --require=${{ steps.firebase_bridge.outputs.bridge_path }}'));
+  assert.ok(workflow.includes('NODE_PATH: ${{ github.workspace }}/node_modules'));
+  assert.ok(workflow.includes('QUALITY_PATROL_AUTH_BRIDGE=external_account'));
   assert.ok(workflow.includes('npm install'));
   assert.ok(workflow.includes('npm run quality-patrol:cycle'));
   assert.ok(workflow.includes('actions/upload-artifact@v4'));

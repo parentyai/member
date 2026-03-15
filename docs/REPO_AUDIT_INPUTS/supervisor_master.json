@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T13:48:16-04:00",
-  "gitCommit": "9cfabf866ff861a6db16c492756521a244e0429b",
-  "branch": "codex/quality-patrol-observation-automation-T001",
-  "sourceDigest": "1a025d39183efdf63f1a3fcd4252430130e99824db6227fcbd5d1df588fd3cbe",
+  "generatedAt": "2026-03-15T15:10:46-04:00",
+  "gitCommit": "92e93936385af21f778fc9119059a4dfc52b1b6a",
+  "branch": "codex/quality-patrol-auth-fix-T001",
+  "sourceDigest": "090dbd4e3690a8ebfb2059dbb88654078f3c32dcf0c4e884c711937a2c5fb06f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

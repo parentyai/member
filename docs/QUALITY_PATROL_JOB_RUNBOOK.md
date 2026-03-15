@@ -86,6 +86,10 @@ Output path is controlled by `--output`. If omitted, the job writes to `/tmp`.
   - `decision`
   - `prD`
 - the scheduled workflow runs hourly and uploads `/tmp/quality_patrol_cycle_*.json`.
+- the GitHub Actions caller preloads a Firebase Admin external-account bridge before `npm run quality-patrol:cycle`.
+  - source auth remains OIDC/WIF via `google-github-actions/auth@v2`
+  - the workflow keeps `GOOGLE_APPLICATION_CREDENTIALS` on the OIDC/WIF credential file and preloads a `NODE_OPTIONS=--require=...` bridge that teaches Firebase Admin to exchange `external_account` tokens through `google-auth-library`
+  - if this bridge step fails, treat it as a CI auth/materialization fault before inspecting patrol logic
 - automation stays read-only apart from replay writes that already travel through the normal webhook -> action-log -> snapshot path.
 
 ## Degraded / unavailable semantics
