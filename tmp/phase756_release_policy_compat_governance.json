@@ -1,9 +1,9 @@
 {
   "ok": false,
-  "generatedAt": "2026-03-15T03:54:29.263Z",
-  "baselinePath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase756_baseline_scorecard_compat_governance.json",
-  "candidatePath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase756_candidate_scorecard_compat_governance.json",
-  "mustPassPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase756_must_pass_compat_governance.json",
+  "generatedAt": "2026-03-15T03:56:48.348Z",
+  "baselinePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase756_baseline_scorecard_compat_governance.json",
+  "candidatePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase756_candidate_scorecard_compat_governance.json",
+  "mustPassPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase756_must_pass_compat_governance.json",
   "releaseGatePolicy": {
     "overallImprovementRequired": true,
     "hardGateNoRegression": true,
@@ -240,7 +240,7 @@
       "pass": true
     }
   ],
-  "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase756_summary_compat_governance.json",
+  "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase756_summary_compat_governance.json",
   "runtimeSignals": {
     "defaultCasualRate": 0.012,
     "legacyTemplateHitRate": 0.003,

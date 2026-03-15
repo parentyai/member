@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T22:20:53.615Z",
-  "gitCommit": "669763af5fac731199a802911d3d5c4d87eef31f",
-  "branch": "codex/quality-patrol-pr0-merge-T002",
-  "sourceDigest": "11ab4b0ad29e3af712ac6fb97e8e20975d2aef587f231a997d06dc31995f7d4c",
+  "generatedAt": "2026-03-15T22:45:56.145Z",
+  "gitCommit": "3c75b8c66ca5daa13c9f0add5ef12b93a21ba5d5",
+  "branch": "codex/quality-patrol-prG-merge-T002",
+  "sourceDigest": "774533d18b0bb8d08b584a331296e8c32a7eb405b862a9132b690e61c5a3ce76",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "2d95c9d4e17286745503f0c5b683cb5f89cd31e664e35d07ca8d8320a13416a9",
+      "sha256": "606e165fabd825b06fe13424b1628eaceec6c45e9c0adcc86064b04cab1ac1e9",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "d7c50148776604b68c8a27194ffd9eb15c2c4f8f76ef497a1eb335a473a83092",
+      "sha256": "ea13a26e69e4e91d20d5c6ca43421b294d8d42315f14132a2a3b29aff373fe40",
       "bytes": 487
     },
     {
@@ -151,7 +151,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "4ed1aa39f7150512fdb0fd66eea91b28cee9019da01575c7fbbf64868479ed1e",
+      "sha256": "ac5de15703979bd6b4047858b29d77a4798c248d2166906006a20dbe916dea2a",
       "bytes": 740
     },
     {
@@ -166,12 +166,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "1e733947e3ac2ae0bbb6a8e13e6883485a7d68e1552c9111f89835291ef85aa1",
+      "sha256": "dca4759560b62d37a1ede96f055ecd6a15c3fdd859153ef377c0004262b649b0",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "c3e79eb74f7c85fc4d3fbb825471eee4db57115347a09dc2fbbf36ce47187ff8",
+      "sha256": "7669dd402d9c90111ed8a9ed3db2b7926430432bb5f916f822df54f05652dcfa",
       "bytes": 2421
     },
     {

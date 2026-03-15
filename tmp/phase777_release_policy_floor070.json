@@ -1,9 +1,9 @@
 {
   "ok": true,
-  "generatedAt": "2026-03-15T03:54:29.997Z",
-  "baselinePath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase777_floor070_baseline_scorecard.json",
-  "candidatePath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase777_floor070_candidate_scorecard.json",
-  "mustPassPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/phase777_floor070_must_pass.json",
+  "generatedAt": "2026-03-15T03:56:49.785Z",
+  "baselinePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase777_floor070_baseline_scorecard.json",
+  "candidatePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase777_floor070_candidate_scorecard.json",
+  "mustPassPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase777_floor070_must_pass.json",
   "releaseGatePolicy": {
     "overallImprovementRequired": true,
     "hardGateNoRegression": true,
@@ -240,7 +240,7 @@
       "pass": true
     }
   ],
-  "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prF-T001/tmp/llm_usage_summary.json",
+  "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/llm_usage_summary.json",
   "runtimeSignals": {
     "defaultCasualRate": 0.012,
     "legacyTemplateHitRate": 0.003,
