@@ -1,0 +1,38 @@
+{
+  "summary": {
+    "conversationQuality": {
+      "routerReasons": [
+        {
+          "routerReason": "default_casual",
+          "count": 3
+        }
+      ],
+      "fallbackTypes": [
+        {
+          "fallbackType": "paid_domain_concierge",
+          "count": 2
+        }
+      ],
+      "followupIntents": [
+        {
+          "followupIntent": "none",
+          "count": 4
+        }
+      ],
+      "domainIntents": [
+        {
+          "domainIntent": "ssn",
+          "count": 4
+        }
+      ],
+      "legacyTemplateHitRate": 0.1,
+      "defaultCasualRate": 0.2,
+      "followupQuestionIncludedRate": 0.7,
+      "conciseModeAppliedRate": 0.6,
+      "retrieveNeededRate": 0.3,
+      "avgActionCount": 2,
+      "directAnswerAppliedRate": 0.81,
+      "avgRepeatRiskScore": 0.22
+    }
+  }
+}

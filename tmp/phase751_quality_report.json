@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-03-15T03:56:47.152Z",
+  "overall_quality_score": 0,
+  "baseline_overall_quality_score": 0,
+  "dimension_scores": [],
+  "hard_gate_failures": [],
+  "top_10_quality_failures": [],
+  "soft_floor_threshold": 0.8,
+  "soft_floor_gaps": [],
+  "top_10_loop_cases": [
+    {
+      "signal": "routerReason:default_casual",
+      "count": 3
+    },
+    {
+      "signal": "fallbackType:paid_domain_concierge",
+      "count": 2
+    }
+  ],
+  "top_10_context_loss_cases": [
+    {
+      "signal": "none",
+      "count": 4
+    },
+    {
+      "signal": "ssn",
+      "count": 4
+    }
+  ],
+  "top_10_japanese_service_failures": [
+    {
+      "signal": "conciseModeAppliedRate",
+      "value": 0.4,
+      "available": true
+    },
+    {
+      "signal": "followupQuestionIncludedRate",
+      "value": 0.3,
+      "available": true
+    },
+    {
+      "signal": "defaultCasualRate",
+      "value": 0.2,
+      "available": true
+    },
+    {
+      "signal": "legacyTemplateHitRate",
+      "value": 0.1,
+      "available": true
+    }
+  ],
+  "top_10_line_fit_failures": [
+    {
+      "signal": "retrieveNeededRate",
+      "value": 0.3,
+      "available": true
+    },
+    {
+      "signal": "defaultCasualRate",
+      "value": 0.2,
+      "available": true
+    },
+    {
+      "signal": "avgActionCountOverBudget",
+      "value": 0,
+      "available": true
+    }
+  ],
+  "signal_coverage": {
+    "conversationQualityPresent": true,
+    "requiredSignalCount": 8,
+    "availableSignalCount": 8,
+    "missingSignalCount": 0,
+    "missingSignals": []
+  },
+  "current_quality_risk_map": {
+    "high": [],
+    "medium": [],
+    "low": []
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "planVersion": "v2",
+  "generatedAt": "2026-03-15T03:56:50.459Z",
+  "source": {
+    "auditPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase808_quality_audit.json",
+    "integrationPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase808_integration_audit.json"
+  },
+  "backlog": [
+    {
+      "priority": "high",
+      "signal": "staleSourceBlockRate",
+      "pr": "PR-8",
+      "title": "City Pack / Source Refs Integration Hardening",
+      "reason": "measurement_missing"
+    },
+    {
+      "priority": "high",
+      "signal": "emergencyOverrideAppliedRate",
+      "pr": "PR-9",
+      "title": "Emergency Layer Quality Override",
+      "reason": "measurement_missing"
+    },
+    {
+      "priority": "high",
+      "signal": "traceJoinCompleteness",
+      "pr": "PR-12",
+      "title": "Cross-System Trace Join & Operator UX",
+      "reason": "measurement_missing"
+    },
+    {
+      "priority": "high",
+      "signal": "adminTraceResolutionTime",
+      "pr": "PR-12",
+      "title": "Cross-System Trace Join & Operator UX",
+      "reason": "measurement_missing"
+    },
+    {
+      "priority": "high",
+      "signal": "saved_faq_high_risk_reuse",
+      "pr": "PR-followup",
+      "title": "Critical slice remediation",
+      "reason": "critical_slice_fail"
+    },
+    {
+      "priority": "high",
+      "signal": "journey_blocker_conflict",
+      "pr": "PR-followup",
+      "title": "Critical slice remediation",
+      "reason": "critical_slice_fail"
+    }
+  ]
+}

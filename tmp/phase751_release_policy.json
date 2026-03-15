@@ -1,0 +1,496 @@
+{
+  "ok": true,
+  "generatedAt": "2026-03-15T03:56:47.330Z",
+  "baselinePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase751_baseline_scorecard.json",
+  "candidatePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase751_candidate_scorecard.json",
+  "mustPassPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase751_must_pass.json",
+  "releaseGatePolicy": {
+    "overallImprovementRequired": true,
+    "hardGateNoRegression": true,
+    "factualitySafetyPrivacyNoRegression": true,
+    "continuityImprovementRequired": true,
+    "repetitionImprovementRequired": true,
+    "japaneseServiceImprovementRequired": true,
+    "lineNativeImprovementRequired": true,
+    "minorityCriticalRegressionForbidden": true,
+    "mustPassFixturesRequired": true,
+    "allSlicesPassRequired": false,
+    "strictRuntimeSignalsRequired": false,
+    "compatGovernanceRequired": false,
+    "liveRuntimeAuditRequired": false,
+    "noGoGateMandatoryRequired": false,
+    "maxCompatShare": 0.15,
+    "softFloorRequired": false,
+    "softFloorValue": 0.8
+  },
+  "noRegressionPolicy": {
+    "mustHold": [
+      "factuality_grounding",
+      "safety_compliance_privacy",
+      "conversation_continuity",
+      "repetition_loop_avoidance",
+      "japanese_service_quality",
+      "line_native_fit",
+      "minority_persona_robustness"
+    ],
+    "criticalSlices": [
+      "short_followup",
+      "domain_continuation",
+      "group_chat",
+      "japanese_service_quality",
+      "minority_personas",
+      "cultural_slices"
+    ]
+  },
+  "baselineOverallScore": 76.45,
+  "candidateOverallScore": 91.99,
+  "keyDimensions": [
+    {
+      "key": "factuality_grounding",
+      "baseline": 0.84,
+      "candidate": 0.87,
+      "pass": true
+    },
+    {
+      "key": "safety_compliance_privacy",
+      "baseline": 0.95,
+      "candidate": 0.95,
+      "pass": true
+    },
+    {
+      "key": "conversation_continuity",
+      "baseline": 0.52,
+      "candidate": 0.72,
+      "pass": true
+    },
+    {
+      "key": "repetition_loop_avoidance",
+      "baseline": 0.41,
+      "candidate": 0.85,
+      "pass": true
+    },
+    {
+      "key": "japanese_service_quality",
+      "baseline": 0.58,
+      "candidate": 0.83,
+      "pass": true
+    },
+    {
+      "key": "line_native_fit",
+      "baseline": 0.6,
+      "candidate": 0.83,
+      "pass": true
+    },
+    {
+      "key": "minority_persona_robustness",
+      "baseline": 0.55,
+      "candidate": 0.84,
+      "pass": true
+    }
+  ],
+  "criticalSlices": [
+    {
+      "sliceKey": "short_followup",
+      "baseline": 0.46,
+      "candidate": 0.78,
+      "pass": true
+    },
+    {
+      "sliceKey": "domain_continuation",
+      "baseline": 0.49,
+      "candidate": 0.75,
+      "pass": true
+    },
+    {
+      "sliceKey": "group_chat",
+      "baseline": 0.68,
+      "candidate": 0.77,
+      "pass": true
+    },
+    {
+      "sliceKey": "japanese_service_quality",
+      "baseline": 0.56,
+      "candidate": 0.77,
+      "pass": true
+    },
+    {
+      "sliceKey": "minority_personas",
+      "baseline": 0.54,
+      "candidate": 0.77,
+      "pass": true
+    },
+    {
+      "sliceKey": "cultural_slices",
+      "baseline": 0.57,
+      "candidate": 0.75,
+      "pass": true
+    }
+  ],
+  "softFloorChecks": [
+    {
+      "key": "procedural_utility",
+      "score": 0.75,
+      "pass": false
+    },
+    {
+      "key": "next_step_clarity",
+      "score": 0.74,
+      "pass": false
+    },
+    {
+      "key": "conversation_continuity",
+      "score": 0.72,
+      "pass": false
+    },
+    {
+      "key": "clarification_quality",
+      "score": 0.72,
+      "pass": false
+    },
+    {
+      "key": "direct_answer_first",
+      "score": 0.74,
+      "pass": false
+    },
+    {
+      "key": "japanese_naturalness",
+      "score": 0.78,
+      "pass": false
+    },
+    {
+      "key": "keigo_distance",
+      "score": 0.74,
+      "pass": false
+    },
+    {
+      "key": "empathy",
+      "score": 0.73,
+      "pass": false
+    },
+    {
+      "key": "misunderstanding_recovery",
+      "score": 0.71,
+      "pass": false
+    },
+    {
+      "key": "latency_surface_efficiency",
+      "score": 0.73,
+      "pass": false
+    }
+  ],
+  "allSlices": [
+    {
+      "sliceKey": "paid",
+      "baseline": 0.63,
+      "candidate": 0.77,
+      "pass": true
+    },
+    {
+      "sliceKey": "free",
+      "baseline": 0.66,
+      "candidate": 0.76,
+      "pass": true
+    },
+    {
+      "sliceKey": "admin",
+      "baseline": 0.71,
+      "candidate": 0.78,
+      "pass": true
+    },
+    {
+      "sliceKey": "compat",
+      "baseline": 0.62,
+      "candidate": 0.75,
+      "pass": true
+    },
+    {
+      "sliceKey": "short_followup",
+      "baseline": 0.46,
+      "candidate": 0.78,
+      "pass": true
+    },
+    {
+      "sliceKey": "domain_continuation",
+      "baseline": 0.49,
+      "candidate": 0.75,
+      "pass": true
+    },
+    {
+      "sliceKey": "group_chat",
+      "baseline": 0.68,
+      "candidate": 0.77,
+      "pass": true
+    },
+    {
+      "sliceKey": "japanese_service_quality",
+      "baseline": 0.56,
+      "candidate": 0.77,
+      "pass": true
+    },
+    {
+      "sliceKey": "minority_personas",
+      "baseline": 0.54,
+      "candidate": 0.77,
+      "pass": true
+    },
+    {
+      "sliceKey": "cultural_slices",
+      "baseline": 0.57,
+      "candidate": 0.75,
+      "pass": true
+    }
+  ],
+  "summaryPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/llm_usage_summary.json",
+  "runtimeSignals": {
+    "defaultCasualRate": 0.012,
+    "legacyTemplateHitRate": 0.003,
+    "followupQuestionIncludedRate": 0.84,
+    "conciseModeAppliedRate": 0.9,
+    "retrieveNeededRate": 0.2,
+    "avgActionCount": 1.7,
+    "directAnswerMissRate": 0.06999999999999995,
+    "avgRepeatRiskScore": 0.09
+  },
+  "runtimeSignalCoverage": {
+    "requiredKeys": [
+      "legacyTemplateHitRate",
+      "defaultCasualRate",
+      "followupQuestionIncludedRate",
+      "conciseModeAppliedRate",
+      "retrieveNeededRate",
+      "avgActionCount",
+      "directAnswerAppliedRate",
+      "avgRepeatRiskScore"
+    ],
+    "availableKeys": [
+      "legacyTemplateHitRate",
+      "defaultCasualRate",
+      "followupQuestionIncludedRate",
+      "conciseModeAppliedRate",
+      "retrieveNeededRate",
+      "avgActionCount",
+      "directAnswerAppliedRate",
+      "avgRepeatRiskScore"
+    ],
+    "missingKeys": []
+  },
+  "qualityLoopV2": {
+    "version": "v2-foundation",
+    "rolloutStage": "nogo_gate_mandatory",
+    "nogoGateMandatoryActive": true,
+    "crossSystemPriorityOrder": [
+      "Emergency",
+      "Legal / Consent",
+      "Task Blocker",
+      "Journey State",
+      "City Pack / Source Refs / Local Guidance",
+      "Saved FAQ",
+      "Generic LLM reasoning"
+    ],
+    "criticalSliceKeys": [
+      "emergency_high_risk",
+      "saved_faq_high_risk_reuse",
+      "journey_blocker_conflict",
+      "stale_city_pack_required_source",
+      "compat_spike",
+      "trace_join_incomplete",
+      "direct_url_leakage",
+      "official_source_missing_on_high_risk"
+    ],
+    "criticalSlices": [
+      {
+        "sliceKey": "emergency_high_risk",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "emergencyOfficialSourceRate"
+      },
+      {
+        "sliceKey": "saved_faq_high_risk_reuse",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "savedFaqReusePassRate"
+      },
+      {
+        "sliceKey": "journey_blocker_conflict",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "taskBlockerConflictRate"
+      },
+      {
+        "sliceKey": "stale_city_pack_required_source",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "staleSourceBlockRate"
+      },
+      {
+        "sliceKey": "compat_spike",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "compatShareWindow"
+      },
+      {
+        "sliceKey": "trace_join_incomplete",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "traceJoinCompleteness"
+      },
+      {
+        "sliceKey": "direct_url_leakage",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "directUrlLeakage"
+      },
+      {
+        "sliceKey": "official_source_missing_on_high_risk",
+        "status": "pass",
+        "blocked": false,
+        "sourceMetric": "officialSourceUsageRateHighRisk"
+      }
+    ],
+    "criticalSliceFailCount": 0,
+    "integrationKpis": {
+      "cityPackGroundingRate": {
+        "key": "cityPackGroundingRate",
+        "status": "pass",
+        "value": 0.94,
+        "sampleCount": 20
+      },
+      "staleSourceBlockRate": {
+        "key": "staleSourceBlockRate",
+        "status": "pass",
+        "value": 0.97,
+        "sampleCount": 20
+      },
+      "emergencyOfficialSourceRate": {
+        "key": "emergencyOfficialSourceRate",
+        "status": "pass",
+        "value": 1,
+        "sampleCount": 6
+      },
+      "emergencyOverrideAppliedRate": {
+        "key": "emergencyOverrideAppliedRate",
+        "status": "pass",
+        "value": 0.22,
+        "sampleCount": 6
+      },
+      "journeyAlignedActionRate": {
+        "key": "journeyAlignedActionRate",
+        "status": "pass",
+        "value": 0.91,
+        "sampleCount": 18
+      },
+      "taskBlockerConflictRate": {
+        "key": "taskBlockerConflictRate",
+        "status": "pass",
+        "value": 0.01,
+        "sampleCount": 18
+      },
+      "savedFaqReusePassRate": {
+        "key": "savedFaqReusePassRate",
+        "status": "pass",
+        "value": 0.96,
+        "sampleCount": 10
+      },
+      "crossSystemConflictRate": {
+        "key": "crossSystemConflictRate",
+        "status": "pass",
+        "value": 0.02,
+        "sampleCount": 20
+      },
+      "traceJoinCompleteness": {
+        "key": "traceJoinCompleteness",
+        "status": "pass",
+        "value": 1,
+        "sampleCount": 10
+      },
+      "adminTraceResolutionTime": {
+        "key": "adminTraceResolutionTime",
+        "status": "pass",
+        "value": 600000,
+        "sampleCount": 10
+      },
+      "officialSourceUsageRateHighRisk": {
+        "key": "officialSourceUsageRateHighRisk",
+        "status": "pass",
+        "value": 0.97,
+        "sampleCount": 10
+      },
+      "compatShareWindow": {
+        "key": "compatShareWindow",
+        "status": "pass",
+        "value": 0.04,
+        "sampleCount": 10
+      },
+      "directUrlLeakage": {
+        "key": "directUrlLeakage",
+        "status": "pass",
+        "value": 0,
+        "sampleCount": 10
+      }
+    },
+    "readinessV2": {
+      "sampleCount": 10,
+      "versionObserved": "v2",
+      "decisionBreakdown": [
+        {
+          "decision": "allow",
+          "count": 8
+        },
+        {
+          "decision": "clarify",
+          "count": 2
+        }
+      ],
+      "modeBreakdown": [
+        {
+          "mode": "hard_enforced_v2",
+          "count": 10
+        }
+      ],
+      "stageBreakdown": [
+        {
+          "stage": "nogo_gate_mandatory",
+          "count": 10
+        }
+      ],
+      "hardEnforcedCount": 10,
+      "softEnforcedCount": 0,
+      "logOnlyCount": 0,
+      "nogoGateMandatoryCount": 10
+    },
+    "missingJoins": [],
+    "reservations": [
+      "judge_disagreement_queue",
+      "integration_counterexample_registry",
+      "replay_slice_registry",
+      "saved_faq_retirement_review",
+      "emergency_override_review_queue",
+      "city_pack_freshness_recertification_report"
+    ]
+  },
+  "improvementLoop": null,
+  "runtimeSummarySource": null,
+  "compatGovernance": {
+    "required": false,
+    "maxCompatShare": 0.15,
+    "compatShareWindow": 0.04
+  },
+  "mustPassSummary": {
+    "ok": true,
+    "failureCount": 0,
+    "criticalFailureCount": 0
+  },
+  "failures": [],
+  "warnings": [
+    "soft_floor_warning:procedural_utility",
+    "soft_floor_warning:next_step_clarity",
+    "soft_floor_warning:conversation_continuity",
+    "soft_floor_warning:clarification_quality",
+    "soft_floor_warning:direct_answer_first",
+    "soft_floor_warning:japanese_naturalness",
+    "soft_floor_warning:keigo_distance",
+    "soft_floor_warning:empathy",
+    "soft_floor_warning:misunderstanding_recovery",
+    "soft_floor_warning:latency_surface_efficiency"
+  ]
+}

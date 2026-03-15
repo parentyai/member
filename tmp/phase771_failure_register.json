@@ -1,0 +1,34 @@
+{
+  "registerVersion": "v1",
+  "updatedAt": "2026-03-15T03:56:48.935Z",
+  "source": {
+    "reportPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase771_quality_report.json",
+    "gatePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tmp/phase771_quality_gate.json"
+  },
+  "policy": {
+    "maxHistory": 30,
+    "perCategoryLimit": 10
+  },
+  "latest": {
+    "id": "failure_snapshot_2026-03-15T03:56:48.892Z",
+    "generatedAt": "2026-03-15T03:56:48.892Z",
+    "overallQualityScore": 0,
+    "hardGateFailures": [],
+    "gateFailures": [],
+    "entryCount": 0,
+    "entries": [],
+    "fingerprint": "1bfca36e9f86e07f53a23fffaeb65b4b92129c47a4a9da425dff4c2b9e09bb42"
+  },
+  "history": [
+    {
+      "id": "failure_snapshot_2026-03-15T03:56:48.892Z",
+      "generatedAt": "2026-03-15T03:56:48.892Z",
+      "overallQualityScore": 0,
+      "hardGateFailures": [],
+      "gateFailures": [],
+      "entryCount": 0,
+      "entries": [],
+      "fingerprint": "1bfca36e9f86e07f53a23fffaeb65b4b92129c47a4a9da425dff4c2b9e09bb42"
+    }
+  ]
+}

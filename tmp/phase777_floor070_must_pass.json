@@ -1,0 +1,87 @@
+{
+  "ok": true,
+  "generatedAt": "2026-03-15T03:56:49.740Z",
+  "fixtureListPath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tools/llm_quality/fixtures/must_pass_fixture_list.v1.json",
+  "baselinePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tools/llm_quality/fixtures/baseline_metrics.v1.json",
+  "candidatePath": "/Volumes/Arumamihs/Member-quality-patrol-prG-T001/tools/llm_quality/fixtures/candidate_metrics.v1.json",
+  "requiredFixtures": [
+    "paid_golden_eval",
+    "replay_arena",
+    "slice:short_followup",
+    "slice:domain_continuation",
+    "slice:group_chat",
+    "slice:japanese_service_quality",
+    "slice:minority_personas",
+    "slice:cultural_slices"
+  ],
+  "checks": [
+    {
+      "fixture": "paid_golden_eval",
+      "pass": true,
+      "critical": true,
+      "reason": null
+    },
+    {
+      "fixture": "replay_arena",
+      "pass": true,
+      "critical": true,
+      "reason": null
+    },
+    {
+      "fixture": "slice:short_followup",
+      "pass": true,
+      "critical": true,
+      "baselineScore": 0.46,
+      "candidateScore": 0.78,
+      "candidateStatus": "pass",
+      "reason": null
+    },
+    {
+      "fixture": "slice:domain_continuation",
+      "pass": true,
+      "critical": true,
+      "baselineScore": 0.49,
+      "candidateScore": 0.75,
+      "candidateStatus": "pass",
+      "reason": null
+    },
+    {
+      "fixture": "slice:japanese_service_quality",
+      "pass": true,
+      "critical": true,
+      "baselineScore": 0.56,
+      "candidateScore": 0.77,
+      "candidateStatus": "pass",
+      "reason": null
+    },
+    {
+      "fixture": "slice:minority_personas",
+      "pass": true,
+      "critical": true,
+      "baselineScore": 0.54,
+      "candidateScore": 0.77,
+      "candidateStatus": "pass",
+      "reason": null
+    },
+    {
+      "fixture": "slice:cultural_slices",
+      "pass": true,
+      "critical": true,
+      "baselineScore": 0.57,
+      "candidateScore": 0.75,
+      "candidateStatus": "pass",
+      "reason": null
+    },
+    {
+      "fixture": "slice:group_chat",
+      "pass": true,
+      "critical": true,
+      "baselineScore": 0.68,
+      "candidateScore": 0.77,
+      "candidateStatus": "pass",
+      "reason": null
+    }
+  ],
+  "failureCount": 0,
+  "criticalFailureCount": 0
+}

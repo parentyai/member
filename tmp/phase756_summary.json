@@ -1,0 +1,14 @@
+{
+  "summary": {
+    "conversationQuality": {
+      "legacyTemplateHitRate": 0.003,
+      "defaultCasualRate": 0.12,
+      "followupQuestionIncludedRate": 0.1,
+      "conciseModeAppliedRate": 0.08,
+      "retrieveNeededRate": 0.2,
+      "avgActionCount": 2.6,
+      "directAnswerAppliedRate": 0.85,
+      "avgRepeatRiskScore": 0.62
+    }
+  }
+}
