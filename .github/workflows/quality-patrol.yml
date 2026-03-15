@@ -1,0 +1,96 @@
+name: Quality Patrol cycle
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
+  GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+  DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
+  LLM_FEATURE_FLAG: ${{ vars.LLM_FEATURE_FLAG }}
+  OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+  ENABLE_PAID_ORCHESTRATOR_V2: ${{ vars.ENABLE_PAID_ORCHESTRATOR_V2 }}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  quality-patrol:
+    runs-on: ubuntu-latest
+    environment: stg
+    concurrency:
+      group: quality-patrol-cycle
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Auth (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: access_token
+          create_credentials_file: true
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.FIRESTORE_PROJECT_ID || env.GCP_PROJECT_ID }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Normalize patrol environment
+        run: |
+          set -euo pipefail
+          PROJECT_ID="${FIRESTORE_PROJECT_ID:-$GCP_PROJECT_ID}"
+          if [ -z "$PROJECT_ID" ]; then
+            echo "::error title=Missing workflow variable::FIRESTORE_PROJECT_ID or GCP_PROJECT_ID must be set"
+            exit 1
+          fi
+          echo "FIRESTORE_PROJECT_ID=$PROJECT_ID" >> "$GITHUB_ENV"
+          echo "SERVICE_MODE=member" >> "$GITHUB_ENV"
+          echo "ENABLE_V1_OPENAI_RESPONSES=true" >> "$GITHUB_ENV"
+          echo "LLM_FEATURE_FLAG=${LLM_FEATURE_FLAG:-true}" >> "$GITHUB_ENV"
+          echo "OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}" >> "$GITHUB_ENV"
+          echo "ENABLE_PAID_ORCHESTRATOR_V2=${ENABLE_PAID_ORCHESTRATOR_V2:-true}" >> "$GITHUB_ENV"
+
+      - name: Resolve OPENAI_API_KEY
+        env:
+          GH_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "${GH_OPENAI_API_KEY:-}" ]; then
+            echo "::add-mask::$GH_OPENAI_API_KEY"
+            echo "OPENAI_API_KEY=$GH_OPENAI_API_KEY" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          TOKEN="$(gcloud secrets versions access latest --secret=OPENAI_API_KEY --project "${GCP_PROJECT_ID:-$FIRESTORE_PROJECT_ID}" | tr -d '\r')"
+          if [ -z "$TOKEN" ]; then
+            echo "::error title=Secret read failed::OPENAI_API_KEY is empty"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "OPENAI_API_KEY=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run quality patrol cycle
+        run: npm run quality-patrol:cycle
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-patrol-cycle-${{ github.run_id }}
+          path: /tmp/quality_patrol_cycle_*.json
+          if-no-files-found: error

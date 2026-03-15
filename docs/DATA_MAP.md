@@ -155,7 +155,7 @@ Notes:
 - observation-gap-led plans stay in observation-only families until evidence quality improves.
 
 ### Quality Patrol query responses (derived, read-only)
-Purpose: expose read-only operator/human query views over the quality patrol foundations without adding a scheduler artifact yet.
+Purpose: expose read-only operator/human query views over the quality patrol foundations without changing the route contract when scheduler artifacts are added.
 
 Typical fields:
 - `queryVersion`, `generatedAt`, `audience`
@@ -177,7 +177,7 @@ Notes:
 - PR-9 admin UI consumes the same route in `pane-quality-patrol` with `mode` and `audience` selectors; no additional write path is introduced.
 
 ### Quality Patrol job artifacts (derived, filesystem, read-only by default)
-Purpose: allow manual or cron-friendly patrol runs to materialize stable JSON artifacts without introducing a scheduler service yet.
+Purpose: allow manual or scheduled patrol runs to materialize stable JSON artifacts without changing runtime, Firestore collection meaning, or query route shape.
 
 Typical files:
 - `/tmp/quality_patrol_latest.json`
@@ -186,6 +186,12 @@ Typical files:
 - `/tmp/quality_patrol_planning.json`
 - `/tmp/quality_patrol_replay_result.json`
 - `/tmp/quality_patrol_postmerge_verify.json`
+- `/tmp/quality_patrol_cycle_replay.json`
+- `/tmp/quality_patrol_cycle_metrics.json`
+- `/tmp/quality_patrol_cycle_latest.json`
+- `/tmp/quality_patrol_cycle_operator.json`
+- `/tmp/quality_patrol_cycle_human.json`
+- `/tmp/quality_patrol_cycle_verify.json`
 
 Typical fields:
 - `summary`, `issues[]`, `observationBlockers[]`, `evidence[]`, `traceRefs[]`, `recommendedPr[]`
@@ -205,6 +211,7 @@ Typical fields:
 
 Notes:
 - PR-10 jobs are CLI first and read-only by default.
+- PR-11 adds `tools/quality_patrol/run_quality_patrol_cycle.js` and `.github/workflows/quality-patrol.yml` for hourly observation automation.
 - `--write-issues` and `--write-backlog` are explicit opt-in flags.
 - no new Firestore collection is introduced for these artifacts in PR-10.
 - operator/human query evidence may also expose `quality_patrol_decay_ops_gate` summaries; these remain derived and are not persisted.
