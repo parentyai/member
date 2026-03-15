@@ -175,6 +175,26 @@ function serializeDecayAwareReadiness(decayAwareReadiness, audience, rows, seen)
   });
 }
 
+function serializeDecayAwareOpsGate(decayAwareOpsGate, audience, rows, seen) {
+  const payload = decayAwareOpsGate && typeof decayAwareOpsGate === 'object' ? decayAwareOpsGate : null;
+  if (!payload) return;
+  const summary = audience === 'human'
+    ? (payload.decision === 'GO'
+      ? '最近と全体の観測が安定し、readiness の再判定候補です。'
+      : (payload.decision === 'OBSERVATION_CONTINUE'
+        ? '最近の観測は安定しており、過去期間の負債が減っているため、もう少し観測を続けます。'
+        : (payload.decisionReasonCode === 'historical_backlog_dominant'
+          ? '最近の観測は安定していますが、過去期間の負債が残るため、いまは readiness を見送ります。'
+          : '最近の観測でも現在の応答経路または結合証跡に不足があるため、いまは readiness を見送ります。')))
+    : `decayAwareOpsGate decision=${payload.decision} reason=${payload.decisionReasonCode} operatorAction=${payload.operatorAction} recent=${payload.recentWindowStatus} historical=${payload.historicalBacklogStatus} overall=${payload.overallReadinessStatus} prD=${payload.prDStatus}:${payload.prDReasonCode}`;
+  pushEvidence(rows, seen, {
+    kind: 'summary',
+    summary,
+    provenance: 'quality_patrol_decay_ops_gate',
+    traceId: null
+  });
+}
+
 function serializePatrolEvidence(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const audience = resolveAudienceView(payload.audience);
@@ -183,6 +203,7 @@ function serializePatrolEvidence(params) {
   const seen = new Set();
 
   serializeDecayAwareReadiness(payload.decayAwareReadiness, audience, rows, seen);
+  serializeDecayAwareOpsGate(payload.decayAwareOpsGate, audience, rows, seen);
   serializeJoinDiagnostics(payload.joinDiagnostics, audience, rows, seen);
   serializeMetricEvidence(payload.metrics, audience, rows, seen);
   serializeTranscriptCoverageEvidence(payload.transcriptCoverage, audience, rows, seen);

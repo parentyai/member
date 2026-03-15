@@ -45,6 +45,13 @@
   - `deltaFromPreviousFullWindow`
   - `historicalDebt`
   - `currentRuntimeHealth`
+- decay-aware ops gate surfaces may expose:
+  - `decision` (`GO` / `NO_GO` / `OBSERVATION_CONTINUE`)
+  - `decisionReasonCode`
+  - `operatorAction`
+  - `prDEligible`
+  - `prDStatus`
+  - `prDReasonCode`
 - `snapshotInputDiagnostics` may include:
   - `assistantReplyPresent`
   - `assistantReplyLength`
@@ -60,4 +67,13 @@
   - recent unhealthy => `current_runtime_or_current_join_problem`
   - recent healthy + full improving => `observation_continue_backlog_decay`
   - recent healthy + full healthy => `readiness_candidate`
+- decay-aware ops gate maps those statuses into operator actions:
+  - `current_runtime_or_current_join_problem` => `NO_GO`, repair current runtime or current join path first
+  - `historical_backlog_dominant` => `NO_GO`, treat the gap as historical debt and keep PR-D deferred
+  - `observation_continue_backlog_decay` => `OBSERVATION_CONTINUE`
+  - `readiness_candidate` => `GO`
+- PR-D is allowed only when:
+  - `currentRuntimeHealth.status = healthy`
+  - `historicalBacklogStatus = cleared`
+  - `overallReadinessStatus = readiness_candidate`
 - transcript coverage diagnostics do not widen retention and do not persist raw transcript text.

@@ -53,6 +53,7 @@ function buildPatrolQueryResponse(params) {
     metrics: payload.metrics,
     transcriptCoverage: payload.transcriptCoverage,
     decayAwareReadiness: payload.decayAwareReadiness,
+    decayAwareOpsGate: payload.decayAwareOpsGate,
     issues: payload.issues,
     rootCauseReports: payload.rootCauseReports,
     joinDiagnostics: payload.joinDiagnostics

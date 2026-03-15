@@ -15,6 +15,7 @@ const { listOpenIssues } = require('../../src/usecases/qualityPatrol/listOpenIss
 const { listTopPriorityBacklog } = require('../../src/usecases/qualityPatrol/listTopPriorityBacklog');
 const { buildPatrolQueryResponse } = require('../../src/domain/qualityPatrol/query/buildPatrolQueryResponse');
 const { createEmptyDecayAwareReadiness } = require('../../src/domain/qualityPatrol/buildDecayAwareReadiness');
+const { createEmptyDecayAwareOpsGate } = require('../../src/domain/qualityPatrol/buildDecayAwareOpsGate');
 
 const MAIN_ARTIFACT_VERSION = 'quality_patrol_job_v1';
 const METRICS_ARTIFACT_VERSION = 'quality_patrol_metrics_job_v1';
@@ -198,6 +199,7 @@ function createEmptyKpiResult() {
       sourceCollections: ['llm_action_logs']
     },
     decayAwareReadiness: createEmptyDecayAwareReadiness(),
+    decayAwareOpsGate: createEmptyDecayAwareOpsGate(),
     observationBlockers: [],
     provenance: 'review_unit_evaluator',
     sourceCollections: []
@@ -287,6 +289,7 @@ function buildFallbackQueryArtifact(payload) {
     metrics: Object.assign({}, payload.kpiResult.metrics || {}, payload.kpiResult.issueCandidateMetrics || {}),
     transcriptCoverage: payload.kpiResult.transcriptCoverage || null,
     decayAwareReadiness: payload.kpiResult.decayAwareReadiness || null,
+    decayAwareOpsGate: payload.kpiResult.decayAwareOpsGate || null,
     kpiSummary: payload.kpiResult.summary || null,
     issues: payload.detectionResult.issueCandidates || [],
     rootCauseReports: payload.rootCauseResult.rootCauseReports || [],
@@ -308,6 +311,7 @@ function buildMainArtifact(job) {
     analysisStatus: summarizeAnalysisStatus(job.rootCauseResult),
     transcriptCoverage: job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage,
     decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
+    decayAwareOpsGate: job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate(),
     provenance: JOB_PROVENANCE,
     sourceWindow: job.sourceWindow,
     runtimeFetchStatus: job.runtimeFetchStatus,
@@ -326,6 +330,7 @@ function buildMetricsArtifact(job) {
     issueCandidateMetrics: job.kpiResult.issueCandidateMetrics || {},
     transcriptCoverage: job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage,
     decayAwareReadiness: job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness(),
+    decayAwareOpsGate: job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate(),
     observationBlockers: job.kpiResult.observationBlockers || [],
     provenance: 'quality_patrol_job_metrics',
     sourceCollections: job.kpiResult.sourceCollections || [],
