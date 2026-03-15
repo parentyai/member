@@ -138,6 +138,7 @@ async function queryLatestPatrolInsights(params, deps) {
     metrics: kpiResult && kpiResult.metrics ? Object.assign({}, kpiResult.metrics, kpiResult.issueCandidateMetrics || {}) : {},
     transcriptCoverage: kpiResult && kpiResult.transcriptCoverage ? kpiResult.transcriptCoverage : null,
     decayAwareReadiness: kpiResult && kpiResult.decayAwareReadiness ? kpiResult.decayAwareReadiness : null,
+    decayAwareOpsGate: kpiResult && kpiResult.decayAwareOpsGate ? kpiResult.decayAwareOpsGate : null,
     kpiSummary: kpiResult && kpiResult.summary ? kpiResult.summary : null,
     issues: detectionResult && Array.isArray(detectionResult.issueCandidates) ? detectionResult.issueCandidates : [],
     rootCauseReports: rootCauseResult && Array.isArray(rootCauseResult.rootCauseReports) ? rootCauseResult.rootCauseReports : [],

@@ -35,6 +35,7 @@
   - add-only precision fields: `code`, `category`, `evidenceSource`, `privacySensitivity`, `detailVisibility`
 - `evidence[]` includes read-only metric/signal/trace/snapshot/summary references
 - `evidence[]` may include decay-aware readiness summaries that separate recent runtime health from historical backlog debt without changing the top-level response shape
+- `evidence[]` may include decay-aware ops gate summaries that convert recent/full/overall facts into `GO` / `NO_GO` / `OBSERVATION_CONTINUE` without changing the top-level response shape
 - `traceRefs[]` may be returned for operator audience only
 - `recommendedPr[]` includes proposal priority, objective, risk, and blockers
 - `observationStatus` remains `ready`, `blocked`, `insufficient_evidence`, or `unavailable`
@@ -51,6 +52,19 @@
 - decay-aware readiness evidence keeps the same audience split:
   - operator: recent/full window counts, delta, and backlog-vs-runtime status
   - human: compact explanation that current runtime health and historical backlog are separated, without raw internal taxonomy strings
+- decay-aware ops gate evidence keeps the same audience split:
+  - operator: `decision`, `decisionReasonCode`, `operatorAction`, and `prDStatus`
+  - human: compact readiness explanation only, without internal rule codes
+- operator action rule:
+  - `decision=NO_GO` and `decisionReasonCode=current_runtime_or_current_join_problem` => fix runtime or current join path
+  - `decision=NO_GO` and `decisionReasonCode=historical_backlog_dominant` => treat as historical debt and keep PR-D deferred
+  - `decision=OBSERVATION_CONTINUE` => continue backlog decay observation
+  - `decision=GO` => readiness review may proceed
+- PR-D condition:
+  - `currentRuntimeHealth=healthy`
+  - `historicalBacklogStatus=cleared`
+  - `overallReadinessStatus=readiness_candidate`
+  - no non-copy blocker remains in the overall gate
 
 ## Security and privacy
 - route is under `/api/admin/*` and therefore inherits admin token protection from the protection matrix.

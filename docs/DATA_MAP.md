@@ -108,6 +108,7 @@ Typical fields:
 - `decayAwareReadiness.recentWindowStatus`, `historicalBacklogStatus`, `overallReadinessStatus`
 - `decayAwareReadiness.recentWindow`, `fullWindow`, `previousFullWindow`, `deltaFromPreviousFullWindow`
 - `decayAwareReadiness.historicalDebt`, `currentRuntimeHealth`
+- `decayAwareOpsGate.decision`, `decisionReasonCode`, `operatorAction`, `prDEligible`, `prDStatus`, `prDReasonCode`
 - `observationBlockers`, `provenance`, `sourceCollections`
 
 Notes:
@@ -184,12 +185,14 @@ Typical fields:
 - `mode`, `audience`, `generatedAt`
 - `planningStatus`, `analysisStatus`, `observationStatus`
 - `decayAwareReadiness`
+- `decayAwareOpsGate`
 - `runtimeFetchStatus`, `writeStatus`, `sourceWindow`, `sourceCollections`
 
 Notes:
 - PR-10 jobs are CLI first and read-only by default.
 - `--write-issues` and `--write-backlog` are explicit opt-in flags.
 - no new Firestore collection is introduced for these artifacts in PR-10.
+- operator/human query evidence may also expose `quality_patrol_decay_ops_gate` summaries; these remain derived and are not persisted.
 
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.

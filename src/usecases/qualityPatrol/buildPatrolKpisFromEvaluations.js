@@ -16,6 +16,9 @@ const {
   buildWindowSnapshot,
   buildDecayAwareReadiness
 } = require('../../domain/qualityPatrol/buildDecayAwareReadiness');
+const {
+  buildDecayAwareOpsGate
+} = require('../../domain/qualityPatrol/buildDecayAwareOpsGate');
 
 function hasWindow(sourceWindow) {
   return Boolean(sourceWindow && sourceWindow.fromAt && sourceWindow.toAt);
@@ -142,12 +145,14 @@ async function buildPatrolKpisFromEvaluations(params, deps) {
     fullWindow,
     previousFullWindow
   });
+  const decayAwareOpsGate = buildDecayAwareOpsGate(decayAwareReadiness);
 
   return Object.assign({
     ok: true,
     sourceWindow
   }, result, {
     decayAwareReadiness,
+    decayAwareOpsGate,
     sourceCollections: Array.from(new Set([].concat(sourceCollections, result.sourceCollections).filter(Boolean)))
   });
 }
