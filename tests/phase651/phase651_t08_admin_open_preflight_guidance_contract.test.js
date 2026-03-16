@@ -4,7 +4,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { test } = require('node:test');
 
-const { buildAdminOpenPreflightAdvice } = require('../../tools/admin_open');
+const {
+  buildAdminOpenPreflightAdvice,
+  shouldAbortAdminOpenFromPreflightAdvice,
+  formatBlockingAdminOpenPreflightMessage
+} = require('../../tools/admin_open');
 const { runLocalPreflight } = require('../../tools/admin_local_preflight');
 
 test('phase651: preflight summary exposes operator branch/hint for SA key required', async () => {
@@ -48,10 +52,31 @@ test('phase651: admin_open guidance maps ADC reauth and provides actionable next
   assert.equal(advice.nextCommand, 'npm run admin:preflight');
 });
 
+test('phase651: admin_open treats FIRESTORE_SDK_MISSING as blocking and prints recovery command', () => {
+  const advice = buildAdminOpenPreflightAdvice({
+    ready: false,
+    summary: {
+      code: 'FIRESTORE_SDK_MISSING',
+      cause: 'firebase-admin 依存が見つかりません。',
+      action: '依存関係を復旧（npm ci）してから再診断してください。',
+      recoveryCommands: [
+        'npm ci',
+        'npm run admin:preflight'
+      ]
+    }
+  });
+
+  assert.equal(shouldAbortAdminOpenFromPreflightAdvice(advice), true);
+  assert.match(formatBlockingAdminOpenPreflightMessage(advice), /admin:open を中止しました。/);
+  assert.match(formatBlockingAdminOpenPreflightMessage(advice), /npm ci/);
+});
+
 test('phase651: admin_open source keeps unified preflight and operator-friendly failure guidance logs', () => {
   const src = fs.readFileSync('tools/admin_open.js', 'utf8');
   assert.ok(src.includes('[admin:open] preflight.${label} code='));
   assert.ok(src.includes('token copy failed ('));
   assert.ok(src.includes('existing server health check failed ('));
   assert.ok(src.includes('buildAdminOpenPreflightAdvice'));
+  assert.ok(src.includes('shouldAbortAdminOpenFromPreflightAdvice'));
+  assert.ok(src.includes('formatBlockingAdminOpenPreflightMessage'));
 });

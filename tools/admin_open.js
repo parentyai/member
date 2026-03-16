@@ -468,6 +468,21 @@ function buildAdminOpenPreflightAdvice(preflightResult) {
   };
 }
 
+function shouldAbortAdminOpenFromPreflightAdvice(advice) {
+  const src = advice && typeof advice === 'object' ? advice : {};
+  const code = normalizeCode(src.code || '');
+  return code === 'FIRESTORE_SDK_MISSING';
+}
+
+function formatBlockingAdminOpenPreflightMessage(advice) {
+  const src = advice && typeof advice === 'object' ? advice : {};
+  const parts = ['admin:open を中止しました。'];
+  if (src.cause) parts.push(String(src.cause).trim());
+  if (src.action) parts.push(String(src.action).trim());
+  if (src.nextCommand) parts.push(`次: ${String(src.nextCommand).trim()}`);
+  return parts.filter(Boolean).join(' ');
+}
+
 function printAdminOpenPreflightAdvice(stage, advice, log) {
   const label = String(stage || 'probe').trim() || 'probe';
   const logger = typeof log === 'function'
@@ -520,6 +535,15 @@ async function maybeRepairAdcForLocalReadPath(opts, projectId) {
   const beforeAdvice = buildAdminOpenPreflightAdvice(before);
   printAdminOpenPreflightAdvice('before', beforeAdvice);
   const beforeClassification = resolveProbeClassification(before);
+  if (shouldAbortAdminOpenFromPreflightAdvice(beforeAdvice)) {
+    return {
+      attempted: false,
+      skipped: 'blocking_preflight',
+      blocked: true,
+      beforeClassification,
+      beforeAdvice
+    };
+  }
   if (beforeClassification !== 'ADC_REAUTH_REQUIRED') {
     return { attempted: false, skipped: 'not_required', beforeClassification, beforeAdvice };
   }
@@ -543,6 +567,17 @@ async function maybeRepairAdcForLocalReadPath(opts, projectId) {
   const afterAdvice = buildAdminOpenPreflightAdvice(after);
   printAdminOpenPreflightAdvice('after', afterAdvice);
   const afterClassification = resolveProbeClassification(after);
+  if (shouldAbortAdminOpenFromPreflightAdvice(afterAdvice)) {
+    return {
+      attempted: true,
+      repaired: false,
+      blocked: true,
+      beforeClassification,
+      afterClassification,
+      beforeAdvice,
+      afterAdvice
+    };
+  }
   if (afterClassification === 'ADC_REAUTH_REQUIRED') {
     throw new Error('ADC再認証後も Firestore read-only probe が失敗しています。service account 鍵または権限設定を確認してください。');
   }
@@ -570,6 +605,10 @@ async function main() {
   }
 
   const adcRepair = await maybeRepairAdcForLocalReadPath(opts, project.projectId);
+  if (adcRepair && adcRepair.blocked) {
+    const blockingAdvice = adcRepair.afterAdvice || adcRepair.beforeAdvice || null;
+    throw new Error(formatBlockingAdminOpenPreflightMessage(blockingAdvice));
+  }
 
   const tokenResolved = resolveAdminToken(opts);
   if (!tokenResolved.token) {
@@ -673,6 +712,8 @@ module.exports = {
   maybeRepairAdcForLocalReadPath,
   resolveProbeClassification,
   buildAdminOpenPreflightAdvice,
+  shouldAbortAdminOpenFromPreflightAdvice,
+  formatBlockingAdminOpenPreflightMessage,
   evaluateDashboardHealthPayload,
   evaluateFeatureCatalogHealthPayload
 };
