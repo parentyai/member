@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T22:05:28-04:00",
-  "gitCommit": "8716924d67dfe49f00eefb1de33cfdf20f4aa608",
-  "branch": "codex/admin-ui-pr14-empty-state-reasons",
-  "sourceDigest": "8091845a69ea41cbe4658d38692ee3cafd547cbff7d60f485a6baa1df594c182",
+  "generatedAt": "2026-03-15T22:27:35-04:00",
+  "gitCommit": "7fddbcac6899e9fb1fa1a715b6c8ae15457c9260",
+  "branch": "codex/data-c01-foundation-t001",
+  "sourceDigest": "4ec376bcd8209f396ac96549e9699fa62961e702514d57373ba2964ec4fc26f7",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

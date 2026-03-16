@@ -11,6 +11,7 @@ const {
   clearServerTimestampForTest
 } = require('../../src/infra/firestore');
 const { appendCanonicalCoreOutboxEvent } = require('../../src/repos/firestore/canonicalCoreOutboxRepo');
+const { DEFAULT_CANONICAL_CORE_OUTBOX_CONTRACT_VERSION } = require('../../src/domain/data/canonicalCoreBridge');
 
 function buildEnvelope() {
   return {
@@ -74,7 +75,17 @@ test('phase793: canonical core outbox writes normalized pending event when dual-
     objectId: 'sr_1',
     eventType: 'upsert',
     recordEnvelope: buildEnvelope(),
-    payloadSummary: { lifecycleState: 'approved', lifecycleBucket: 'approved_knowledge', status: 'active' }
+    payloadSummary: { lifecycleState: 'approved', lifecycleBucket: 'approved_knowledge', status: 'active' },
+    canonicalPayload: {
+      canonicalKey: 'source_snapshot:sr_1',
+      sourceId: 'src_registry_1'
+    },
+    sourceLinks: [
+      { sourceId: 'src_registry_1', snapshotRef: 'source_ref:abc123', linkRole: 'supports', primary: true }
+    ],
+    materializationHints: {
+      targetTables: ['source_registry', 'source_snapshot', 'source_snapshot']
+    }
   });
 
   assert.equal(result.skipped, false);
@@ -82,9 +93,14 @@ test('phase793: canonical core outbox writes normalized pending event when dual-
   const collection = db._state.collections.canonical_core_outbox;
   assert.ok(collection);
   const row = collection.docs[result.id].data;
+  assert.equal(row.contractVersion, DEFAULT_CANONICAL_CORE_OUTBOX_CONTRACT_VERSION);
   assert.equal(row.objectType, 'source_snapshot');
   assert.equal(row.objectId, 'sr_1');
   assert.equal(row.eventType, 'upsert');
+  assert.equal(row.canonicalPayload.canonicalKey, 'source_snapshot:sr_1');
+  assert.equal(row.sourceLinks.length, 1);
+  assert.equal(row.sourceLinks[0].primary, true);
+  assert.deepEqual(row.materializationHints.targetTables, ['source_registry', 'source_snapshot']);
   assert.equal(row.sinkStatus, 'pending');
   assert.equal(row.createdAt, 'SERVER_TIMESTAMP');
   assert.equal(row.updatedAt, 'SERVER_TIMESTAMP');
