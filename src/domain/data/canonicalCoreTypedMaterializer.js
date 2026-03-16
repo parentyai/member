@@ -15,6 +15,9 @@ const {
 const {
   materializeGeneratedViewRecordFromEvent
 } = require('./canonicalCoreGeneratedViewMapping');
+const {
+  materializeExceptionPlaybookRecordFromEvent
+} = require('./canonicalCoreExceptionPlaybookMapping');
 
 const SUPPORTED_TARGET_TABLES = new Set([
   'source_registry',
@@ -23,6 +26,7 @@ const SUPPORTED_TARGET_TABLES = new Set([
   'knowledge_object',
   'task_template',
   'rule_set',
+  'exception_playbook',
   'generated_view'
 ]);
 
@@ -247,6 +251,39 @@ function normalizeRuleSetRow(payload) {
     effectiveTo: toIsoString(row.effectiveTo, null),
     reviewerStatus: normalizeText(row.reviewerStatus, 'draft'),
     activeFlag: normalizeBoolean(row.activeFlag, false),
+    publishBundleId: normalizeText(row.publishBundleId, null),
+    metadata: normalizeObject(row.metadata, {})
+  };
+}
+
+function normalizeExceptionPlaybookRow(payload) {
+  const row = payload && typeof payload === 'object' ? payload : {};
+  const exceptionCode = normalizeText(row.exceptionCode, 'compat-exception-playbook');
+  const canonicalKey = normalizeText(row.canonicalKey, `exception_playbook:${exceptionCode}`);
+  const severity = normalizeText(row.severity, 'medium');
+  return {
+    exceptionId: normalizeText(row.exceptionId, buildDeterministicUuid(canonicalKey || exceptionCode)),
+    canonicalKey,
+    exceptionCode,
+    title: normalizeText(row.title, exceptionCode),
+    domain: normalizeText(row.domain, 'ops'),
+    topic: normalizeText(row.topic, 'exception'),
+    countryCode: normalizeText(row.countryCode, 'TBD'),
+    scopeKey: normalizeText(row.scopeKey, 'GLOBAL'),
+    audienceScope: Array.isArray(row.audienceScope) ? row.audienceScope : [],
+    householdScope: Array.isArray(row.householdScope) ? row.householdScope : [],
+    visaScope: Array.isArray(row.visaScope) ? row.visaScope : [],
+    severity: ['low', 'medium', 'high', 'critical'].includes(severity) ? severity : 'medium',
+    symptomPatterns: Array.isArray(row.symptomPatterns) ? row.symptomPatterns : [],
+    detectionExpr: normalizeText(row.detectionExpr, null),
+    summaryMd: normalizeText(row.summaryMd, null),
+    bodyMd: normalizeText(row.bodyMd, null),
+    fallbackSteps: Array.isArray(row.fallbackSteps) ? row.fallbackSteps : [],
+    escalationContacts: normalizeObject(row.escalationContacts, {}),
+    authorityFloor: mapAuthorityTierToCanonical(row.authorityFloor, 'T3'),
+    reviewerStatus: normalizeText(row.reviewerStatus, 'draft'),
+    activeFlag: normalizeBoolean(row.activeFlag, false),
+    staleFlag: normalizeBoolean(row.staleFlag, false),
     publishBundleId: normalizeText(row.publishBundleId, null),
     metadata: normalizeObject(row.metadata, {})
   };
@@ -826,6 +863,97 @@ RETURNING rule_id
   return { table: 'rule_set', recordId: `rule_set:${(result.rows[0] || {}).rule_id || row.ruleId}` };
 }
 
+async function upsertExceptionPlaybook(pool, payload) {
+  const row = normalizeExceptionPlaybookRow(payload);
+  const sql = `
+INSERT INTO exception_playbook (
+  exception_id,
+  canonical_key,
+  exception_code,
+  title,
+  domain,
+  topic,
+  country_code,
+  scope_key,
+  audience_scope,
+  household_scope,
+  visa_scope,
+  severity,
+  symptom_patterns,
+  detection_expr,
+  summary_md,
+  body_md,
+  fallback_steps,
+  escalation_contacts,
+  authority_floor,
+  reviewer_status,
+  active_flag,
+  stale_flag,
+  publish_bundle_id,
+  metadata,
+  updated_at
+)
+VALUES (
+  $1::uuid,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12::severity_enum,$13::jsonb,$14,$15,$16,$17::jsonb,$18::jsonb,$19::authority_tier,$20::reviewer_status,$21,$22,$23::uuid,$24::jsonb,NOW()
+)
+ON CONFLICT (exception_id) DO UPDATE
+SET
+  canonical_key = EXCLUDED.canonical_key,
+  exception_code = EXCLUDED.exception_code,
+  title = EXCLUDED.title,
+  domain = EXCLUDED.domain,
+  topic = EXCLUDED.topic,
+  country_code = EXCLUDED.country_code,
+  scope_key = EXCLUDED.scope_key,
+  audience_scope = EXCLUDED.audience_scope,
+  household_scope = EXCLUDED.household_scope,
+  visa_scope = EXCLUDED.visa_scope,
+  severity = EXCLUDED.severity,
+  symptom_patterns = EXCLUDED.symptom_patterns,
+  detection_expr = EXCLUDED.detection_expr,
+  summary_md = EXCLUDED.summary_md,
+  body_md = EXCLUDED.body_md,
+  fallback_steps = EXCLUDED.fallback_steps,
+  escalation_contacts = EXCLUDED.escalation_contacts,
+  authority_floor = EXCLUDED.authority_floor,
+  reviewer_status = EXCLUDED.reviewer_status,
+  active_flag = EXCLUDED.active_flag,
+  stale_flag = EXCLUDED.stale_flag,
+  publish_bundle_id = EXCLUDED.publish_bundle_id,
+  metadata = EXCLUDED.metadata,
+  updated_at = NOW()
+RETURNING exception_id
+`.trim();
+  const values = [
+    row.exceptionId,
+    row.canonicalKey,
+    row.exceptionCode,
+    row.title,
+    row.domain,
+    row.topic,
+    row.countryCode,
+    row.scopeKey,
+    JSON.stringify(row.audienceScope),
+    JSON.stringify(row.householdScope),
+    JSON.stringify(row.visaScope),
+    row.severity,
+    JSON.stringify(row.symptomPatterns),
+    row.detectionExpr,
+    row.summaryMd,
+    row.bodyMd,
+    JSON.stringify(row.fallbackSteps),
+    JSON.stringify(row.escalationContacts),
+    row.authorityFloor,
+    row.reviewerStatus,
+    row.activeFlag,
+    row.staleFlag,
+    row.publishBundleId,
+    JSON.stringify(row.metadata)
+  ];
+  const result = await pool.query(sql, values);
+  return { table: 'exception_playbook', recordId: `exception_playbook:${(result.rows[0] || {}).exception_id || row.exceptionId}` };
+}
+
 async function upsertGeneratedView(pool, event) {
   const materialized = materializeGeneratedViewRecordFromEvent(event);
   if (!materialized || materialized.skipped === true) {
@@ -975,6 +1103,17 @@ async function materializeTypedTable(pool, tableName, canonicalPayload, event) {
   if (tableName === 'knowledge_object') return upsertKnowledgeObject(pool, canonicalPayload.knowledgeObject);
   if (tableName === 'task_template') return upsertTaskTemplate(pool, canonicalPayload.taskTemplate);
   if (tableName === 'rule_set') return upsertRuleSet(pool, canonicalPayload.ruleSet);
+  if (tableName === 'exception_playbook') {
+    const materialized = materializeExceptionPlaybookRecordFromEvent(event);
+    if (!materialized || materialized.skipped === true) {
+      return {
+        table: 'exception_playbook',
+        status: 'skipped',
+        reason: materialized && materialized.reason ? materialized.reason : 'exception_playbook_payload_missing'
+      };
+    }
+    return upsertExceptionPlaybook(pool, materialized.row);
+  }
   if (tableName === 'generated_view') return upsertGeneratedView(pool, event);
   return { table: tableName, status: 'unsupported' };
 }

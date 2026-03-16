@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T18:46:27-04:00",
-  "gitCommit": "c90102a974d7e7dbc66ea93e46d04bd8fa050b76",
-  "branch": "codex/data-c01-registry-split-T005",
-  "sourceDigest": "2ffb06788f9c996007f91d23b44ff87fc0848ca129c7094c7cd2f88f8a8e8dde",
+  "generatedAt": "2026-03-16T18:56:47-04:00",
+  "gitCommit": "0a2ddcb701e6a673574a37ca754794569f60845b",
+  "branch": "codex/data-c04-exception-playbook-T006",
+  "sourceDigest": "b16c6142b042115d957a0b9033de97a283f88dc1fdf7ad787616ef047d90da35",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

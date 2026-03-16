@@ -227,6 +227,30 @@ Compatibility note:
 - `ops_states` が canonical。
 - `ops_state` は read fallback 互換としてのみ維持し、運用書き込み先には使わない。
 
+### `notification_templates/{id}` / `templates_v/{id}`
+Purpose: Ops 通知 template と versioned content。`notification_templates.exceptionPlaybook` が存在する template は Canonical Core `exception_playbook` sidecar の runtime authority として扱う。
+
+Typical fields for `notification_templates/{id}`:
+- `key`, `status`, `notificationCategory`
+- `title`, `body`, `text`, `ctaText`, `linkRegistryId`
+- `exceptionPlaybook`
+  - `exceptionCode`, `domain`, `topic`, `countryCode`, `scopeKey`
+  - `audienceScope[]`, `householdScope[]`, `visaScope[]`
+  - `severity`, `symptomPatterns[]`, `detectionExpr`
+  - `summaryMd`, `bodyMd`, `fallbackSteps[]`, `escalationContacts`
+  - `authorityFloor`, `reviewerStatus`, `linkedTaskTemplates[]`, `requiredEvidence[]`
+- `recordEnvelope`
+- `createdAt`, `updatedAt`
+
+Typical fields for `templates_v/{id}`:
+- `templateKey`, `version`, `status`
+- `content`（versioned template body）
+- `createdAt`, `updatedAt`
+
+Notes:
+- `templates_v` は versioned content store のまま維持し、この段階では `exception_playbook` authority に使わない。
+- `notification_templates` の draft/active/inactive 遷移が `exception_playbook.activeFlag/staleFlag` の入力になる。
+
 ### `events/{id}` / `notifications/{id}` / `checklists/*` / `user_checklists/*`
 Purpose: product events, notification metadata, and checklist progress.
 
