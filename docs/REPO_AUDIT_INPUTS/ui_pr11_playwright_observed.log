@@ -1,0 +1,10 @@
+captureSet=ui-pr11-hardening-20260316
+observedAt=2026-03-16
+tool=playwright-mcp
+baseUrl=http://127.0.0.1:18081/admin/app
+roles=operator,admin,developer
+panes=home,composer,monitor,city-pack,vendors,read-model,alerts,errors,llm,settings,maintenance,audit,ops-feature-catalog,ops-system-health
+viewport=1440x900
+counts=fold(pre=0,textarea=0,detailsOpen=1) per captured surface
+knownNonBlockers=Cannot find module firebase-admin (separate track), setupMaintenanceControls TypeError (separate track)
+metrics=artifacts/ui-pr11-hardening-20260316/metrics/fold_noise_role_surface_1440x900.json
