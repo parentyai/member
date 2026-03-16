@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T00:04:12-04:00",
-  "gitCommit": "f2ad5b535f9abf93db8d1dae34467dd335559624",
-  "branch": "codex/data-c01-typed-materialization-T002",
-  "sourceDigest": "9178d8586a26c1a7a4472d7e61494079d13345620752e45cae71864d2671d55e",
+  "generatedAt": "2026-03-16T06:35:16-04:00",
+  "gitCommit": "49a4e88e9711d2b0e779beb7f7982dda4ae1602b",
+  "branch": "codex/data-c01-task-rule-mapping-T003",
+  "sourceDigest": "f0733f9e93acb5f33832f40f4425b2f2380faf7604567a815a5ca7d064789b27",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
