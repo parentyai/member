@@ -368,7 +368,7 @@ internal token matrix（routeごとの既定ヘッダー）:
 
 ### P2-1 鍵なし代替（WIF / impersonation）評価
 現状観測:
-- CI / deploy は WIF/OIDC を既定採用（`google-github-actions/auth@v2` + `workload_identity_provider`）。
+- CI / deploy は WIF/OIDC を既定採用（`google-github-actions/auth@v3` + `workload_identity_provider`）。
 - local preflight は `GOOGLE_APPLICATION_CREDENTIALS` と `SA_KEY_PATH_*` を診断軸にしている。
 - `phase21_verify_day_window` は `GOOGLE_APPLICATION_CREDENTIALS` を既定拒否し、`--allow-gac` でのみ回避可能。
 
