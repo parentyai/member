@@ -55,4 +55,7 @@ test('phase795: sourceEvidenceRepo dual-writes canonical core outbox when featur
   assert.equal(latest.traceId, 'trace_phase795');
   assert.equal(latest.payloadSummary.lifecycleState, 'approved');
   assert.equal(latest.payloadSummary.lifecycleBucket, 'approved_knowledge');
+  assert.deepEqual(latest.materializationHints.targetTables, ['evidence_claim']);
+  assert.equal(latest.canonicalPayload.evidenceClaim.canonicalKey, 'evidence_claim:se_phase795');
+  assert.equal(latest.sourceLinks[0].sourceId, 'sr_phase795');
 });

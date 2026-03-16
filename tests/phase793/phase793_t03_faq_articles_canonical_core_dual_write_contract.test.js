@@ -59,4 +59,7 @@ test('phase793: faqArticlesRepo dual-writes canonical core outbox on create/upda
   assert.equal(upsert.objectType, 'knowledge_object');
   assert.equal(deleted.objectType, 'knowledge_object');
   assert.equal(deleted.payloadSummary.status, 'disabled');
+  assert.deepEqual(upsert.materializationHints.targetTables, ['knowledge_object']);
+  assert.equal(upsert.canonicalPayload.knowledgeObject.canonicalKey, `knowledge_object:${created.id}`);
+  assert.equal(upsert.canonicalPayload.knowledgeObject.objectType, 'faq_article');
 });

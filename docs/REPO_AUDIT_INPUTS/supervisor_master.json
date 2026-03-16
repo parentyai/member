@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T22:27:35-04:00",
-  "gitCommit": "7fddbcac6899e9fb1fa1a715b6c8ae15457c9260",
-  "branch": "codex/data-c01-foundation-t001",
-  "sourceDigest": "4ec376bcd8209f396ac96549e9699fa62961e702514d57373ba2964ec4fc26f7",
+  "generatedAt": "2026-03-16T00:04:12-04:00",
+  "gitCommit": "f2ad5b535f9abf93db8d1dae34467dd335559624",
+  "branch": "codex/data-c01-typed-materialization-T002",
+  "sourceDigest": "9178d8586a26c1a7a4472d7e61494079d13345620752e45cae71864d2671d55e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

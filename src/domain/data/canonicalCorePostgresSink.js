@@ -1,5 +1,11 @@
 'use strict';
 
+const {
+  materializeCanonicalCoreTypedTables,
+  isCanonicalCoreTypedMaterializerEnabled,
+  isCanonicalCoreTypedMaterializerStrictEnabled
+} = require('./canonicalCoreTypedMaterializer');
+
 let poolCache = null;
 
 function resolveBooleanEnvFlag(name, defaultValue) {
@@ -68,6 +74,12 @@ function normalizeEvent(params) {
     jurisdiction: payload.jurisdiction || null,
     payloadSummary: payload.payloadSummary && typeof payload.payloadSummary === 'object'
       ? payload.payloadSummary
+      : {},
+    canonicalPayload: payload.canonicalPayload && typeof payload.canonicalPayload === 'object'
+      ? payload.canonicalPayload
+      : {},
+    materializationHints: payload.materializationHints && typeof payload.materializationHints === 'object'
+      ? payload.materializationHints
       : {},
     recordEnvelope: payload.recordEnvelope && typeof payload.recordEnvelope === 'object'
       ? payload.recordEnvelope
@@ -142,9 +154,11 @@ RETURNING object_type, object_id
     const canonicalRecordId = row && row.object_type && row.object_id
       ? `${row.object_type}:${row.object_id}`
       : `${payload.objectType}:${payload.objectId}`;
+    const typedMaterialization = await materializeCanonicalCoreTypedTables(payload, Object.assign({}, deps, { pool }));
     return {
       skipped: false,
-      canonicalRecordId
+      canonicalRecordId,
+      typedMaterialization
     };
   } catch (error) {
     if (strict) throw error;
@@ -160,6 +174,8 @@ RETURNING object_type, object_id
 module.exports = {
   isCanonicalCorePostgresSinkEnabled,
   isCanonicalCorePostgresSinkStrictEnabled,
+  isCanonicalCoreTypedMaterializerEnabled,
+  isCanonicalCoreTypedMaterializerStrictEnabled,
   resolveCanonicalCorePostgresDsn,
   upsertCanonicalCoreObject
 };
