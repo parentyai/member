@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T20:05:42-04:00",
-  "gitCommit": "e287b0047d4f0f169da1393ce8b20f5ee78cc8d7",
-  "branch": "codex/admin-ui-pr9-target4-stabilization",
-  "sourceDigest": "3a8487d43a351ce1b20cc3875621828f50ddda9cacb09b0f21045fcea612d8dd",
+  "generatedAt": "2026-03-15T21:16:48-04:00",
+  "gitCommit": "ea4ae223e168033cb8ab29c1f93f83213e60a5ff",
+  "branch": "codex/admin-ui-pr12-nonblocker-fixes",
+  "sourceDigest": "e8bcd883245360bf5580e40e76ec0599350e046d9d21a3a20b7a78f7a84b3f28",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
