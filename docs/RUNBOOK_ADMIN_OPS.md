@@ -210,6 +210,26 @@ internal token matrix（routeごとの既定ヘッダー）:
   - `npm run admin:open -- --no-adc-repair`
   - `npm run admin:open -- --fresh-server`（既存プロセスを必ず停止してfresh起動）
 
+### admin:open 失敗分類の統一表示（PR10）
+- `admin:open` は起動前に preflight を読み取り、`preflight.before`（必要時のみ `preflight.after`）を同一フォーマットで出力する。
+- 表示フィールド:
+  - `code`: 失敗分類コード（例: `SA_KEY_REQUIRED`, `ADC_REAUTH_REQUIRED`）
+  - `branch`: 復旧分岐（`AUTH_SA_KEY` / `AUTH_ADC` / `PERMISSION` / `PROJECT_ID` / `CONNECTIVITY` / `DATABASE`）
+  - `cause`: 何が起きたか
+  - `action`: 次に何をするか
+  - `next`: 最短の復旧コマンド（既定は `npm run admin:preflight`）
+- 運用ルール:
+  - `branch=AUTH_SA_KEY`: 先に `GOOGLE_APPLICATION_CREDENTIALS` を修正
+  - `branch=AUTH_ADC`: `gcloud auth application-default login` を実行
+  - `branch=PERMISSION`: 参照権限を確認
+  - `branch=PROJECT_ID`: `FIRESTORE_PROJECT_ID` を修正
+  - `branch=CONNECTIVITY`: 通信状態と資格情報を再確認
+  - `branch=DATABASE`: Firestore database の存在を確認
+
+### admin:open 失敗時メッセージ（PR10）
+- tokenコピー失敗時は理由を明示し、OS別の復旧ヒントを表示する（`pbcopy_failed` / `clip_failed` / `clipboard_command_missing`）。
+- 既存サーバ再利用判定の healthcheck 失敗時は、コードに加えて運用者向け説明を表示して自動再起動する。
+
 ### 判定
 - `ready=true`: 実装/データ条件を確認する
 - `ready=false`: 先に認証環境を修復する
