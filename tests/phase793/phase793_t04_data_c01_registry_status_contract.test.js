@@ -22,9 +22,8 @@ test('phase793: DATA-C-01 contract status is aligned for observable canonical co
   );
 });
 
-test('phase793: CF-02 no longer blocks once observable sidecars are aligned', () => {
+test('phase793: blocking conflict is cleared once observable sidecars are aligned', () => {
   const registry = readRegistry();
   const conflict = (registry.conflicts || []).find((row) => row.conflictId === 'CF-02');
-  assert.ok(conflict, 'CF-02 conflict must exist');
-  assert.equal(conflict.blocking, false);
+  assert.equal(conflict, undefined);
 });

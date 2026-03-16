@@ -7,7 +7,7 @@
 ## Runtime Flags
 - `ENABLE_CANONICAL_CORE_OUTBOX_DUAL_WRITE_V1`
   - default: `false`
-  - `true` のとき `source_refs` / `source_evidence` / `faq_articles` / `step_rules` 更新で `canonical_core_outbox` にイベントを書き込む。
+  - `true` のとき `source_refs` / `source_evidence` / `faq_articles` / `step_rules` / `city_packs` / `notification_templates` 更新で `canonical_core_outbox` にイベントを書き込む。
 - `ENABLE_CANONICAL_CORE_OUTBOX_STRICT_V1`
   - default: `false`
   - `true` のとき outbox 書き込み失敗を本処理失敗として返す。
@@ -46,16 +46,18 @@
 - V2 で追加するのは outbox payload の add-only field のみで、既存 consumer は未参照のまま互換維持する。
 - `source_refs` / `source_evidence` / `faq_articles` の既存 dual-write は継続し、`step_rules` は add-only で `task_template` + `rule_set` の typed payload を emit する。
 - `city_packs` は add-only で `generated_view` sidecar payload を emit する。typed materializer は `metadata.countryCode` が埋まる pack のみ `generated_view` table へ materialize し、country 未解決の pack は skip reason を残して継続する。
-- typed materializer の現スコープは `source_registry / source_snapshot / evidence_claim / knowledge_object / task_template / rule_set / generated_view`。
+- `notification_templates` は add-only で `exception_playbook` sidecar payload を emit する。runtime authority は `notification_templates.exceptionPlaybook` で、draft/active/inactive の既存 template flow をそのまま使う。
+- typed materializer の現スコープは `source_registry / source_snapshot / evidence_claim / knowledge_object / task_template / rule_set / generated_view / exception_playbook`。
 - `task_template` / `rule_set` の runtime authority は引き続き Firestore `step_rules` 側にあり、PostgreSQL typed table は compat sidecar として扱う。
 - `journey_templates` / `task_contents` はこの段階では未materializeのまま残す。
-- `exception_playbook` は `objectType` allowlist に残すが、repo-backed runtime authority が未観測のため current scope には含めない。
+- `templates_v` は versioned template content のまま維持し、この段階では `exception_playbook` authority には使わない。
 - typed row は Firestore read model の互換 sidecar として生成し、runtime authority は引き続き Firestore 側に置く。
 
 ## Deferred Scope
-- `exception_playbook`
-  - 現時点では src/runtime authority が未観測。
-  - spec 側の要求は保持するが、Canonical Core sidecar への昇格は runtime surface と contract tests が揃ってから行う。
+- `rich_menu` / `vendor_card` などの追加 `generated_view` subtype
+  - authority path が repo 上で安定している surface から順に sidecar 化する。
+- `templates_v` を含む versioned exception authoring
+  - まず `notification_templates` authority を固定し、その後に versioned content との統合を段階導入する。
 
 ## Sync Job Contract
 - endpoint: `POST /internal/jobs/canonical-core-outbox-sync`

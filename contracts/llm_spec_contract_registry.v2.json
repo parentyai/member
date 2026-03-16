@@ -1,6 +1,6 @@
 {
   "registryVersion": "v2.0.0",
-  "registryHash": "sha256:llm-spec-contract-v2-20260316-data-c01-registry-split-r799",
+  "registryHash": "sha256:llm-spec-contract-v2-20260316-data-c04-exception-playbook-r800",
   "generatedAt": "2026-03-10T00:00:00.000Z",
   "authorityOrder": [
     "Member_LLM_Unified_Master_Spec_v2",
@@ -102,7 +102,7 @@
       "status": "aligned",
       "severity": "critical",
       "blastRadius": "data_governance",
-      "recommendedAction": "keep staged canary coverage for source_refs/source_evidence/faq_articles/step_rules/city_packs dual-write, preserve typed materializer coverage for source_snapshot/evidence_claim/knowledge_object/task_template/rule_set/generated_view, and track exception_playbook separately until repo-backed authority exists",
+      "recommendedAction": "keep staged canary coverage for source_refs/source_evidence/faq_articles/step_rules/city_packs/notification_templates dual-write and preserve typed materializer coverage for source_snapshot/evidence_claim/knowledge_object/task_template/rule_set/generated_view/exception_playbook",
       "evidence": [
         "/Volumes/Arumamihs/Member/src/domain/data/canonicalCoreBridge.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/canonicalCoreOutboxRepo.js:1",
@@ -172,15 +172,22 @@
     {
       "requirementId": "DATA-C-04",
       "sourceSpec": "data_integration_spec",
-      "summary": "Exception playbook sidecar remains spec-led until repo-backed authority exists",
-      "status": "spec-leads-repo",
+      "summary": "Exception playbook sidecar is aligned through notification_templates runtime authority",
+      "status": "aligned",
       "severity": "medium",
-      "blastRadius": "future_data_model",
-      "recommendedAction": "introduce an observable exception playbook runtime authority and contract tests before promoting exception_playbook into Canonical Core typed sidecars",
+      "blastRadius": "ops_templates_data_model",
+      "recommendedAction": "keep exceptionPlaybook metadata on notification_templates draft/active flows and preserve typed materializer coverage for exception_playbook sidecars",
       "evidence": [
         "/Volumes/Arumamihs/Member/src/domain/data/canonicalCoreBridge.js:1",
         "/Volumes/Arumamihs/Member/docs/DATA_CANONICAL_CORE_BRIDGE_V2.md:1",
-        "tests/phase799/phase799_t01_data_c04_exception_playbook_spec_gap_contract.test.js:1"
+        "src/domain/data/canonicalCoreExceptionPlaybookMapping.js:1",
+        "src/domain/data/canonicalCoreTypedMaterializer.js:1",
+        "src/repos/firestore/notificationTemplatesRepo.js:1",
+        "src/routes/phase61Templates.js:1",
+        "tests/phase799/phase799_t01_data_c04_exception_playbook_spec_gap_contract.test.js:1",
+        "tests/phase800/phase800_t01_notification_templates_exception_playbook_dual_write_contract.test.js:1",
+        "tests/phase800/phase800_t02_canonical_core_exception_playbook_materializer_contract.test.js:1",
+        "tests/phase800/phase800_t03_canonical_core_postgres_sink_exception_playbook_contract.test.js:1"
       ]
     },
     {
@@ -258,12 +265,5 @@
       ]
     }
   ],
-  "conflicts": [
-    {
-      "conflictId": "CF-02",
-      "severity": "critical",
-      "blocking": false,
-      "summary": "Observable Canonical Core sidecars are aligned; remaining exception_playbook gap is tracked separately until repo-backed authority exists"
-    }
-  ]
+  "conflicts": []
 }
