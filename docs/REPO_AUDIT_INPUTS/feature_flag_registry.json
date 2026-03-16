@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-03-14T13:54:48.937Z",
-  "gitCommit": "20e2dced500683efbe8abef97565e18c228f05aa",
-  "branch": "codex/quality-patrol-pr0-T002",
+  "generatedAt": "2026-03-16T10:11:38.587Z",
+  "gitCommit": "f2ad5b535f9abf93db8d1dae34467dd335559624",
+  "branch": "codex/data-c01-typed-materialization-T002",
   "flags": [
     {
       "name": "ENABLE_ADMIN_BUILD_META",
@@ -274,6 +274,32 @@
       "blastRadius": "cross_module",
       "sourceRefs": [
         "src/domain/data/canonicalCorePostgresSink.js:15"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CANONICAL_CORE_TYPED_MATERIALIZER_STRICT_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_canonical_core_typed_materializer_strict_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/domain/data/canonicalCoreTypedMaterializer.js:37"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CANONICAL_CORE_TYPED_MATERIALIZER_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_canonical_core_typed_materializer_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/domain/data/canonicalCoreTypedMaterializer.js:33"
       ],
       "status": "active"
     },

@@ -13,6 +13,18 @@ const {
   normalizeKnowledgeLifecycleBucket
 } = require('../../domain/data/knowledgeLifecycleStateMachine');
 const { appendCanonicalCoreOutboxEvent } = require('./canonicalCoreOutboxRepo');
+const {
+  mapAuthorityTierToCanonical,
+  mapBindingLevelToCanonical,
+  extractHostname,
+  resolveCountryCodeFromRegionKey,
+  resolveScopeKey,
+  resolveReviewerStatus,
+  resolveStaleFlag,
+  resolvePositiveDaySpan,
+  toIsoString,
+  normalizeObject
+} = require('../../domain/data/canonicalCoreCompatMapping');
 
 const COLLECTION = 'source_refs';
 const VALIDITY_DAYS = 120;
@@ -302,6 +314,116 @@ function buildSourceRefEnvelope(sourceRefId, normalized, existingEnvelope) {
   });
 }
 
+function buildSourceRefCanonicalPayload(sourceRefId, normalized, recordEnvelope) {
+  const authorityTier = mapAuthorityTierToCanonical(resolveSourceAuthorityTier(normalized), 'T3');
+  const bindingLevel = mapBindingLevelToCanonical(resolveSourceBindingLevel(normalized), 'informative');
+  const hostname = extractHostname(normalized.url, sourceRefId);
+  const countryCode = resolveCountryCodeFromRegionKey(normalized.regionKey, 'TBD');
+  const scopeKey = resolveScopeKey(normalized.regionKey, 'GLOBAL');
+  const effectiveFrom = toIsoString(normalized.validFrom, new Date().toISOString());
+  const effectiveTo = toIsoString(normalized.validUntil, null);
+  const freshnessSlaDays = resolvePositiveDaySpan(normalized.validFrom, normalized.validUntil, VALIDITY_DAYS);
+  const reviewerStatus = resolveReviewerStatus({
+    status: normalized.status,
+    lifecycleState: normalized.knowledgeLifecycleState
+  }, 'draft');
+  const staleFlag = resolveStaleFlag({
+    status: normalized.status,
+    effectiveTo: normalized.validUntil
+  });
+  const snapshotCanonicalKey = `source_snapshot:${sourceRefId}:${normalized.contentHash || 'missing'}`;
+
+  return {
+    sourceRegistry: {
+      sourceId: sourceRefId,
+      canonicalKey: `source_registry:${sourceRefId}`,
+      sourceName: hostname,
+      ownerOrg: hostname,
+      authorityTier,
+      bindingLevel,
+      countryCode,
+      scopeKey,
+      domain: normalized.domainClass || 'unknown',
+      topic: normalized.eduScope || null,
+      canonicalUrl: normalized.url,
+      contentType: null,
+      parserType: normalized.lastAuditStage ? `source_refs_${normalized.lastAuditStage}` : null,
+      refreshCadence: `${VALIDITY_DAYS}d`,
+      freshnessSlaDays,
+      conflictPriority: 100,
+      reviewerStatus,
+      activeFlag: normalized.status === 'active',
+      staleFlag,
+      linkRegistryRef: null,
+      lastVerifiedAt: toIsoString(normalized.lastCheckAt, null),
+      nextCheckAt: effectiveTo,
+      metadata: normalizeObject({
+        sourceType: normalized.sourceType,
+        requiredLevel: normalized.requiredLevel,
+        authorityLevel: normalized.authorityLevel,
+        confidenceScore: normalized.confidenceScore,
+        domainClass: normalized.domainClass,
+        schoolType: normalized.schoolType,
+        eduScope: normalized.eduScope,
+        regionKey: normalized.regionKey,
+        evidenceLatestId: normalized.evidenceLatestId,
+        usedByCityPackIds: normalized.usedByCityPackIds,
+        recordEnvelope
+      }, {})
+    },
+    sourceSnapshot: {
+      canonicalKey: snapshotCanonicalKey,
+      sourceId: sourceRefId,
+      fetchUrl: normalized.url,
+      storageUri: null,
+      contentHash: normalized.contentHash || `missing:${sourceRefId}`,
+      observedAt: toIsoString(normalized.lastCheckAt, effectiveFrom),
+      sourcePublishedAt: null,
+      effectiveFrom,
+      effectiveTo,
+      parseStatus: normalized.status,
+      isLatest: normalized.status === 'active',
+      rawTextExcerpt: null,
+      extractedJson: normalizeObject({
+        status: normalized.status,
+        sourceType: normalized.sourceType,
+        requiredLevel: normalized.requiredLevel,
+        authorityLevel: normalized.authorityLevel,
+        riskLevel: normalized.riskLevel,
+        domainClass: normalized.domainClass,
+        schoolType: normalized.schoolType,
+        eduScope: normalized.eduScope,
+        regionKey: normalized.regionKey,
+        confidenceScore: normalized.confidenceScore,
+        lastResult: normalized.lastResult,
+        lastAuditStage: normalized.lastAuditStage,
+        evidenceLatestId: normalized.evidenceLatestId,
+        usedByCityPackIds: normalized.usedByCityPackIds
+      }, {}),
+      diffSummary: normalizeObject({
+        lifecycleState: normalized.knowledgeLifecycleState,
+        lifecycleBucket: normalized.knowledgeLifecycleBucket,
+        status: normalized.status,
+        riskLevel: normalized.riskLevel
+      }, {}),
+      metadata: normalizeObject({
+        sourceRefId,
+        snapshotRef: recordEnvelope && recordEnvelope.source_snapshot_ref ? recordEnvelope.source_snapshot_ref : null
+      }, {})
+    }
+  };
+}
+
+function buildSourceRefSourceLinks(sourceRefId, normalized, recordEnvelope) {
+  return [{
+    sourceId: sourceRefId,
+    snapshotRef: recordEnvelope && recordEnvelope.source_snapshot_ref ? recordEnvelope.source_snapshot_ref : null,
+    linkRole: 'primary',
+    primary: true,
+    canonicalSnapshotKey: `source_snapshot:${sourceRefId}:${normalized.contentHash || 'missing'}`
+  }];
+}
+
 async function createSourceRef(data) {
   if (data && typeof data === 'object'
     && Object.prototype.hasOwnProperty.call(data, 'knowledgeLifecycleState')
@@ -346,6 +468,11 @@ async function createSourceRef(data) {
     objectId: id,
     eventType: 'upsert',
     recordEnvelope,
+    canonicalPayload: buildSourceRefCanonicalPayload(id, normalized, recordEnvelope),
+    sourceLinks: buildSourceRefSourceLinks(id, normalized, recordEnvelope),
+    materializationHints: {
+      targetTables: ['source_registry', 'source_snapshot']
+    },
     payloadSummary: {
       lifecycleState: normalized.knowledgeLifecycleState,
       lifecycleBucket: normalized.knowledgeLifecycleBucket,
@@ -492,6 +619,11 @@ async function updateSourceRef(sourceRefId, patch) {
     objectId: sourceRefId,
     eventType: 'upsert',
     recordEnvelope: payload.recordEnvelope,
+    canonicalPayload: buildSourceRefCanonicalPayload(sourceRefId, mergedForEnvelope, payload.recordEnvelope),
+    sourceLinks: buildSourceRefSourceLinks(sourceRefId, mergedForEnvelope, payload.recordEnvelope),
+    materializationHints: {
+      targetTables: ['source_registry', 'source_snapshot']
+    },
     payloadSummary: {
       lifecycleState: nextLifecycleState,
       lifecycleBucket: resolveKnowledgeLifecycleBucket(nextLifecycleState),

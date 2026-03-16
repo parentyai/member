@@ -11,6 +11,17 @@ const {
   assertKnowledgeLifecycleTransition,
   isKnowledgeLifecycleState
 } = require('../../domain/data/knowledgeLifecycleStateMachine');
+const {
+  mapAuthorityTierToCanonical,
+  mapBindingLevelToCanonical,
+  resolveCountryCodeFromLocale,
+  resolveReviewerStatus,
+  resolveStaleFlag,
+  resolvePositiveDaySpan,
+  normalizeObject,
+  toIsoString,
+  slugify
+} = require('../../domain/data/canonicalCoreCompatMapping');
 
 const COLLECTION = 'faq_articles';
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
@@ -365,6 +376,88 @@ function validateKbArticle(data) {
   return { valid: errors.length === 0, errors };
 }
 
+function buildFaqArticleCanonicalPayload(articleId, article, recordEnvelope) {
+  const payload = article && typeof article === 'object' ? article : {};
+  const authorityFloor = mapAuthorityTierToCanonical(resolveFaqArticleAuthorityTier(payload), 'T3');
+  const bindingLevel = mapBindingLevelToCanonical(resolveFaqArticleBindingLevel(payload), 'informative');
+  const countryCode = resolveCountryCodeFromLocale(payload.locale, 'TBD');
+  const effectiveFrom = toIsoString(payload.createdAt, new Date().toISOString());
+  const effectiveTo = toIsoString(payload.validUntil, null);
+  const freshnessSlaDays = resolvePositiveDaySpan(payload.createdAt, payload.validUntil, 30);
+  const reviewerStatus = resolveReviewerStatus({
+    status: payload.status,
+    lifecycleState: payload.knowledgeLifecycleState
+  }, 'draft');
+  const staleFlag = resolveStaleFlag({
+    status: payload.status,
+    effectiveTo: payload.validUntil
+  });
+  const title = typeof payload.title === 'string' && payload.title.trim() ? payload.title.trim() : `faq-${articleId}`;
+  const topic = normalizeStringArray(payload.tags)[0]
+    || normalizeStringArray(payload.keywords)[0]
+    || normalizeStringArray(payload.allowedIntents).map((value) => value.toLowerCase())[0]
+    || 'faq';
+
+  return {
+    knowledgeObject: {
+      canonicalKey: `knowledge_object:${articleId}`,
+      objectType: 'faq_article',
+      title,
+      slug: slugify(title, `faq-${articleId}`),
+      domain: 'faq',
+      subdomain: payload.locale || null,
+      topic,
+      topicDetail: normalizeStringArray(payload.synonyms)[0] || null,
+      countryCode,
+      scopeKey: 'GLOBAL',
+      audienceScope: [],
+      householdScope: [],
+      visaScope: [],
+      assignmentTypeScope: [],
+      companyPolicyScope: {},
+      summaryMd: typeof payload.title === 'string' ? payload.title : null,
+      bodyMd: typeof payload.body === 'string' ? payload.body : null,
+      stepsJson: [],
+      prerequisitesJson: [],
+      requiredDocsJson: [],
+      formCodesJson: [],
+      channelsJson: [],
+      systemCodesJson: [],
+      feeAmount: null,
+      feeCurrency: null,
+      costNotes: null,
+      waitTimeMinDays: null,
+      waitTimeMaxDays: null,
+      processTimeMinDays: null,
+      processTimeMaxDays: null,
+      validityDays: resolvePositiveDaySpan(payload.createdAt, payload.validUntil, null),
+      retentionDays: 365,
+      authorityFloor,
+      bindingLevel,
+      freshnessSlaDays,
+      effectiveFrom,
+      effectiveTo,
+      reviewerStatus,
+      ownerTeam: 'knowledge-platform',
+      activeFlag: payload.status === 'active' && payload.knowledgeLifecycleState === 'approved',
+      staleFlag,
+      lastVerifiedAt: effectiveFrom,
+      nextCheckAt: effectiveTo,
+      metadata: normalizeObject({
+        locale: payload.locale || null,
+        riskLevel: payload.riskLevel || null,
+        allowedIntents: normalizeStringArray(payload.allowedIntents),
+        keywords: normalizeStringArray(payload.keywords),
+        synonyms: normalizeStringArray(payload.synonyms),
+        tags: normalizeStringArray(payload.tags),
+        version: payload.version || null,
+        versionSemver: payload.versionSemver || null,
+        recordEnvelope
+      }, {})
+    }
+  };
+}
+
 async function createArticle(data) {
   const { valid, errors } = validateKbArticle(data);
   if (!valid) {
@@ -392,6 +485,10 @@ async function createArticle(data) {
     objectId: docRef.id,
     eventType: 'upsert',
     recordEnvelope,
+    canonicalPayload: buildFaqArticleCanonicalPayload(docRef.id, record, recordEnvelope),
+    materializationHints: {
+      targetTables: ['knowledge_object']
+    },
     payloadSummary: {
       lifecycleState: lifecycle.knowledgeLifecycleState,
       lifecycleBucket: lifecycle.knowledgeLifecycleBucket,
@@ -454,6 +551,10 @@ async function updateArticle(id, patch) {
     objectId: id,
     eventType: 'upsert',
     recordEnvelope,
+    canonicalPayload: buildFaqArticleCanonicalPayload(id, merged, recordEnvelope),
+    materializationHints: {
+      targetTables: ['knowledge_object']
+    },
     payloadSummary: {
       lifecycleState: lifecycle.knowledgeLifecycleState,
       lifecycleBucket: lifecycle.knowledgeLifecycleBucket,
@@ -496,6 +597,10 @@ async function deleteArticle(id) {
     objectId: id,
     eventType: 'delete',
     recordEnvelope,
+    canonicalPayload: buildFaqArticleCanonicalPayload(id, merged, recordEnvelope),
+    materializationHints: {
+      targetTables: ['knowledge_object']
+    },
     payloadSummary: {
       lifecycleState: lifecycle.knowledgeLifecycleState,
       lifecycleBucket: lifecycle.knowledgeLifecycleBucket,

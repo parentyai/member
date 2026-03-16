@@ -61,6 +61,8 @@ async function runCanonicalCoreOutboxSyncJob(params, deps) {
     syncedCount: 0,
     failedCount: 0,
     skippedCount: 0,
+    typedMaterializedCount: 0,
+    typedSkippedCount: 0,
     skippedReasonCounts: {},
     items: []
   };
@@ -104,8 +106,16 @@ async function runCanonicalCoreOutboxSyncJob(params, deps) {
       await markSynced(eventId, {
         canonicalRecordId: sinkResult && sinkResult.canonicalRecordId
           ? String(sinkResult.canonicalRecordId)
+          : null,
+        typedMaterialization: sinkResult && sinkResult.typedMaterialization
+          ? sinkResult.typedMaterialization
           : null
       });
+      const typedTables = sinkResult && sinkResult.typedMaterialization && Array.isArray(sinkResult.typedMaterialization.tables)
+        ? sinkResult.typedMaterialization.tables
+        : [];
+      result.typedMaterializedCount += typedTables.filter((row) => row && row.status === 'materialized').length;
+      result.typedSkippedCount += typedTables.filter((row) => row && row.status === 'skipped').length;
       result.syncedCount += 1;
       result.items.push({
         id: eventId,
@@ -115,6 +125,9 @@ async function runCanonicalCoreOutboxSyncJob(params, deps) {
         outcome: 'synced',
         canonicalRecordId: sinkResult && sinkResult.canonicalRecordId
           ? String(sinkResult.canonicalRecordId)
+          : null,
+        typedMaterialization: sinkResult && sinkResult.typedMaterialization
+          ? sinkResult.typedMaterialization
           : null
       });
     } catch (error) {
@@ -150,6 +163,8 @@ async function runCanonicalCoreOutboxSyncJob(params, deps) {
       syncedCount: result.syncedCount,
       skippedCount: result.skippedCount,
       failedCount: result.failedCount,
+      typedMaterializedCount: result.typedMaterializedCount,
+      typedSkippedCount: result.typedSkippedCount,
       skippedReasonCounts: result.skippedReasonCounts
     }
   }).catch(() => null);

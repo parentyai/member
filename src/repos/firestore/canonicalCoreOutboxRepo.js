@@ -136,6 +136,9 @@ async function markCanonicalCoreOutboxEventSynced(eventId, extras) {
     canonicalRecordId: typeof payload.canonicalRecordId === 'string' && payload.canonicalRecordId.trim()
       ? payload.canonicalRecordId.trim()
       : null,
+    typedMaterialization: payload.typedMaterialization && typeof payload.typedMaterialization === 'object'
+      ? payload.typedMaterialization
+      : null,
     syncedAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: true });

@@ -51,4 +51,8 @@ test('phase793: sourceRefsRepo dual-writes canonical core outbox when feature fl
   assert.equal(latest.sinkStatus, 'pending');
   assert.equal(latest.payloadSummary.lifecycleState, 'deprecated');
   assert.equal(latest.payloadSummary.lifecycleBucket, 'candidate_knowledge');
+  assert.deepEqual(latest.materializationHints.targetTables, ['source_registry', 'source_snapshot']);
+  assert.equal(latest.canonicalPayload.sourceRegistry.sourceId, 'sr_phase793');
+  assert.equal(latest.canonicalPayload.sourceSnapshot.sourceId, 'sr_phase793');
+  assert.equal(latest.sourceLinks[0].sourceId, 'sr_phase793');
 });

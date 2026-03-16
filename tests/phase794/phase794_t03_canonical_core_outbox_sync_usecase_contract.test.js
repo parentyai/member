@@ -32,7 +32,18 @@ test('phase794: outbox sync usecase processes pending rows and writes summary', 
         err.code = 'ECONN';
         throw err;
       }
-      return { skipped: false, canonicalRecordId: 'source_snapshot:sr_1' };
+      return {
+        skipped: false,
+        canonicalRecordId: 'source_snapshot:sr_1',
+        typedMaterialization: {
+          enabled: true,
+          strict: false,
+          tables: [
+            { table: 'source_registry', status: 'materialized', recordId: 'source_registry:sr_1' },
+            { table: 'source_snapshot', status: 'materialized', recordId: 'source_snapshot:snap_1' }
+          ]
+        }
+      };
     },
     markSynced: async (id, extras) => {
       calls.synced.push({ id, extras });
@@ -50,13 +61,17 @@ test('phase794: outbox sync usecase processes pending rows and writes summary', 
   assert.equal(result.syncedCount, 1);
   assert.equal(result.skippedCount, 1);
   assert.equal(result.failedCount, 1);
+  assert.equal(result.typedMaterializedCount, 2);
+  assert.equal(result.typedSkippedCount, 0);
   assert.equal(result.skippedReasonCounts.postgres_sink_disabled, 1);
   assert.equal(calls.synced.length, 1);
   assert.equal(calls.synced[0].id, 'cco_1');
+  assert.equal(calls.synced[0].extras.typedMaterialization.tables.length, 2);
   assert.equal(calls.failed.length, 1);
   assert.equal(calls.failed[0].id, 'cco_3');
   assert.equal(calls.audits.length, 1);
   assert.equal(calls.audits[0].action, 'canonical_core.outbox.sync');
+  assert.equal(calls.audits[0].payloadSummary.typedMaterializedCount, 2);
 });
 
 test('phase794: outbox sync usecase keeps rows untouched in dry-run mode', async () => {

@@ -4,6 +4,13 @@ const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
 const { appendCanonicalCoreOutboxEvent } = require('./canonicalCoreOutboxRepo');
+const {
+  mapAuthorityTierToCanonical,
+  mapBindingLevelToCanonical,
+  resolveReviewerStatus,
+  normalizeObject,
+  toIsoString
+} = require('../../domain/data/canonicalCoreCompatMapping');
 
 const COLLECTION = 'source_evidence';
 
@@ -69,6 +76,62 @@ function buildSourceEvidenceEnvelope(evidenceId, payload) {
   });
 }
 
+function buildSourceEvidenceCanonicalPayload(evidenceId, payload, lifecycleState) {
+  return {
+    evidenceClaim: {
+      canonicalKey: `evidence_claim:${evidenceId}`,
+      claimType: 'source_audit_result',
+      title: `source evidence ${payload.sourceRefId}`,
+      claimText: payload.diffSummary || `source audit result: ${payload.result}`,
+      normalizedFact: normalizeObject({
+        sourceRefId: payload.sourceRefId,
+        checkedAt: payload.checkedAt,
+        result: payload.result,
+        statusCode: payload.statusCode,
+        finalUrl: payload.finalUrl,
+        contentHash: payload.contentHash,
+        screenshotPaths: payload.screenshotPaths,
+        llmUsed: payload.llm_used,
+        model: payload.model,
+        promptVersion: payload.promptVersion
+      }, {}),
+      countryCode: 'TBD',
+      scopeKey: 'GLOBAL',
+      subjectType: 'source_ref',
+      actorRole: 'source_audit',
+      authorityTier: mapAuthorityTierToCanonical('T2', 'T2'),
+      bindingLevel: mapBindingLevelToCanonical('informative', 'informative'),
+      confidenceScore: payload.result === 'ok' ? 1 : 0.6,
+      corroborationCount: 1,
+      freshnessSlaDays: 30,
+      effectiveFrom: toIsoString(payload.checkedAt, new Date().toISOString()),
+      effectiveTo: null,
+      reviewerStatus: resolveReviewerStatus({
+        status: payload.result,
+        lifecycleState
+      }, payload.result === 'ok' ? 'approved' : 'needs_review'),
+      activeFlag: payload.result === 'ok',
+      staleFlag: false,
+      lastVerifiedAt: toIsoString(payload.checkedAt, null),
+      nextCheckAt: null,
+      metadata: normalizeObject({
+        traceId: payload.traceId,
+        sourceRefId: payload.sourceRefId
+      }, {})
+    }
+  };
+}
+
+function buildSourceEvidenceSourceLinks(payload) {
+  return [{
+    sourceId: payload.sourceRefId,
+    snapshotRef: payload.contentHash ? `source_ref:${payload.contentHash}` : null,
+    linkRole: 'source_evidence',
+    primary: true,
+    canonicalSnapshotKey: payload.contentHash ? `source_snapshot:${payload.sourceRefId}:${payload.contentHash}` : null
+  }];
+}
+
 async function createEvidence(data) {
   const payload = normalizePayload(data);
   if (!payload.sourceRefId) throw new Error('sourceRefId required');
@@ -88,6 +151,11 @@ async function createEvidence(data) {
     objectId: id,
     eventType: 'upsert',
     recordEnvelope,
+    canonicalPayload: buildSourceEvidenceCanonicalPayload(id, payload, lifecycleState),
+    sourceLinks: buildSourceEvidenceSourceLinks(payload),
+    materializationHints: {
+      targetTables: ['evidence_claim']
+    },
     payloadSummary: {
       lifecycleState,
       lifecycleBucket,
