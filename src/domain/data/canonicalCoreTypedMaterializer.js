@@ -17,7 +17,9 @@ const SUPPORTED_TARGET_TABLES = new Set([
   'source_registry',
   'source_snapshot',
   'evidence_claim',
-  'knowledge_object'
+  'knowledge_object',
+  'task_template',
+  'rule_set'
 ]);
 
 function resolveBooleanEnvFlag(name, defaultValue) {
@@ -177,6 +179,71 @@ function normalizeKnowledgeObjectRow(payload) {
     staleFlag: normalizeBoolean(row.staleFlag, false),
     lastVerifiedAt: toIsoString(row.lastVerifiedAt, null),
     nextCheckAt: toIsoString(row.nextCheckAt, null),
+    metadata: normalizeObject(row.metadata, {})
+  };
+}
+
+function normalizeTaskTemplateRow(payload) {
+  const row = payload && typeof payload === 'object' ? payload : {};
+  const taskCode = normalizeText(row.taskCode, 'compat-task-template');
+  const canonicalKey = normalizeText(row.canonicalKey, `task_template:${taskCode}`);
+  const title = normalizeText(row.title, taskCode);
+  return {
+    taskTemplateId: normalizeText(row.taskTemplateId, buildDeterministicUuid(canonicalKey || taskCode)),
+    canonicalKey,
+    objectId: normalizeText(row.objectId, null),
+    taskCode,
+    title,
+    domain: normalizeText(row.domain, 'task_engine'),
+    topic: normalizeText(row.topic, 'general'),
+    countryCode: normalizeText(row.countryCode, 'TBD'),
+    scopeKey: normalizeText(row.scopeKey, 'GLOBAL'),
+    audienceScope: Array.isArray(row.audienceScope) ? row.audienceScope : [],
+    householdScope: Array.isArray(row.householdScope) ? row.householdScope : [],
+    visaScope: Array.isArray(row.visaScope) ? row.visaScope : [],
+    triggerExpr: normalizeText(row.triggerExpr, '{}'),
+    prerequisiteExpr: normalizeText(row.prerequisiteExpr, null),
+    stopExpr: normalizeText(row.stopExpr, null),
+    dueBasis: normalizeText(row.dueBasis, null),
+    dueOffsetDays: Number.isFinite(Number(row.dueOffsetDays)) ? Math.floor(Number(row.dueOffsetDays)) : null,
+    dueAtFixed: toIsoString(row.dueAtFixed, null),
+    completionExpr: normalizeText(row.completionExpr, '{"taskStatus":"done"}'),
+    stepsJson: Array.isArray(row.stepsJson) ? row.stepsJson : [],
+    requiredFactKeys: Array.isArray(row.requiredFactKeys) ? row.requiredFactKeys : [],
+    requiredDocTypes: Array.isArray(row.requiredDocTypes) ? row.requiredDocTypes : [],
+    uiModuleIds: Array.isArray(row.uiModuleIds) ? row.uiModuleIds : [],
+    notificationGuardFlags: Array.isArray(row.notificationGuardFlags) ? row.notificationGuardFlags : [],
+    actionMapId: normalizeText(row.actionMapId, null),
+    exceptionCode: normalizeText(row.exceptionCode, null),
+    escalationJson: normalizeObject(row.escalationJson, {}),
+    metricsKeys: Array.isArray(row.metricsKeys) ? row.metricsKeys : [],
+    activeFlag: normalizeBoolean(row.activeFlag, false),
+    reviewerStatus: normalizeText(row.reviewerStatus, 'draft'),
+    publishBundleId: normalizeText(row.publishBundleId, null),
+    metadata: normalizeObject(row.metadata, {})
+  };
+}
+
+function normalizeRuleSetRow(payload) {
+  const row = payload && typeof payload === 'object' ? payload : {};
+  const ruleCode = normalizeText(row.ruleCode, 'compat-rule-set');
+  const canonicalKey = normalizeText(row.canonicalKey, `rule_set:${ruleCode}`);
+  return {
+    ruleId: normalizeText(row.ruleId, buildDeterministicUuid(canonicalKey || ruleCode)),
+    canonicalKey,
+    ruleCode,
+    ruleScope: normalizeText(row.ruleScope, 'GLOBAL'),
+    exprLang: normalizeText(row.exprLang, 'jsonlogic'),
+    triggerExpr: normalizeText(row.triggerExpr, null),
+    exprBody: normalizeObject(row.exprBody, {}),
+    outputPayload: normalizeObject(row.outputPayload, {}),
+    priority: Number.isFinite(Number(row.priority)) ? Math.floor(Number(row.priority)) : 100,
+    testFixture: normalizeObject(row.testFixture, {}),
+    effectiveFrom: toIsoString(row.effectiveFrom, null),
+    effectiveTo: toIsoString(row.effectiveTo, null),
+    reviewerStatus: normalizeText(row.reviewerStatus, 'draft'),
+    activeFlag: normalizeBoolean(row.activeFlag, false),
+    publishBundleId: normalizeText(row.publishBundleId, null),
     metadata: normalizeObject(row.metadata, {})
   };
 }
@@ -573,11 +640,195 @@ RETURNING object_id
   return { table: 'knowledge_object', recordId: `knowledge_object:${(result.rows[0] || {}).object_id || row.objectId}` };
 }
 
+async function upsertTaskTemplate(pool, payload) {
+  const row = normalizeTaskTemplateRow(payload);
+  const sql = `
+INSERT INTO task_template (
+  task_template_id,
+  canonical_key,
+  object_id,
+  task_code,
+  title,
+  domain,
+  topic,
+  country_code,
+  scope_key,
+  audience_scope,
+  household_scope,
+  visa_scope,
+  trigger_expr,
+  prerequisite_expr,
+  stop_expr,
+  due_basis,
+  due_offset_days,
+  due_at_fixed,
+  completion_expr,
+  steps_json,
+  required_fact_keys,
+  required_doc_types,
+  ui_module_ids,
+  notification_guard_flags,
+  action_map_id,
+  exception_code,
+  escalation_json,
+  metrics_keys,
+  active_flag,
+  reviewer_status,
+  publish_bundle_id,
+  metadata,
+  updated_at
+)
+VALUES (
+  $1::uuid,$2,$3::uuid,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::jsonb,$13,$14,$15,$16,$17,$18,$19,$20::jsonb,$21::jsonb,$22::jsonb,$23::jsonb,$24::jsonb,$25,$26,$27::jsonb,$28::jsonb,$29,$30::reviewer_status,$31::uuid,$32::jsonb,NOW()
+)
+ON CONFLICT (task_template_id) DO UPDATE
+SET
+  canonical_key = EXCLUDED.canonical_key,
+  object_id = EXCLUDED.object_id,
+  task_code = EXCLUDED.task_code,
+  title = EXCLUDED.title,
+  domain = EXCLUDED.domain,
+  topic = EXCLUDED.topic,
+  country_code = EXCLUDED.country_code,
+  scope_key = EXCLUDED.scope_key,
+  audience_scope = EXCLUDED.audience_scope,
+  household_scope = EXCLUDED.household_scope,
+  visa_scope = EXCLUDED.visa_scope,
+  trigger_expr = EXCLUDED.trigger_expr,
+  prerequisite_expr = EXCLUDED.prerequisite_expr,
+  stop_expr = EXCLUDED.stop_expr,
+  due_basis = EXCLUDED.due_basis,
+  due_offset_days = EXCLUDED.due_offset_days,
+  due_at_fixed = EXCLUDED.due_at_fixed,
+  completion_expr = EXCLUDED.completion_expr,
+  steps_json = EXCLUDED.steps_json,
+  required_fact_keys = EXCLUDED.required_fact_keys,
+  required_doc_types = EXCLUDED.required_doc_types,
+  ui_module_ids = EXCLUDED.ui_module_ids,
+  notification_guard_flags = EXCLUDED.notification_guard_flags,
+  action_map_id = EXCLUDED.action_map_id,
+  exception_code = EXCLUDED.exception_code,
+  escalation_json = EXCLUDED.escalation_json,
+  metrics_keys = EXCLUDED.metrics_keys,
+  active_flag = EXCLUDED.active_flag,
+  reviewer_status = EXCLUDED.reviewer_status,
+  publish_bundle_id = EXCLUDED.publish_bundle_id,
+  metadata = EXCLUDED.metadata,
+  updated_at = NOW()
+RETURNING task_template_id
+`.trim();
+  const values = [
+    row.taskTemplateId,
+    row.canonicalKey,
+    row.objectId,
+    row.taskCode,
+    row.title,
+    row.domain,
+    row.topic,
+    row.countryCode,
+    row.scopeKey,
+    JSON.stringify(row.audienceScope),
+    JSON.stringify(row.householdScope),
+    JSON.stringify(row.visaScope),
+    row.triggerExpr,
+    row.prerequisiteExpr,
+    row.stopExpr,
+    row.dueBasis,
+    row.dueOffsetDays,
+    row.dueAtFixed,
+    row.completionExpr,
+    JSON.stringify(row.stepsJson),
+    JSON.stringify(row.requiredFactKeys),
+    JSON.stringify(row.requiredDocTypes),
+    JSON.stringify(row.uiModuleIds),
+    JSON.stringify(row.notificationGuardFlags),
+    row.actionMapId,
+    row.exceptionCode,
+    JSON.stringify(row.escalationJson),
+    JSON.stringify(row.metricsKeys),
+    row.activeFlag,
+    row.reviewerStatus,
+    row.publishBundleId,
+    JSON.stringify(row.metadata)
+  ];
+  const result = await pool.query(sql, values);
+  return { table: 'task_template', recordId: `task_template:${(result.rows[0] || {}).task_template_id || row.taskTemplateId}` };
+}
+
+async function upsertRuleSet(pool, payload) {
+  const row = normalizeRuleSetRow(payload);
+  const sql = `
+INSERT INTO rule_set (
+  rule_id,
+  canonical_key,
+  rule_code,
+  rule_scope,
+  expr_lang,
+  trigger_expr,
+  expr_body,
+  output_payload,
+  priority,
+  test_fixture,
+  effective_from,
+  effective_to,
+  reviewer_status,
+  active_flag,
+  publish_bundle_id,
+  metadata,
+  updated_at
+)
+VALUES (
+  $1::uuid,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9,$10::jsonb,$11,$12,$13::reviewer_status,$14,$15::uuid,$16::jsonb,NOW()
+)
+ON CONFLICT (rule_id) DO UPDATE
+SET
+  canonical_key = EXCLUDED.canonical_key,
+  rule_code = EXCLUDED.rule_code,
+  rule_scope = EXCLUDED.rule_scope,
+  expr_lang = EXCLUDED.expr_lang,
+  trigger_expr = EXCLUDED.trigger_expr,
+  expr_body = EXCLUDED.expr_body,
+  output_payload = EXCLUDED.output_payload,
+  priority = EXCLUDED.priority,
+  test_fixture = EXCLUDED.test_fixture,
+  effective_from = EXCLUDED.effective_from,
+  effective_to = EXCLUDED.effective_to,
+  reviewer_status = EXCLUDED.reviewer_status,
+  active_flag = EXCLUDED.active_flag,
+  publish_bundle_id = EXCLUDED.publish_bundle_id,
+  metadata = EXCLUDED.metadata,
+  updated_at = NOW()
+RETURNING rule_id
+`.trim();
+  const values = [
+    row.ruleId,
+    row.canonicalKey,
+    row.ruleCode,
+    row.ruleScope,
+    row.exprLang,
+    row.triggerExpr,
+    JSON.stringify(row.exprBody),
+    JSON.stringify(row.outputPayload),
+    row.priority,
+    JSON.stringify(row.testFixture),
+    row.effectiveFrom,
+    row.effectiveTo,
+    row.reviewerStatus,
+    row.activeFlag,
+    row.publishBundleId,
+    JSON.stringify(row.metadata)
+  ];
+  const result = await pool.query(sql, values);
+  return { table: 'rule_set', recordId: `rule_set:${(result.rows[0] || {}).rule_id || row.ruleId}` };
+}
+
 async function materializeTypedTable(pool, tableName, canonicalPayload) {
   if (tableName === 'source_registry') return upsertSourceRegistry(pool, canonicalPayload.sourceRegistry);
   if (tableName === 'source_snapshot') return upsertSourceSnapshot(pool, canonicalPayload.sourceSnapshot);
   if (tableName === 'evidence_claim') return upsertEvidenceClaim(pool, canonicalPayload.evidenceClaim);
   if (tableName === 'knowledge_object') return upsertKnowledgeObject(pool, canonicalPayload.knowledgeObject);
+  if (tableName === 'task_template') return upsertTaskTemplate(pool, canonicalPayload.taskTemplate);
+  if (tableName === 'rule_set') return upsertRuleSet(pool, canonicalPayload.ruleSet);
   return { table: tableName, status: 'unsupported' };
 }
 

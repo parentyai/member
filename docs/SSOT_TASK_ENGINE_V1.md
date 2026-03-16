@@ -128,6 +128,15 @@ Task Engine v1 の add-only SSOT。
   - 既存 Line command (`TODO完了`, `TODO進行中`, `TODO未着手`, `TODO一覧`) 維持
   - `TODOスヌーズ` を add-only 拡張
 
+## Canonical Core Sidecar（add-only）
+- Firestore runtime authority:
+  - `step_rules` / `journey_templates` / `task_contents` を引き続き runtime SSOT とする。
+- PostgreSQL sidecar mapping:
+  - `step_rules` 更新時、`canonical_core_outbox` に `objectType=task_template` のイベントを add-only emit し、typed materializer で `task_template` / `rule_set` を sidecar 生成する。
+- 非対象:
+  - この段階では `journey_templates` / `task_contents` を直接 typed sidecar へ materialize しない。
+  - 既存 Task runtime / LINE surface / admin write contract は変更しない。
+
 ## Explainability
 - `tasks.checkedAt`, `tasks.decisionHash`, `tasks.explain[]`
 - `task_events`:

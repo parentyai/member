@@ -1,12 +1,19 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { appendCanonicalCoreOutboxEvent } = require('./canonicalCoreOutboxRepo');
 const { LEAD_TIME_KIND, LEAD_TIME_KIND_VALUES } = require('../../domain/tasks/constants');
 const { normalizeTaskCategory } = require('../../domain/tasks/usExpatTaxonomy');
 const {
   isTaskCategorySystemEnabled,
   getTaskDependencyMax
 } = require('../../domain/tasks/featureFlags');
+const {
+  buildDeterministicUuid,
+  normalizeObject: compatNormalizeObject,
+  resolveCountryCodeFromRegionKey,
+  resolveScopeKey
+} = require('../../domain/data/canonicalCoreCompatMapping');
 
 const COLLECTION = 'step_rules';
 const DEFAULT_LIMIT = 200;
@@ -14,6 +21,8 @@ const MAX_LIMIT = 1000;
 const ALLOWED_RISK_LEVEL = Object.freeze(['low', 'medium', 'high']);
 const MEANING_KEY_PATTERN = /^[a-z0-9_-]{2,64}$/;
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
+const DEFAULT_CANONICAL_BINDING_LEVEL = 'POLICY';
+const DEFAULT_CANONICAL_AUTHORITY_TIER = 'T2_APPROVED_SECONDARY';
 
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -229,6 +238,181 @@ function isRuleActiveAt(rule, nowIso) {
   return true;
 }
 
+function resolveRuleNamespace(rule) {
+  const ruleId = normalizeText(rule && rule.ruleId, '');
+  const parts = ruleId.split('__').filter(Boolean);
+  if (parts.length >= 3) {
+    return {
+      templateId: parts[0],
+      phaseKey: parts[1],
+      stepKey: parts.slice(2).join('__')
+    };
+  }
+  return {
+    templateId: null,
+    phaseKey: null,
+    stepKey: normalizeText(rule && rule.stepKey, null)
+  };
+}
+
+function buildStepRuleRecordEnvelope(rule) {
+  const row = rule && typeof rule === 'object' ? rule : {};
+  return {
+    record_id: normalizeText(row.ruleId, 'unknown_step_rule'),
+    record_type: 'step_rule',
+    source_system: 'member_firestore',
+    source_snapshot_ref: `step_rule:${normalizeText(row.ruleId, 'unknown_step_rule')}`,
+    effective_from: row.validFrom || null,
+    effective_to: row.validUntil || null,
+    authority_tier: DEFAULT_CANONICAL_AUTHORITY_TIER,
+    binding_level: DEFAULT_CANONICAL_BINDING_LEVEL,
+    jurisdiction: normalizeText(row[FIELD_SCK], 'GLOBAL'),
+    status: row.enabled === true ? 'active' : 'disabled',
+    retention_tag: 'step_rules_indefinite',
+    pii_class: 'none',
+    access_scope: ['operator'],
+    masking_policy: 'none',
+    deletion_policy: 'reference_stop_only',
+    created_at: row.createdAt || null,
+    updated_at: row.updatedAt || null
+  };
+}
+
+function buildStepRuleCanonicalPayload(rule) {
+  const row = rule && typeof rule === 'object' ? rule : {};
+  const namespace = resolveRuleNamespace(row);
+  const scenarioRef = normalizeText(row[FIELD_SCK], 'GLOBAL');
+  const countryCode = resolveCountryCodeFromRegionKey(scenarioRef, 'TBD');
+  const scopeKey = resolveScopeKey(scenarioRef, 'GLOBAL');
+  const title = normalizeText(
+    row.meaning && row.meaning.title,
+    normalizeText(namespace.stepKey || row.stepKey, normalizeText(row.ruleId, 'task_rule'))
+  );
+  const category = normalizeText(row.category, 'task_engine').toLowerCase();
+  const helpLinkRegistryIds = normalizeStringList(row.meaning && row.meaning.helpLinkRegistryIds);
+  const recommendedVendorLinkIds = normalizeStringListWithLimit(row.recommendedVendorLinkIds, 3);
+  const stepDetails = {
+    ruleId: normalizeText(row.ruleId, null),
+    stepKey: normalizeText(row.stepKey, null),
+    phaseKey: namespace.phaseKey,
+    [FIELD_SCK]: scenarioRef,
+    title,
+    meaningKey: row.meaning && row.meaning.meaningKey ? row.meaning.meaningKey : null,
+    summary: row.meaning && row.meaning.summary ? row.meaning.summary : null,
+    whyNow: row.meaning && row.meaning.whyNow ? row.meaning.whyNow : null,
+    doneDefinition: row.meaning && row.meaning.doneDefinition ? row.meaning.doneDefinition : null,
+    helpLinkRegistryIds,
+    recommendedVendorLinkIds,
+    estimatedTimeMin: Number.isFinite(Number(row.estimatedTimeMin)) ? Number(row.estimatedTimeMin) : null,
+    estimatedTimeMax: Number.isFinite(Number(row.estimatedTimeMax)) ? Number(row.estimatedTimeMax) : null,
+    nudgeTemplate: row.nudgeTemplate ? compatNormalizeObject(row.nudgeTemplate, {}) : null
+  };
+  const taskTemplateCanonicalKey = `task_template:${normalizeText(row.ruleId, 'unknown_step_rule')}`;
+  const reviewerStatus = row.enabled === true ? 'approved' : 'draft';
+  return {
+    taskTemplate: {
+      taskTemplateId: buildDeterministicUuid(taskTemplateCanonicalKey),
+      canonicalKey: taskTemplateCanonicalKey,
+      objectId: null,
+      taskCode: normalizeText(row.ruleId, 'unknown_step_rule'),
+      title,
+      domain: category || 'task_engine',
+      topic: normalizeText(row.stepKey, normalizeText(namespace.stepKey, 'general')),
+      countryCode,
+      scopeKey,
+      audienceScope: [],
+      householdScope: [],
+      visaScope: [],
+      triggerExpr: JSON.stringify(compatNormalizeObject(row.trigger, {})),
+      prerequisiteExpr: row.dependsOn && row.dependsOn.length
+        ? JSON.stringify({ dependsOn: row.dependsOn })
+        : null,
+      stopExpr: row.validUntil ? JSON.stringify({ validUntil: row.validUntil }) : null,
+      dueBasis: row.leadTime && row.leadTime.kind ? String(row.leadTime.kind) : null,
+      dueOffsetDays: Number.isFinite(Number(row.leadTime && row.leadTime.days))
+        ? Number(row.leadTime.days)
+        : null,
+      dueAtFixed: null,
+      completionExpr: JSON.stringify({ taskStatus: 'done', ruleId: normalizeText(row.ruleId, 'unknown_step_rule') }),
+      stepsJson: [stepDetails],
+      requiredFactKeys: normalizeStringList(row.dependsOn),
+      requiredDocTypes: [],
+      uiModuleIds: ['task_detail'],
+      notificationGuardFlags: row.nudgeTemplate && row.nudgeTemplate.linkRegistryId
+        ? ['CTA_REQUIRED', 'LINK_REGISTRY_REQUIRED']
+        : [],
+      actionMapId: null,
+      exceptionCode: null,
+      escalationJson: {},
+      metricsKeys: [`step_rule:${normalizeText(row.ruleId, 'unknown_step_rule')}`],
+      activeFlag: row.enabled === true,
+      reviewerStatus,
+      metadata: {
+        sourceCollection: COLLECTION,
+        sourceRecordId: normalizeText(row.ruleId, null),
+        templateId: namespace.templateId,
+        phaseKey: namespace.phaseKey,
+        [FIELD_SCK]: scenarioRef,
+        category: row.category || null,
+        riskLevel: row.riskLevel || null,
+        constraints: compatNormalizeObject(row.constraints, {}),
+        meaning: compatNormalizeObject(row.meaning, {}),
+        recommendedVendorLinkIds
+      }
+    },
+    ruleSet: {
+      ruleId: buildDeterministicUuid(`rule_set:${normalizeText(row.ruleId, 'unknown_step_rule')}`),
+      canonicalKey: `rule_set:${normalizeText(row.ruleId, 'unknown_step_rule')}`,
+      ruleCode: normalizeText(row.ruleId, 'unknown_step_rule'),
+      ruleScope: scopeKey,
+      exprLang: 'member_step_rule_v1',
+      triggerExpr: JSON.stringify({
+        trigger: compatNormalizeObject(row.trigger, {}),
+        leadTime: compatNormalizeObject(row.leadTime, {})
+      }),
+      exprBody: {
+        trigger: compatNormalizeObject(row.trigger, {}),
+        leadTime: compatNormalizeObject(row.leadTime, {}),
+        dependsOn: normalizeStringList(row.dependsOn),
+        constraints: compatNormalizeObject(row.constraints, {}),
+        enabled: row.enabled === true,
+        [FIELD_SCK]: scenarioRef,
+        phaseKey: namespace.phaseKey,
+        stepKey: normalizeText(row.stepKey, null),
+        templateId: namespace.templateId,
+        riskLevel: row.riskLevel || null
+      },
+      outputPayload: {
+        taskTemplateCanonicalKey,
+        taskCode: normalizeText(row.ruleId, 'unknown_step_rule'),
+        [FIELD_SCK]: scenarioRef,
+        stepKey: normalizeText(row.stepKey, null),
+        category: row.category || null,
+        meaningKey: row.meaning && row.meaning.meaningKey ? row.meaning.meaningKey : null,
+        recommendedVendorLinkIds,
+        nudgeTemplate: row.nudgeTemplate ? compatNormalizeObject(row.nudgeTemplate, {}) : null
+      },
+      priority: Number.isFinite(Number(row.priority)) ? Number(row.priority) : 100,
+      testFixture: {
+        sourceCollection: COLLECTION,
+        sourceRecordId: normalizeText(row.ruleId, null)
+      },
+      effectiveFrom: row.validFrom || null,
+      effectiveTo: row.validUntil || null,
+      reviewerStatus,
+      activeFlag: row.enabled === true,
+      metadata: {
+        sourceCollection: COLLECTION,
+        sourceRecordId: normalizeText(row.ruleId, null),
+        templateId: namespace.templateId,
+        phaseKey: namespace.phaseKey,
+        stepKey: normalizeText(row.stepKey, null),
+        [FIELD_SCK]: scenarioRef
+      }
+    }
+  };
+}
+
 async function getStepRule(ruleId) {
   const id = normalizeText(ruleId, '');
   if (!id) return null;
@@ -251,7 +435,24 @@ async function upsertStepRule(ruleId, patch, actor) {
     createdAt: normalized.createdAt || serverTimestamp(),
     createdBy: normalized.createdBy || normalizeText(actor, null)
   }), { merge: true });
-  return getStepRule(id);
+  const saved = await getStepRule(id);
+  await appendCanonicalCoreOutboxEvent({
+    objectType: 'task_template',
+    objectId: id,
+    eventType: 'upsert',
+    recordEnvelope: buildStepRuleRecordEnvelope(saved),
+    payloadSummary: {
+      lifecycleState: saved && saved.enabled === true ? 'approved' : 'draft',
+      lifecycleBucket: 'task_engine_template',
+      status: saved && saved.enabled === true ? 'active' : 'disabled',
+      riskLevel: saved && saved.riskLevel ? saved.riskLevel : null
+    },
+    canonicalPayload: buildStepRuleCanonicalPayload(saved),
+    materializationHints: {
+      targetTables: ['task_template', 'rule_set']
+    }
+  });
+  return saved;
 }
 
 async function listStepRules(filters) {

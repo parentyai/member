@@ -7,7 +7,7 @@
 ## Runtime Flags
 - `ENABLE_CANONICAL_CORE_OUTBOX_DUAL_WRITE_V1`
   - default: `false`
-  - `true` のとき `source_refs` / `source_evidence` / `faq_articles` 更新で `canonical_core_outbox` にイベントを書き込む。
+  - `true` のとき `source_refs` / `source_evidence` / `faq_articles` / `step_rules` 更新で `canonical_core_outbox` にイベントを書き込む。
 - `ENABLE_CANONICAL_CORE_OUTBOX_STRICT_V1`
   - default: `false`
   - `true` のとき outbox 書き込み失敗を本処理失敗として返す。
@@ -44,9 +44,10 @@
 ## Foundation V2 Scope
 - 既存 sink の `canonical_core_objects` upsert SQL はこの段階では変更しない。
 - V2 で追加するのは outbox payload の add-only field のみで、既存 consumer は未参照のまま互換維持する。
-- `source_refs` / `source_evidence` / `faq_articles` 既存 dual-write は継続し、後続 PR で `task_template` / `rule_set` / `generated_view` / `exception_playbook` を追加する。
-- typed materializer の現スコープは `source_registry / source_snapshot / evidence_claim / knowledge_object` のみ。
-- `claim_source_link` / `knowledge_evidence_link` / `task_template` / `rule_set` / `generated_view` / `exception_playbook` はこの段階では未materializeのまま残す。
+- `source_refs` / `source_evidence` / `faq_articles` の既存 dual-write は継続し、`step_rules` は add-only で `task_template` + `rule_set` の typed payload を emit する。
+- typed materializer の現スコープは `source_registry / source_snapshot / evidence_claim / knowledge_object / task_template / rule_set`。
+- `task_template` / `rule_set` の runtime authority は引き続き Firestore `step_rules` 側にあり、PostgreSQL typed table は compat sidecar として扱う。
+- `journey_templates` / `task_contents` / `generated_view` / `exception_playbook` はこの段階では未materializeのまま残す。
 - typed row は Firestore read model の互換 sidecar として生成し、runtime authority は引き続き Firestore 側に置く。
 
 ## Sync Job Contract
