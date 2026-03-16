@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T19:43:29-04:00",
-  "gitCommit": "2a11d51e403db3d47301e21db11b9ebf9fc00561",
-  "branch": "codex/admin-ui-pr8-data-reflection-contract",
-  "sourceDigest": "7cb68ae156906fd104dd23158a208f522b76998da2e7f8316f710e259d782a5e",
+  "generatedAt": "2026-03-15T20:05:42-04:00",
+  "gitCommit": "e287b0047d4f0f169da1393ce8b20f5ee78cc8d7",
+  "branch": "codex/admin-ui-pr9-target4-stabilization",
+  "sourceDigest": "3a8487d43a351ce1b20cc3875621828f50ddda9cacb09b0f21045fcea612d8dd",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

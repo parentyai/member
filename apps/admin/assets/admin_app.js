@@ -165,6 +165,7 @@ const state = {
   monitorSavedView: 'all',
   monitorSearchQuery: '',
   monitorStatusFilter: '',
+  monitorDiagnosticsReason: null,
   taskRulesRules: [],
   taskRulesTaskContents: [],
   taskRulesTaskContentLinks: [],
@@ -218,6 +219,7 @@ const state = {
   selectedCityPackSourceRefId: null,
   cityPackTemplateImportPlanHash: null,
   cityPackTemplateImportConfirmToken: null,
+  llmRolloutStage: null,
   currentComposerStatus: '未取得',
   composerTone: 'unknown',
   composerUpdatedAt: null,
@@ -1475,6 +1477,30 @@ function renderGuardBanner(rawError) {
         action: 'traceIdで監査ログを確認してください',
         tone: 'danger'
       };
+  const guardCode = normalizeGuardErrorCode(rawError);
+  const requestedPane = rawError && typeof rawError === 'object' && rawError.requestedPane
+    ? String(rawError.requestedPane)
+    : '';
+  const currentRole = rawError && typeof rawError === 'object' && rawError.role
+    ? normalizeRoleValue(rawError.role)
+    : normalizeRoleValue(state.role);
+  const requestedPaneLabel = requestedPane && PANE_HEADER_MAP[requestedPane]
+    ? t(PANE_HEADER_MAP[requestedPane].titleKey, requestedPane)
+    : requestedPane;
+
+  let causeText = normalized.cause || '-';
+  let impactText = normalized.impact || '-';
+  let actionTextRaw = normalized.action || '-';
+  if ((guardCode === 'ROLE_FORBIDDEN' || guardCode === 'PANE_FORBIDDEN') && requestedPane) {
+    causeText = `${requestedPaneLabel || requestedPane} は現在のRole（${resolveRoleScopeLabel(currentRole)}）では表示できません。`;
+    impactText = '対象画面の情報は非表示になり、現在のRoleで許可された画面へ移動します。';
+    actionTextRaw = 'Roleを切り替えるか、左ナビから許可済み画面へ移動してください。';
+  } else if (guardCode === 'ROLLOUT_DISABLED' && requestedPane) {
+    causeText = `${requestedPaneLabel || requestedPane} は段階公開の対象外です。`;
+    impactText = '公開条件に合致しないため、画面を表示できません。';
+    actionTextRaw = '公開フラグとRole条件を確認し、公開済み画面で運用を継続してください。';
+  }
+
   const cause = el.querySelector('[data-guard-field="cause"]');
   const impact = el.querySelector('[data-guard-field="impact"]');
   const action = el.querySelector('[data-guard-field="action"]');
@@ -1482,10 +1508,10 @@ function renderGuardBanner(rawError) {
     ? String(rawError.recommendedPane)
     : '';
   const actionText = recommendedPane
-    ? `${normalized.action || '-'}（推奨: ${recommendedPane}）`
-    : (normalized.action || '-');
-  if (cause) cause.textContent = normalized.cause || '-';
-  if (impact) impact.textContent = normalized.impact || '-';
+    ? `${actionTextRaw}（推奨: ${recommendedPane}）`
+    : actionTextRaw;
+  if (cause) cause.textContent = causeText;
+  if (impact) impact.textContent = impactText;
   if (action) action.textContent = actionText;
   el.classList.add('is-visible');
   applyBannerState(el, normalized.tone, 'system');
@@ -3148,6 +3174,71 @@ function canUseMonitorConfigurationView(role) {
   return nextRole === 'admin' || nextRole === 'developer';
 }
 
+function resolveRoleScopeLabel(role) {
+  const nextRole = normalizeRoleValue(role);
+  if (nextRole === 'admin') return '管理';
+  if (nextRole === 'developer') return '開発';
+  return '運用';
+}
+
+function resolveLlmRolloutStageLabel(stage) {
+  const normalized = String(stage || '').trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized === 'hard_enforcement') return 'hard_enforcement（厳格適用）';
+  if (normalized === 'nogo_gate_mandatory') return 'nogo_gate_mandatory（停止ゲート）';
+  if (normalized === 'soft_enforcement') return 'soft_enforcement（警告運用）';
+  if (normalized === 'log_only') return 'log_only（観測のみ）';
+  if (normalized === 'design_only') return 'design_only（設計段階）';
+  return normalized;
+}
+
+function setRoleVisibilityReasonText(elementId, message) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.textContent = normalizeCopyForRole(String(message || '-'), state.role);
+}
+
+function renderPaneVisibilityReasons() {
+  const role = normalizeRoleValue(state.role);
+  const canUseConfiguration = canUseMonitorConfigurationView(role);
+  setRoleVisibilityReasonText(
+    'monitor-role-visibility-reason',
+    canUseConfiguration
+      ? '監視と設定を切り替えできます。診断の詳細は「System状態へ」から確認してください。'
+      : '現在のRoleでは「設定」ビューは表示されません。監視情報の閲覧はこのまま継続できます。'
+  );
+  const monitorHandoffReason = state.monitorDiagnosticsReason && String(state.monitorDiagnosticsReason).trim()
+    ? `診断情報はSystemレイヤーで確認します（直近理由: ${String(state.monitorDiagnosticsReason).trim()}）。`
+    : '診断情報はSystemレイヤーで確認します。';
+  setRoleVisibilityReasonText('monitor-insights-handoff-reason', monitorHandoffReason);
+
+  setRoleVisibilityReasonText(
+    'audit-role-visibility-reason',
+    role === 'operator'
+      ? '証跡参照は利用できます。構造ドリフト補正は管理ロールでのみ表示されます。'
+      : '証跡参照と補正操作を表示中です。補正操作は確認トークンが必要です。'
+  );
+
+  setRoleVisibilityReasonText(
+    'llm-role-visibility-reason',
+    `現在Role: ${resolveRoleScopeLabel(role)}。LLM支援は管理/開発ロールで表示されます。`
+  );
+  const llmStageLabel = resolveLlmRolloutStageLabel(state.llmRolloutStage);
+  setRoleVisibilityReasonText(
+    'llm-rollout-visibility-reason',
+    llmStageLabel
+      ? `品質ループ段階: ${llmStageLabel}。表示条件に合わない場合は結果が限定されます。`
+      : '品質ループ段階は状態更新後に表示されます。'
+  );
+
+  setRoleVisibilityReasonText(
+    'settings-role-visibility-reason',
+    UXOS_POLICY_READONLY_V1
+      ? 'この画面は参照専用です。編集操作は System の設定画面で実施します。'
+      : 'UX Policy 参照は現在無効です。ENABLE_UXOS_POLICY_READONLY_V1 を有効化すると表示されます。'
+  );
+}
+
 function normalizeMonitorWorkspaceView(view, role) {
   const raw = String(view || '').trim().toLowerCase();
   const candidate = raw === MONITOR_WORKSPACE_VIEW_CONFIGURATION
@@ -3203,6 +3294,7 @@ function applyMonitorWorkspaceView(view, options) {
     permissionNoticeEl.classList.toggle('is-hidden', canUseConfiguration);
     permissionNoticeEl.setAttribute('aria-hidden', canUseConfiguration ? 'true' : 'false');
   }
+  renderPaneVisibilityReasons();
   if (opts.persist === true) {
     state.monitorWorkspaceView = nextView;
   }
@@ -3248,8 +3340,14 @@ function setRole(role, options) {
     if (!legacyVisibleMatch || legacyVisibleMatch.pane !== allowedPane) allowedPane = 'home';
   }
   if (paneKey && paneKey !== allowedPane) {
-    renderGuardBanner({ error: opts.guardReason || 'ROLE_FORBIDDEN', recommendedPane: allowedPane });
+    renderGuardBanner({
+      error: opts.guardReason || 'ROLE_FORBIDDEN',
+      recommendedPane: allowedPane,
+      requestedPane: paneKey,
+      role: nextRole
+    });
     activatePane(allowedPane, { historyMode: 'replace', guardReason: 'ROLE_FORBIDDEN' });
+    renderPaneVisibilityReasons();
     return;
   }
   if (opts.syncHistory !== false) {
@@ -3258,6 +3356,7 @@ function setRole(role, options) {
   renderUiFixtureSuccess(paneKey || 'home');
   applyBuildMetaBadge();
   renderAllPaneReflectionStates();
+  renderPaneVisibilityReasons();
 }
 
 function setupRoleSwitch() {
@@ -5111,7 +5210,14 @@ function activatePane(target, options) {
     const mode = opts.historyMode || 'replace';
     updateHistoryWithPaneRole(nextPane, state.role, mode);
   }
-  if (paneBlocked) renderGuardBanner({ error: guardReason, recommendedPane: nextPane });
+  if (paneBlocked) {
+    renderGuardBanner({
+      error: guardReason,
+      recommendedPane: nextPane,
+      requestedPane: normalizedTarget,
+      role: state.role
+    });
+  }
   updatePageHeader(nextPane);
   if (nextPane === 'ops-feature-catalog' && isOpsRealtimeSnapshotEnabled() && (!Array.isArray(state.opsFeatureRows) || state.opsFeatureRows.length === 0)) {
     void loadOpsFeatureCatalogStatus({ notify: false });
@@ -8195,6 +8301,7 @@ function renderMonitorInsightsFailure(traceId, requestInfo, error) {
     error: error && error.message ? error.message : 'unknown'
   };
   const noteText = formatMonitorNote(rawPayload.error);
+  state.monitorDiagnosticsReason = noteText;
   renderVendorCtrRows([]);
   renderFaqReferenceRows([]);
   const abSummaryEl = document.getElementById('monitor-ab-summary');
@@ -8214,6 +8321,7 @@ function renderMonitorInsightsFailure(traceId, requestInfo, error) {
   const raw = document.getElementById('monitor-insights-raw');
   if (raw) raw.textContent = JSON.stringify(rawPayload, null, 2);
   state.monitorInsights = null;
+  renderPaneVisibilityReasons();
 }
 
 function renderMonitorInsightsDiagnostics(payload, traceId) {
@@ -8262,9 +8370,13 @@ function renderMonitorInsightsDiagnostics(payload, traceId) {
   }
   const diagnosticsEl = document.getElementById('monitor-insights-diagnostics');
   if (diagnosticsEl) diagnosticsEl.textContent = notes.length > 0 ? notes.join(' / ') : t('ui.label.common.empty', 'データなし');
+  state.monitorDiagnosticsReason = notes.length > 0
+    ? notes[0]
+    : t('ui.label.common.empty', 'データなし');
 
   const raw = document.getElementById('monitor-insights-raw');
   if (raw) raw.textContent = JSON.stringify(data, null, 2);
+  renderPaneVisibilityReasons();
 }
 
 function resolveHost(value) {
@@ -18354,6 +18466,7 @@ function setUxPolicyReadonlyVisibility() {
   const enabled = UXOS_POLICY_READONLY_V1 === true;
   if (panel) panel.classList.toggle('hidden', !enabled);
   if (actions) actions.classList.toggle('hidden', !enabled);
+  renderPaneVisibilityReasons();
 }
 
 function renderUxPolicyReadonlyResult(targetId, payload) {
@@ -18855,6 +18968,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
     ? summary.qualityFramework
     : null;
   if (!quality) {
+    state.llmRolloutStage = null;
     renderLlmResult('llm-quality-scorecard', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-slices', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-judge', { ok: false, error: 'no_quality_framework' });
@@ -18869,6 +18983,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
     renderLlmResult('llm-quality-v2-integration', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-v2-critical-slices', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-v3-improvement-loop', { ok: false, error: 'no_quality_framework' });
+    renderPaneVisibilityReasons();
     return;
   }
 
@@ -18881,6 +18996,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
   const replay = quality.replay && typeof quality.replay === 'object' ? quality.replay : {};
   const frontier = quality.frontier && typeof quality.frontier === 'object' ? quality.frontier : {};
   const qualityLoopV2 = quality.qualityLoopV2 && typeof quality.qualityLoopV2 === 'object' ? quality.qualityLoopV2 : {};
+  state.llmRolloutStage = qualityLoopV2.rolloutStage || null;
   const topQualityFailures = Array.isArray(quality.top_10_quality_failures) ? quality.top_10_quality_failures : [];
   const counterexampleQueue = Array.isArray(quality.counterexampleQueue) ? quality.counterexampleQueue : [];
   const topLoopCases = Array.isArray(quality.top_10_loop_cases) ? quality.top_10_loop_cases : [];
@@ -19001,6 +19117,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
       ? qualityLoopV2.runtimeAudit
       : {}
   });
+  renderPaneVisibilityReasons();
 }
 
 function llmBlockedReasonCategoryLabel(category) {

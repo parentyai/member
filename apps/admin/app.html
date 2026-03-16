@@ -1083,6 +1083,9 @@
               </div>
             </div>
           </div>
+          <div id="monitor-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="monitor" role="status" aria-live="polite">
+            監視情報は全ロールで参照できます。設定ビューは管理ロールのみ表示されます。
+          </div>
           <details id="monitor-pane-details" class="decision-details section">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="monitor-view-switch" data-ui="monitor-view-switch">
@@ -2100,7 +2103,7 @@
 	                    </details>
 	                  </div>
                   <div id="monitor-insights-system-handoff" class="note monitor-system-diagnostics-handoff">
-                    診断情報はSystemレイヤーで確認します。
+                    <span id="monitor-insights-handoff-reason">診断情報はSystemレイヤーで確認します。</span>
                     <button id="monitor-open-system-diagnostics" type="button" class="secondary-btn">System状態へ</button>
                   </div>
                   <div id="monitor-insights-diagnostics-panel" class="panel is-hidden">
@@ -3993,6 +3996,9 @@
                   <div class="note">Audit: traceIdで証跡JSONと判断ログを追跡します。</div>
                   <div class="note">Monitor: 配信結果と運用状態を確認します。</div>
                   <div class="note">Decision timeline: 監査詳細で判断履歴を時系列に確認します。</div>
+                  <div id="audit-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="audit" role="status" aria-live="polite">
+                    証跡参照は全ロールで利用できます。補正操作は管理ロールのみ表示されます。
+                  </div>
                   <div class="row row-top">
                     <button id="audit-open-monitor" type="button" class="button-subtle">配信結果へ（trace）</button>
                     <button id="audit-open-composer" type="button" class="button-subtle">通知作成へ戻る</button>
@@ -4396,6 +4402,10 @@
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.llm.validation">LLM検証</div>
                 <div class="panel-body">
+                  <div id="llm-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="llm" role="status" aria-live="polite">
+                    LLM支援は管理ロールのみ表示されます。表示されない場合はRoleを管理または開発に切り替えてください。
+                  </div>
+                  <div id="llm-rollout-visibility-reason" class="note role-visibility-rollout" role="status" aria-live="polite">品質ループの段階は状態更新後に表示されます。</div>
                   <div class="input-grid">
                     <div>
                       <label data-dict-key="ui.label.llm.lineUserId" data-dict-tip="ui.help.llm.lineUserId">LINEユーザーID</label>
@@ -4776,6 +4786,9 @@
                 <div class="panel-title" data-dict-key="ui.label.settings.notice">設定は管理者で操作</div>
                 <div class="panel-body">
                   <p data-dict-key="ui.desc.settings.notice">設定・回復は /admin/master に集約されています。</p>
+                  <div id="settings-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="settings" role="status" aria-live="polite">
+                    この画面は参照専用です。編集操作は System の設定画面で実施します。
+                  </div>
                 </div>
               </div>
               <div id="ux-policy-readonly-panel" class="panel hidden">
