@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T06:35:16-04:00",
-  "gitCommit": "49a4e88e9711d2b0e779beb7f7982dda4ae1602b",
-  "branch": "codex/data-c01-task-rule-mapping-T003",
-  "sourceDigest": "f0733f9e93acb5f33832f40f4425b2f2380faf7604567a815a5ca7d064789b27",
+  "generatedAt": "2026-03-16T07:01:30-04:00",
+  "gitCommit": "00384d9ad0aa4648032eb9ab4dad172b8be3b3be",
+  "branch": "codex/data-c01-generated-view-T004",
+  "sourceDigest": "c1068f3666deaac05d37cf55bbc53c4c7211b61575aaa7480a5ec239428a8d5c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

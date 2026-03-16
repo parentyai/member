@@ -12,6 +12,9 @@ const {
   mapBindingLevelToCanonical,
   slugify
 } = require('./canonicalCoreCompatMapping');
+const {
+  materializeGeneratedViewRecordFromEvent
+} = require('./canonicalCoreGeneratedViewMapping');
 
 const SUPPORTED_TARGET_TABLES = new Set([
   'source_registry',
@@ -19,7 +22,8 @@ const SUPPORTED_TARGET_TABLES = new Set([
   'evidence_claim',
   'knowledge_object',
   'task_template',
-  'rule_set'
+  'rule_set',
+  'generated_view'
 ]);
 
 function resolveBooleanEnvFlag(name, defaultValue) {
@@ -822,13 +826,156 @@ RETURNING rule_id
   return { table: 'rule_set', recordId: `rule_set:${(result.rows[0] || {}).rule_id || row.ruleId}` };
 }
 
-async function materializeTypedTable(pool, tableName, canonicalPayload) {
+async function upsertGeneratedView(pool, event) {
+  const materialized = materializeGeneratedViewRecordFromEvent(event);
+  if (!materialized || materialized.skipped === true) {
+    return {
+      table: 'generated_view',
+      status: 'skipped',
+      reason: materialized && materialized.reason ? materialized.reason : 'generated_view_payload_missing'
+    };
+  }
+  const row = materialized.row;
+  const sql = `
+INSERT INTO generated_view (
+  view_id,
+  canonical_key,
+  view_type,
+  view_key,
+  locale,
+  country_code,
+  scope_key,
+  object_subtype,
+  title,
+  title_short,
+  summary_md,
+  body_md,
+  faq_question,
+  faq_answer_short,
+  city_pack_module_key,
+  rich_menu_action_id,
+  vendor_code,
+  vendor_slot_policy,
+  notification_guard_flags,
+  ui_module_ids,
+  authority_floor,
+  binding_level,
+  confidence_score,
+  freshness_sla_days,
+  render_payload,
+  from_object_ids,
+  from_claim_ids,
+  from_task_codes,
+  from_signal_ids,
+  derivation_method,
+  prompt_version,
+  model_name,
+  reviewer_status,
+  active_flag,
+  stale_flag,
+  effective_from,
+  effective_to,
+  metadata,
+  updated_at
+)
+VALUES (
+  $1::uuid,$2,$3::view_type_enum,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19::jsonb,$20::jsonb,
+  $21::authority_tier,$22::binding_level,$23,$24,$25::jsonb,$26::jsonb,$27::jsonb,$28::jsonb,$29::jsonb,$30,$31,$32,$33::reviewer_status,$34,$35,$36,$37,$38::jsonb,NOW()
+)
+ON CONFLICT (view_id) DO UPDATE
+SET
+  canonical_key = EXCLUDED.canonical_key,
+  view_type = EXCLUDED.view_type,
+  view_key = EXCLUDED.view_key,
+  locale = EXCLUDED.locale,
+  country_code = EXCLUDED.country_code,
+  scope_key = EXCLUDED.scope_key,
+  object_subtype = EXCLUDED.object_subtype,
+  title = EXCLUDED.title,
+  title_short = EXCLUDED.title_short,
+  summary_md = EXCLUDED.summary_md,
+  body_md = EXCLUDED.body_md,
+  faq_question = EXCLUDED.faq_question,
+  faq_answer_short = EXCLUDED.faq_answer_short,
+  city_pack_module_key = EXCLUDED.city_pack_module_key,
+  rich_menu_action_id = EXCLUDED.rich_menu_action_id,
+  vendor_code = EXCLUDED.vendor_code,
+  vendor_slot_policy = EXCLUDED.vendor_slot_policy,
+  notification_guard_flags = EXCLUDED.notification_guard_flags,
+  ui_module_ids = EXCLUDED.ui_module_ids,
+  authority_floor = EXCLUDED.authority_floor,
+  binding_level = EXCLUDED.binding_level,
+  confidence_score = EXCLUDED.confidence_score,
+  freshness_sla_days = EXCLUDED.freshness_sla_days,
+  render_payload = EXCLUDED.render_payload,
+  from_object_ids = EXCLUDED.from_object_ids,
+  from_claim_ids = EXCLUDED.from_claim_ids,
+  from_task_codes = EXCLUDED.from_task_codes,
+  from_signal_ids = EXCLUDED.from_signal_ids,
+  derivation_method = EXCLUDED.derivation_method,
+  prompt_version = EXCLUDED.prompt_version,
+  model_name = EXCLUDED.model_name,
+  reviewer_status = EXCLUDED.reviewer_status,
+  active_flag = EXCLUDED.active_flag,
+  stale_flag = EXCLUDED.stale_flag,
+  effective_from = EXCLUDED.effective_from,
+  effective_to = EXCLUDED.effective_to,
+  metadata = EXCLUDED.metadata,
+  updated_at = NOW()
+RETURNING view_id
+`.trim();
+  const values = [
+    row.viewId,
+    row.canonicalKey,
+    row.viewType,
+    row.viewKey,
+    row.locale,
+    row.countryCode,
+    row.scopeKey,
+    row.objectSubtype,
+    row.title,
+    row.titleShort,
+    row.summaryMd,
+    row.bodyMd,
+    row.faqQuestion,
+    row.faqAnswerShort,
+    row.cityPackModuleKey,
+    row.richMenuActionId,
+    row.vendorCode,
+    JSON.stringify(row.vendorSlotPolicy || {}),
+    JSON.stringify(Array.isArray(row.notificationGuardFlags) ? row.notificationGuardFlags : []),
+    JSON.stringify(Array.isArray(row.uiModuleIds) ? row.uiModuleIds : []),
+    row.authorityFloor,
+    row.bindingLevel,
+    row.confidenceScore,
+    row.freshnessSlaDays,
+    JSON.stringify(row.renderPayload || {}),
+    JSON.stringify(Array.isArray(row.fromObjectIds) ? row.fromObjectIds : []),
+    JSON.stringify(Array.isArray(row.fromClaimIds) ? row.fromClaimIds : []),
+    JSON.stringify(Array.isArray(row.fromTaskCodes) ? row.fromTaskCodes : []),
+    JSON.stringify(Array.isArray(row.fromSignalIds) ? row.fromSignalIds : []),
+    row.derivationMethod,
+    row.promptVersion,
+    row.modelName,
+    row.reviewerStatus,
+    row.activeFlag,
+    row.staleFlag,
+    row.effectiveFrom,
+    row.effectiveTo,
+    JSON.stringify(row.metadata || {})
+  ];
+  const result = await pool.query(sql, values);
+  return { table: 'generated_view', recordId: `generated_view:${(result.rows[0] || {}).view_id || row.viewId}` };
+}
+
+async function materializeTypedTable(pool, tableName, canonicalPayload, event) {
   if (tableName === 'source_registry') return upsertSourceRegistry(pool, canonicalPayload.sourceRegistry);
   if (tableName === 'source_snapshot') return upsertSourceSnapshot(pool, canonicalPayload.sourceSnapshot);
   if (tableName === 'evidence_claim') return upsertEvidenceClaim(pool, canonicalPayload.evidenceClaim);
   if (tableName === 'knowledge_object') return upsertKnowledgeObject(pool, canonicalPayload.knowledgeObject);
   if (tableName === 'task_template') return upsertTaskTemplate(pool, canonicalPayload.taskTemplate);
   if (tableName === 'rule_set') return upsertRuleSet(pool, canonicalPayload.ruleSet);
+  if (tableName === 'generated_view') return upsertGeneratedView(pool, event);
   return { table: tableName, status: 'unsupported' };
 }
 
@@ -877,12 +1024,18 @@ async function materializeCanonicalCoreTypedTables(event, deps) {
   const tables = [];
   for (const tableName of targetTables) {
     try {
-      const result = await materializeTypedTable(pool, tableName, canonicalPayload);
+      const result = await materializeTypedTable(pool, tableName, canonicalPayload, event);
       if (result && result.recordId) {
         tables.push({
           table: tableName,
           status: 'materialized',
           recordId: result.recordId
+        });
+      } else if (result && result.status === 'skipped') {
+        tables.push({
+          table: tableName,
+          status: 'skipped',
+          reason: result.reason || 'payload_missing'
         });
       } else {
         tables.push({

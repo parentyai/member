@@ -1,8 +1,8 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-16T10:11:38.587Z
-- gitCommit: f2ad5b535f9abf93db8d1dae34467dd335559624
-- branch: codex/data-c01-typed-materialization-T002
+- generatedAt: 2026-03-16T13:07:02.836Z
+- gitCommit: 00384d9ad0aa4648032eb9ab4dad172b8be3b3be
+- branch: codex/data-c01-generated-view-T004
 - flagCount: 93
 - source: src/**/*.js
 - check: `npm run feature-flags:check`

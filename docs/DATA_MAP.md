@@ -1011,6 +1011,8 @@ Typical fields:
 ### `city_packs` add-only fields
 - `recommendedTasks[]`
   - item: `{ ruleId, module|null, priorityBoost|null }`
+- `recordEnvelope`
+  - Universal Record Envelope mirror for Canonical Core sidecar emit
 
 ### Rich Menu Task OS seed collections
 - `rich_menu_templates`
