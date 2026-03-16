@@ -14,6 +14,12 @@ test('phase832: trace bundle route hints expose diagnosis fields for fallback co
       traceId: 'trace-1',
       entryType: 'webhook',
       routeKind: 'canonical',
+      contractVersion: 'sro_v2',
+      pathType: 'slow',
+      serviceSurface: 'quick_reply',
+      groupPrivacyMode: 'group_safe',
+      handoffState: 'OFFERED',
+      uUnits: ['U-16', 'U-17', 'U-27'],
       conversationMode: 'concierge',
       routerReason: 'question_pattern',
       strategyReason: 'broad_question_clarify',
@@ -43,4 +49,10 @@ test('phase832: trace bundle route hints expose diagnosis fields for fallback co
   assert.ok(summary.routeHints.finalizerTemplateKinds.includes('generic_fallback'));
   assert.ok(summary.routeHints.replyTemplateFingerprints.includes('rtf_same'));
   assert.ok(summary.routeHints.genericFallbackSlices.includes('broad'));
+  assert.ok(summary.routeHints.contractVersions.includes('sro_v2'));
+  assert.ok(summary.routeHints.pathTypes.includes('slow'));
+  assert.ok(summary.routeHints.serviceSurfaces.includes('quick_reply'));
+  assert.ok(summary.routeHints.groupPrivacyModes.includes('group_safe'));
+  assert.ok(summary.routeHints.handoffStates.includes('OFFERED'));
+  assert.ok(summary.routeHints.uUnits.includes('U-27'));
 });

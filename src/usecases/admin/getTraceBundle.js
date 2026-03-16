@@ -167,7 +167,17 @@ function buildTraceJoinSummary(payload) {
       genericFallbackSlices: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.genericFallbackSlice)).filter(Boolean))).slice(0, 8),
       compatFallbackReasons: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.compatFallbackReason)).filter(Boolean))).slice(0, 8),
       sharedReadinessBridges: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.sharedReadinessBridge)).filter(Boolean))).slice(0, 8),
-      routeDecisionSources: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.routeDecisionSource)).filter(Boolean))).slice(0, 8)
+      routeDecisionSources: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.routeDecisionSource)).filter(Boolean))).slice(0, 8),
+      contractVersions: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.contractVersion)).filter(Boolean))).slice(0, 8),
+      pathTypes: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.pathType)).filter(Boolean))).slice(0, 8),
+      serviceSurfaces: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.serviceSurface)).filter(Boolean))).slice(0, 8),
+      groupPrivacyModes: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.groupPrivacyMode)).filter(Boolean))).slice(0, 8),
+      handoffStates: Array.from(new Set(llmActions.map((row) => normalizeText(row && row.handoffState)).filter(Boolean))).slice(0, 8),
+      uUnits: Array.from(new Set(
+        llmActions.flatMap((row) => Array.isArray(row && row.uUnits) ? row.uUnits : [])
+          .map((item) => normalizeText(item))
+          .filter(Boolean)
+      )).slice(0, 20)
     }
   };
 }

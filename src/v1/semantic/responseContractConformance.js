@@ -68,6 +68,39 @@ function buildSemanticResponseObjectFromReply(params) {
 
   return sanitizeSemanticResponseObject({
     version: 'v1',
+    contract_version: payload.contractVersion || payload.contract_version || null,
+    intent: normalizeText(payload.intent || payload.domainIntent || 'general') || 'general',
+    stage: normalizeText(payload.stage || payload.lifecycleStage || payload.parentLifecycleStage) || 'unknown',
+    answer_mode: normalizeText(payload.answerMode || payload.answer_mode || payload.conversationMode || 'answer') || 'answer',
+    action_class: normalizeText(payload.actionClass || payload.action_class || 'assist') || 'assist',
+    confidence_band: normalizeText(payload.confidenceBand || payload.confidence_band || 'UNKNOWN') || 'UNKNOWN',
+    tasks: Array.isArray(payload.tasks) ? payload.tasks : [],
+    warnings: Array.isArray(payload.warnings) ? payload.warnings : (payload.warning ? [payload.warning] : []),
+    evidence_refs: Array.isArray(payload.evidenceRefs || payload.evidence_refs)
+      ? (payload.evidenceRefs || payload.evidence_refs)
+      : [],
+    follow_up_questions: Array.isArray(payload.followUpQuestions || payload.follow_up_questions)
+      ? (payload.followUpQuestions || payload.follow_up_questions)
+      : (followupQuestion ? [followupQuestion] : []),
+    memory_read_scopes: Array.isArray(payload.memoryReadScopes || payload.memory_read_scopes)
+      ? (payload.memoryReadScopes || payload.memory_read_scopes)
+      : [],
+    memory_write_scopes: Array.isArray(payload.memoryWriteScopes || payload.memory_write_scopes)
+      ? (payload.memoryWriteScopes || payload.memory_write_scopes)
+      : [],
+    handoff_state: normalizeText(payload.handoffState || payload.handoff_state || (payload.handoffRequired === true ? 'OFFERED' : 'NONE')) || 'NONE',
+    service_surface: normalizeText(payload.serviceSurface || payload.service_surface || null) || null,
+    response_chunks: Array.isArray(payload.responseChunks || payload.response_chunks)
+      ? (payload.responseChunks || payload.response_chunks)
+      : [],
+    path_type: normalizeText(payload.pathType || payload.path_type || 'slow') || 'slow',
+    u_units: Array.isArray(payload.uUnits || payload.u_units) ? (payload.uUnits || payload.u_units) : [],
+    group_privacy_mode: normalizeText(payload.groupPrivacyMode || payload.group_privacy_mode || 'direct') || 'direct',
+    quick_replies: Array.isArray(payload.quickReplies || payload.quick_replies)
+      ? (payload.quickReplies || payload.quick_replies)
+      : [],
+    policy_trace: payload.policyTrace && typeof payload.policyTrace === 'object' ? payload.policyTrace : {},
+    citation_summary: payload.citationSummary && typeof payload.citationSummary === 'object' ? payload.citationSummary : {},
     response_contract: {
       style: normalizeText(payload.style || payload.conversationMode || 'coach') || 'coach',
       intent: normalizeText(payload.intent || payload.domainIntent || 'general') || 'general',
@@ -94,7 +127,12 @@ function evaluateResponseContractConformance(params) {
     errorCount: Array.isArray(validation.errors) ? validation.errors.length : 0,
     semanticResponseObject: validation.value,
     responseMarkdown,
-    fallbackApplied: validation.ok !== true
+    fallbackApplied: validation.ok !== true,
+    contractVersion: validation.value && validation.value.contract_version ? validation.value.contract_version : null,
+    pathType: validation.value && validation.value.path_type ? validation.value.path_type : null,
+    uUnits: Array.isArray(validation.value && validation.value.u_units) ? validation.value.u_units : [],
+    serviceSurface: validation.value && validation.value.service_surface ? validation.value.service_surface : null,
+    groupPrivacyMode: validation.value && validation.value.group_privacy_mode ? validation.value.group_privacy_mode : null
   };
 }
 

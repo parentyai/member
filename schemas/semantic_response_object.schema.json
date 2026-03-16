@@ -4,9 +4,185 @@
   "title": "semantic_response_object",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "response_contract"],
+  "required": [
+    "version",
+    "contract_version",
+    "intent",
+    "stage",
+    "answer_mode",
+    "action_class",
+    "confidence_band",
+    "tasks",
+    "warnings",
+    "evidence_refs",
+    "follow_up_questions",
+    "memory_read_scopes",
+    "memory_write_scopes",
+    "handoff_state",
+    "service_surface",
+    "response_chunks",
+    "response_markdown"
+  ],
   "properties": {
     "version": { "type": "string", "const": "v1" },
+    "contract_version": { "type": "string", "minLength": 1, "maxLength": 32 },
+    "intent": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "stage": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "answer_mode": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "action_class": {
+      "type": "string",
+      "enum": ["lookup", "draft", "assist", "human_only"]
+    },
+    "confidence_band": {
+      "type": "string",
+      "enum": ["HIGH", "MEDIUM", "LOW", "UNKNOWN"]
+    },
+    "tasks": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "title", "status", "priority", "required_docs", "blockers"],
+        "properties": {
+          "task_id": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "status": { "type": "string", "minLength": 1, "maxLength": 32 },
+          "priority": { "type": "string", "minLength": 1, "maxLength": 32 },
+          "due_at": { "type": ["string", "null"], "format": "date-time" },
+          "required_docs": {
+            "type": "array",
+            "maxItems": 5,
+            "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
+          "blockers": {
+            "type": "array",
+            "maxItems": 5,
+            "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "maxItems": 6,
+      "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ref_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "source_snapshot_id": { "type": ["string", "null"], "maxLength": 120 },
+          "authority_tier": { "type": "string", "maxLength": 64 },
+          "freshness_status": {
+            "type": "string",
+            "enum": ["fresh", "mixed", "stale", "unknown"]
+          },
+          "readiness_decision": {
+            "type": "string",
+            "enum": ["allow", "hedged", "clarify", "refuse", "unknown"]
+          },
+          "disclosure_required": { "type": "boolean" },
+          "url": { "type": ["string", "null"], "maxLength": 400 }
+        }
+      }
+    },
+    "follow_up_questions": {
+      "type": "array",
+      "maxItems": 3,
+      "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+    },
+    "memory_read_scopes": {
+      "type": "array",
+      "maxItems": 6,
+      "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+    },
+    "memory_write_scopes": {
+      "type": "array",
+      "maxItems": 6,
+      "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+    },
+    "handoff_state": {
+      "type": "string",
+      "enum": ["NONE", "OFFERED", "REQUIRED", "IN_PROGRESS", "COMPLETED"]
+    },
+    "service_surface": {
+      "type": "string",
+      "enum": ["text", "quick_reply", "flex", "template", "liff", "mini_app", "push", "service_message"]
+    },
+    "response_chunks": {
+      "type": "array",
+      "maxItems": 6,
+      "items": { "type": "string", "minLength": 1, "maxLength": 800 }
+    },
+    "response_markdown": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "path_type": {
+      "type": "string",
+      "enum": ["fast", "slow", "unknown"]
+    },
+    "u_units": {
+      "type": "array",
+      "maxItems": 12,
+      "items": { "type": "string", "minLength": 1, "maxLength": 32 }
+    },
+    "group_privacy_mode": {
+      "type": "string",
+      "enum": ["direct", "group_safe"]
+    },
+    "quick_replies": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "text"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1, "maxLength": 20 },
+          "text": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "data": { "type": ["string", "null"], "maxLength": 120 }
+        }
+      }
+    },
+    "policy_trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_source", "legal_decision", "safety_gate", "disclosure_required", "escalation_required", "reason_codes"],
+      "properties": {
+        "policy_source": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "legal_decision": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "safety_gate": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "disclosure_required": { "type": "boolean" },
+        "escalation_required": { "type": "boolean" },
+        "reason_codes": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+        }
+      }
+    },
+    "citation_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["finalized", "readiness_decision", "freshness_status", "disclaimer_required"],
+      "properties": {
+        "finalized": { "type": "boolean" },
+        "readiness_decision": {
+          "type": "string",
+          "enum": ["allow", "hedged", "clarify", "refuse", "unknown"]
+        },
+        "freshness_status": {
+          "type": "string",
+          "enum": ["fresh", "mixed", "stale", "unknown"]
+        },
+        "authority_satisfied": { "type": ["boolean", "null"] },
+        "disclaimer_required": { "type": "boolean" }
+      }
+    },
     "response_contract": {
       "type": "object",
       "additionalProperties": false,
@@ -43,7 +219,6 @@
           "arguments": { "type": "object" }
         }
       }
-    },
-    "response_markdown": { "type": "string", "maxLength": 2000 }
+    }
   }
 }
