@@ -416,6 +416,53 @@ internal token matrix（routeごとの既定ヘッダー）:
 2) 上表どおりのグループ表示か確認
 3) 逸脱時は直近 UI PR を revert し、契約テスト失敗を確認して原因修正
 
+## PR11 One-shot Release Gate（hardening）
+目的: 本番有効化を1回に集約し、role別で「見えない/反映されない」再発を防止する。
+
+### 事前ゲート（必須）
+1) `npm run test:docs`
+2) `npm run test:admin-nav-contract`
+3) `node --test tests/phase674/*.test.js`
+4) `ui_screenshot_evidence_index_v2.json` の `captureSet=ui-pr11-hardening-20260316` が42件（14面×3role）であること
+5) `docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json` が存在すること
+
+### 14面×3role Playwright最小回帰（実施済みセット）
+- captureSet: `ui-pr11-hardening-20260316`
+- role: `operator/admin/developer`
+- pane:
+  - `home`
+  - `composer`
+  - `monitor`
+  - `city-pack`
+  - `vendors`
+  - `read-model`
+  - `alerts`
+  - `errors`
+  - `llm`
+  - `settings`
+  - `maintenance`
+  - `audit`
+  - `ops-feature-catalog`
+  - `ops-system-health`
+- foldノイズ結果（1440x900）:
+  - `preInFold=0`
+  - `textareaInFold=0`
+  - `detailsOpenInFold=1`
+- 追跡ファイル:
+  - `docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json`
+  - `docs/REPO_AUDIT_INPUTS/ui_pr11_playwright_observed.log`
+
+### 即時停止（既存フラグ）
+1) `ENABLE_OPS_SYSTEM_SNAPSHOT_V1=0`
+2) `ENABLE_OPS_REALTIME_DASHBOARD_V1=0`
+3) `ENABLE_ADMIN_NAV_ALL_ACCESSIBLE_V1=0`
+
+### 段階巻き戻し（PR単位）
+1) PR11 revert
+2) PR10 revert
+3) PR9 revert
+4) PR8 revert
+
 ## City Pack Education運用（公立学校 / link-only）
 目的: 公立学校の公式リンクを安全運用し、120日監査で期限切れ/差分を管理する。
 

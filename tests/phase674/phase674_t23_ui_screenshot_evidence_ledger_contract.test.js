@@ -16,7 +16,7 @@ test('phase674: screenshot evidence ledger json keeps minimum schema and source 
   const rows = JSON.parse(fs.readFileSync(LEDGER_JSON, 'utf8'));
 
   assert.ok(Array.isArray(rows));
-  assert.ok(rows.length >= 20, 'expected at least 20 screenshot evidence rows');
+  assert.ok(rows.length >= 60, 'expected at least 60 screenshot evidence rows');
 
   const requiredKeys = [
     'evidenceId',
@@ -51,6 +51,7 @@ test('phase674: screenshot evidence ledger covers key capture sets, roles and pr
   const captureSets = new Set(rows.map((row) => row.captureSet));
   assert.ok(captureSets.has('ui-audit-20260306'));
   assert.ok(captureSets.has('ui-ux-audit-20260307'));
+  assert.ok(captureSets.has('ui-pr11-hardening-20260316'));
 
   const roles = new Set(rows.map((row) => row.role));
   assert.ok(roles.has('admin'));
