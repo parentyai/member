@@ -20,6 +20,45 @@ function normalizeLowerText(value) {
   return String(value || '').toLowerCase();
 }
 
+function classifyOperatorRecoveryBranch(summary) {
+  const source = summary && typeof summary === 'object' ? summary : {};
+  const code = normalizeCode(source.code || '');
+  if (!code || code === 'LOCAL_PREFLIGHT_OK') return 'OK';
+  if (code === 'SA_KEY_REQUIRED'
+    || code.startsWith('SA_KEY_PATH_')
+    || code === 'CREDENTIALS_PATH_INVALID'
+    || code === 'CREDENTIALS_PATH_NOT_FILE') {
+    return 'AUTH_SA_KEY';
+  }
+  if (code === 'ADC_REAUTH_REQUIRED') return 'AUTH_ADC';
+  if (code === 'FIRESTORE_PERMISSION_ERROR') return 'PERMISSION';
+  if (code === 'FIRESTORE_PROJECT_ID_ERROR' || code === 'FIRESTORE_PROJECT_ID_MISSING') return 'PROJECT_ID';
+  if (code === 'FIRESTORE_TIMEOUT' || code === 'FIRESTORE_NETWORK_ERROR') return 'CONNECTIVITY';
+  if (code === 'FIRESTORE_DATABASE_NOT_FOUND') return 'DATABASE';
+  return 'UNKNOWN';
+}
+
+function buildOperatorRecoveryHint(branch) {
+  switch (normalizeCode(branch)) {
+    case 'OK':
+      return 'ローカル前提条件は正常です。通常運用を継続してください。';
+    case 'AUTH_SA_KEY':
+      return 'ローカルSA鍵（GOOGLE_APPLICATION_CREDENTIALS）を確認して再診断してください。';
+    case 'AUTH_ADC':
+      return 'ADC再認証を実行してアクセストークンを再取得してください。';
+    case 'PERMISSION':
+      return '利用中の資格情報に Firestore の参照権限があるか確認してください。';
+    case 'PROJECT_ID':
+      return 'FIRESTORE_PROJECT_ID と gcloud の project 設定を一致させてください。';
+    case 'CONNECTIVITY':
+      return 'ネットワーク疎通と資格情報を確認し、再診断してください。';
+    case 'DATABASE':
+      return '対象プロジェクトに Firestore データベースが存在するか確認してください。';
+    default:
+      return '詳細ヒントを確認し、復旧コマンドを順に実行してください。';
+  }
+}
+
 function resolveBooleanFlag(value, fallback) {
   if (typeof value !== 'string') return fallback;
   const normalized = value.trim().toLowerCase();
@@ -900,7 +939,12 @@ async function runLocalPreflight(options) {
   const summary = shouldSkipProbe
     ? buildSaKeyRequiredSummary(saKeyPath)
     : buildSummary(checks);
-  const ready = summary.tone !== 'danger';
+  const operatorBranch = classifyOperatorRecoveryBranch(summary);
+  const summaryWithBranch = Object.assign({}, summary, {
+    operatorBranch,
+    operatorHint: buildOperatorRecoveryHint(operatorBranch)
+  });
+  const ready = summaryWithBranch.tone !== 'danger';
 
   return {
     ok: true,
@@ -908,7 +952,7 @@ async function runLocalPreflight(options) {
     checkedAt: new Date().toISOString(),
     autoSaKeyPath: autoSaKeyPath || null,
     checks,
-    summary
+    summary: summaryWithBranch
   };
 }
 
@@ -934,5 +978,7 @@ module.exports = {
   probeFirestoreReadOnly,
   buildSummary,
   classifyProbeError,
-  classifyFirestoreProbeClassification
+  classifyFirestoreProbeClassification,
+  classifyOperatorRecoveryBranch,
+  buildOperatorRecoveryHint
 };

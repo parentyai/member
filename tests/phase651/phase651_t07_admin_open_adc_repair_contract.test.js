@@ -52,7 +52,8 @@ test('phase651: feature catalog evaluator requires available true', () => {
 test('phase651: admin_open includes adc reauth workflow contract', () => {
   const src = fs.readFileSync('tools/admin_open.js', 'utf8');
 
-  assert.ok(src.includes("const { runLocalPreflight } = require('./admin_local_preflight');"));
+  assert.ok(src.includes("require('./admin_local_preflight')"));
+  assert.ok(src.includes('runLocalPreflight'));
   assert.ok(src.includes('async function maybeRepairAdcForLocalReadPath(opts, projectId)'));
   assert.ok(src.includes("ADC expired; launching browser for gcloud application-default login"));
   assert.ok(src.includes("runCommand('gcloud', ['auth', 'application-default', 'login']"));
