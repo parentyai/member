@@ -14944,8 +14944,12 @@ function renderMaintenanceOverview() {
   const staleCount = snapshotRows.filter((item) => item && item.isStale).length;
   const fallbackRows = Array.isArray(state.readPathFallbackSummary) ? state.readPathFallbackSummary : [];
   const fallbackCount = fallbackRows.reduce((sum, row) => sum + (Number.isFinite(Number(row && row.count)) ? Number(row.count) : 0), 0);
-  const missingIndexCount = Number.isFinite(Number(state.missingIndexSurfaceMeta && state.missingIndexSurfaceMeta.surfaceCount))
+  const missingIndexSurfaceCountRaw = state.missingIndexSurfaceMeta
+    && state.missingIndexSurfaceMeta.surfaceCount !== undefined
     ? Number(state.missingIndexSurfaceMeta.surfaceCount)
+    : NaN;
+  const missingIndexCount = Number.isFinite(missingIndexSurfaceCountRaw)
+    ? missingIndexSurfaceCountRaw
     : (Array.isArray(state.missingIndexSurfaceItems) ? state.missingIndexSurfaceItems.length : 0);
   const featureCounts = state.opsFeatureCatalogStatus && state.opsFeatureCatalogStatus.counts && typeof state.opsFeatureCatalogStatus.counts === 'object'
     ? state.opsFeatureCatalogStatus.counts

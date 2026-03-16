@@ -279,6 +279,28 @@ test('phase664: local preflight classifies missing project id probe failure as F
   assert.ok(result.summary.recoveryCommands.includes('npm run admin:preflight'));
 });
 
+test('phase664: local preflight classifies missing firebase-admin dependency as FIRESTORE_SDK_MISSING', async () => {
+  const result = await runLocalPreflight({
+    env: { FIRESTORE_PROJECT_ID: 'member-485303' },
+    requireSaKey: false,
+    timeoutMs: 100,
+    getDb: () => ({
+      listCollections: async () => {
+        throw new Error("Cannot find module 'firebase-admin'");
+      }
+    })
+  });
+
+  assert.equal(result.ready, false);
+  assert.equal(result.checks.firestoreProbe.code, 'FIRESTORE_SDK_MISSING');
+  assert.equal(result.checks.firestoreProbe.classification, 'FIRESTORE_SDK_MISSING');
+  assert.equal(result.summary.code, 'FIRESTORE_SDK_MISSING');
+  assert.equal(result.summary.category, 'env');
+  assert.equal(result.summary.recoveryActionCode, 'CHECK_FIRESTORE_SDK_MISSING');
+  assert.ok(Array.isArray(result.summary.recoveryCommands));
+  assert.ok(result.summary.recoveryCommands.includes('npm ci'));
+});
+
 test('phase664: local preflight promotes FIRESTORE_UNKNOWN probe to FIRESTORE_PROJECT_ID_ERROR when project id is missing', async () => {
   const result = await runLocalPreflight({
     env: {},

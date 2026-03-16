@@ -12,9 +12,33 @@ const PROJECT_ID_ENV_KEYS = Object.freeze([
   'GCP_PROJECT'
 ]);
 
+function isFirebaseAdminModuleNotFound(err) {
+  if (!err || err.code !== 'MODULE_NOT_FOUND') return false;
+  const message = typeof err.message === 'string' ? err.message : '';
+  if (message.includes("'firebase-admin'") || message.includes('"firebase-admin"')) return true;
+  const stack = Array.isArray(err.requireStack) ? err.requireStack : [];
+  return stack.some((entry) => typeof entry === 'string' && entry.includes('firebase-admin'));
+}
+
+function buildFirestoreSdkMissingError(innerError) {
+  const error = new Error(
+    'FIRESTORE_SDK_MISSING: firebase-admin が見つかりません。`npm ci` または `npm install` を実行して依存関係を復旧してください。'
+  );
+  error.code = 'FIRESTORE_SDK_MISSING';
+  if (innerError) error.cause = innerError;
+  return error;
+}
+
 function getAdmin() {
   if (adminCache) return adminCache;
-  adminCache = require('firebase-admin');
+  try {
+    adminCache = require('firebase-admin');
+  } catch (err) {
+    if (isFirebaseAdminModuleNotFound(err)) {
+      throw buildFirestoreSdkMissingError(err);
+    }
+    throw err;
+  }
   return adminCache;
 }
 
