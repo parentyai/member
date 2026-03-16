@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T21:47:58-04:00",
-  "gitCommit": "f843b9e99607f61df6454c3a9856e5a4d972ad91",
-  "branch": "codex/llm-line-canonical-sro-t001",
-  "sourceDigest": "cf0d1358c20ba7c777185d018ee87667e485bc4680f96c3787f04c5106212f1a",
+  "generatedAt": "2026-03-15T22:05:28-04:00",
+  "gitCommit": "8716924d67dfe49f00eefb1de33cfdf20f4aa608",
+  "branch": "codex/admin-ui-pr14-empty-state-reasons",
+  "sourceDigest": "8091845a69ea41cbe4658d38692ee3cafd547cbff7d60f485a6baa1df594c182",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
