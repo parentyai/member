@@ -27,7 +27,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Auth (OIDC)
         uses: google-github-actions/auth@v2
@@ -43,7 +43,7 @@ jobs:
           project_id: ${{ env.FIRESTORE_PROJECT_ID || env.GCP_PROJECT_ID }}
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: npm
@@ -204,7 +204,7 @@ jobs:
 
       - name: Upload artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: quality-patrol-cycle-${{ github.run_id }}
           path: /tmp/quality_patrol_cycle_*.json

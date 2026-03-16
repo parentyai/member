@@ -31,7 +31,7 @@ test('phase184: stg notification e2e workflow runs proxy and strict route error 
 
 test('phase184: stg notification e2e workflow uploads artifacts', () => {
   const contents = read('.github/workflows/stg-notification-e2e.yml');
-  assert.match(contents, /actions\/upload-artifact@v4/, 'artifact upload action missing');
+  assert.match(contents, /actions\/upload-artifact@v7/, 'artifact upload action missing');
   assert.match(contents, /artifacts\/stg-notification-e2e/, 'artifact path missing');
   assert.match(contents, /Append markdown summary to job summary/, 'job summary step missing');
 });

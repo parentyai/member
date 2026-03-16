@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T23:26:19.260Z",
-  "gitCommit": "0a2ddcb701e6a673574a37ca754794569f60845b",
-  "branch": "codex/data-c04-exception-playbook-T006",
-  "sourceDigest": "ae24d67904e5972f020888a5ff159e5da78c8a7a0ec04884b38b243927f677ad",
+  "generatedAt": "2026-03-16T23:35:00.864Z",
+  "gitCommit": "fb289f2d5cd2fbfd75f5ebf4e0ae0f9b7ce19e45",
+  "branch": "codex/gha-node24-readiness-T007",
+  "sourceDigest": "c108b6dd3641d18c258cb63c211515b7fe14885243b738a094cc3349283c60f0",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "1883fd0849ff8a26ed6391fec071bfa36d117a22069d2a9664fc44fcd6298eca",
+      "sha256": "832649d622587fe4442c28949602c57146a8833619048edb2e5db54e869976db",
       "bytes": 453880
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "a45d572f6ec54f37b20a0a8fda950fddb84fd2509094aa16f676d28f5622b52f",
-      "bytes": 2424
+      "sha256": "76143537814a7b0ce33e0e981da57846340e3e7c8e66b3c6bfe773527bf43080",
+      "bytes": 2417
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",

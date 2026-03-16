@@ -28,7 +28,7 @@ test('phase856: quality patrol workflow runs hourly with OIDC auth and artifact 
   assert.ok(workflow.includes('QUALITY_PATROL_AUTH_BRIDGE=external_account'));
   assert.ok(workflow.includes('npm install'));
   assert.ok(workflow.includes('npm run quality-patrol:cycle'));
-  assert.ok(workflow.includes('actions/upload-artifact@v4'));
+  assert.ok(workflow.includes('actions/upload-artifact@v7'));
   assert.ok(workflow.includes('/tmp/quality_patrol_cycle_*.json'));
   assert.ok(workflow.includes('OPENAI_API_KEY'));
   assert.ok(workflow.includes('FIRESTORE_PROJECT_ID'));

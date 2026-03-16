@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T18:56:47-04:00",
-  "gitCommit": "0a2ddcb701e6a673574a37ca754794569f60845b",
-  "branch": "codex/data-c04-exception-playbook-T006",
-  "sourceDigest": "b16c6142b042115d957a0b9033de97a283f88dc1fdf7ad787616ef047d90da35",
+  "generatedAt": "2026-03-16T19:30:56-04:00",
+  "gitCommit": "fb289f2d5cd2fbfd75f5ebf4e0ae0f9b7ce19e45",
+  "branch": "codex/gha-node24-readiness-T007",
+  "sourceDigest": "1998b256b2538c141aafcf0fb907ed24af27efb5ebd480be342356538100557d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
