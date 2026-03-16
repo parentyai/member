@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T18:43:36-04:00",
-  "gitCommit": "3c75b8c66ca5daa13c9f0add5ef12b93a21ba5d5",
-  "branch": "codex/quality-patrol-prG-merge-T002",
-  "sourceDigest": "649f8f4c354436fad6006c223e690f5ea8236502b794828714fa4a048b5405b0",
+  "generatedAt": "2026-03-15T18:49:45-04:00",
+  "gitCommit": "9577e5712c8d0fcee494cd60f2f6d3420f622996",
+  "branch": "codex/llm-line-canonical-sro-t001",
+  "sourceDigest": "abe35d6f1c01e91fb76ba191bcc1e4a4b7bba27c4413ca174604d3ba6e635977",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

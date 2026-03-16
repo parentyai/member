@@ -49,6 +49,10 @@ const SOURCE_READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refus
 const READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refuse']);
 const READINESS_SAFE_RESPONSE_MODES = new Set(['answer', 'answer_with_hedge', 'clarify', 'refuse']);
 const FOLLOWUP_INTENTS = new Set(['docs_required', 'appointment_needed', 'next_step']);
+const SERVICE_SURFACES = new Set(['text', 'quick_reply', 'flex', 'template', 'liff', 'mini_app', 'push', 'service_message']);
+const HANDOFF_STATES = new Set(['NONE', 'OFFERED', 'REQUIRED', 'IN_PROGRESS', 'COMPLETED']);
+const PATH_TYPES = new Set(['fast', 'slow', 'unknown']);
+const GROUP_PRIVACY_MODES = new Set(['direct', 'group_safe']);
 const PARENT_INTENT_TYPES = new Set([
   'NEXT_STEP',
   'HOW_TO',
@@ -316,6 +320,30 @@ function normalizeFollowupIntent(value) {
   return FOLLOWUP_INTENTS.has(normalized) ? normalized : null;
 }
 
+function normalizeServiceSurface(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return SERVICE_SURFACES.has(normalized) ? normalized : 'text';
+}
+
+function normalizeHandoffState(value) {
+  const normalized = normalizeString(value, '').toUpperCase();
+  if (!normalized) return null;
+  return HANDOFF_STATES.has(normalized) ? normalized : null;
+}
+
+function normalizePathType(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return PATH_TYPES.has(normalized) ? normalized : 'unknown';
+}
+
+function normalizeGroupPrivacyMode(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return GROUP_PRIVACY_MODES.has(normalized) ? normalized : 'direct';
+}
+
 function normalizeKnowledgeCandidateCountBySource(value) {
   const payload = value && typeof value === 'object' ? value : {};
   const clampCount = (input) => {
@@ -549,6 +577,30 @@ async function appendLlmActionLog(params) {
     responseContractErrorCount: Math.max(0, Math.min(12, Math.floor(normalizeNumber(payload.responseContractErrorCount, 0)))),
     responseContractErrors: normalizeStringList(payload.responseContractErrors, 12),
     responseContractFallbackApplied: payload.responseContractFallbackApplied === true,
+    contractVersion: normalizeString(payload.contractVersion, null),
+    pathType: normalizePathType(payload.pathType),
+    uUnits: normalizeStringList(payload.uUnits, 12),
+    serviceSurface: normalizeServiceSurface(payload.serviceSurface),
+    groupPrivacyMode: normalizeGroupPrivacyMode(payload.groupPrivacyMode),
+    handoffState: normalizeHandoffState(payload.handoffState),
+    memoryReadScopes: normalizeStringList(payload.memoryReadScopes, 6),
+    memoryWriteScopes: normalizeStringList(payload.memoryWriteScopes, 6),
+    citationFinalized: typeof payload.citationFinalized === 'boolean' ? payload.citationFinalized : null,
+    citationFreshnessStatus: normalizeString(payload.citationFreshnessStatus, null),
+    citationAuthoritySatisfied: typeof payload.citationAuthoritySatisfied === 'boolean'
+      ? payload.citationAuthoritySatisfied
+      : null,
+    citationDisclaimerRequired: typeof payload.citationDisclaimerRequired === 'boolean'
+      ? payload.citationDisclaimerRequired
+      : null,
+    policySourceResolved: normalizeString(payload.policySourceResolved, null),
+    policyGate: normalizeString(payload.policyGate, null),
+    policyDisclosureRequired: typeof payload.policyDisclosureRequired === 'boolean'
+      ? payload.policyDisclosureRequired
+      : null,
+    policyEscalationRequired: typeof payload.policyEscalationRequired === 'boolean'
+      ? payload.policyEscalationRequired
+      : null,
     sourceAuthorityScore: Math.max(0, Math.min(1, normalizeNumber(payload.sourceAuthorityScore, 0))),
     sourceFreshnessScore: Math.max(0, Math.min(1, normalizeNumber(payload.sourceFreshnessScore, 0))),
     sourceReadinessDecision: normalizeSourceReadinessDecision(payload.sourceReadinessDecision),

@@ -51,6 +51,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/SSOT_RETENTION_ADDENDUM.md`（Retention方針補遺）
 - `docs/KILLSWITCH_DEPENDENCY_MAP.md`（killSwitch依存経路マップ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
+- `docs/LLM_SRO_TRACEABILITY_MAP_V1.md`（canonical SRO contract / trace fields / U-unit 対応表）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
 - `docs/LLM_GUARDRAILS.md`（LLMガードレール）
 - `docs/LLM_DATA_MINIMIZATION.md`（LLM最小化ポリシー）

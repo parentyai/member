@@ -198,7 +198,27 @@ const LLM_GATE_KEYS = new Set([
   'savedFaqReused',
   'savedFaqReusePass',
   'savedFaqReuseReasonCodes',
-  'sourceSnapshotRefs'
+  'sourceSnapshotRefs',
+  'responseContractConformant',
+  'responseContractErrorCount',
+  'responseContractErrors',
+  'responseContractFallbackApplied',
+  'contractVersion',
+  'pathType',
+  'uUnits',
+  'serviceSurface',
+  'groupPrivacyMode',
+  'handoffState',
+  'memoryReadScopes',
+  'memoryWriteScopes',
+  'citationFinalized',
+  'citationFreshnessStatus',
+  'citationAuthoritySatisfied',
+  'citationDisclaimerRequired',
+  'policySourceResolved',
+  'policyGate',
+  'policyDisclosureRequired',
+  'policyEscalationRequired'
 ]);
 
 const LLM_USAGE_KEYS = new Set([
