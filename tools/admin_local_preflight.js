@@ -20,6 +20,48 @@ function normalizeLowerText(value) {
   return String(value || '').toLowerCase();
 }
 
+function classifyOperatorRecoveryBranch(summary) {
+  const source = summary && typeof summary === 'object' ? summary : {};
+  const code = normalizeCode(source.code || '');
+  if (!code || code === 'LOCAL_PREFLIGHT_OK') return 'OK';
+  if (code === 'SA_KEY_REQUIRED'
+    || code.startsWith('SA_KEY_PATH_')
+    || code === 'CREDENTIALS_PATH_INVALID'
+    || code === 'CREDENTIALS_PATH_NOT_FILE') {
+    return 'AUTH_SA_KEY';
+  }
+  if (code === 'ADC_REAUTH_REQUIRED') return 'AUTH_ADC';
+  if (code === 'FIRESTORE_SDK_MISSING') return 'SDK_MISSING';
+  if (code === 'FIRESTORE_PERMISSION_ERROR') return 'PERMISSION';
+  if (code === 'FIRESTORE_PROJECT_ID_ERROR' || code === 'FIRESTORE_PROJECT_ID_MISSING') return 'PROJECT_ID';
+  if (code === 'FIRESTORE_TIMEOUT' || code === 'FIRESTORE_NETWORK_ERROR') return 'CONNECTIVITY';
+  if (code === 'FIRESTORE_DATABASE_NOT_FOUND') return 'DATABASE';
+  return 'UNKNOWN';
+}
+
+function buildOperatorRecoveryHint(branch) {
+  switch (normalizeCode(branch)) {
+    case 'OK':
+      return 'ローカル前提条件は正常です。通常運用を継続してください。';
+    case 'AUTH_SA_KEY':
+      return 'ローカルSA鍵（GOOGLE_APPLICATION_CREDENTIALS）を確認して再診断してください。';
+    case 'AUTH_ADC':
+      return 'ADC再認証を実行してアクセストークンを再取得してください。';
+    case 'SDK_MISSING':
+      return 'firebase-admin 依存を復旧し、npm run admin:preflight を再実行してください。';
+    case 'PERMISSION':
+      return '利用中の資格情報に Firestore の参照権限があるか確認してください。';
+    case 'PROJECT_ID':
+      return 'FIRESTORE_PROJECT_ID と gcloud の project 設定を一致させてください。';
+    case 'CONNECTIVITY':
+      return 'ネットワーク疎通と資格情報を確認し、再診断してください。';
+    case 'DATABASE':
+      return '対象プロジェクトに Firestore データベースが存在するか確認してください。';
+    default:
+      return '詳細ヒントを確認し、復旧コマンドを順に実行してください。';
+  }
+}
+
 function resolveBooleanFlag(value, fallback) {
   if (typeof value !== 'string') return fallback;
   const normalized = value.trim().toLowerCase();
@@ -317,6 +359,12 @@ function evaluateProjectId(env, options) {
 
 function classifyProbeError(message) {
   const text = normalizeLowerText(message);
+  if (text.includes('firestore_sdk_missing')
+    || text.includes("cannot find module 'firebase-admin'")
+    || text.includes('firebase-admin が見つかりません')
+    || text.includes('firebase-admin is missing')) {
+    return 'FIRESTORE_SDK_MISSING';
+  }
   if (text.includes('could not load the default credentials')
     || text.includes('failed to read credentials')
     || text.includes('google_application_credentials')
@@ -333,6 +381,12 @@ function classifyProbeError(message) {
 
 function classifyFirestoreProbeClassification(message) {
   const text = normalizeLowerText(message);
+  if (text.includes('firestore_sdk_missing')
+    || text.includes("cannot find module 'firebase-admin'")
+    || text.includes('firebase-admin が見つかりません')
+    || text.includes('firebase-admin is missing')) {
+    return 'FIRESTORE_SDK_MISSING';
+  }
   if (text.includes('database not found')
     || text.includes('datastore was not found')
     || text.includes('resource name') && text.includes('/databases/') && text.includes('not found')
@@ -433,6 +487,11 @@ const RECOVERY_COMMANDS = Object.freeze({
     'npm run admin:preflight',
     'curl -sS -H "x-admin-token: <token>" -H "x-actor: local-check" http://127.0.0.1:8080/api/admin/local-preflight'
   ]),
+  CHECK_FIRESTORE_SDK_MISSING: Object.freeze([
+    'npm ls firebase-admin',
+    'npm ci',
+    'npm run admin:preflight'
+  ]),
   FIX_CREDENTIALS_PATH: Object.freeze([
     'export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.secrets/member-dev-sa.json"',
     'test -r "$GOOGLE_APPLICATION_CREDENTIALS"',
@@ -462,6 +521,21 @@ function buildErrorSummary(entry) {
 
   if (source.key === 'firestoreProbe') {
     const classification = normalizeCode(source.classification || 'FIRESTORE_UNKNOWN');
+    if (classification === 'FIRESTORE_SDK_MISSING') {
+      return {
+        code: 'FIRESTORE_SDK_MISSING',
+        tone: 'danger',
+        category: 'env',
+        cause: 'firebase-admin 依存が見つからず Firestore 接続に失敗しました。',
+        impact: 'Firestore依存APIが失敗し、管理画面に NOT AVAILABLE が増えます。',
+        action: '依存関係を復旧（npm ci）してから再診断してください。',
+        recoveryActionCode: 'CHECK_FIRESTORE_SDK_MISSING',
+        recoveryCommands: resolveRecoveryCommands('CHECK_FIRESTORE_SDK_MISSING'),
+        primaryCheckKey: 'firestoreProbe',
+        rawHint,
+        retriable: true
+      };
+    }
     if (classification === 'FIRESTORE_DATABASE_NOT_FOUND') {
       return {
         code: 'FIRESTORE_DATABASE_NOT_FOUND',
@@ -900,7 +974,12 @@ async function runLocalPreflight(options) {
   const summary = shouldSkipProbe
     ? buildSaKeyRequiredSummary(saKeyPath)
     : buildSummary(checks);
-  const ready = summary.tone !== 'danger';
+  const operatorBranch = classifyOperatorRecoveryBranch(summary);
+  const summaryWithBranch = Object.assign({}, summary, {
+    operatorBranch,
+    operatorHint: buildOperatorRecoveryHint(operatorBranch)
+  });
+  const ready = summaryWithBranch.tone !== 'danger';
 
   return {
     ok: true,
@@ -908,7 +987,7 @@ async function runLocalPreflight(options) {
     checkedAt: new Date().toISOString(),
     autoSaKeyPath: autoSaKeyPath || null,
     checks,
-    summary
+    summary: summaryWithBranch
   };
 }
 
@@ -934,5 +1013,7 @@ module.exports = {
   probeFirestoreReadOnly,
   buildSummary,
   classifyProbeError,
-  classifyFirestoreProbeClassification
+  classifyFirestoreProbeClassification,
+  classifyOperatorRecoveryBranch,
+  buildOperatorRecoveryHint
 };

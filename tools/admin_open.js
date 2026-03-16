@@ -5,7 +5,11 @@ const http = require('http');
 const { spawn, spawnSync } = require('child_process');
 const { createHash } = require('crypto');
 const { resolveFirestoreProjectId } = require('../src/infra/firestore');
-const { runLocalPreflight } = require('./admin_local_preflight');
+const {
+  runLocalPreflight,
+  classifyOperatorRecoveryBranch,
+  buildOperatorRecoveryHint
+} = require('./admin_local_preflight');
 
 const DEFAULT_PORT = 18080;
 const DEFAULT_ENV_NAME = 'stg';
@@ -407,7 +411,7 @@ function applyLocalAccessActions(loginUrl, token, opts) {
   if (!opts.noCopy) {
     const copied = copyToClipboard(token);
     if (copied.ok) process.stdout.write(`[admin:open] token copied to clipboard (${copied.reason})\n`);
-    else process.stdout.write('[admin:open] token copy skipped (clipboard command unavailable)\n');
+    else process.stdout.write(`[admin:open] token copy failed (${copied.reason}): ${describeClipboardFailure(copied.reason)}\n`);
   }
   if (!opts.noOpen) {
     const opened = openUrl(loginUrl);
@@ -430,6 +434,93 @@ function resolveProbeClassification(preflightResult) {
   return String(raw || '').trim().toUpperCase();
 }
 
+function normalizeCode(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function pickPrimaryRecoveryCommand(commands) {
+  const list = Array.isArray(commands) ? commands : [];
+  const executable = list
+    .map((entry) => String(entry || '').trim())
+    .filter((entry) => entry && !entry.startsWith('#'));
+  if (!executable.length) return '';
+  const preferred = executable.find((entry) => entry.includes('npm run admin:preflight'));
+  return preferred || executable[0];
+}
+
+function buildAdminOpenPreflightAdvice(preflightResult) {
+  const result = preflightResult && typeof preflightResult === 'object' ? preflightResult : {};
+  const summary = result.summary && typeof result.summary === 'object' ? result.summary : {};
+  const code = normalizeCode(summary.code || resolveProbeClassification(result) || 'LOCAL_PREFLIGHT_UNKNOWN');
+  const operatorBranch = classifyOperatorRecoveryBranch(summary);
+  const operatorHint = buildOperatorRecoveryHint(operatorBranch);
+  const cause = String(summary.cause || '').trim();
+  const action = String(summary.action || '').trim();
+  const nextCommand = pickPrimaryRecoveryCommand(summary.recoveryCommands);
+  return {
+    ready: result.ready !== false,
+    code,
+    operatorBranch,
+    operatorHint,
+    cause,
+    action,
+    nextCommand
+  };
+}
+
+function shouldAbortAdminOpenFromPreflightAdvice(advice) {
+  const src = advice && typeof advice === 'object' ? advice : {};
+  const code = normalizeCode(src.code || '');
+  return code === 'FIRESTORE_SDK_MISSING';
+}
+
+function formatBlockingAdminOpenPreflightMessage(advice) {
+  const src = advice && typeof advice === 'object' ? advice : {};
+  const parts = ['admin:open を中止しました。'];
+  if (src.cause) parts.push(String(src.cause).trim());
+  if (src.action) parts.push(String(src.action).trim());
+  if (src.nextCommand) parts.push(`次: ${String(src.nextCommand).trim()}`);
+  return parts.filter(Boolean).join(' ');
+}
+
+function printAdminOpenPreflightAdvice(stage, advice, log) {
+  const label = String(stage || 'probe').trim() || 'probe';
+  const logger = typeof log === 'function'
+    ? log
+    : (line) => process.stdout.write(`${line}\n`);
+  const src = advice && typeof advice === 'object' ? advice : {};
+  logger(`[admin:open] preflight.${label} code=${normalizeCode(src.code || 'LOCAL_PREFLIGHT_UNKNOWN')} branch=${src.operatorBranch || 'UNKNOWN'} ready=${src.ready === false ? 'false' : 'true'}`);
+  if (src.cause) logger(`[admin:open] preflight.${label} cause=${src.cause}`);
+  if (src.action) logger(`[admin:open] preflight.${label} action=${src.action}`);
+  if (src.operatorHint) logger(`[admin:open] preflight.${label} hint=${src.operatorHint}`);
+  if (src.nextCommand) logger(`[admin:open] preflight.${label} next=${src.nextCommand}`);
+}
+
+function describeHealthcheckFailure(code) {
+  const normalized = normalizeCode(code);
+  if (normalized === 'DASHBOARD_HTTP_ERROR') return 'ダッシュボード取得に失敗したため既存プロセスを再起動します。';
+  if (normalized === 'DASHBOARD_NOT_AVAILABLE') return 'ダッシュボードが情報不足状態のため既存プロセスを再起動します。';
+  if (normalized === 'DASHBOARD_REGISTRATIONS_UNAVAILABLE') return '登録者数KPIが取得できないため既存プロセスを再起動します。';
+  if (normalized === 'FEATURE_CATALOG_HTTP_ERROR' || normalized === 'FEATURE_CATALOG_UNAVAILABLE') {
+    return '機能カタログ状態が取得できないため既存プロセスを再起動します。';
+  }
+  return '既存プロセスのヘルスチェックに失敗したため再起動します。';
+}
+
+function describeClipboardFailure(reason) {
+  const normalized = String(reason || '').trim().toLowerCase();
+  if (normalized === 'pbcopy_failed') {
+    return 'pbcopy に失敗しました。ターミナルのクリップボード権限を確認し、必要なら --no-copy で起動を継続してください。';
+  }
+  if (normalized === 'clip_failed') {
+    return 'clip に失敗しました。管理者権限で再実行するか --no-copy で起動を継続してください。';
+  }
+  if (normalized === 'clipboard_command_missing') {
+    return 'クリップボードコマンドが見つかりません。xclip/xsel を導入するか --no-copy で起動を継続してください。';
+  }
+  return 'トークンコピーに失敗しました。--no-copy で起動し、手動で貼り付けてください。';
+}
+
 async function maybeRepairAdcForLocalReadPath(opts, projectId) {
   if (opts.noAdcRepair) return { attempted: false, skipped: 'disabled' };
   if (!projectId) return { attempted: false, skipped: 'project_id_unavailable' };
@@ -441,9 +532,20 @@ async function maybeRepairAdcForLocalReadPath(opts, projectId) {
     env: probeEnv,
     allowGcloudProjectIdDetect: true
   });
+  const beforeAdvice = buildAdminOpenPreflightAdvice(before);
+  printAdminOpenPreflightAdvice('before', beforeAdvice);
   const beforeClassification = resolveProbeClassification(before);
+  if (shouldAbortAdminOpenFromPreflightAdvice(beforeAdvice)) {
+    return {
+      attempted: false,
+      skipped: 'blocking_preflight',
+      blocked: true,
+      beforeClassification,
+      beforeAdvice
+    };
+  }
   if (beforeClassification !== 'ADC_REAUTH_REQUIRED') {
-    return { attempted: false, skipped: 'not_required', beforeClassification };
+    return { attempted: false, skipped: 'not_required', beforeClassification, beforeAdvice };
   }
 
   process.stdout.write('[admin:open] ADC expired; launching browser for gcloud application-default login\n');
@@ -462,7 +564,20 @@ async function maybeRepairAdcForLocalReadPath(opts, projectId) {
     env: probeEnv,
     allowGcloudProjectIdDetect: true
   });
+  const afterAdvice = buildAdminOpenPreflightAdvice(after);
+  printAdminOpenPreflightAdvice('after', afterAdvice);
   const afterClassification = resolveProbeClassification(after);
+  if (shouldAbortAdminOpenFromPreflightAdvice(afterAdvice)) {
+    return {
+      attempted: true,
+      repaired: false,
+      blocked: true,
+      beforeClassification,
+      afterClassification,
+      beforeAdvice,
+      afterAdvice
+    };
+  }
   if (afterClassification === 'ADC_REAUTH_REQUIRED') {
     throw new Error('ADC再認証後も Firestore read-only probe が失敗しています。service account 鍵または権限設定を確認してください。');
   }
@@ -471,7 +586,9 @@ async function maybeRepairAdcForLocalReadPath(opts, projectId) {
     attempted: true,
     repaired: true,
     beforeClassification,
-    afterClassification
+    afterClassification,
+    beforeAdvice,
+    afterAdvice
   };
 }
 
@@ -488,6 +605,10 @@ async function main() {
   }
 
   const adcRepair = await maybeRepairAdcForLocalReadPath(opts, project.projectId);
+  if (adcRepair && adcRepair.blocked) {
+    const blockingAdvice = adcRepair.afterAdvice || adcRepair.beforeAdvice || null;
+    throw new Error(formatBlockingAdminOpenPreflightMessage(blockingAdvice));
+  }
 
   const tokenResolved = resolveAdminToken(opts);
   if (!tokenResolved.token) {
@@ -534,7 +655,7 @@ async function main() {
         process.stdout.write('[admin:open] ready\n');
         return;
       }
-      process.stdout.write(`[admin:open] existing server health check failed (${health.code}), restarting on same port\n`);
+      process.stdout.write(`[admin:open] existing server health check failed (${health.code}): ${describeHealthcheckFailure(health.code)}\n`);
     } else {
       process.stdout.write('[admin:open] existing server detected, fresh-server requested\n');
     }
@@ -590,6 +711,9 @@ module.exports = {
   resolveAdminToken,
   maybeRepairAdcForLocalReadPath,
   resolveProbeClassification,
+  buildAdminOpenPreflightAdvice,
+  shouldAbortAdminOpenFromPreflightAdvice,
+  formatBlockingAdminOpenPreflightMessage,
   evaluateDashboardHealthPayload,
   evaluateFeatureCatalogHealthPayload
 };

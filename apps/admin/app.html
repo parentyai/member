@@ -251,6 +251,19 @@
               <button id="home-action-read-model" type="button" class="decision-action-btn" data-action-kind="tertiary" data-open-pane="read-model">通知集計を確認</button>
             </div>
           </div>
+          <div id="home-reflection-state" class="panel data-reflection-panel" data-reflection-pane="home" data-ui="data-reflection-state" data-ui-state="unset" role="status" aria-live="polite">
+            <div class="panel-title">データ反映状態</div>
+            <div class="panel-body">
+              <div class="note"><strong>状態:</strong> <span id="home-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
+              <div class="note"><strong>理由:</strong> <span id="home-reflection-reason">最初の取得を待機しています。</span></div>
+              <div class="note"><strong>最終成功:</strong> <span id="home-reflection-success-at">-</span></div>
+              <div class="row row-top">
+                <button id="home-reflection-reload" type="button" class="secondary-btn">再読込</button>
+                <button id="home-reflection-open-system" type="button" class="secondary-btn">System Healthへ移動</button>
+                <button id="home-reflection-open-audit" type="button" class="secondary-btn">Trace監査へ移動</button>
+              </div>
+            </div>
+          </div>
           <details id="home-pane-details" class="decision-details section" open>
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
           </details>
@@ -1056,6 +1069,22 @@
               <button id="monitor-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
               <button id="monitor-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
+          </div>
+          <div id="monitor-reflection-state" class="panel data-reflection-panel" data-reflection-pane="monitor" data-ui="data-reflection-state" data-ui-state="unset" role="status" aria-live="polite">
+            <div class="panel-title">データ反映状態</div>
+            <div class="panel-body">
+              <div class="note"><strong>状態:</strong> <span id="monitor-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
+              <div class="note"><strong>理由:</strong> <span id="monitor-reflection-reason">最初の取得を待機しています。</span></div>
+              <div class="note"><strong>最終成功:</strong> <span id="monitor-reflection-success-at">-</span></div>
+              <div class="row row-top">
+                <button id="monitor-reflection-reload" type="button" class="secondary-btn">再読込</button>
+                <button id="monitor-reflection-open-system" type="button" class="secondary-btn">System Healthへ移動</button>
+                <button id="monitor-reflection-open-audit" type="button" class="secondary-btn">Trace監査へ移動</button>
+              </div>
+            </div>
+          </div>
+          <div id="monitor-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="monitor" role="status" aria-live="polite">
+            監視情報は全ロールで参照できます。設定ビューは管理ロールのみ表示されます。
           </div>
           <details id="monitor-pane-details" class="decision-details section">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
@@ -2074,7 +2103,7 @@
 	                    </details>
 	                  </div>
                   <div id="monitor-insights-system-handoff" class="note monitor-system-diagnostics-handoff">
-                    診断情報はSystemレイヤーで確認します。
+                    <span id="monitor-insights-handoff-reason">診断情報はSystemレイヤーで確認します。</span>
                     <button id="monitor-open-system-diagnostics" type="button" class="secondary-btn">System状態へ</button>
                   </div>
                   <div id="monitor-insights-diagnostics-panel" class="panel is-hidden">
@@ -2408,6 +2437,19 @@
               <button id="city-pack-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
               <button id="city-pack-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
               <button id="city-pack-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+            </div>
+          </div>
+          <div id="city-pack-reflection-state" class="panel data-reflection-panel" data-reflection-pane="city-pack" data-ui="data-reflection-state" data-ui-state="unset" role="status" aria-live="polite">
+            <div class="panel-title">データ反映状態</div>
+            <div class="panel-body">
+              <div class="note"><strong>状態:</strong> <span id="city-pack-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
+              <div class="note"><strong>理由:</strong> <span id="city-pack-reflection-reason">最初の取得を待機しています。</span></div>
+              <div class="note"><strong>最終成功:</strong> <span id="city-pack-reflection-success-at">-</span></div>
+              <div class="row row-top">
+                <button id="city-pack-reflection-reload" type="button" class="secondary-btn">再読込</button>
+                <button id="city-pack-reflection-open-system" type="button" class="secondary-btn">System Healthへ移動</button>
+                <button id="city-pack-reflection-open-audit" type="button" class="secondary-btn">Trace監査へ移動</button>
+              </div>
             </div>
           </div>
           <details id="city-pack-pane-details" class="decision-details section" data-workbench-zone="true">
@@ -3465,6 +3507,19 @@
               <button id="read-model-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
+          <div id="read-model-reflection-state" class="panel data-reflection-panel" data-reflection-pane="read-model" data-ui="data-reflection-state" data-ui-state="unset" role="status" aria-live="polite">
+            <div class="panel-title">データ反映状態</div>
+            <div class="panel-body">
+              <div class="note"><strong>状態:</strong> <span id="read-model-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
+              <div class="note"><strong>理由:</strong> <span id="read-model-reflection-reason">最初の取得を待機しています。</span></div>
+              <div class="note"><strong>最終成功:</strong> <span id="read-model-reflection-success-at">-</span></div>
+              <div class="row row-top">
+                <button id="read-model-reflection-reload" type="button" class="secondary-btn">再読込</button>
+                <button id="read-model-reflection-open-system" type="button" class="secondary-btn">System Healthへ移動</button>
+                <button id="read-model-reflection-open-audit" type="button" class="secondary-btn">Trace監査へ移動</button>
+              </div>
+            </div>
+          </div>
           <details id="read-model-pane-details" class="decision-details section">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="pane-grid">
@@ -3728,6 +3783,19 @@
               <button id="vendors-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
+          <div id="vendors-reflection-state" class="panel data-reflection-panel" data-reflection-pane="vendors" data-ui="data-reflection-state" data-ui-state="unset" role="status" aria-live="polite">
+            <div class="panel-title">データ反映状態</div>
+            <div class="panel-body">
+              <div class="note"><strong>状態:</strong> <span id="vendors-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
+              <div class="note"><strong>理由:</strong> <span id="vendors-reflection-reason">最初の取得を待機しています。</span></div>
+              <div class="note"><strong>最終成功:</strong> <span id="vendors-reflection-success-at">-</span></div>
+              <div class="row row-top">
+                <button id="vendors-reflection-reload" type="button" class="secondary-btn">再読込</button>
+                <button id="vendors-reflection-open-system" type="button" class="secondary-btn">System Healthへ移動</button>
+                <button id="vendors-reflection-open-audit" type="button" class="secondary-btn">Trace監査へ移動</button>
+              </div>
+            </div>
+          </div>
           <details id="vendors-pane-details" class="decision-details section" data-workbench-zone="true">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="panel unified-admin-panel vendors-unified-panel">
@@ -3928,6 +3996,9 @@
                   <div class="note">Audit: traceIdで証跡JSONと判断ログを追跡します。</div>
                   <div class="note">Monitor: 配信結果と運用状態を確認します。</div>
                   <div class="note">Decision timeline: 監査詳細で判断履歴を時系列に確認します。</div>
+                  <div id="audit-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="audit" role="status" aria-live="polite">
+                    証跡参照は全ロールで利用できます。補正操作は管理ロールのみ表示されます。
+                  </div>
                   <div class="row row-top">
                     <button id="audit-open-monitor" type="button" class="button-subtle">配信結果へ（trace）</button>
                     <button id="audit-open-composer" type="button" class="button-subtle">通知作成へ戻る</button>
@@ -4331,6 +4402,10 @@
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.llm.validation">LLM検証</div>
                 <div class="panel-body">
+                  <div id="llm-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="llm" role="status" aria-live="polite">
+                    LLM支援は管理ロールのみ表示されます。表示されない場合はRoleを管理または開発に切り替えてください。
+                  </div>
+                  <div id="llm-rollout-visibility-reason" class="note role-visibility-rollout" role="status" aria-live="polite">品質ループの段階は状態更新後に表示されます。</div>
                   <div class="input-grid">
                     <div>
                       <label data-dict-key="ui.label.llm.lineUserId" data-dict-tip="ui.help.llm.lineUserId">LINEユーザーID</label>
@@ -4711,6 +4786,9 @@
                 <div class="panel-title" data-dict-key="ui.label.settings.notice">設定は管理者で操作</div>
                 <div class="panel-body">
                   <p data-dict-key="ui.desc.settings.notice">設定・回復は /admin/master に集約されています。</p>
+                  <div id="settings-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="settings" role="status" aria-live="polite">
+                    この画面は参照専用です。編集操作は System の設定画面で実施します。
+                  </div>
                 </div>
               </div>
               <div id="ux-policy-readonly-panel" class="panel hidden">

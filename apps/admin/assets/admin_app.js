@@ -165,6 +165,7 @@ const state = {
   monitorSavedView: 'all',
   monitorSearchQuery: '',
   monitorStatusFilter: '',
+  monitorDiagnosticsReason: null,
   taskRulesRules: [],
   taskRulesTaskContents: [],
   taskRulesTaskContentLinks: [],
@@ -218,6 +219,7 @@ const state = {
   selectedCityPackSourceRefId: null,
   cityPackTemplateImportPlanHash: null,
   cityPackTemplateImportConfirmToken: null,
+  llmRolloutStage: null,
   currentComposerStatus: '未取得',
   composerTone: 'unknown',
   composerUpdatedAt: null,
@@ -307,7 +309,8 @@ const state = {
   opsFeatureCatalogWarnings: [],
   opsFeatureCatalogLoadError: false,
   opsFeatureCatalogLoadMessage: null,
-  uxPolicyLastTraceId: null
+  uxPolicyLastTraceId: null,
+  paneReflection: {}
 };
 
 const LOCAL_PREFLIGHT_CODE_SET = new Set([
@@ -346,6 +349,22 @@ const SYSTEM_DIAGNOSTIC_PANES = new Set([
   'ops-feature-catalog',
   'ops-system-health',
   'maintenance'
+]);
+const DATA_REFLECTION_PANES = Object.freeze([
+  'home',
+  'monitor',
+  'city-pack',
+  'read-model',
+  'vendors'
+]);
+const PREFLIGHT_AUTH_RELATED_CODES = new Set([
+  'ADC_REAUTH_REQUIRED',
+  'FIRESTORE_CREDENTIALS_ERROR',
+  'FIRESTORE_PERMISSION_ERROR',
+  'SA_KEY_REQUIRED',
+  'FIRESTORE_PROBE_SKIPPED_SA_KEY_REQUIRED',
+  'CREDENTIALS_PATH_INVALID',
+  'CREDENTIALS_PATH_NOT_FILE'
 ]);
 
 function normalizeCopyForRole(text, role) {
@@ -1458,6 +1477,30 @@ function renderGuardBanner(rawError) {
         action: 'traceIdで監査ログを確認してください',
         tone: 'danger'
       };
+  const guardCode = normalizeGuardErrorCode(rawError);
+  const requestedPane = rawError && typeof rawError === 'object' && rawError.requestedPane
+    ? String(rawError.requestedPane)
+    : '';
+  const currentRole = rawError && typeof rawError === 'object' && rawError.role
+    ? normalizeRoleValue(rawError.role)
+    : normalizeRoleValue(state.role);
+  const requestedPaneLabel = requestedPane && PANE_HEADER_MAP[requestedPane]
+    ? t(PANE_HEADER_MAP[requestedPane].titleKey, requestedPane)
+    : requestedPane;
+
+  let causeText = normalized.cause || '-';
+  let impactText = normalized.impact || '-';
+  let actionTextRaw = normalized.action || '-';
+  if ((guardCode === 'ROLE_FORBIDDEN' || guardCode === 'PANE_FORBIDDEN') && requestedPane) {
+    causeText = `${requestedPaneLabel || requestedPane} は現在のRole（${resolveRoleScopeLabel(currentRole)}）では表示できません。`;
+    impactText = '対象画面の情報は非表示になり、現在のRoleで許可された画面へ移動します。';
+    actionTextRaw = 'Roleを切り替えるか、左ナビから許可済み画面へ移動してください。';
+  } else if (guardCode === 'ROLLOUT_DISABLED' && requestedPane) {
+    causeText = `${requestedPaneLabel || requestedPane} は段階公開の対象外です。`;
+    impactText = '公開条件に合致しないため、画面を表示できません。';
+    actionTextRaw = '公開フラグとRole条件を確認し、公開済み画面で運用を継続してください。';
+  }
+
   const cause = el.querySelector('[data-guard-field="cause"]');
   const impact = el.querySelector('[data-guard-field="impact"]');
   const action = el.querySelector('[data-guard-field="action"]');
@@ -1465,10 +1508,10 @@ function renderGuardBanner(rawError) {
     ? String(rawError.recommendedPane)
     : '';
   const actionText = recommendedPane
-    ? `${normalized.action || '-'}（推奨: ${recommendedPane}）`
-    : (normalized.action || '-');
-  if (cause) cause.textContent = normalized.cause || '-';
-  if (impact) impact.textContent = normalized.impact || '-';
+    ? `${actionTextRaw}（推奨: ${recommendedPane}）`
+    : actionTextRaw;
+  if (cause) cause.textContent = causeText;
+  if (impact) impact.textContent = impactText;
   if (action) action.textContent = actionText;
   el.classList.add('is-visible');
   applyBannerState(el, normalized.tone, 'system');
@@ -1556,6 +1599,7 @@ function clearLocalPreflightBanner() {
   if (checksDetails) checksDetails.open = false;
   if (copyBtn) copyBtn.disabled = true;
   syncSystemDiagnosticsVisibility();
+  renderAllPaneReflectionStates();
 }
 
 function normalizeLocalPreflightPayload(payload) {
@@ -1615,6 +1659,7 @@ function renderLocalPreflightBanner(payload) {
   el.setAttribute('data-admin-local-preflight', 'visible');
   syncSystemDiagnosticsVisibility();
   applyRecoveryUxFromPreflight(payload);
+  renderAllPaneReflectionStates();
 }
 
 function renderDataLoadFailureGuard(reasonCode, err) {
@@ -2633,6 +2678,254 @@ function resolvePaneUpdatedAt(paneKey) {
   return state.paneUpdatedAt[paneKey] || '-';
 }
 
+function ensurePaneReflectionStateEntry(paneKey) {
+  const key = String(paneKey || '').trim();
+  if (!key) return null;
+  if (!state.paneReflection || typeof state.paneReflection !== 'object') {
+    state.paneReflection = {};
+  }
+  if (!state.paneReflection[key] || typeof state.paneReflection[key] !== 'object') {
+    state.paneReflection[key] = {
+      lastSuccessAt: null,
+      lastAttemptAt: null,
+      lastFailureCode: null,
+      lastFailureMessage: null,
+      lastTraceId: null,
+      lastSampleCount: null
+    };
+  }
+  return state.paneReflection[key];
+}
+
+function isAuthRelatedFailureCode(code) {
+  const normalized = String(code || '').trim().toUpperCase();
+  if (!normalized) return false;
+  if (PREFLIGHT_AUTH_RELATED_CODES.has(normalized)) return true;
+  return normalized.includes('AUTH')
+    || normalized.includes('UNAUTHORIZED')
+    || normalized.includes('FORBIDDEN')
+    || normalized.includes('PERMISSION')
+    || normalized.includes('CREDENTIAL')
+    || normalized.includes('ADC_REAUTH')
+    || normalized.includes('SA_KEY');
+}
+
+function resolvePaneReflectionTraceId(paneKey) {
+  const key = String(paneKey || '').trim();
+  const inputIdByPane = {
+    home: 'traceId',
+    monitor: 'monitor-trace',
+    'city-pack': 'monitor-trace',
+    'read-model': 'read-model-trace',
+    vendors: 'vendor-trace'
+  };
+  const preferredInputId = inputIdByPane[key] || 'traceId';
+  const fromInput = ensureTraceInput(preferredInputId);
+  if (fromInput && fromInput !== '-') return fromInput;
+  if (key === 'city-pack' && state.selectedCityPackRunTraceId) return String(state.selectedCityPackRunTraceId);
+  const fromEntry = ensurePaneReflectionStateEntry(key);
+  if (fromEntry && fromEntry.lastTraceId) return String(fromEntry.lastTraceId);
+  return null;
+}
+
+function markPaneReflectionSuccess(paneKey, options) {
+  const key = String(paneKey || '').trim();
+  if (!key) return;
+  const opts = options && typeof options === 'object' ? options : {};
+  const entry = ensurePaneReflectionStateEntry(key);
+  if (!entry) return;
+  const nowIso = new Date().toISOString();
+  entry.lastAttemptAt = nowIso;
+  entry.lastSuccessAt = nowIso;
+  entry.lastFailureCode = null;
+  entry.lastFailureMessage = null;
+  entry.lastTraceId = opts.traceId ? String(opts.traceId) : (entry.lastTraceId || null);
+  entry.lastSampleCount = Number.isFinite(Number(opts.sampleCount)) ? Number(opts.sampleCount) : entry.lastSampleCount;
+  renderPaneReflectionState(key);
+}
+
+function markPaneReflectionFailure(paneKey, options) {
+  const key = String(paneKey || '').trim();
+  if (!key) return;
+  const opts = options && typeof options === 'object' ? options : {};
+  const entry = ensurePaneReflectionStateEntry(key);
+  if (!entry) return;
+  entry.lastAttemptAt = new Date().toISOString();
+  entry.lastFailureCode = opts.code ? String(opts.code) : 'load_failed';
+  entry.lastFailureMessage = opts.message ? String(opts.message) : 'データ取得に失敗しました。';
+  entry.lastTraceId = opts.traceId ? String(opts.traceId) : (entry.lastTraceId || null);
+  renderPaneReflectionState(key);
+}
+
+function countDashboardAvailableMetrics(payload) {
+  const source = payload && typeof payload === 'object' ? payload : null;
+  if (!source || !source.kpis || typeof source.kpis !== 'object') return 0;
+  return Object.keys(DASHBOARD_CARD_CONFIG).reduce((count, metricKey) => {
+    const metric = resolveDashboardMetric(source, metricKey);
+    if (metric && metric.available === true) return count + 1;
+    return count;
+  }, 0);
+}
+
+function resolvePaneHasData(paneKey) {
+  const key = String(paneKey || '').trim();
+  if (key === 'home') {
+    const defaultWindow = normalizeDashboardWindow(
+      document.getElementById('dashboard-window-months')?.value || DASHBOARD_DEFAULT_WINDOW
+    );
+    const payload = resolveDashboardPayload(defaultWindow);
+    return countDashboardAvailableMetrics(payload) > 0;
+  }
+  if (key === 'monitor') return Array.isArray(state.monitorItems) && state.monitorItems.length > 0;
+  if (key === 'read-model') return Array.isArray(state.readModelItems) && state.readModelItems.length > 0;
+  if (key === 'vendors') return Array.isArray(state.vendorItems) && state.vendorItems.length > 0;
+  if (key === 'city-pack') {
+    const total = [
+      state.cityPackInboxItems,
+      state.cityPackRequestItems,
+      state.cityPackFeedbackItems,
+      state.cityPackBulletinItems,
+      state.cityPackProposalItems,
+      state.cityPackTemplateLibraryItems,
+      state.cityPackEducationLinkItems
+    ].reduce((sum, list) => {
+      const length = Array.isArray(list) ? list.length : 0;
+      return sum + length;
+    }, 0);
+    return total > 0;
+  }
+  return false;
+}
+
+function resolvePaneReflectionVm(paneKey) {
+  const key = String(paneKey || '').trim();
+  const entry = ensurePaneReflectionStateEntry(key);
+  const defaultVm = {
+    tone: 'unset',
+    label: '取得待ち',
+    reason: '最初の取得を待機しています。',
+    successAt: '-'
+  };
+  if (!entry) return defaultVm;
+
+  const preflightSummary = state.localPreflight && state.localPreflight.summary && typeof state.localPreflight.summary === 'object'
+    ? state.localPreflight.summary
+    : null;
+  if (isLocalPreflightBlockingDataLoads() && preflightSummary) {
+    const code = String(preflightSummary.code || 'LOCAL_PREFLIGHT_NOT_READY').trim();
+    const authRelated = isAuthRelatedFailureCode(code);
+    return {
+      tone: authRelated ? 'forbidden' : 'warn',
+      label: authRelated ? '認証不足' : '要対応',
+      reason: preflightSummary.cause
+        ? String(preflightSummary.cause)
+        : t('ui.desc.admin.localPreflight.defaultCause', 'ローカル前提条件を確認できませんでした。'),
+      successAt: entry.lastSuccessAt ? formatDateLabel(entry.lastSuccessAt) : '-'
+    };
+  }
+
+  if (entry.lastFailureCode) {
+    const authRelated = isAuthRelatedFailureCode(entry.lastFailureCode);
+    return {
+      tone: authRelated ? 'forbidden' : 'error',
+      label: authRelated ? '認証不足' : '取得失敗',
+      reason: entry.lastFailureMessage || 'データ取得に失敗しました。',
+      successAt: entry.lastSuccessAt ? formatDateLabel(entry.lastSuccessAt) : '-'
+    };
+  }
+
+  if (entry.lastSuccessAt) {
+    const hasData = resolvePaneHasData(key);
+    return {
+      tone: hasData ? 'success' : 'pending',
+      label: hasData ? '反映済み' : '空データ',
+      reason: hasData
+        ? '最新データを表示中です。'
+        : '対象データがありません。フィルタ条件または権限を確認してください。',
+      successAt: formatDateLabel(entry.lastSuccessAt)
+    };
+  }
+
+  return defaultVm;
+}
+
+function renderPaneReflectionState(paneKey) {
+  const key = String(paneKey || '').trim();
+  if (!key) return;
+  const root = document.getElementById(`${key}-reflection-state`);
+  const labelEl = document.getElementById(`${key}-reflection-state-label`);
+  const reasonEl = document.getElementById(`${key}-reflection-reason`);
+  const successAtEl = document.getElementById(`${key}-reflection-success-at`);
+  const openAuditBtn = document.getElementById(`${key}-reflection-open-audit`);
+  if (!root || !labelEl || !reasonEl || !successAtEl) return;
+  const vm = resolvePaneReflectionVm(key);
+  root.setAttribute('data-ui-state', normalizeUiStateTone(vm.tone, 'unset'));
+  applyBadgeState(labelEl, vm.label, vm.tone, { baseClass: 'badge', messageLevel: 'inline', fallbackTone: 'unset' });
+  reasonEl.textContent = normalizeCopyForRole(vm.reason || '-', state.role);
+  successAtEl.textContent = vm.successAt || '-';
+  if (openAuditBtn) openAuditBtn.disabled = !resolvePaneReflectionTraceId(key);
+}
+
+function renderAllPaneReflectionStates() {
+  DATA_REFLECTION_PANES.forEach((paneKey) => {
+    renderPaneReflectionState(paneKey);
+  });
+}
+
+async function openPaneReflectionAudit(paneKey) {
+  const traceId = resolvePaneReflectionTraceId(paneKey) || newTraceId();
+  await navigateToAuditWithTrace(traceId, { historyMode: 'push' }).catch(() => {
+    showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+  });
+}
+
+async function reloadPaneReflectionData(paneKey, options) {
+  const key = String(paneKey || '').trim();
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify !== false;
+  if (key === 'home') {
+    await loadDashboardKpis({ notify, forceRefresh: true });
+    return;
+  }
+  if (key === 'monitor') {
+    await loadMonitorData({ notify });
+    await loadMonitorInsights({ notify: false });
+    return;
+  }
+  if (key === 'city-pack') {
+    await loadCityPackReviewInbox({ notify });
+    await Promise.all([
+      loadCityPackKpi({ notify: false }),
+      loadCityPackMetrics({ notify: false }),
+      loadCityPackAuditRuns({ notify: false })
+    ]);
+    return;
+  }
+  if (key === 'read-model') {
+    await loadReadModelData({ notify });
+    await loadUsersSummary({ notify: false });
+    return;
+  }
+  if (key === 'vendors') {
+    await loadVendors({ notify });
+  }
+}
+
+function setupPaneReflectionControls() {
+  DATA_REFLECTION_PANES.forEach((paneKey) => {
+    document.getElementById(`${paneKey}-reflection-reload`)?.addEventListener('click', () => {
+      void reloadPaneReflectionData(paneKey, { notify: true });
+    });
+    document.getElementById(`${paneKey}-reflection-open-system`)?.addEventListener('click', () => {
+      activatePane('ops-system-health', { historyMode: 'push', syncHistory: true });
+    });
+    document.getElementById(`${paneKey}-reflection-open-audit`)?.addEventListener('click', () => {
+      void openPaneReflectionAudit(paneKey);
+    });
+  });
+  renderAllPaneReflectionStates();
+}
+
 function renderDecisionCard(paneKey, vm) {
   if (!paneKey || !vm) return;
   const cardEl = document.getElementById(`${paneKey}-decision-card`);
@@ -2881,6 +3174,71 @@ function canUseMonitorConfigurationView(role) {
   return nextRole === 'admin' || nextRole === 'developer';
 }
 
+function resolveRoleScopeLabel(role) {
+  const nextRole = normalizeRoleValue(role);
+  if (nextRole === 'admin') return '管理';
+  if (nextRole === 'developer') return '開発';
+  return '運用';
+}
+
+function resolveLlmRolloutStageLabel(stage) {
+  const normalized = String(stage || '').trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized === 'hard_enforcement') return 'hard_enforcement（厳格適用）';
+  if (normalized === 'nogo_gate_mandatory') return 'nogo_gate_mandatory（停止ゲート）';
+  if (normalized === 'soft_enforcement') return 'soft_enforcement（警告運用）';
+  if (normalized === 'log_only') return 'log_only（観測のみ）';
+  if (normalized === 'design_only') return 'design_only（設計段階）';
+  return normalized;
+}
+
+function setRoleVisibilityReasonText(elementId, message) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.textContent = normalizeCopyForRole(String(message || '-'), state.role);
+}
+
+function renderPaneVisibilityReasons() {
+  const role = normalizeRoleValue(state.role);
+  const canUseConfiguration = canUseMonitorConfigurationView(role);
+  setRoleVisibilityReasonText(
+    'monitor-role-visibility-reason',
+    canUseConfiguration
+      ? '監視と設定を切り替えできます。診断の詳細は「System状態へ」から確認してください。'
+      : '現在のRoleでは「設定」ビューは表示されません。監視情報の閲覧はこのまま継続できます。'
+  );
+  const monitorHandoffReason = state.monitorDiagnosticsReason && String(state.monitorDiagnosticsReason).trim()
+    ? `診断情報はSystemレイヤーで確認します（直近理由: ${String(state.monitorDiagnosticsReason).trim()}）。`
+    : '診断情報はSystemレイヤーで確認します。';
+  setRoleVisibilityReasonText('monitor-insights-handoff-reason', monitorHandoffReason);
+
+  setRoleVisibilityReasonText(
+    'audit-role-visibility-reason',
+    role === 'operator'
+      ? '証跡参照は利用できます。構造ドリフト補正は管理ロールでのみ表示されます。'
+      : '証跡参照と補正操作を表示中です。補正操作は確認トークンが必要です。'
+  );
+
+  setRoleVisibilityReasonText(
+    'llm-role-visibility-reason',
+    `現在Role: ${resolveRoleScopeLabel(role)}。LLM支援は管理/開発ロールで表示されます。`
+  );
+  const llmStageLabel = resolveLlmRolloutStageLabel(state.llmRolloutStage);
+  setRoleVisibilityReasonText(
+    'llm-rollout-visibility-reason',
+    llmStageLabel
+      ? `品質ループ段階: ${llmStageLabel}。表示条件に合わない場合は結果が限定されます。`
+      : '品質ループ段階は状態更新後に表示されます。'
+  );
+
+  setRoleVisibilityReasonText(
+    'settings-role-visibility-reason',
+    UXOS_POLICY_READONLY_V1
+      ? 'この画面は参照専用です。編集操作は System の設定画面で実施します。'
+      : 'UX Policy 参照は現在無効です。ENABLE_UXOS_POLICY_READONLY_V1 を有効化すると表示されます。'
+  );
+}
+
 function normalizeMonitorWorkspaceView(view, role) {
   const raw = String(view || '').trim().toLowerCase();
   const candidate = raw === MONITOR_WORKSPACE_VIEW_CONFIGURATION
@@ -2936,6 +3294,7 @@ function applyMonitorWorkspaceView(view, options) {
     permissionNoticeEl.classList.toggle('is-hidden', canUseConfiguration);
     permissionNoticeEl.setAttribute('aria-hidden', canUseConfiguration ? 'true' : 'false');
   }
+  renderPaneVisibilityReasons();
   if (opts.persist === true) {
     state.monitorWorkspaceView = nextView;
   }
@@ -2981,8 +3340,14 @@ function setRole(role, options) {
     if (!legacyVisibleMatch || legacyVisibleMatch.pane !== allowedPane) allowedPane = 'home';
   }
   if (paneKey && paneKey !== allowedPane) {
-    renderGuardBanner({ error: opts.guardReason || 'ROLE_FORBIDDEN', recommendedPane: allowedPane });
+    renderGuardBanner({
+      error: opts.guardReason || 'ROLE_FORBIDDEN',
+      recommendedPane: allowedPane,
+      requestedPane: paneKey,
+      role: nextRole
+    });
     activatePane(allowedPane, { historyMode: 'replace', guardReason: 'ROLE_FORBIDDEN' });
+    renderPaneVisibilityReasons();
     return;
   }
   if (opts.syncHistory !== false) {
@@ -2990,6 +3355,8 @@ function setRole(role, options) {
   }
   renderUiFixtureSuccess(paneKey || 'home');
   applyBuildMetaBadge();
+  renderAllPaneReflectionStates();
+  renderPaneVisibilityReasons();
 }
 
 function setupRoleSwitch() {
@@ -4843,7 +5210,14 @@ function activatePane(target, options) {
     const mode = opts.historyMode || 'replace';
     updateHistoryWithPaneRole(nextPane, state.role, mode);
   }
-  if (paneBlocked) renderGuardBanner({ error: guardReason, recommendedPane: nextPane });
+  if (paneBlocked) {
+    renderGuardBanner({
+      error: guardReason,
+      recommendedPane: nextPane,
+      requestedPane: normalizedTarget,
+      role: state.role
+    });
+  }
   updatePageHeader(nextPane);
   if (nextPane === 'ops-feature-catalog' && isOpsRealtimeSnapshotEnabled() && (!Array.isArray(state.opsFeatureRows) || state.opsFeatureRows.length === 0)) {
     void loadOpsFeatureCatalogStatus({ notify: false });
@@ -5588,6 +5962,17 @@ async function loadDashboardKpis(options) {
   const notify = !options || options.notify !== false;
   const forceRefresh = Boolean(options && options.forceRefresh === true);
   if (isLocalPreflightBlockingDataLoads()) {
+    const blockedCode = state.localPreflight && state.localPreflight.summary
+      ? String(state.localPreflight.summary.code || 'LOCAL_PREFLIGHT_NOT_READY')
+      : 'LOCAL_PREFLIGHT_NOT_READY';
+    const blockedMessage = state.localPreflight && state.localPreflight.summary
+      ? String(state.localPreflight.summary.cause || t('ui.desc.admin.localPreflight.defaultCause', 'ローカル前提条件を確認できませんでした。'))
+      : t('ui.desc.admin.localPreflight.defaultCause', 'ローカル前提条件を確認できませんでした。');
+    markPaneReflectionFailure('home', {
+      code: blockedCode,
+      message: blockedMessage,
+      traceId: ensureTraceInput('traceId') || null
+    });
     state.dashboardKpis = null;
     state.dashboardJourneyKpi = null;
     renderDashboardKpis();
@@ -5611,7 +5996,18 @@ async function loadDashboardKpis(options) {
     }
   }
   const defaultWindow = normalizeDashboardWindow(document.getElementById('dashboard-window-months')?.value || DASHBOARD_DEFAULT_WINDOW);
-  state.dashboardKpis = resolveDashboardPayload(defaultWindow)?.kpis || null;
+  const defaultPayload = resolveDashboardPayload(defaultWindow);
+  state.dashboardKpis = defaultPayload?.kpis || null;
+  const availableCount = countDashboardAvailableMetrics(defaultPayload);
+  if (failed && availableCount <= 0) {
+    markPaneReflectionFailure('home', {
+      code: 'DASHBOARD_KPI_FAILED',
+      message: t('ui.toast.dashboard.reloadFail', 'ダッシュボード指標の取得に失敗しました'),
+      traceId
+    });
+  } else {
+    markPaneReflectionSuccess('home', { traceId, sampleCount: availableCount });
+  }
   renderDashboardKpis();
   if (failed) {
     renderDataLoadFailureGuard('dashboard_kpi_failed', new Error('dashboard kpi failed'));
@@ -7905,6 +8301,7 @@ function renderMonitorInsightsFailure(traceId, requestInfo, error) {
     error: error && error.message ? error.message : 'unknown'
   };
   const noteText = formatMonitorNote(rawPayload.error);
+  state.monitorDiagnosticsReason = noteText;
   renderVendorCtrRows([]);
   renderFaqReferenceRows([]);
   const abSummaryEl = document.getElementById('monitor-ab-summary');
@@ -7924,6 +8321,7 @@ function renderMonitorInsightsFailure(traceId, requestInfo, error) {
   const raw = document.getElementById('monitor-insights-raw');
   if (raw) raw.textContent = JSON.stringify(rawPayload, null, 2);
   state.monitorInsights = null;
+  renderPaneVisibilityReasons();
 }
 
 function renderMonitorInsightsDiagnostics(payload, traceId) {
@@ -7972,9 +8370,13 @@ function renderMonitorInsightsDiagnostics(payload, traceId) {
   }
   const diagnosticsEl = document.getElementById('monitor-insights-diagnostics');
   if (diagnosticsEl) diagnosticsEl.textContent = notes.length > 0 ? notes.join(' / ') : t('ui.label.common.empty', 'データなし');
+  state.monitorDiagnosticsReason = notes.length > 0
+    ? notes[0]
+    : t('ui.label.common.empty', 'データなし');
 
   const raw = document.getElementById('monitor-insights-raw');
   if (raw) raw.textContent = JSON.stringify(data, null, 2);
+  renderPaneVisibilityReasons();
 }
 
 function resolveHost(value) {
@@ -10140,6 +10542,7 @@ async function loadMonitorData(options) {
     state.topCauses = causes.text;
     state.topCausesTip = causes.tip;
     state.topAnomaly = computeTopAnomaly(state.monitorItems);
+    markPaneReflectionSuccess('monitor', { traceId, sampleCount: state.monitorItems.length });
     setPaneUpdatedAt('monitor');
     const counts = getHealthCounts(state.monitorItems);
     const monitorTodo = document.getElementById('monitor-todo');
@@ -10150,6 +10553,11 @@ async function loadMonitorData(options) {
 
     if (notify) showToast(t('ui.toast.monitor.ok', 'monitor OK'), 'ok');
   } catch (_err) {
+    markPaneReflectionFailure('monitor', {
+      code: 'MONITOR_LIST_FAILED',
+      message: _err && _err.message ? String(_err.message) : t('ui.toast.monitor.fail', 'monitor 失敗'),
+      traceId
+    });
     if (notify) showToast(t('ui.toast.monitor.fail', 'monitor 失敗'), 'danger');
   } finally {
     if (skeleton) skeleton.classList.add('is-hidden');
@@ -10164,13 +10572,28 @@ async function loadReadModelData(options) {
   try {
     const res = await fetch('/admin/read-model/notifications?limit=50', { headers: buildHeaders({}, traceId) });
     const data = await res.json();
+    const loadOk = Boolean(data && data.ok === true);
     state.readModelItems = data && data.items ? data.items : [];
+    if (loadOk) {
+      markPaneReflectionSuccess('read-model', { traceId, sampleCount: state.readModelItems.length });
+    } else {
+      markPaneReflectionFailure('read-model', {
+        code: data && data.error ? String(data.error) : 'READ_MODEL_LOAD_FAILED',
+        message: t('ui.toast.readModel.fail', 'read model 失敗'),
+        traceId
+      });
+    }
     renderReadModelRows(state.readModelItems);
     renderComposerScenarioCompare(state.readModelItems);
     setPaneUpdatedAt('read-model');
     renderAllDecisionCards();
-    if (notify) showToast(data && data.ok ? t('ui.toast.readModel.ok', 'read model OK') : t('ui.toast.readModel.fail', 'read model 失敗'), data && data.ok ? 'ok' : 'danger');
+    if (notify) showToast(loadOk ? t('ui.toast.readModel.ok', 'read model OK') : t('ui.toast.readModel.fail', 'read model 失敗'), loadOk ? 'ok' : 'danger');
   } catch (_err) {
+    markPaneReflectionFailure('read-model', {
+      code: 'READ_MODEL_FETCH_FAILED',
+      message: _err && _err.message ? String(_err.message) : t('ui.toast.readModel.fail', 'read model 失敗'),
+      traceId
+    });
     if (notify) showToast(t('ui.toast.readModel.fail', 'read model 失敗'), 'danger');
   } finally {
     if (skeleton) skeleton.classList.add('is-hidden');
@@ -13272,10 +13695,16 @@ async function loadVendors(options) {
     if (shadowLineUserId) {
       await loadVendorShadowRelevance({ notify: false });
     }
+    markPaneReflectionSuccess('vendors', { traceId, sampleCount: items.length });
     setPaneUpdatedAt('vendors');
     renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.vendors.loaded', 'Vendor一覧を更新しました'), 'ok');
   } catch (_err) {
+    markPaneReflectionFailure('vendors', {
+      code: 'VENDORS_LOAD_FAILED',
+      message: _err && _err.message ? String(_err.message) : t('ui.toast.vendors.loadFail', 'Vendor一覧の取得に失敗しました'),
+      traceId
+    });
     state.vendorItems = [];
     renderVendorRows([]);
     renderVendorUnifiedRows();
@@ -13550,10 +13979,16 @@ async function loadCityPackReviewInbox(options) {
     renderCityPackInboxRows(items);
     refreshCityPackCalendarReviewItems();
     refreshCityPackUnifiedRows();
+    markPaneReflectionSuccess('city-pack', { traceId: monitorTrace, sampleCount: items.length });
     setPaneUpdatedAt('city-pack');
     renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.cityPack.inboxLoaded', 'Review Inboxを取得しました'), 'ok');
   } catch (_err) {
+    markPaneReflectionFailure('city-pack', {
+      code: 'CITY_PACK_INBOX_LOAD_FAILED',
+      message: _err && _err.message ? String(_err.message) : t('ui.toast.cityPack.inboxLoadFail', 'Review Inboxの取得に失敗しました'),
+      traceId: monitorTrace
+    });
     state.cityPackInboxItems = [];
     refreshCityPackCalendarReviewItems();
     refreshCityPackUnifiedRows();
@@ -14509,8 +14944,12 @@ function renderMaintenanceOverview() {
   const staleCount = snapshotRows.filter((item) => item && item.isStale).length;
   const fallbackRows = Array.isArray(state.readPathFallbackSummary) ? state.readPathFallbackSummary : [];
   const fallbackCount = fallbackRows.reduce((sum, row) => sum + (Number.isFinite(Number(row && row.count)) ? Number(row.count) : 0), 0);
-  const missingIndexCount = Number.isFinite(Number(state.missingIndexSurfaceMeta && state.missingIndexSurfaceMeta.surfaceCount))
+  const missingIndexSurfaceCountRaw = state.missingIndexSurfaceMeta
+    && state.missingIndexSurfaceMeta.surfaceCount !== undefined
     ? Number(state.missingIndexSurfaceMeta.surfaceCount)
+    : NaN;
+  const missingIndexCount = Number.isFinite(missingIndexSurfaceCountRaw)
+    ? missingIndexSurfaceCountRaw
     : (Array.isArray(state.missingIndexSurfaceItems) ? state.missingIndexSurfaceItems.length : 0);
   const featureCounts = state.opsFeatureCatalogStatus && state.opsFeatureCatalogStatus.counts && typeof state.opsFeatureCatalogStatus.counts === 'object'
     ? state.opsFeatureCatalogStatus.counts
@@ -18031,6 +18470,7 @@ function setUxPolicyReadonlyVisibility() {
   const enabled = UXOS_POLICY_READONLY_V1 === true;
   if (panel) panel.classList.toggle('hidden', !enabled);
   if (actions) actions.classList.toggle('hidden', !enabled);
+  renderPaneVisibilityReasons();
 }
 
 function renderUxPolicyReadonlyResult(targetId, payload) {
@@ -18532,6 +18972,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
     ? summary.qualityFramework
     : null;
   if (!quality) {
+    state.llmRolloutStage = null;
     renderLlmResult('llm-quality-scorecard', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-slices', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-judge', { ok: false, error: 'no_quality_framework' });
@@ -18546,6 +18987,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
     renderLlmResult('llm-quality-v2-integration', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-v2-critical-slices', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-v3-improvement-loop', { ok: false, error: 'no_quality_framework' });
+    renderPaneVisibilityReasons();
     return;
   }
 
@@ -18558,6 +19000,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
   const replay = quality.replay && typeof quality.replay === 'object' ? quality.replay : {};
   const frontier = quality.frontier && typeof quality.frontier === 'object' ? quality.frontier : {};
   const qualityLoopV2 = quality.qualityLoopV2 && typeof quality.qualityLoopV2 === 'object' ? quality.qualityLoopV2 : {};
+  state.llmRolloutStage = qualityLoopV2.rolloutStage || null;
   const topQualityFailures = Array.isArray(quality.top_10_quality_failures) ? quality.top_10_quality_failures : [];
   const counterexampleQueue = Array.isArray(quality.counterexampleQueue) ? quality.counterexampleQueue : [];
   const topLoopCases = Array.isArray(quality.top_10_loop_cases) ? quality.top_10_loop_cases : [];
@@ -18678,6 +19121,7 @@ function renderLlmQualityFrameworkDashboard(summary) {
       ? qualityLoopV2.runtimeAudit
       : {}
   });
+  renderPaneVisibilityReasons();
 }
 
 function llmBlockedReasonCategoryLabel(category) {
@@ -19423,6 +19867,7 @@ function setupLlmControls() {
   setupHeaderActions();
   setupDeveloperMenu();
   setupLocalPreflightControls();
+  setupPaneReflectionControls();
   setupHomeControls();
   setupComposerActions();
   setupMonitorControls();

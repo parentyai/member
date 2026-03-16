@@ -210,6 +210,28 @@ internal token matrix（routeごとの既定ヘッダー）:
   - `npm run admin:open -- --no-adc-repair`
   - `npm run admin:open -- --fresh-server`（既存プロセスを必ず停止してfresh起動）
 
+### admin:open 失敗分類の統一表示（PR10）
+- `admin:open` は起動前に preflight を読み取り、`preflight.before`（必要時のみ `preflight.after`）を同一フォーマットで出力する。
+- 表示フィールド:
+  - `code`: 失敗分類コード（例: `SA_KEY_REQUIRED`, `ADC_REAUTH_REQUIRED`）
+  - `branch`: 復旧分岐（`AUTH_SA_KEY` / `AUTH_ADC` / `SDK_MISSING` / `PERMISSION` / `PROJECT_ID` / `CONNECTIVITY` / `DATABASE`）
+  - `cause`: 何が起きたか
+  - `action`: 次に何をするか
+  - `next`: 最短の復旧コマンド（既定は `npm run admin:preflight`）
+- 運用ルール:
+  - `branch=AUTH_SA_KEY`: 先に `GOOGLE_APPLICATION_CREDENTIALS` を修正
+  - `branch=AUTH_ADC`: `gcloud auth application-default login` を実行
+  - `branch=SDK_MISSING`: `npm ci` で依存を復旧し、`npm run admin:preflight` を再実行
+  - `branch=PERMISSION`: 参照権限を確認
+  - `branch=PROJECT_ID`: `FIRESTORE_PROJECT_ID` を修正
+  - `branch=CONNECTIVITY`: 通信状態と資格情報を再確認
+  - `branch=DATABASE`: Firestore database の存在を確認
+- `FIRESTORE_SDK_MISSING` の場合、`admin:open` は壊れたローカルサーバを起動せず、その場で停止する。
+
+### admin:open 失敗時メッセージ（PR10）
+- tokenコピー失敗時は理由を明示し、OS別の復旧ヒントを表示する（`pbcopy_failed` / `clip_failed` / `clipboard_command_missing`）。
+- 既存サーバ再利用判定の healthcheck 失敗時は、コードに加えて運用者向け説明を表示して自動再起動する。
+
 ### 判定
 - `ready=true`: 実装/データ条件を確認する
 - `ready=false`: 先に認証環境を修復する
@@ -395,6 +417,53 @@ internal token matrix（routeごとの既定ヘッダー）:
 1) `/admin/app?pane=home` で role を operator / admin / developer に切替
 2) 上表どおりのグループ表示か確認
 3) 逸脱時は直近 UI PR を revert し、契約テスト失敗を確認して原因修正
+
+## PR11 One-shot Release Gate（hardening）
+目的: 本番有効化を1回に集約し、role別で「見えない/反映されない」再発を防止する。
+
+### 事前ゲート（必須）
+1) `npm run test:docs`
+2) `npm run test:admin-nav-contract`
+3) `node --test tests/phase674/*.test.js`
+4) `ui_screenshot_evidence_index_v2.json` の `captureSet=ui-pr11-hardening-20260316` が42件（14面×3role）であること
+5) `docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json` が存在すること
+
+### 14面×3role Playwright最小回帰（実施済みセット）
+- captureSet: `ui-pr11-hardening-20260316`
+- role: `operator/admin/developer`
+- pane:
+  - `home`
+  - `composer`
+  - `monitor`
+  - `city-pack`
+  - `vendors`
+  - `read-model`
+  - `alerts`
+  - `errors`
+  - `llm`
+  - `settings`
+  - `maintenance`
+  - `audit`
+  - `ops-feature-catalog`
+  - `ops-system-health`
+- foldノイズ結果（1440x900）:
+  - `preInFold=0`
+  - `textareaInFold=0`
+  - `detailsOpenInFold=1`
+- 追跡ファイル:
+  - `docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json`
+  - `docs/REPO_AUDIT_INPUTS/ui_pr11_playwright_observed.log`
+
+### 即時停止（既存フラグ）
+1) `ENABLE_OPS_SYSTEM_SNAPSHOT_V1=0`
+2) `ENABLE_OPS_REALTIME_DASHBOARD_V1=0`
+3) `ENABLE_ADMIN_NAV_ALL_ACCESSIBLE_V1=0`
+
+### 段階巻き戻し（PR単位）
+1) PR11 revert
+2) PR10 revert
+3) PR9 revert
+4) PR8 revert
 
 ## City Pack Education運用（公立学校 / link-only）
 目的: 公立学校の公式リンクを安全運用し、120日監査で期限切れ/差分を管理する。

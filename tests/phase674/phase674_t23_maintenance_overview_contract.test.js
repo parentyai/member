@@ -26,6 +26,8 @@ test('phase674: maintenance pane exposes integrated overview summary contract', 
 
   assert.ok(css.includes('.maintenance-overview-metrics'));
   assert.ok(js.includes('function renderMaintenanceOverview()'));
+  assert.ok(js.includes('const missingIndexSurfaceCountRaw = state.missingIndexSurfaceMeta'));
+  assert.ok(js.includes('const missingIndexCount = Number.isFinite(missingIndexSurfaceCountRaw)'));
   assert.ok(js.includes("document.getElementById('maintenance-overview-open-system-health')?.addEventListener('click'"));
   assert.ok(js.includes("document.getElementById('maintenance-overview-open-feature-catalog')?.addEventListener('click'"));
 });

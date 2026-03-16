@@ -3647,3 +3647,17 @@ pre[data-visual-noise="evidence-placeholder"] {
   color: var(--text-muted);
   min-height: 2.5rem;
 }
+
+/* PR9 stabilization: keep role/rollout visibility reasons readable without changing layout contracts. */
+.role-visibility-reason {
+  margin: var(--space-2) 0;
+}
+
+.role-visibility-rollout {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+}
+
+#monitor-insights-handoff-reason {
+  flex: 1;
+}
