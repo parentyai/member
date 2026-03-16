@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T00:07:16.805Z",
-  "gitCommit": "e287b0047d4f0f169da1393ce8b20f5ee78cc8d7",
-  "branch": "codex/admin-ui-pr9-target4-stabilization",
-  "sourceDigest": "108f3e720854b3ef9faf121b78482722150845c5b1672a9e284a7143c1baaf83",
+  "generatedAt": "2026-03-16T00:28:21.649Z",
+  "gitCommit": "b9d46c547dd4f5a4a5c3d0cb70fa183e459e4340",
+  "branch": "codex/admin-ui-pr10-login-preflight",
+  "sourceDigest": "6bc26791c39f34e30e8260c9a6142d54212c96a2d5a2b7381738e6f58a7e3f23",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -76,7 +76,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "ab7cf887960c0cb777b097a6d950eaccde58d27c84fc659802433f4c80bcd529",
+      "sha256": "e51051ed89dca300c2f3f192de3561f94ef32a9e2e1394538b75a90c4aed1865",
       "bytes": 79293
     },
     {
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "597375c42877d85c81ae2870724042cc7ffee951d1fc963aab39f9ddeab13325",
+      "sha256": "425573178d9343e8ba0167355f713e20c3603f26499fbf16ad03e7907906c42f",
       "bytes": 453787
     },
     {
