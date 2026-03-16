@@ -10,21 +10,21 @@ function readRegistry() {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-test('phase793: DATA-C-01 contract status is partial with canonical core bridge evidence', () => {
+test('phase793: DATA-C-01 contract status is aligned for observable canonical core sidecars', () => {
   const registry = readRegistry();
   const requirement = (registry.requirements || []).find((row) => row.requirementId === 'DATA-C-01');
   assert.ok(requirement, 'DATA-C-01 requirement must exist');
-  assert.equal(requirement.status, 'partial');
+  assert.equal(requirement.status, 'aligned');
   assert.match(
     String(requirement.recommendedAction || ''),
-    /dual-write|canonical core outbox|postgres/i,
-    'DATA-C-01 action must mention bridge/dual-write progression'
+    /step_rules|city_packs|generated_view|exception_playbook/i,
+    'DATA-C-01 action must mention current observable coverage and deferred scope'
   );
 });
 
-test('phase793: CF-02 remains blocking until canonical core PostgreSQL sink is implemented', () => {
+test('phase793: CF-02 no longer blocks once observable sidecars are aligned', () => {
   const registry = readRegistry();
   const conflict = (registry.conflicts || []).find((row) => row.conflictId === 'CF-02');
   assert.ok(conflict, 'CF-02 conflict must exist');
-  assert.equal(conflict.blocking, true);
+  assert.equal(conflict.blocking, false);
 });

@@ -1,7 +1,7 @@
 # DATA_CANONICAL_CORE_BRIDGE_V2
 
 ## Purpose
-- `DATA-C-01` の段階移行として、Firestore 書き込み時に `canonical_core_outbox` へ dual-write し、後段 PostgreSQL Canonical Core 取り込みの入力を固定する。
+- `DATA-C-01` の observable scope として、Firestore 書き込み時に `canonical_core_outbox` へ dual-write し、repo-backed domain の PostgreSQL sidecar 入力を固定する。
 - 既存 read path は変更しない（add-only）。
 
 ## Runtime Flags
@@ -48,8 +48,14 @@
 - `city_packs` は add-only で `generated_view` sidecar payload を emit する。typed materializer は `metadata.countryCode` が埋まる pack のみ `generated_view` table へ materialize し、country 未解決の pack は skip reason を残して継続する。
 - typed materializer の現スコープは `source_registry / source_snapshot / evidence_claim / knowledge_object / task_template / rule_set / generated_view`。
 - `task_template` / `rule_set` の runtime authority は引き続き Firestore `step_rules` 側にあり、PostgreSQL typed table は compat sidecar として扱う。
-- `journey_templates` / `task_contents` / `exception_playbook` はこの段階では未materializeのまま残す。
+- `journey_templates` / `task_contents` はこの段階では未materializeのまま残す。
+- `exception_playbook` は `objectType` allowlist に残すが、repo-backed runtime authority が未観測のため current scope には含めない。
 - typed row は Firestore read model の互換 sidecar として生成し、runtime authority は引き続き Firestore 側に置く。
+
+## Deferred Scope
+- `exception_playbook`
+  - 現時点では src/runtime authority が未観測。
+  - spec 側の要求は保持するが、Canonical Core sidecar への昇格は runtime surface と contract tests が揃ってから行う。
 
 ## Sync Job Contract
 - endpoint: `POST /internal/jobs/canonical-core-outbox-sync`
