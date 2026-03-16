@@ -22,6 +22,7 @@ test('phase674: target panes expose unified reflection state and one-click recov
     assert.ok(pane.includes(`id="${paneId}-reflection-state"`), `${paneId} reflection container missing`);
     assert.ok(pane.includes(`id="${paneId}-reflection-state-label"`), `${paneId} reflection state label missing`);
     assert.ok(pane.includes(`id="${paneId}-reflection-reason"`), `${paneId} reflection reason missing`);
+    assert.ok(pane.includes(`id="${paneId}-reflection-next"`), `${paneId} reflection next-step missing`);
     assert.ok(pane.includes(`id="${paneId}-reflection-success-at"`), `${paneId} reflection success timestamp missing`);
     assert.ok(pane.includes(`id="${paneId}-reflection-reload"`), `${paneId} reflection reload action missing`);
     assert.ok(pane.includes(`id="${paneId}-reflection-open-system"`), `${paneId} reflection system handoff missing`);
@@ -34,6 +35,8 @@ test('phase674: data reflection contract keeps reason classification and pane-le
 
   assert.ok(js.includes('const DATA_REFLECTION_PANES = Object.freeze(['));
   assert.ok(js.includes('function resolvePaneReflectionVm(paneKey) {'));
+  assert.ok(js.includes('const PANE_REFLECTION_EMPTY_COPY = Object.freeze({'));
+  assert.ok(js.includes('function resolvePaneReflectionEmptyCopy(paneKey) {'));
   assert.ok(js.includes('function setupPaneReflectionControls() {'));
   assert.ok(js.includes("void reloadPaneReflectionData(paneKey, { notify: true });"));
   assert.ok(js.includes("activatePane('ops-system-health', { historyMode: 'push', syncHistory: true });"));

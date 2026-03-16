@@ -2767,14 +2767,19 @@ function countDashboardAvailableMetrics(payload) {
   }, 0);
 }
 
+function countVisibleDashboardAvailableMetrics() {
+  return Object.keys(DASHBOARD_CARD_CONFIG).reduce((count, metricKey) => {
+    const payload = resolveDashboardPayload(getDashboardWindowMonths(metricKey));
+    const metric = resolveDashboardMetric(payload, metricKey);
+    if (metric && metric.available === true) return count + 1;
+    return count;
+  }, 0);
+}
+
 function resolvePaneHasData(paneKey) {
   const key = String(paneKey || '').trim();
   if (key === 'home') {
-    const defaultWindow = normalizeDashboardWindow(
-      document.getElementById('dashboard-window-months')?.value || DASHBOARD_DEFAULT_WINDOW
-    );
-    const payload = resolveDashboardPayload(defaultWindow);
-    return countDashboardAvailableMetrics(payload) > 0;
+    return countVisibleDashboardAvailableMetrics() > 0;
   }
   if (key === 'monitor') return Array.isArray(state.monitorItems) && state.monitorItems.length > 0;
   if (key === 'read-model') return Array.isArray(state.readModelItems) && state.readModelItems.length > 0;
@@ -2797,6 +2802,48 @@ function resolvePaneHasData(paneKey) {
   return false;
 }
 
+const PANE_REFLECTION_EMPTY_COPY = Object.freeze({
+  home: Object.freeze({
+    reasonKey: 'ui.desc.admin.reflection.empty.home.reason',
+    reasonFallback: '期間内に表示対象のKPIがありません。通知実績か期間条件を確認してください。',
+    nextKey: 'ui.desc.admin.reflection.empty.home.next',
+    nextFallback: 'まず要対応一覧か通知集計へ進み、対象期間にデータがあるか確認してください。'
+  }),
+  monitor: Object.freeze({
+    reasonKey: 'ui.desc.admin.reflection.empty.monitor.reason',
+    reasonFallback: '通知履歴や分析対象が見つかりません。検索条件と配信実績を確認してください。',
+    nextKey: 'ui.desc.admin.reflection.empty.monitor.next',
+    nextFallback: '履歴検索条件を見直し、必要なら作成画面から通知を追加してから再確認してください。'
+  }),
+  'city-pack': Object.freeze({
+    reasonKey: 'ui.desc.admin.reflection.empty.cityPack.reason',
+    reasonFallback: 'City Pack の受信箱・候補・保存済みデータがまだありません。',
+    nextKey: 'ui.desc.admin.reflection.empty.cityPack.next',
+    nextFallback: '都市候補を更新するか、監査から直近の取り込み trace を確認してください。'
+  }),
+  'read-model': Object.freeze({
+    reasonKey: 'ui.desc.admin.reflection.empty.readModel.reason',
+    reasonFallback: '通知集計に使えるユーザーまたは通知データがありません。',
+    nextKey: 'ui.desc.admin.reflection.empty.readModel.next',
+    nextFallback: '一覧の絞り込み条件を見直し、必要ならダッシュボードや配信結果から対象を探してください。'
+  }),
+  vendors: Object.freeze({
+    reasonKey: 'ui.desc.admin.reflection.empty.vendors.reason',
+    reasonFallback: 'ベンダー関連データが見つかりません。関連付け対象または同期状態を確認してください。',
+    nextKey: 'ui.desc.admin.reflection.empty.vendors.next',
+    nextFallback: 'City Pack との関係一覧を確認し、必要ならドリルダウンで trace を追跡してください。'
+  })
+});
+
+function resolvePaneReflectionEmptyCopy(paneKey) {
+  const key = String(paneKey || '').trim();
+  const copy = PANE_REFLECTION_EMPTY_COPY[key] || {};
+  return {
+    reason: t(copy.reasonKey, copy.reasonFallback || '対象データがありません。フィルタ条件または権限を確認してください。'),
+    next: t(copy.nextKey, copy.nextFallback || '再読込する前に、条件と権限を確認してください。')
+  };
+}
+
 function resolvePaneReflectionVm(paneKey) {
   const key = String(paneKey || '').trim();
   const entry = ensurePaneReflectionStateEntry(key);
@@ -2804,6 +2851,7 @@ function resolvePaneReflectionVm(paneKey) {
     tone: 'unset',
     label: '取得待ち',
     reason: '最初の取得を待機しています。',
+    next: t('ui.desc.admin.reflection.defaultNext', '最初の取得完了を待ってから、必要に応じて再読込してください。'),
     successAt: '-'
   };
   if (!entry) return defaultVm;
@@ -2820,6 +2868,9 @@ function resolvePaneReflectionVm(paneKey) {
       reason: preflightSummary.cause
         ? String(preflightSummary.cause)
         : t('ui.desc.admin.localPreflight.defaultCause', 'ローカル前提条件を確認できませんでした。'),
+      next: authRelated
+        ? t('ui.desc.admin.reflection.authNext', 'ローカル認証を復旧してから再読込するか、System Health で状態を確認してください。')
+        : t('ui.desc.admin.reflection.warnNext', 'System Health で失敗分類を確認し、解消後に再読込してください。'),
       successAt: entry.lastSuccessAt ? formatDateLabel(entry.lastSuccessAt) : '-'
     };
   }
@@ -2830,18 +2881,25 @@ function resolvePaneReflectionVm(paneKey) {
       tone: authRelated ? 'forbidden' : 'error',
       label: authRelated ? '認証不足' : '取得失敗',
       reason: entry.lastFailureMessage || 'データ取得に失敗しました。',
+      next: authRelated
+        ? t('ui.desc.admin.reflection.authNext', 'ローカル認証を復旧してから再読込するか、System Health で状態を確認してください。')
+        : t('ui.desc.admin.reflection.errorNext', 'System Health で失敗理由を確認し、必要なら Trace監査へ進んでください。'),
       successAt: entry.lastSuccessAt ? formatDateLabel(entry.lastSuccessAt) : '-'
     };
   }
 
   if (entry.lastSuccessAt) {
     const hasData = resolvePaneHasData(key);
+    const emptyCopy = resolvePaneReflectionEmptyCopy(key);
     return {
       tone: hasData ? 'success' : 'pending',
       label: hasData ? '反映済み' : '空データ',
       reason: hasData
-        ? '最新データを表示中です。'
-        : '対象データがありません。フィルタ条件または権限を確認してください。',
+        ? t('ui.desc.admin.reflection.successReason', '最新データを表示中です。')
+        : emptyCopy.reason,
+      next: hasData
+        ? t('ui.desc.admin.reflection.successNext', 'この画面の一覧またはカードで判断を進め、必要時のみ System / Trace を開いてください。')
+        : emptyCopy.next,
       successAt: formatDateLabel(entry.lastSuccessAt)
     };
   }
@@ -2855,13 +2913,15 @@ function renderPaneReflectionState(paneKey) {
   const root = document.getElementById(`${key}-reflection-state`);
   const labelEl = document.getElementById(`${key}-reflection-state-label`);
   const reasonEl = document.getElementById(`${key}-reflection-reason`);
+  const nextEl = document.getElementById(`${key}-reflection-next`);
   const successAtEl = document.getElementById(`${key}-reflection-success-at`);
   const openAuditBtn = document.getElementById(`${key}-reflection-open-audit`);
-  if (!root || !labelEl || !reasonEl || !successAtEl) return;
+  if (!root || !labelEl || !reasonEl || !nextEl || !successAtEl) return;
   const vm = resolvePaneReflectionVm(key);
   root.setAttribute('data-ui-state', normalizeUiStateTone(vm.tone, 'unset'));
   applyBadgeState(labelEl, vm.label, vm.tone, { baseClass: 'badge', messageLevel: 'inline', fallbackTone: 'unset' });
   reasonEl.textContent = normalizeCopyForRole(vm.reason || '-', state.role);
+  nextEl.textContent = normalizeCopyForRole(vm.next || '-', state.role);
   successAtEl.textContent = vm.successAt || '-';
   if (openAuditBtn) openAuditBtn.disabled = !resolvePaneReflectionTraceId(key);
 }
@@ -5998,7 +6058,7 @@ async function loadDashboardKpis(options) {
   const defaultWindow = normalizeDashboardWindow(document.getElementById('dashboard-window-months')?.value || DASHBOARD_DEFAULT_WINDOW);
   const defaultPayload = resolveDashboardPayload(defaultWindow);
   state.dashboardKpis = defaultPayload?.kpis || null;
-  const availableCount = countDashboardAvailableMetrics(defaultPayload);
+  const availableCount = countVisibleDashboardAvailableMetrics();
   if (failed && availableCount <= 0) {
     markPaneReflectionFailure('home', {
       code: 'DASHBOARD_KPI_FAILED',
