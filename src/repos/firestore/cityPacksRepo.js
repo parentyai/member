@@ -3,6 +3,14 @@
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { toMillis } = require('./queryFallback');
+const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
+const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
+const { appendCanonicalCoreOutboxEvent } = require('./canonicalCoreOutboxRepo');
+const {
+  buildCityPackGeneratedViewCanonicalPayload,
+  buildCityPackGeneratedViewSourceLinks,
+  resolveCityPackJurisdiction
+} = require('../../domain/data/canonicalCoreGeneratedViewMapping');
 
 const COLLECTION = 'city_packs';
 const VALIDITY_DAYS = 120;
@@ -131,6 +139,44 @@ function normalizeString(value) {
 function normalizeMetadata(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   return Object.assign({}, value);
+}
+
+function resolveCityPackAuthorityTier(payload) {
+  const metadata = normalizeMetadata(payload && payload.metadata);
+  const authorityTier = typeof metadata.authorityTier === 'string' ? metadata.authorityTier.trim().toUpperCase() : '';
+  return authorityTier || 'UNKNOWN';
+}
+
+function resolveCityPackBindingLevel(payload) {
+  const metadata = normalizeMetadata(payload && payload.metadata);
+  const bindingLevel = typeof metadata.bindingLevel === 'string' ? metadata.bindingLevel.trim().toUpperCase() : '';
+  return bindingLevel || 'REFERENCE';
+}
+
+function buildCityPackEnvelope(cityPackId, cityPack, existingEnvelope) {
+  const payload = cityPack && typeof cityPack === 'object' ? cityPack : {};
+  const previousCreatedAt = existingEnvelope && typeof existingEnvelope === 'object'
+    ? existingEnvelope.created_at
+    : null;
+  return buildUniversalRecordEnvelope({
+    recordId: cityPackId,
+    recordType: 'city_pack',
+    sourceSystem: 'member_firestore',
+    sourceSnapshotRef: `city_packs:${cityPackId}`,
+    effectiveFrom: payload.createdAt || new Date().toISOString(),
+    effectiveTo: payload.validUntil || null,
+    authorityTier: resolveCityPackAuthorityTier(payload),
+    bindingLevel: resolveCityPackBindingLevel(payload),
+    jurisdiction: resolveCityPackJurisdiction(payload),
+    status: payload.status || 'draft',
+    retentionTag: 'city_packs_indefinite',
+    piiClass: 'none',
+    accessScope: ['operator', 'retrieval'],
+    maskingPolicy: 'none',
+    deletionPolicy: 'retention_policy_v1',
+    createdAt: previousCreatedAt || payload.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
 }
 
 function normalizeBasePackId(value) {
@@ -392,6 +438,8 @@ async function createCityPack(data) {
   if (!payload.name) throw new Error('name required');
   if (!payload.sourceRefs.length) throw new Error('sourceRefs required');
   const db = getDb();
+  const recordEnvelope = buildCityPackEnvelope(payload.id, payload, null);
+  assertRecordEnvelopeCompliance({ dataClass: 'city_packs', recordEnvelope });
   await db.collection(COLLECTION).doc(payload.id).set({
     name: payload.name,
     status: payload.status,
@@ -414,9 +462,26 @@ async function createCityPack(data) {
     nationwidePolicy: payload.nationwidePolicy,
     modules: payload.modules,
     recommendedTasks: payload.recommendedTasks,
+    recordEnvelope,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: false });
+
+  await appendCanonicalCoreOutboxEvent({
+    objectType: 'generated_view',
+    objectId: `city_pack:${payload.id}`,
+    eventType: 'upsert',
+    recordEnvelope,
+    canonicalPayload: buildCityPackGeneratedViewCanonicalPayload(payload.id, payload, recordEnvelope),
+    sourceLinks: buildCityPackGeneratedViewSourceLinks(payload),
+    materializationHints: {
+      targetTables: ['generated_view']
+    },
+    payloadSummary: {
+      status: payload.status,
+      locale: payload.language
+    }
+  });
   return { id: payload.id };
 }
 
@@ -446,10 +511,30 @@ async function listCityPacks(params) {
 
 async function updateCityPack(cityPackId, patch) {
   if (!cityPackId) throw new Error('cityPackId required');
+  const current = await getCityPack(cityPackId);
   const payload = patch && typeof patch === 'object' ? Object.assign({}, patch) : {};
+  const mergedForEnvelope = normalizePayload(Object.assign({}, current || {}, payload, { id: cityPackId }));
+  payload.recordEnvelope = buildCityPackEnvelope(cityPackId, mergedForEnvelope, current && current.recordEnvelope);
+  assertRecordEnvelopeCompliance({ dataClass: 'city_packs', recordEnvelope: payload.recordEnvelope });
   payload.updatedAt = serverTimestamp();
   const db = getDb();
   await db.collection(COLLECTION).doc(cityPackId).set(payload, { merge: true });
+
+  await appendCanonicalCoreOutboxEvent({
+    objectType: 'generated_view',
+    objectId: `city_pack:${cityPackId}`,
+    eventType: 'upsert',
+    recordEnvelope: payload.recordEnvelope,
+    canonicalPayload: buildCityPackGeneratedViewCanonicalPayload(cityPackId, mergedForEnvelope, payload.recordEnvelope),
+    sourceLinks: buildCityPackGeneratedViewSourceLinks(mergedForEnvelope),
+    materializationHints: {
+      targetTables: ['generated_view']
+    },
+    payloadSummary: {
+      status: mergedForEnvelope.status,
+      locale: mergedForEnvelope.language
+    }
+  });
   return { id: cityPackId };
 }
 

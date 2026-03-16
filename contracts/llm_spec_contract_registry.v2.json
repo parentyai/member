@@ -1,6 +1,6 @@
 {
   "registryVersion": "v2.0.0",
-  "registryHash": "sha256:llm-spec-contract-v2-20260310-data-c01-postgres-sink-r794",
+  "registryHash": "sha256:llm-spec-contract-v2-20260316-data-c01-generated-view-r798",
   "generatedAt": "2026-03-10T00:00:00.000Z",
   "authorityOrder": [
     "Member_LLM_Unified_Master_Spec_v2",
@@ -102,11 +102,13 @@
       "status": "partial",
       "severity": "critical",
       "blastRadius": "data_governance",
-      "recommendedAction": "run canonical core outbox sync job in staged canary with dual-write enabled, expand dual-write producers (source_refs/source_evidence/faq_articles/step_rules), materialize task_template/rule_set sidecars from step_rules, and expand postgres sink coverage from bridge table to remaining Canonical Core object set",
+      "recommendedAction": "run canonical core outbox sync job in staged canary with dual-write enabled, expand dual-write producers (source_refs/source_evidence/faq_articles/step_rules/city_packs), materialize task_template/rule_set sidecars from step_rules, materialize generated_view sidecars from city_packs when metadata.countryCode is present, and expand postgres sink coverage from bridge table to remaining Canonical Core object set",
       "evidence": [
         "/Volumes/Arumamihs/Member/src/domain/data/canonicalCoreBridge.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/canonicalCoreOutboxRepo.js:1",
         "/Volumes/Arumamihs/Member/src/domain/data/canonicalCorePostgresSink.js:1",
+        "/Volumes/Arumamihs/Member/src/domain/data/canonicalCoreGeneratedViewMapping.js:1",
+        "/Volumes/Arumamihs/Member/src/domain/data/canonicalCoreTypedMaterializer.js:1",
         "/Volumes/Arumamihs/Member/src/usecases/data/runCanonicalCoreOutboxSyncJob.js:1",
         "/Volumes/Arumamihs/Member/src/routes/internal/canonicalCoreOutboxSyncJob.js:1",
         "/Volumes/Arumamihs/Member/src/index.js:1848",
@@ -114,12 +116,16 @@
         "/Volumes/Arumamihs/Member/src/repos/firestore/sourceEvidenceRepo.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/faqArticlesRepo.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/stepRulesRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/repos/firestore/cityPacksRepo.js:1",
         "/Volumes/Arumamihs/Member/tests/phase793/phase793_t01_canonical_core_outbox_repo_contract.test.js:1",
         "/Volumes/Arumamihs/Member/tests/phase793/phase793_t02_source_refs_canonical_core_dual_write_contract.test.js:1",
         "/Volumes/Arumamihs/Member/tests/phase793/phase793_t03_faq_articles_canonical_core_dual_write_contract.test.js:1",
         "/Volumes/Arumamihs/Member/tests/phase795/phase795_t01_source_evidence_canonical_core_dual_write_contract.test.js:1",
         "tests/phase796/phase796_t02_step_rules_canonical_core_dual_write_contract.test.js:1",
         "tests/phase796/phase796_t03_canonical_core_typed_materializer_task_rule_contract.test.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase798/phase798_t01_city_packs_generated_view_dual_write_contract.test.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase798/phase798_t02_canonical_core_generated_view_materializer_contract.test.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase798/phase798_t03_canonical_core_postgres_sink_generated_view_contract.test.js:1",
         "/Volumes/Arumamihs/Member/tests/phase794/phase794_t03_canonical_core_outbox_sync_usecase_contract.test.js:1",
         "/Volumes/Arumamihs/Member/tests/phase794/phase794_t04_canonical_core_outbox_sync_route_contract.test.js:1"
       ]
