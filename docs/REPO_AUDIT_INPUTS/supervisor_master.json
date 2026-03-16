@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T21:16:48-04:00",
-  "gitCommit": "ea4ae223e168033cb8ab29c1f93f83213e60a5ff",
-  "branch": "codex/admin-ui-pr12-nonblocker-fixes",
-  "sourceDigest": "e8bcd883245360bf5580e40e76ec0599350e046d9d21a3a20b7a78f7a84b3f28",
+  "generatedAt": "2026-03-15T22:02:56-04:00",
+  "gitCommit": "00c8a2ada78c4100d3174e39f4ce9c6126e6485a",
+  "branch": "codex/admin-ui-pr14-empty-state-reasons",
+  "sourceDigest": "8bba005f0a4f401e6d5237f60a382e002a35869c22aa4522561c067e74460162",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
