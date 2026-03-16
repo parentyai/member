@@ -14,8 +14,8 @@ test('phase856: quality patrol workflow runs hourly with OIDC auth and artifact 
 
   assert.ok(workflow.includes('cron: "0 * * * *"'));
   assert.ok(workflow.includes('workflow_dispatch:'));
-  assert.ok(workflow.includes('google-github-actions/auth@v2'));
-  assert.ok(workflow.includes('google-github-actions/setup-gcloud@v2'));
+  assert.ok(workflow.includes('google-github-actions/auth@v3'));
+  assert.ok(workflow.includes('google-github-actions/setup-gcloud@v3'));
   assert.ok(workflow.includes('create_credentials_file: true'));
   assert.ok(workflow.includes('Prepare Firebase Admin external-account bridge'));
   assert.ok(workflow.includes('Diagnose Firebase Admin bridge'));
