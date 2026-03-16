@@ -18,4 +18,5 @@ test('phase651: runbook and SSOT mention local preflight operational checks', ()
   assert.ok(ssot.includes('/api/admin/local-preflight'));
   assert.ok(runbook.includes('admin:preflight'));
   assert.ok(runbook.includes('/api/admin/local-preflight'));
+  assert.ok(runbook.includes('FIRESTORE_SDK_MISSING'));
 });

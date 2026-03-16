@@ -214,17 +214,19 @@ internal token matrix（routeごとの既定ヘッダー）:
 - `admin:open` は起動前に preflight を読み取り、`preflight.before`（必要時のみ `preflight.after`）を同一フォーマットで出力する。
 - 表示フィールド:
   - `code`: 失敗分類コード（例: `SA_KEY_REQUIRED`, `ADC_REAUTH_REQUIRED`）
-  - `branch`: 復旧分岐（`AUTH_SA_KEY` / `AUTH_ADC` / `PERMISSION` / `PROJECT_ID` / `CONNECTIVITY` / `DATABASE`）
+  - `branch`: 復旧分岐（`AUTH_SA_KEY` / `AUTH_ADC` / `SDK_MISSING` / `PERMISSION` / `PROJECT_ID` / `CONNECTIVITY` / `DATABASE`）
   - `cause`: 何が起きたか
   - `action`: 次に何をするか
   - `next`: 最短の復旧コマンド（既定は `npm run admin:preflight`）
 - 運用ルール:
   - `branch=AUTH_SA_KEY`: 先に `GOOGLE_APPLICATION_CREDENTIALS` を修正
   - `branch=AUTH_ADC`: `gcloud auth application-default login` を実行
+  - `branch=SDK_MISSING`: `npm ci` で依存を復旧し、`npm run admin:preflight` を再実行
   - `branch=PERMISSION`: 参照権限を確認
   - `branch=PROJECT_ID`: `FIRESTORE_PROJECT_ID` を修正
   - `branch=CONNECTIVITY`: 通信状態と資格情報を再確認
   - `branch=DATABASE`: Firestore database の存在を確認
+- `FIRESTORE_SDK_MISSING` の場合、`admin:open` は壊れたローカルサーバを起動せず、その場で停止する。
 
 ### admin:open 失敗時メッセージ（PR10）
 - tokenコピー失敗時は理由を明示し、OS別の復旧ヒントを表示する（`pbcopy_failed` / `clip_failed` / `clipboard_command_missing`）。
