@@ -6,7 +6,7 @@ const dryrun = readFileSync('.github/workflows/phase22-scheduled-dryrun.yml', 'u
 const write = readFileSync('.github/workflows/phase22-scheduled-write.yml', 'utf8');
 
 function assertArtifactConfig(contents, name) {
-  assert.match(contents, /actions\/upload-artifact@v4/);
+  assert.match(contents, /actions\/upload-artifact@v7/);
   assert.match(contents, /if:\s*always\(\)/);
   assert.match(contents, new RegExp(`name:\\s*${name}`));
   assert.match(contents, /stdout\.txt/);

@@ -13,7 +13,7 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Auth (OIDC)
         uses: google-github-actions/auth@v2
         with:
@@ -24,7 +24,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "20"
       - run: npm ci
@@ -142,7 +142,7 @@ jobs:
             echo "nextAction: ${nextAction}"
             echo "humanDecisionHint: ${humanDecisionHint}"
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: phase22-write
