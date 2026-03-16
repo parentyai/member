@@ -202,7 +202,23 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'responseContractConformant',
   'responseContractErrorCount',
   'responseContractErrors',
-  'responseContractFallbackApplied'
+  'responseContractFallbackApplied',
+  'contractVersion',
+  'pathType',
+  'uUnits',
+  'serviceSurface',
+  'groupPrivacyMode',
+  'handoffState',
+  'memoryReadScopes',
+  'memoryWriteScopes',
+  'citationFinalized',
+  'citationFreshnessStatus',
+  'citationAuthoritySatisfied',
+  'citationDisclaimerRequired',
+  'policySourceResolved',
+  'policyGate',
+  'policyDisclosureRequired',
+  'policyEscalationRequired'
 ]);
 
 function resolveAppendAuditLog() {

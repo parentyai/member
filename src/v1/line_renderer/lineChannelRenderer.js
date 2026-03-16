@@ -7,14 +7,50 @@ const { buildOverflowFallbackMessage } = require('./fallbackRenderer');
 const MAX_LINE_MESSAGE_OBJECTS = 5;
 const DEFAULT_TEXT_UTF16_BUDGET = 1200;
 
+function normalizeQuickReply(value) {
+  const payload = value && typeof value === 'object' ? value : {};
+  const items = Array.isArray(payload.items) ? payload.items : [];
+  const normalizedItems = items
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => {
+      const action = item.action && typeof item.action === 'object' ? item.action : {};
+      const label = typeof action.label === 'string' ? action.label.trim() : '';
+      const text = typeof action.text === 'string' ? action.text.trim() : '';
+      if (!label || !text || action.type !== 'message') return null;
+      const normalizedAction = {
+        type: 'message',
+        label,
+        text
+      };
+      if (typeof action.data === 'string' && action.data.trim()) {
+        normalizedAction.data = action.data.trim();
+      }
+      return {
+        type: 'action',
+        action: normalizedAction
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 4);
+  return normalizedItems.length > 0 ? { items: normalizedItems } : null;
+}
+
 function normalizeMessageObject(row) {
   if (!row || typeof row !== 'object') return null;
   if (row.type === 'text') {
     const text = typeof row.text === 'string' ? row.text : '';
-    return { type: 'text', text };
+    const quickReply = normalizeQuickReply(row.quickReply);
+    return quickReply ? { type: 'text', text, quickReply } : { type: 'text', text };
+  }
+  if (row.type === 'quick_reply') {
+    const text = typeof row.text === 'string' ? row.text : '';
+    const quickReply = normalizeQuickReply(row.quickReply);
+    if (!quickReply) return { type: 'text', text };
+    return { type: 'text', text, quickReply };
   }
   if (row.type === 'flex' || row.type === 'template') {
-    return row;
+    const quickReply = normalizeQuickReply(row.quickReply);
+    return quickReply ? Object.assign({}, row, { quickReply }) : row;
   }
   if (row.type === 'service_message') {
     return {
@@ -28,7 +64,11 @@ function normalizeMessageObject(row) {
 function explodeTextMessage(message, textBudgetUtf16) {
   const chunks = splitTextByUtf16(message.text, textBudgetUtf16);
   if (!chunks.length) return [];
-  return chunks.map((text) => ({ type: 'text', text }));
+  return chunks.map((text, index) => {
+    const row = { type: 'text', text };
+    if (index === 0 && message.quickReply) row.quickReply = message.quickReply;
+    return row;
+  });
 }
 
 function prepareLineMessages(messages, options) {

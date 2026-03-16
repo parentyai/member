@@ -90,6 +90,9 @@ const { InMemoryWebhookDedupeStore } = require('../v1/channel_edge/line/dedupeSt
 const { filterWebhookEventsAsync } = require('../v1/channel_edge/line/receiver');
 const { classifyDispatchMode } = require('../v1/channel_edge/line/dispatcher');
 const { buildServiceAckMessage } = require('../v1/line_renderer/fallbackRenderer');
+const { buildSemanticLineMessage } = require('../v1/line_renderer/semanticLineMessage');
+const { resolveLineSurfacePlan } = require('../v1/line_surface_policy/lineInteractionPolicy');
+const { resolveGroupPrivacyPolicy } = require('../v1/policy_graph/groupPrivacyGate');
 const taskNodesRepo = require('../repos/firestore/taskNodesRepo');
 const {
   regionPrompt,
@@ -876,12 +879,38 @@ async function replyWithPaidDomainConcierge(params) {
     conversationMode: result.opportunityDecision && result.opportunityDecision.conversationMode
       ? result.opportunityDecision.conversationMode
       : 'concierge',
+    eventSource: payload.eventSource,
+    pathType: 'slow',
+    uUnits: ['U-05', 'U-06', 'U-09', 'U-10', 'U-11', 'U-12', 'U-13', 'U-16', 'U-17', 'U-23'],
     nextSteps: result.atoms && Array.isArray(result.atoms.nextActions) ? result.atoms.nextActions : [],
     followupQuestion: result.atoms && typeof result.atoms.followupQuestion === 'string'
       ? result.atoms.followupQuestion
-      : null
+      : null,
+    warnings: result.conciergeMeta && Array.isArray(result.conciergeMeta.blockedReasons)
+      ? result.conciergeMeta.blockedReasons
+      : [],
+    legalSnapshot: payload.legalSnapshot || null,
+    sourceAuthorityScore: result.conciergeMeta && Number.isFinite(Number(result.conciergeMeta.sourceAuthorityScore))
+      ? Number(result.conciergeMeta.sourceAuthorityScore)
+      : null,
+    sourceFreshnessScore: result.conciergeMeta && Number.isFinite(Number(result.conciergeMeta.sourceFreshnessScore))
+      ? Number(result.conciergeMeta.sourceFreshnessScore)
+      : null,
+    sourceReadinessDecision: result.conciergeMeta && typeof result.conciergeMeta.sourceReadinessDecision === 'string'
+      ? result.conciergeMeta.sourceReadinessDecision
+      : null,
+    officialOnlySatisfied: result.conciergeMeta ? result.conciergeMeta.officialOnlySatisfied === true : false,
+    readinessDecision: result.conciergeMeta && typeof result.conciergeMeta.readinessDecision === 'string'
+      ? result.conciergeMeta.readinessDecision
+      : null,
+    readinessReasonCodes: result.conciergeMeta && Array.isArray(result.conciergeMeta.readinessReasonCodes)
+      ? result.conciergeMeta.readinessReasonCodes
+      : []
   });
-  await payload.replyFn(payload.replyToken, { type: 'text', text: semanticReplyEnvelope.replyText });
+  await payload.replyFn(
+    payload.replyToken,
+    semanticReplyEnvelope.lineMessage || { type: 'text', text: semanticReplyEnvelope.replyText }
+  );
   return Object.assign({}, result, semanticReplyEnvelope);
 }
 
@@ -1256,24 +1285,242 @@ function resolveTranscriptSnapshotAssistantReplyText(params) {
   return '';
 }
 
+function buildSemanticQuickReplies(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  if (Array.isArray(payload.quickReplies)) return payload.quickReplies;
+  const nextSteps = Array.isArray(payload.nextSteps) ? payload.nextSteps : [];
+  const out = [];
+  nextSteps.slice(0, 3).forEach((step) => {
+    const text = normalizeReplyText(step).slice(0, 60);
+    if (!text) return;
+    out.push({
+      label: text.slice(0, 20),
+      text
+    });
+  });
+  const followupQuestion = normalizeReplyText(payload.followupQuestion).slice(0, 60);
+  if (followupQuestion && out.length < 4) {
+    out.push({
+      label: 'もう少し相談',
+      text: followupQuestion
+    });
+  }
+  return out;
+}
+
+function buildSemanticUUnits(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const explicit = Array.isArray(payload.uUnits) ? payload.uUnits : [];
+  const defaults = ['U-16', 'U-17', 'U-26', 'U-27'];
+  const out = [];
+  explicit.concat(defaults).forEach((item) => {
+    const normalized = normalizeReplyText(item).slice(0, 32);
+    if (!normalized) return;
+    if (!out.includes(normalized)) out.push(normalized);
+  });
+  return out;
+}
+
+function resolveSemanticGroupPrivacyPolicy(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  if (payload.groupPrivacyPolicy && typeof payload.groupPrivacyPolicy === 'object') {
+    return payload.groupPrivacyPolicy;
+  }
+  if (payload.eventSource && typeof payload.eventSource === 'object') {
+    return resolveGroupPrivacyPolicy({ source: payload.eventSource });
+  }
+  return resolveGroupPrivacyPolicy({ source: { type: 'user' } });
+}
+
+function resolveSemanticCitationSummary(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const readinessDecision = normalizeReplyText(payload.readinessDecision || payload.sourceReadinessDecision).toLowerCase() || 'unknown';
+  const freshnessScore = Number.isFinite(Number(payload.sourceFreshnessScore)) ? Number(payload.sourceFreshnessScore) : null;
+  const authorityScore = Number.isFinite(Number(payload.sourceAuthorityScore)) ? Number(payload.sourceAuthorityScore) : null;
+  const officialOnlySatisfied = payload.officialOnlySatisfied === true;
+  let freshnessStatus = 'unknown';
+  if (freshnessScore !== null) {
+    freshnessStatus = freshnessScore >= 0.8 ? 'fresh' : (freshnessScore >= 0.5 ? 'mixed' : 'stale');
+  }
+  const authoritySatisfied = authorityScore === null
+    ? null
+    : (authorityScore >= 0.75 && (officialOnlySatisfied || payload.officialOnlyRequired === false));
+  const disclaimerRequired = ['hedged', 'clarify', 'refuse'].includes(readinessDecision)
+    || freshnessStatus !== 'fresh'
+    || authoritySatisfied === false
+    || payload.regulatedLane === true
+    || payload.highUncertainty === true;
+  return {
+    finalized: true,
+    readiness_decision: ['allow', 'hedged', 'clarify', 'refuse'].includes(readinessDecision) ? readinessDecision : 'unknown',
+    freshness_status: freshnessStatus,
+    authority_satisfied: authoritySatisfied,
+    disclaimer_required: disclaimerRequired
+  };
+}
+
+function resolveSemanticPolicyTrace(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const legalSnapshot = payload.legalSnapshot && typeof payload.legalSnapshot === 'object'
+    ? payload.legalSnapshot
+    : {};
+  const reasonCodes = [];
+  if (Array.isArray(legalSnapshot.legalReasonCodes)) {
+    legalSnapshot.legalReasonCodes.forEach((item) => {
+      const normalized = normalizeReplyText(item).toLowerCase();
+      if (normalized && !reasonCodes.includes(normalized)) reasonCodes.push(normalized);
+    });
+  }
+  if (Array.isArray(payload.readinessReasonCodes)) {
+    payload.readinessReasonCodes.forEach((item) => {
+      const normalized = normalizeReplyText(item).toLowerCase();
+      if (normalized && !reasonCodes.includes(normalized)) reasonCodes.push(normalized);
+    });
+  }
+  if (payload.groupPrivacyMode === 'group_safe' && !reasonCodes.includes('group_privacy_guard_active')) {
+    reasonCodes.push('group_privacy_guard_active');
+  }
+  return {
+    policy_source: normalizeReplyText(payload.policySource || legalSnapshot.policySource).toLowerCase() || 'system_flags',
+    legal_decision: normalizeReplyText(payload.legalDecision || legalSnapshot.legalDecision).toLowerCase() || 'allow',
+    safety_gate: normalizeReplyText(payload.safetyGate || payload.readinessDecision || payload.sourceReadinessDecision).toLowerCase() || 'default',
+    disclosure_required: payload.disclosureRequired === true,
+    escalation_required: payload.escalationRequired === true || ['REQUIRED', 'IN_PROGRESS'].includes(normalizeReplyText(payload.handoffState).toUpperCase()),
+    reason_codes: reasonCodes.slice(0, 8)
+  };
+}
+
+function resolveSemanticWarnings(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const out = [];
+  const sourceWarnings = Array.isArray(payload.warnings) ? payload.warnings : [];
+  sourceWarnings.forEach((item) => {
+    const normalized = normalizeReplyText(item);
+    if (normalized && !out.includes(normalized)) out.push(normalized);
+  });
+  if (payload.groupPrivacyMode === 'group_safe' && !out.includes('group_privacy_guard_active')) {
+    out.push('group_privacy_guard_active');
+  }
+  if (payload.citationSummary && payload.citationSummary.disclaimer_required === true && !out.includes('citation_disclaimer_required')) {
+    out.push('citation_disclaimer_required');
+  }
+  if (payload.policyTrace && payload.policyTrace.escalation_required === true && !out.includes('human_handoff_recommended')) {
+    out.push('human_handoff_recommended');
+  }
+  return out.slice(0, 6);
+}
+
+function resolveScopedMemoryPaths(explicitScopes, groupPrivacyPolicy, blockedScope) {
+  const scopes = Array.isArray(explicitScopes) ? explicitScopes : [];
+  const blocked = typeof blockedScope === 'string' ? blockedScope : '';
+  const out = [];
+  scopes.forEach((scope) => {
+    const normalized = normalizeReplyText(scope);
+    if (!normalized) return;
+    if (groupPrivacyPolicy && groupPrivacyPolicy.isGroup === true && normalized === blocked) return;
+    if (!out.includes(normalized)) out.push(normalized);
+  });
+  return out;
+}
+
 function buildSemanticReplyEnvelope(params) {
   const payload = params && typeof params === 'object' ? params : {};
+  const nextSteps = Array.isArray(payload.nextSteps) ? payload.nextSteps : [];
+  const followupQuestion = typeof payload.followupQuestion === 'string'
+    ? payload.followupQuestion
+    : null;
+  const groupPrivacyPolicy = resolveSemanticGroupPrivacyPolicy({
+    groupPrivacyPolicy: payload.groupPrivacyPolicy,
+    eventSource: payload.eventSource
+  });
+  const groupPrivacyMode = groupPrivacyPolicy && groupPrivacyPolicy.isGroup === true ? 'group_safe' : 'direct';
+  const quickReplies = buildSemanticQuickReplies({
+    quickReplies: payload.quickReplies,
+    nextSteps,
+    followupQuestion
+  });
+  const citationSummary = resolveSemanticCitationSummary({
+    readinessDecision: payload.readinessDecision,
+    sourceReadinessDecision: payload.sourceReadinessDecision,
+    sourceFreshnessScore: payload.sourceFreshnessScore,
+    sourceAuthorityScore: payload.sourceAuthorityScore,
+    officialOnlySatisfied: payload.officialOnlySatisfied === true,
+    officialOnlyRequired: payload.officialOnlyRequired === true,
+    regulatedLane: payload.regulatedLane === true,
+    highUncertainty: payload.highUncertainty === true
+  });
+  const policyTrace = resolveSemanticPolicyTrace({
+    legalSnapshot: payload.legalSnapshot,
+    legalDecision: payload.legalDecision,
+    policySource: payload.policySource,
+    readinessDecision: payload.readinessDecision,
+    sourceReadinessDecision: payload.sourceReadinessDecision,
+    handoffState: payload.handoffState,
+    disclosureRequired: citationSummary.disclaimer_required === true,
+    escalationRequired: payload.escalationRequired === true,
+    groupPrivacyMode
+  });
+  const warnings = resolveSemanticWarnings({
+    warnings: Array.isArray(payload.warnings) ? payload.warnings : [],
+    groupPrivacyMode,
+    citationSummary,
+    policyTrace
+  });
+  const surfacePlan = resolveLineSurfacePlan({
+    requestedSurface: payload.serviceSurface,
+    text: payload.replyText || '',
+    quickReplies,
+    handoffRequired: payload.handoffRequired === true
+      || ['OFFERED', 'REQUIRED', 'IN_PROGRESS'].includes(normalizeReplyText(payload.handoffState).toUpperCase()),
+    miniAppUrl: payload.miniAppUrl,
+    liffUrl: payload.liffUrl
+  });
   const responseContractConformance = evaluateResponseContractConformance({
     replyText: payload.replyText || '',
     domainIntent: normalizeDomainIntent(payload.domainIntent || 'general'),
+    stage: payload.stage || payload.lifecycleStage || null,
+    answerMode: payload.answerMode || payload.conversationMode || null,
+    actionClass: payload.actionClass || null,
+    confidenceBand: payload.confidenceBand || null,
+    tasks: Array.isArray(payload.tasks) ? payload.tasks : [],
+    warnings,
+    evidenceRefs: Array.isArray(payload.evidenceRefs) ? payload.evidenceRefs : [],
+    memoryReadScopes: resolveScopedMemoryPaths(
+      payload.memoryReadScopes,
+      groupPrivacyPolicy,
+      'profile_memory'
+    ),
+    memoryWriteScopes: resolveScopedMemoryPaths(
+      payload.memoryWriteScopes,
+      groupPrivacyPolicy,
+      'profile_memory'
+    ),
+    handoffState: payload.handoffState || (payload.handoffRequired === true ? 'OFFERED' : 'NONE'),
+    serviceSurface: surfacePlan.surface,
+    quickReplies: surfacePlan.quickReplies,
+    pathType: payload.pathType || 'slow',
+    uUnits: buildSemanticUUnits({ uUnits: payload.uUnits }),
+    groupPrivacyMode,
+    policyTrace,
+    citationSummary,
     conversationMode: typeof payload.conversationMode === 'string'
       ? payload.conversationMode
       : null,
-    nextSteps: Array.isArray(payload.nextSteps) ? payload.nextSteps : [],
-    followupQuestion: typeof payload.followupQuestion === 'string'
-      ? payload.followupQuestion
-      : null
+    nextSteps,
+    followupQuestion
+  });
+  const lineRender = buildSemanticLineMessage({
+    semanticResponseObject: responseContractConformance.semanticResponseObject,
+    miniAppUrl: payload.miniAppUrl,
+    liffUrl: payload.liffUrl
   });
   const conformedReplyText = normalizeReplyText(responseContractConformance.responseMarkdown || payload.replyText || '');
   return {
     replyText: conformedReplyText || '回答を準備しています。対象手続きを1つ教えてください。',
     responseContractConformance,
-    semanticResponseObject: responseContractConformance.semanticResponseObject
+    semanticResponseObject: responseContractConformance.semanticResponseObject,
+    lineMessage: lineRender.message,
+    lineSurfacePlan: lineRender.surfacePlan
   };
 }
 
@@ -1409,6 +1656,43 @@ function resolveAnswerReadinessTelemetry(params) {
   };
 }
 
+function resolveSemanticTraceTelemetry(responseContractConformance) {
+  const conformance = responseContractConformance && typeof responseContractConformance === 'object'
+    ? responseContractConformance
+    : {};
+  const semantic = conformance.semanticResponseObject && typeof conformance.semanticResponseObject === 'object'
+    ? conformance.semanticResponseObject
+    : {};
+  const citationSummary = semantic.citation_summary && typeof semantic.citation_summary === 'object'
+    ? semantic.citation_summary
+    : {};
+  const policyTrace = semantic.policy_trace && typeof semantic.policy_trace === 'object'
+    ? semantic.policy_trace
+    : {};
+  return {
+    contractVersion: typeof semantic.contract_version === 'string' ? semantic.contract_version : null,
+    pathType: typeof semantic.path_type === 'string' ? semantic.path_type : null,
+    uUnits: Array.isArray(semantic.u_units) ? semantic.u_units : [],
+    serviceSurface: typeof semantic.service_surface === 'string' ? semantic.service_surface : null,
+    groupPrivacyMode: typeof semantic.group_privacy_mode === 'string' ? semantic.group_privacy_mode : null,
+    handoffState: typeof semantic.handoff_state === 'string' ? semantic.handoff_state : null,
+    memoryReadScopes: Array.isArray(semantic.memory_read_scopes) ? semantic.memory_read_scopes : [],
+    memoryWriteScopes: Array.isArray(semantic.memory_write_scopes) ? semantic.memory_write_scopes : [],
+    citationFinalized: citationSummary.finalized === true,
+    citationFreshnessStatus: typeof citationSummary.freshness_status === 'string'
+      ? citationSummary.freshness_status
+      : null,
+    citationAuthoritySatisfied: typeof citationSummary.authority_satisfied === 'boolean'
+      ? citationSummary.authority_satisfied
+      : null,
+    citationDisclaimerRequired: citationSummary.disclaimer_required === true,
+    policySourceResolved: typeof policyTrace.policy_source === 'string' ? policyTrace.policy_source : null,
+    policyGate: typeof policyTrace.safety_gate === 'string' ? policyTrace.safety_gate : null,
+    policyDisclosureRequired: policyTrace.disclosure_required === true,
+    policyEscalationRequired: policyTrace.escalation_required === true
+  };
+}
+
 async function appendLlmGateDecisionBestEffort(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
@@ -1484,6 +1768,7 @@ async function appendLlmGateDecisionBestEffort(data) {
         ? payload.committedFollowupQuestion
         : null
     });
+  const semanticTrace = resolveSemanticTraceTelemetry(responseContractConformance);
   const routeCoverageMeta = resolveRouteCoverageMeta({
     entryType: 'webhook',
     routeKind: payload.routeKind || 'canonical',
@@ -1844,6 +2129,22 @@ async function appendLlmGateDecisionBestEffort(data) {
           ? responseContractConformance.errors
           : [],
         responseContractFallbackApplied: responseContractConformance.fallbackApplied === true,
+        contractVersion: semanticTrace.contractVersion,
+        pathType: semanticTrace.pathType,
+        uUnits: semanticTrace.uUnits,
+        serviceSurface: semanticTrace.serviceSurface,
+        groupPrivacyMode: semanticTrace.groupPrivacyMode,
+        handoffState: semanticTrace.handoffState,
+        memoryReadScopes: semanticTrace.memoryReadScopes,
+        memoryWriteScopes: semanticTrace.memoryWriteScopes,
+        citationFinalized: semanticTrace.citationFinalized,
+        citationFreshnessStatus: semanticTrace.citationFreshnessStatus,
+        citationAuthoritySatisfied: semanticTrace.citationAuthoritySatisfied,
+        citationDisclaimerRequired: semanticTrace.citationDisclaimerRequired,
+        policySourceResolved: semanticTrace.policySourceResolved,
+        policyGate: semanticTrace.policyGate,
+        policyDisclosureRequired: semanticTrace.policyDisclosureRequired,
+        policyEscalationRequired: semanticTrace.policyEscalationRequired,
         entryType: 'webhook',
         gatesApplied: ['kill_switch', 'injection', 'url_guard']
       }
@@ -1961,6 +2262,7 @@ async function appendLlmActionLogBestEffort(data) {
         ? payload.committedFollowupQuestion
         : null
     });
+  const semanticTrace = resolveSemanticTraceTelemetry(responseContractConformance);
   const routeCoverageMeta = resolveRouteCoverageMeta({
     entryType: 'webhook',
     routeKind: payload.routeKind || 'canonical',
@@ -2362,6 +2664,22 @@ async function appendLlmActionLogBestEffort(data) {
         ? responseContractConformance.errors
         : [],
       responseContractFallbackApplied: responseContractConformance.fallbackApplied === true,
+      contractVersion: semanticTrace.contractVersion,
+      pathType: semanticTrace.pathType,
+      uUnits: semanticTrace.uUnits,
+      serviceSurface: semanticTrace.serviceSurface,
+      groupPrivacyMode: semanticTrace.groupPrivacyMode,
+      handoffState: semanticTrace.handoffState,
+      memoryReadScopes: semanticTrace.memoryReadScopes,
+      memoryWriteScopes: semanticTrace.memoryWriteScopes,
+      citationFinalized: semanticTrace.citationFinalized,
+      citationFreshnessStatus: semanticTrace.citationFreshnessStatus,
+      citationAuthoritySatisfied: semanticTrace.citationAuthoritySatisfied,
+      citationDisclaimerRequired: semanticTrace.citationDisclaimerRequired,
+      policySourceResolved: semanticTrace.policySourceResolved,
+      policyGate: semanticTrace.policyGate,
+      policyDisclosureRequired: semanticTrace.policyDisclosureRequired,
+      policyEscalationRequired: semanticTrace.policyEscalationRequired,
       strategy: typeof payload.strategy === 'string' ? payload.strategy : null,
       retrieveNeeded: payload.retrieveNeeded === true,
       retrievalQuality: typeof payload.retrievalQuality === 'string' ? payload.retrievalQuality : null,
@@ -2642,15 +2960,32 @@ async function tryHandlePaidOrchestratorV2(params) {
     replyText: orchestrated.replyText,
     domainIntent: orchestrated.domainIntent || 'general',
     conversationMode: orchestrated.conversationMode || 'concierge',
+    eventSource: payload.eventSource,
+    pathType: 'slow',
+    uUnits: ['U-05', 'U-06', 'U-09', 'U-10', 'U-11', 'U-12', 'U-13', 'U-16', 'U-17', 'U-23'],
     nextSteps: orchestrated.finalMeta && Array.isArray(orchestrated.finalMeta.committedNextActions)
       ? orchestrated.finalMeta.committedNextActions
       : [],
     followupQuestion: orchestrated.finalMeta && typeof orchestrated.finalMeta.committedFollowupQuestion === 'string'
       ? orchestrated.finalMeta.committedFollowupQuestion
-      : null
+      : null,
+    warnings: orchestrated.conciergeMeta && Array.isArray(orchestrated.conciergeMeta.blockedReasons)
+      ? orchestrated.conciergeMeta.blockedReasons
+      : [],
+    legalSnapshot,
+    sourceAuthorityScore: orchestrated.telemetry ? orchestrated.telemetry.sourceAuthorityScore : null,
+    sourceFreshnessScore: orchestrated.telemetry ? orchestrated.telemetry.sourceFreshnessScore : null,
+    sourceReadinessDecision: orchestrated.telemetry ? orchestrated.telemetry.sourceReadinessDecision : null,
+    officialOnlySatisfied: orchestrated.telemetry ? orchestrated.telemetry.officialOnlySatisfied === true : false,
+    readinessDecision: orchestrated.telemetry ? orchestrated.telemetry.readinessDecision : null,
+    readinessReasonCodes: orchestrated.telemetry ? orchestrated.telemetry.readinessReasonCodes : [],
+    actionClass: orchestrated.telemetry ? orchestrated.telemetry.actionClass : null
   });
   const orchestratedReplyText = orchestratedReplyEnvelope.replyText;
-  await payload.replyFn(payload.replyToken, { type: 'text', text: orchestratedReplyText });
+  await payload.replyFn(
+    payload.replyToken,
+    orchestratedReplyEnvelope.lineMessage || { type: 'text', text: orchestratedReplyText }
+  );
   const conversationQuality = buildConversationQualityMeta({
     replyText: orchestratedReplyText,
     messageText: payload.text,
@@ -3063,13 +3398,39 @@ async function replyWithFreeRetrieval(params) {
     replyText,
     domainIntent,
     conversationMode: payload.plan === 'pro' ? 'concierge' : 'casual',
+    eventSource: payload.eventSource,
+    pathType: 'slow',
+    uUnits: ['U-05', 'U-06', 'U-09', 'U-10', 'U-11', 'U-16', 'U-17'],
     nextSteps: [],
     followupQuestion: contextualFollowup && typeof contextualFollowup.replyText === 'string'
       ? contextualFollowup.replyText
-      : null
+      : null,
+    warnings: conciergeMeta && Array.isArray(conciergeMeta.blockedReasons)
+      ? conciergeMeta.blockedReasons
+      : [],
+    legalSnapshot: payload.legalSnapshot || null,
+    sourceAuthorityScore: conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceAuthorityScore))
+      ? Number(conciergeMeta.sourceAuthorityScore)
+      : null,
+    sourceFreshnessScore: conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceFreshnessScore))
+      ? Number(conciergeMeta.sourceFreshnessScore)
+      : null,
+    sourceReadinessDecision: conciergeMeta && typeof conciergeMeta.sourceReadinessDecision === 'string'
+      ? conciergeMeta.sourceReadinessDecision
+      : null,
+    officialOnlySatisfied: conciergeMeta ? conciergeMeta.officialOnlySatisfied === true : false,
+    readinessDecision: conciergeMeta && typeof conciergeMeta.readinessDecision === 'string'
+      ? conciergeMeta.readinessDecision
+      : null,
+    readinessReasonCodes: conciergeMeta && Array.isArray(conciergeMeta.readinessReasonCodes)
+      ? conciergeMeta.readinessReasonCodes
+      : []
   });
   replyText = semanticReplyEnvelope.replyText;
-  await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
+  await payload.replyFn(
+    payload.replyToken,
+    semanticReplyEnvelope.lineMessage || { type: 'text', text: replyText }
+  );
   const conversationQuality = buildConversationQualityMeta({
     replyText,
     domainIntent,
@@ -3296,11 +3657,17 @@ async function handleAssistantMessage(params) {
       replyText: guardedReply.replyText,
       domainIntent: normalizedConversationIntent,
       conversationMode: 'casual',
+      eventSource: payload.eventSource,
+      pathType: 'fast',
+      uUnits: ['U-02', 'U-17', 'U-26', 'U-27'],
       nextSteps: [],
       followupQuestion: null
     });
     const replyText = semanticReplyEnvelope.replyText;
-    await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
+    await payload.replyFn(
+      payload.replyToken,
+      semanticReplyEnvelope.lineMessage || { type: 'text', text: replyText }
+    );
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
       kbTopScore: 0,
@@ -3739,6 +4106,7 @@ async function handleAssistantMessage(params) {
     text,
     replyToken: payload.replyToken,
     replyFn: payload.replyFn,
+    eventSource: payload.eventSource,
     planInfo,
     explicitPaidIntent,
     paidIntent,
@@ -3793,11 +4161,17 @@ async function handleAssistantMessage(params) {
       replyText: guardedReply.replyText,
       domainIntent: normalizedConversationIntent,
       conversationMode: opportunityDecision.conversationMode || 'casual',
+      eventSource: payload.eventSource,
+      pathType: 'fast',
+      uUnits: ['U-02', 'U-17', 'U-26', 'U-27'],
       nextSteps: [],
       followupQuestion: null
     });
     const replyText = semanticReplyEnvelope.replyText;
-    await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
+    await payload.replyFn(
+      payload.replyToken,
+      semanticReplyEnvelope.lineMessage || { type: 'text', text: replyText }
+    );
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
       kbTopScore: 0,
@@ -4337,11 +4711,44 @@ async function handleAssistantMessage(params) {
       : (conversationRouterEnabled
         ? (routerMode === 'problem' && llmConciergeEnabled ? 'concierge' : 'casual')
         : (llmConciergeEnabled && !isLowRelevanceWarning ? 'concierge' : null)),
+    eventSource: payload.eventSource,
+    pathType: 'slow',
+    uUnits: ['U-05', 'U-06', 'U-09', 'U-11', 'U-12', 'U-13', 'U-14', 'U-15', 'U-16', 'U-17'],
     nextSteps: paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : [],
-    followupQuestion: paid && paid.output && Array.isArray(paid.output.gaps) ? paid.output.gaps[0] : ''
+    followupQuestion: paid && paid.output && Array.isArray(paid.output.gaps) ? paid.output.gaps[0] : '',
+    warnings: []
+      .concat(conciergeMeta && Array.isArray(conciergeMeta.blockedReasons) ? conciergeMeta.blockedReasons : [])
+      .concat(readinessTelemetry.readiness && Array.isArray(readinessTelemetry.readiness.reasonCodes)
+        ? readinessTelemetry.readiness.reasonCodes
+        : []),
+    legalSnapshot,
+    sourceAuthorityScore: conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceAuthorityScore))
+      ? Number(conciergeMeta.sourceAuthorityScore)
+      : null,
+    sourceFreshnessScore: conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceFreshnessScore))
+      ? Number(conciergeMeta.sourceFreshnessScore)
+      : null,
+    sourceReadinessDecision: conciergeMeta && typeof conciergeMeta.sourceReadinessDecision === 'string'
+      ? conciergeMeta.sourceReadinessDecision
+      : null,
+    officialOnlySatisfied: conciergeMeta ? conciergeMeta.officialOnlySatisfied === true : false,
+    readinessDecision: readinessTelemetry.readiness ? readinessTelemetry.readiness.decision : null,
+    readinessReasonCodes: readinessTelemetry.readiness && Array.isArray(readinessTelemetry.readiness.reasonCodes)
+      ? readinessTelemetry.readiness.reasonCodes
+      : [],
+    regulatedLane: riskSnapshot && riskSnapshot.intentRiskTier === 'regulated',
+    highUncertainty: readinessTelemetry.readiness
+      ? readinessTelemetry.readiness.decision !== 'allow'
+      : false,
+    escalationRequired: readinessTelemetry.readiness
+      ? readinessTelemetry.readiness.decision === 'refuse'
+      : false
   });
   replyText = semanticReplyEnvelope.replyText;
-  await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
+  await payload.replyFn(
+    payload.replyToken,
+    semanticReplyEnvelope.lineMessage || { type: 'text', text: replyText }
+  );
   const tokenUsed = (paid.tokensIn || 0) + (paid.tokensOut || 0);
   const conversationMode = (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath)
     ? opportunityDecision.conversationMode
@@ -4746,6 +5153,7 @@ async function handleLineWebhook(options) {
               text,
               replyToken: effectiveReplyToken,
               replyFn: effectiveReplyFn,
+              eventSource: event.source,
               requestId,
               llmConciergeEnabled,
               llmWebSearchEnabled,
@@ -4924,6 +5332,7 @@ async function handleLineWebhook(options) {
             text,
             replyToken,
             replyFn,
+            eventSource: event.source,
             requestId,
             llmConciergeEnabled,
             llmWebSearchEnabled,
@@ -4972,5 +5381,8 @@ module.exports = {
   handleLineWebhook,
   verifyLineSignature,
   extractUserIds,
-  resolveTranscriptSnapshotAssistantReplyText
+  resolveTranscriptSnapshotAssistantReplyText,
+  __testOnly: {
+    buildSemanticReplyEnvelope
+  }
 };

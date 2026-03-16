@@ -105,11 +105,17 @@ test('phase789: response contract conformance checker normalizes concise line re
     replyText: 'SSNの必要書類は3点です。\n1. パスポート\n2. I-94\n予約はオンラインですると早いですか？',
     domainIntent: 'ssn',
     conversationMode: 'concierge',
-    nextSteps: ['パスポートを用意', 'I-94を控える']
+    nextSteps: ['パスポートを用意', 'I-94を控える'],
+    pathType: 'slow',
+    uUnits: ['U-16', 'U-17', 'U-27']
   });
   assert.equal(evaluated.conformant, true);
   assert.equal(evaluated.errorCount, 0);
   assert.ok(evaluated.semanticResponseObject);
+  assert.equal(evaluated.contractVersion, 'sro_v2');
+  assert.equal(evaluated.pathType, 'slow');
+  assert.deepEqual(evaluated.uUnits, ['U-16', 'U-17', 'U-27']);
+  assert.equal(evaluated.semanticResponseObject.intent, 'ssn');
   assert.equal(evaluated.semanticResponseObject.response_contract.intent, 'ssn');
   assert.equal(Array.isArray(evaluated.semanticResponseObject.response_contract.next_steps), true);
   assert.ok(evaluated.responseMarkdown.includes('SSNの必要書類は3点です。'));
@@ -144,7 +150,13 @@ test('phase789: runtime logs include response contract conformance telemetry key
     'responseContractConformant',
     'responseContractErrorCount',
     'responseContractErrors',
-    'responseContractFallbackApplied'
+    'responseContractFallbackApplied',
+    'contractVersion',
+    'pathType',
+    'uUnits',
+    'groupPrivacyMode',
+    'citationFinalized',
+    'policyGate'
   ].forEach((token) => {
     assert.ok(gateWriter.includes(token), `gate writer missing ${token}`);
     assert.ok(actionRepo.includes(token), `action repo missing ${token}`);

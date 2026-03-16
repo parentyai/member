@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-15T21:16:48-04:00",
-  "gitCommit": "ea4ae223e168033cb8ab29c1f93f83213e60a5ff",
-  "branch": "codex/admin-ui-pr12-nonblocker-fixes",
-  "sourceDigest": "e8bcd883245360bf5580e40e76ec0599350e046d9d21a3a20b7a78f7a84b3f28",
+  "generatedAt": "2026-03-15T21:47:58-04:00",
+  "gitCommit": "f843b9e99607f61df6454c3a9856e5a4d972ad91",
+  "branch": "codex/llm-line-canonical-sro-t001",
+  "sourceDigest": "cf0d1358c20ba7c777185d018ee87667e485bc4680f96c3787f04c5106212f1a",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
