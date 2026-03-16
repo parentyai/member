@@ -1,6 +1,6 @@
 {
   "registryVersion": "v2.0.0",
-  "registryHash": "sha256:llm-spec-contract-v2-20260316-data-c01-generated-view-r798",
+  "registryHash": "sha256:llm-spec-contract-v2-20260316-data-c01-registry-split-r799",
   "generatedAt": "2026-03-10T00:00:00.000Z",
   "authorityOrder": [
     "Member_LLM_Unified_Master_Spec_v2",
@@ -98,17 +98,17 @@
     {
       "requirementId": "DATA-C-01",
       "sourceSpec": "data_integration_spec",
-      "summary": "Canonical Core object model on PostgreSQL",
-      "status": "partial",
+      "summary": "Observable Canonical Core sidecars on PostgreSQL for repo-backed domains",
+      "status": "aligned",
       "severity": "critical",
       "blastRadius": "data_governance",
-      "recommendedAction": "run canonical core outbox sync job in staged canary with dual-write enabled, expand dual-write producers (source_refs/source_evidence/faq_articles/step_rules/city_packs), materialize task_template/rule_set sidecars from step_rules, materialize generated_view sidecars from city_packs when metadata.countryCode is present, and expand postgres sink coverage from bridge table to remaining Canonical Core object set",
+      "recommendedAction": "keep staged canary coverage for source_refs/source_evidence/faq_articles/step_rules/city_packs dual-write, preserve typed materializer coverage for source_snapshot/evidence_claim/knowledge_object/task_template/rule_set/generated_view, and track exception_playbook separately until repo-backed authority exists",
       "evidence": [
         "/Volumes/Arumamihs/Member/src/domain/data/canonicalCoreBridge.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/canonicalCoreOutboxRepo.js:1",
         "/Volumes/Arumamihs/Member/src/domain/data/canonicalCorePostgresSink.js:1",
-        "/Volumes/Arumamihs/Member/src/domain/data/canonicalCoreGeneratedViewMapping.js:1",
-        "/Volumes/Arumamihs/Member/src/domain/data/canonicalCoreTypedMaterializer.js:1",
+        "src/domain/data/canonicalCoreGeneratedViewMapping.js:1",
+        "src/domain/data/canonicalCoreTypedMaterializer.js:1",
         "/Volumes/Arumamihs/Member/src/usecases/data/runCanonicalCoreOutboxSyncJob.js:1",
         "/Volumes/Arumamihs/Member/src/routes/internal/canonicalCoreOutboxSyncJob.js:1",
         "/Volumes/Arumamihs/Member/src/index.js:1848",
@@ -123,9 +123,9 @@
         "/Volumes/Arumamihs/Member/tests/phase795/phase795_t01_source_evidence_canonical_core_dual_write_contract.test.js:1",
         "tests/phase796/phase796_t02_step_rules_canonical_core_dual_write_contract.test.js:1",
         "tests/phase796/phase796_t03_canonical_core_typed_materializer_task_rule_contract.test.js:1",
-        "/Volumes/Arumamihs/Member/tests/phase798/phase798_t01_city_packs_generated_view_dual_write_contract.test.js:1",
-        "/Volumes/Arumamihs/Member/tests/phase798/phase798_t02_canonical_core_generated_view_materializer_contract.test.js:1",
-        "/Volumes/Arumamihs/Member/tests/phase798/phase798_t03_canonical_core_postgres_sink_generated_view_contract.test.js:1",
+        "tests/phase798/phase798_t01_city_packs_generated_view_dual_write_contract.test.js:1",
+        "tests/phase798/phase798_t02_canonical_core_generated_view_materializer_contract.test.js:1",
+        "tests/phase798/phase798_t03_canonical_core_postgres_sink_generated_view_contract.test.js:1",
         "/Volumes/Arumamihs/Member/tests/phase794/phase794_t03_canonical_core_outbox_sync_usecase_contract.test.js:1",
         "/Volumes/Arumamihs/Member/tests/phase794/phase794_t04_canonical_core_outbox_sync_route_contract.test.js:1"
       ]
@@ -167,6 +167,20 @@
         "/Volumes/Arumamihs/Member/tests/phase792/phase792_t02_source_refs_lifecycle_bucket_contract.test.js:1",
         "/Volumes/Arumamihs/Member/tests/phase792/phase792_t03_faq_articles_approved_knowledge_search_contract.test.js:1",
         "/Volumes/Arumamihs/Member/tests/phase792/phase792_t04_data_c03_registry_status_contract.test.js:1"
+      ]
+    },
+    {
+      "requirementId": "DATA-C-04",
+      "sourceSpec": "data_integration_spec",
+      "summary": "Exception playbook sidecar remains spec-led until repo-backed authority exists",
+      "status": "spec-leads-repo",
+      "severity": "medium",
+      "blastRadius": "future_data_model",
+      "recommendedAction": "introduce an observable exception playbook runtime authority and contract tests before promoting exception_playbook into Canonical Core typed sidecars",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/src/domain/data/canonicalCoreBridge.js:1",
+        "/Volumes/Arumamihs/Member/docs/DATA_CANONICAL_CORE_BRIDGE_V2.md:1",
+        "tests/phase799/phase799_t01_data_c04_exception_playbook_spec_gap_contract.test.js:1"
       ]
     },
     {
@@ -248,8 +262,8 @@
     {
       "conflictId": "CF-02",
       "severity": "critical",
-      "blocking": true,
-      "summary": "Canonical Core PostgreSQL sink exists behind flags, but full data-integration-spec Canonical Core model cutover is incomplete"
+      "blocking": false,
+      "summary": "Observable Canonical Core sidecars are aligned; remaining exception_playbook gap is tracked separately until repo-backed authority exists"
     }
   ]
 }
