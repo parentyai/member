@@ -20,7 +20,8 @@
   - `true` のとき PostgreSQL sink 失敗を job error として扱う（非strict時は skipped/failed 集計で継続）。
 
 ## Event Contract (canonical_core_outbox)
-- `objectType`: `source_snapshot | evidence_claim | knowledge_object | ...`
+- `contractVersion`: default `canonical_core_outbox_v2`
+- `objectType`: `source_registry | source_snapshot | evidence_claim | knowledge_object | task_template | rule_set | exception_playbook | generated_view | ...`
 - `objectId`
 - `eventType`: `upsert | delete | status_change`
 - `sourceSystem`
@@ -28,8 +29,16 @@
 - `effectiveFrom`, `effectiveTo`
 - `authorityTier`, `bindingLevel`, `jurisdiction`
 - `payloadSummary` (lifecycle/status/risk/locale)
+- `canonicalPayload` (typed PostgreSQL materializer 向けの add-only canonical payload)
+- `sourceLinks[]` (`sourceId`, `snapshotRef`, `linkRole`, `primary`)
+- `materializationHints.targetTables[]`（将来の typed sink で使う目的 table hint）
 - `recordEnvelope`
 - `sinkStatus` (`pending`)
+
+## Foundation V2 Scope
+- 既存 sink の `canonical_core_objects` upsert SQL はこの段階では変更しない。
+- V2 で追加するのは outbox payload の add-only field のみで、既存 consumer は未参照のまま互換維持する。
+- `source_refs` / `source_evidence` / `faq_articles` 既存 dual-write は継続し、後続 PR で `task_template` / `rule_set` / `generated_view` / `exception_playbook` を追加する。
 
 ## Sync Job Contract
 - endpoint: `POST /internal/jobs/canonical-core-outbox-sync`

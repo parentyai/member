@@ -50,7 +50,11 @@ test('phase794: postgres sink upserts canonical row and returns canonical record
     eventType: 'upsert',
     sourceSnapshotRef: 'source_ref:sr_101',
     payloadSummary: { lifecycleState: 'approved' },
-    recordEnvelope: { status: 'active' }
+    recordEnvelope: { status: 'active' },
+    contractVersion: 'canonical_core_outbox_v2',
+    canonicalPayload: { canonicalKey: 'source_snapshot:sr_101' },
+    sourceLinks: [{ sourceId: 'src_101', snapshotRef: 'source_ref:sr_101', linkRole: 'supports', primary: true }],
+    materializationHints: { targetTables: ['source_snapshot'] }
   }, {
     pool: {
       query: async (sql, values) => {
@@ -68,6 +72,7 @@ test('phase794: postgres sink upserts canonical row and returns canonical record
   assert.match(calls[0].sql, /INSERT INTO canonical_core_objects/i);
   assert.equal(calls[0].values[0], 'source_snapshot');
   assert.equal(calls[0].values[1], 'sr_101');
+  assert.equal(calls[0].values.length, 13);
 });
 
 test('phase794: postgres sink throws in strict mode when query fails', async (t) => {

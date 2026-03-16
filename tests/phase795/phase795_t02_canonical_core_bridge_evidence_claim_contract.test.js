@@ -3,7 +3,10 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 
-const { buildCanonicalCoreOutboxEvent } = require('../../src/domain/data/canonicalCoreBridge');
+const {
+  buildCanonicalCoreOutboxEvent,
+  DEFAULT_CANONICAL_CORE_OUTBOX_CONTRACT_VERSION
+} = require('../../src/domain/data/canonicalCoreBridge');
 
 function buildEnvelope() {
   return {
@@ -41,4 +44,33 @@ test('phase795: canonical core bridge preserves evidence_claim object type', () 
   assert.equal(event.objectId, 'se_1');
   assert.equal(event.eventType, 'upsert');
   assert.equal(event.sourceSnapshotRef, 'source_evidence:se_1');
+  assert.equal(event.contractVersion, DEFAULT_CANONICAL_CORE_OUTBOX_CONTRACT_VERSION);
+});
+
+test('phase795: canonical core bridge v2 foundation preserves typed payload, links, and new object types', () => {
+  const event = buildCanonicalCoreOutboxEvent({
+    contractVersion: 'canonical_core_outbox_v2',
+    objectType: 'generated_view',
+    objectId: 'gv_1',
+    eventType: 'status_change',
+    recordEnvelope: buildEnvelope(),
+    canonicalPayload: {
+      viewType: 'city_pack',
+      locale: 'ja',
+      activeFlag: true
+    },
+    sourceLinks: [
+      { sourceId: 'src_1', snapshotRef: 'snap_1', linkRole: 'supports', primary: true },
+      { sourceId: 'src_1', snapshotRef: 'snap_1', linkRole: 'supports', primary: true }
+    ],
+    materializationHints: {
+      targetTables: ['generated_view', 'generated_view', 'exception_playbook']
+    }
+  });
+
+  assert.equal(event.objectType, 'generated_view');
+  assert.equal(event.contractVersion, 'canonical_core_outbox_v2');
+  assert.equal(event.canonicalPayload.viewType, 'city_pack');
+  assert.equal(event.sourceLinks.length, 1);
+  assert.deepEqual(event.materializationHints.targetTables, ['generated_view', 'exception_playbook']);
 });

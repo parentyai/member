@@ -40,6 +40,7 @@ async function appendCanonicalCoreOutboxEvent(params) {
   const event = buildCanonicalCoreOutboxEvent(params);
   const eventId = resolveEventId(event);
   const payload = {
+    contractVersion: event.contractVersion,
     objectType: event.objectType,
     objectId: event.objectId,
     eventType: event.eventType,
@@ -51,6 +52,9 @@ async function appendCanonicalCoreOutboxEvent(params) {
     bindingLevel: event.bindingLevel,
     jurisdiction: event.jurisdiction,
     payloadSummary: event.payloadSummary,
+    canonicalPayload: event.canonicalPayload,
+    sourceLinks: event.sourceLinks,
+    materializationHints: event.materializationHints,
     traceId: event.traceId,
     recordEnvelope: event.recordEnvelope,
     sinkStatus: 'pending',
