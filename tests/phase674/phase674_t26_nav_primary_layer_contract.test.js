@@ -46,3 +46,24 @@ test('phase674: control group keeps data/evidence/system layering and settings o
   assert.ok(controlBlock.includes('data-pane-target="ops-system-health"'));
   assert.ok(controlBlock.indexOf('data-pane-target="errors"') < controlBlock.indexOf('id="nav-open-settings"'));
 });
+
+test('phase674: developer shortcut layer label is Japanese-first', () => {
+  const html = fs.readFileSync('apps/admin/app.html', 'utf8');
+  const developerLayerStart = html.indexOf('data-role="developer"');
+  assert.ok(developerLayerStart >= 0, 'developer layer label missing');
+  const developerLayerEnd = html.indexOf('</div>', developerLayerStart);
+  assert.ok(developerLayerEnd > developerLayerStart, 'developer layer label closing tag missing');
+  const developerLayer = html.slice(developerLayerStart, developerLayerEnd);
+  assert.ok(developerLayer.includes('開発者ショートカット'), 'developer layer label must show the Japanese shortcut text');
+});
+
+test('phase674: core panes show the page-purpose subtitle', () => {
+  const html = fs.readFileSync('apps/admin/app.html', 'utf8');
+  const subtitleStart = html.indexOf('<p id="page-subtitle"');
+  assert.ok(subtitleStart >= 0, 'page subtitle element missing');
+  const subtitleEnd = html.indexOf('</p>', subtitleStart);
+  assert.ok(subtitleEnd > subtitleStart, 'page subtitle closing tag missing');
+  const subtitleBlock = html.slice(subtitleStart, subtitleEnd);
+  assert.ok(subtitleBlock.includes('data-dict-key="ui.desc.page.home"'), 'page subtitle must reference the purpose dict key');
+  assert.ok(subtitleBlock.includes('通知配信の判断指標を期間別に確認します。'), 'subtitle text must describe the home pane purpose');
+});

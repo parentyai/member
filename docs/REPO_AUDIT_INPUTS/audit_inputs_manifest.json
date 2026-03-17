@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-17T02:05:03.722Z",
-  "gitCommit": "9289238b67b5f49cd9066778bf686e8378b2fa98",
-  "branch": "codex/quality-patrol-prA-T001",
-  "sourceDigest": "576c9804185ba1796d0fb5ddbc98e972dcde74c17233a563cb15af54c3fb7860",
+  "generatedAt": "2026-03-17T02:26:50.933Z",
+  "gitCommit": "992645ea3e5a07c7df2103300ab2708a4845a870",
+  "branch": "codex/admin-ui-pr1-nav",
+  "sourceDigest": "0af8840f69106509a906d1deed0fef3dff35de4e5b7fc679294d732ddcb6fd33",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "b7c26f98921fa1c4c1d2b085f41c19b55e01c033d4f7057c3df96d009f1cdf42",
+      "sha256": "13282a69d7f3dcc3057d0bc774bf3a0e8856544ade2ceab3c6155777deadaa93",
       "bytes": 453880
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "4994d7d12a912fcdc34dbd97124937220fcf94a66723172c31a3d8dd14f73083",
-      "bytes": 2415
+      "sha256": "bc70070d0c0454f42926c88884c972ac78b3d9bffab786a7677168fb2cb77083",
+      "bytes": 2408
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",
