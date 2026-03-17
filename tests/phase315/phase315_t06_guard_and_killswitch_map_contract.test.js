@@ -25,7 +25,10 @@ test('phase315: internal job routes keep token guard and killSwitch dependency m
   internalRouteFiles.forEach((file) => {
     const source = fs.readFileSync(file, 'utf8');
     assert.ok(source.includes('requireInternalJobToken'), `${file}: missing requireInternalJobToken reference`);
-    assert.ok(source.includes('if (!requireInternalJobToken(req, res)) return;'), `${file}: missing internal token guard check`);
+    assert.ok(
+      /if\s*\(!requireInternalJobToken\(req,\s*res(?:,\s*\{)?/.test(source),
+      `${file}: missing internal token guard check`
+    );
   });
 
   const killSwitchMap = fs.readFileSync('docs/KILLSWITCH_DEPENDENCY_MAP.md', 'utf8');

@@ -1,7 +1,7 @@
 # KILLSWITCH_DEPENDENCY_MAP
 
 - killSwitch依存経路を静的抽出した一覧。
-- 抽出件数: 95
+- 抽出件数: 96
 
 | file | line | reference |
 | --- | --- | --- |
@@ -43,7 +43,8 @@
 | `src/routes/internal/municipalitySchoolsImportJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/municipalitySchoolsImportJob.js` | 26 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/opsSnapshotJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/internal/opsSnapshotJob.js` | 27 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/internal/opsSnapshotJob.js` | 30 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
+| `src/routes/internal/opsSnapshotJob.js` | 45 | `const killSwitch = await getKillSwitchFn();` |
 | `src/routes/internal/schoolCalendarAuditJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/schoolCalendarAuditJob.js` | 27 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/taskNudgeJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
