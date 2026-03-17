@@ -287,37 +287,37 @@
     },
     {
       "file": "src/routes/admin/osKillSwitch.js",
-      "line": 5,
+      "line": 6,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/admin/osKillSwitch.js",
-      "line": 5,
+      "line": 6,
       "symbol": "setKillSwitch"
     },
     {
       "file": "src/routes/admin/osKillSwitch.js",
-      "line": 26,
+      "line": 65,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/admin/osKillSwitch.js",
-      "line": 34,
+      "line": 73,
       "symbol": "killSwitch"
     },
     {
       "file": "src/routes/admin/osKillSwitch.js",
-      "line": 37,
+      "line": 75,
       "symbol": "killSwitch"
     },
     {
       "file": "src/routes/admin/osKillSwitch.js",
-      "line": 108,
+      "line": 160,
       "symbol": "setKillSwitch"
     },
     {
       "file": "src/routes/admin/osKillSwitch.js",
-      "line": 119,
+      "line": 174,
       "symbol": "killSwitch"
     },
     {
