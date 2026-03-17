@@ -31,8 +31,8 @@
 | `src/routes/internal/cityPackSourceAuditJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/cityPackSourceAuditJob.js` | 73 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/emergencyJobs.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/internal/emergencyJobs.js` | 35 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
-| `src/routes/internal/emergencyJobs.js` | 47 | `const killSwitchOn = await getKillSwitchFn();` |
+| `src/routes/internal/emergencyJobs.js` | 54 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
+| `src/routes/internal/emergencyJobs.js` | 66 | `const killSwitchOn = await getKillSwitchFn();` |
 | `src/routes/internal/journeyBranchDispatchJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/journeyBranchDispatchJob.js` | 61 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
 | `src/routes/internal/journeyBranchDispatchJob.js` | 73 | `const killSwitch = await getKillSwitchFn();` |
