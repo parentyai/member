@@ -2103,6 +2103,8 @@ body.app-body {
   margin: var(--space-1) 0 0;
   font-size: var(--font-14);
   color: var(--text-muted);
+  max-width: 56rem;
+  line-height: 1.5;
 }
 
 .page-header-actions {
@@ -2119,6 +2121,8 @@ body.app-body {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
+  font-size: var(--font-12);
+  color: var(--text-muted);
 }
 
 .managed-action-evidence {
@@ -2184,6 +2188,7 @@ details[data-json-collapsible="true"].json-collapsed > summary {
 .nav-group {
   display: grid;
   gap: var(--space-1);
+  padding-bottom: var(--space-1);
 }
 
 .nav-group + .nav-group {
@@ -2213,17 +2218,18 @@ details[data-json-collapsible="true"].json-collapsed > summary {
 .nav-group-label {
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-12);
-  color: var(--text-muted);
-  font-weight: 600;
+  color: var(--text-base);
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .nav-layer-label {
   padding: 2px var(--space-2);
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: var(--text-soft);
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .legacy-nav {
@@ -3224,7 +3230,7 @@ details:not([open]) > *:not(summary) {
 }
 
 .nav-group-label-dashboard {
-  display: none;
+  display: block;
 }
 
 .top-summary-line {
@@ -3233,7 +3239,8 @@ details:not([open]) > *:not(summary) {
   align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-1);
-  font-size: var(--font-14);
+  font-size: var(--font-12);
+  color: var(--text-muted);
 }
 
 .top-summary-line.is-hidden-by-flag {
@@ -3257,14 +3264,20 @@ details:not([open]) > *:not(summary) {
 .top-summary-link {
   border: none;
   background: transparent;
-  color: var(--text-base);
+  color: var(--text-muted);
   padding: 0;
   font: inherit;
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
-  text-decoration: underline;
+  text-decoration: none;
   cursor: pointer;
+  border-bottom: 1px dotted var(--border);
+}
+
+.top-summary-link:hover,
+.top-summary-link:focus-visible {
+  color: var(--text-base);
 }
 
 .dashboard-kpi-grid {
