@@ -121,6 +121,10 @@ internal outcome quick guide:
 - struct drift backfill: `success/dry_run`, `partial/completed_with_more_remaining`, `success/no_changes`, `success/completed`
 - LLM action reward finalize: `blocked/kill_switch_on`, `success/dry_run`, `success/no_eligible_rows`, `partial/completed_with_errors`
 - emergency sync/provider jobs: `blocked/kill_switch_on`=`409`, `partial/completed_with_failures`=`207`, `error/*`=`500 or pass-through`
+- admin phase2 automation: `success/completed`, `error/invalid_fallback_mode`, `error/<usecase_error>`
+- admin quality patrol query: `success/completed`, `error/not_found`, `error/error`
+- admin journey KPI view: `success/completed`, `blocked/journey_kpi_disabled`, `error/error`
+- admin struct drift routes now also emit `payload.outcome` + `x-member-outcome-*` with `routeKey=admin.struct_drift.backfill`; state is inferred from `ok/partial` unless an explicit reason is supplied
 
 ### 即時ロールバック
 - snapshot更新停止: `ENABLE_OPS_SYSTEM_SNAPSHOT_V1=0`
@@ -817,8 +821,9 @@ API:
 5) route応答は `payload.outcome` と `x-member-outcome-*` header を返す。  
    - 正常完了: `success/completed`  
    - flag停止: `blocked/journey_kpi_disabled`  
-   - kill switch: `blocked/kill_switch_on`  
-6) `llm_usage` エクスポートは `x-actor` 必須、CSVは `userIdMasked` のみ利用する。  
+   - 例外: `error/error`  
+6) internal batch (`POST /internal/jobs/journey-kpi-build`) は別契約で `blocked/kill_switch_on` を返しうる。admin read route は kill switch ではなく `ENABLE_JOURNEY_KPI` を一次ガードとする。  
+7) `llm_usage` エクスポートは `x-actor` 必須、CSVは `userIdMasked` のみ利用する。  
 
 即時停止:
 - `ENABLE_JOURNEY_KPI=0`

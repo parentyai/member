@@ -5,6 +5,7 @@ const { test } = require('node:test');
 
 const { handleRunPhase2 } = require('../../src/routes/admin/phase2Automation');
 const { handleJourneyKpi } = require('../../src/routes/admin/osJourneyKpi');
+const { handleQualityPatrolQuery } = require('../../src/routes/admin/qualityPatrol');
 const structDrift = require('../../src/routes/admin/structDriftBackfill');
 
 function createResCapture() {
@@ -149,4 +150,53 @@ test('phase900: struct drift response helper attaches outcome and guard headers'
   assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'admin.struct_drift.backfill');
   assert.equal(res.result.headers['x-member-outcome-state'], 'success');
   assert.equal(res.result.headers['x-member-outcome-route-type'], 'admin_route');
+});
+
+test('phase900: quality patrol query returns success outcome metadata on the admin route', async () => {
+  const req = {
+    method: 'GET',
+    url: '/api/admin/quality-patrol?mode=latest&audience=operator',
+    headers: { 'x-actor': 'tester', 'x-trace-id': 'trace_quality_patrol_route' }
+  };
+  const res = createResCapture();
+  const queryResult = {
+    queryVersion: 'quality_patrol_query_v1',
+    mode: 'latest',
+    audience: 'operator',
+    summary: { overallStatus: 'ok', topPriorityCount: 0, observationBlockerCount: 0 },
+    issues: []
+  };
+  await handleQualityPatrolQuery(req, res, {
+    queryLatestPatrolInsights: async () => queryResult,
+    appendAuditLog: async () => {}
+  });
+
+  const body = res.readJson();
+  assert.equal(res.result.statusCode, 200);
+  assert.equal(body.ok, true);
+  assert.equal(body.queryVersion, 'quality_patrol_query_v1');
+  assert.equal(body.outcome && body.outcome.state, 'success');
+  assert.equal(body.outcome && body.outcome.reason, 'completed');
+  assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'admin.quality_patrol');
+  assert.equal(res.result.headers['x-member-outcome-state'], 'success');
+  assert.equal(res.result.headers['x-member-outcome-reason'], 'completed');
+  assert.equal(res.result.headers['x-member-outcome-route-type'], 'admin_route');
+});
+
+test('phase900: quality patrol route rejects non-GET methods with not_found outcome metadata', async () => {
+  const req = {
+    method: 'POST',
+    url: '/api/admin/quality-patrol',
+    headers: { 'x-actor': 'tester' }
+  };
+  const res = createResCapture();
+  await handleQualityPatrolQuery(req, res, {});
+
+  const body = res.readJson();
+  assert.equal(res.result.statusCode, 404);
+  assert.equal(body.ok, false);
+  assert.equal(body.outcome && body.outcome.state, 'error');
+  assert.equal(body.outcome && body.outcome.reason, 'not_found');
+  assert.equal(res.result.headers['x-member-outcome-state'], 'error');
+  assert.equal(res.result.headers['x-member-outcome-reason'], 'not_found');
 });

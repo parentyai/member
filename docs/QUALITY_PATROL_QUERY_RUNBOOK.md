@@ -14,6 +14,10 @@
 
 ## Contract
 - query is read-only. PR-8 does not write issue registry, backlog, snapshots, or scheduler artifacts.
+- route responses are add-only normalized with `payload.outcome` and `x-member-outcome-*` headers.
+  - success path: `success/completed`
+  - unsupported method: `error/not_found`
+  - unexpected failure: `error/error`
 - audience split is explicit:
   - `operator`: richer evidence, trace refs, provenance, and proposal context
   - `human`: compact summary, reduced internal metadata, no raw trace ids
@@ -29,6 +33,8 @@
 
 ## Response shape
 - `queryVersion = quality_patrol_query_v1`
+- `outcome.routeType = admin_route`
+- `outcome.guard.routeKey = admin.quality_patrol`
 - `summary` includes `overallStatus`, `topFindings`, `topPriorityCount`, `observationBlockerCount`
 - `issues[]` includes query-facing severity/status/category summaries
 - `observationBlockers[]` keeps blocker title, slices, and recommended action
