@@ -426,6 +426,12 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 - endpoint: `POST /internal/jobs/llm-action-reward-finalize`
 - token: `LLM_ACTION_JOB_TOKEN`
 - default: `rewardWindowHours=48`
+- route outcome:
+  - `blocked/kill_switch_on`: kill switch 優先で停止
+  - `success/dry_run`: reward finalize dry-run 完了
+  - `success/no_eligible_rows`: pending reward 対象なし
+  - `partial/completed_with_errors`: 一部 row の finalize に失敗
+  - `error/invalid_json`: payload 不備
 - dry run 例:
 ```json
 {

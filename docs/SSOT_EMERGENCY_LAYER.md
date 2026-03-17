@@ -50,6 +50,12 @@ Internal routes:
 - `POST /internal/jobs/emergency-provider-normalize`
 - `POST /internal/jobs/emergency-provider-summarize`
 
+Internal route outcome contract:
+- `blocked/kill_switch_on` -> HTTP `409`
+- `partial/completed_with_failures` -> HTTP `207`
+- `error/*` -> `httpStatus`/`statusCode` 優先、未指定時は `500`
+- `success/completed` -> HTTP `200`
+
 ## 6. Admin Contract
 Routes:
 - `GET /api/admin/emergency/providers`
