@@ -4,10 +4,25 @@ const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { runStructDriftBackfill } = require('../../usecases/structure/runStructDriftBackfill');
 const { requireActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
-function writeJson(res, status, payload) {
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.struct_drift.backfill';
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
 }
 
 function parseLimit(req) {
@@ -123,5 +138,8 @@ async function handleStructDriftBackfillAdmin(req, res, body) {
 }
 
 module.exports = {
-  handleStructDriftBackfillAdmin
+  handleStructDriftBackfillAdmin,
+  _test: {
+    writeStructDriftResponse: writeJson
+  }
 };

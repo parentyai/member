@@ -5,6 +5,26 @@ const { URL } = require('url');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { queryLatestPatrolInsights } = require('../../usecases/qualityPatrol/queryLatestPatrolInsights');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.quality_patrol';
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
 
 function parsePositiveInt(value, fallback, max) {
   if (value === null || value === undefined || value === '') return fallback;
@@ -29,8 +49,7 @@ function parseQueryParams(req) {
 
 async function handleQualityPatrolQuery(req, res, deps) {
   if (req.method !== 'GET') {
-    res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'not found' }));
+    writeJson(res, 404, { ok: false, error: 'not found' }, { reason: 'not_found' });
     return;
   }
 
@@ -62,16 +81,14 @@ async function handleQualityPatrolQuery(req, res, deps) {
       logRouteError('admin.quality_patrol.audit', auditErr, { actor, traceId, requestId });
     }
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(Object.assign({
+    writeJson(res, 200, Object.assign({
       ok: true,
       traceId,
       requestId
-    }, result)));
+    }, result), { reason: 'completed' });
   } catch (err) {
     logRouteError('admin.quality_patrol.query', err, { actor, traceId, requestId });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, { reason: 'error' });
   }
 }
 
