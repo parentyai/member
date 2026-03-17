@@ -6,7 +6,9 @@ const { test } = require('node:test');
 const { handleJourneyLineCommand } = require('../../src/usecases/journey/handleJourneyLineCommand');
 
 function createDeps() {
+  const capturedEvents = [];
   return {
+    capturedEvents,
     tasksRepo: {
       getTask: async (taskId) => {
         if (taskId === 'U_PHASE741__bank_open') {
@@ -92,6 +94,12 @@ function createDeps() {
     composeCityAndNationwidePacks: async () => ({ items: [] }),
     cityPacksRepo: {
       getCityPack: async () => null
+    },
+    eventsRepo: {
+      createEvent: async (event) => {
+        capturedEvents.push(event);
+        return { id: `event_${capturedEvents.length}` };
+      }
     }
   };
 }
@@ -123,6 +131,11 @@ test('phase741: journey command handlers cover next/category/history/vendor/supp
     assert.equal(dueSoon.handled, true);
     assert.match(dueSoon.replyText, /期限（7日以内）/);
     assert.match(dueSoon.replyText, /期限超過/);
+    const dueSoonEvent = deps.capturedEvents.find((event) => event && event.type === 'due_soon_opened');
+    assert.ok(dueSoonEvent);
+    assert.equal(dueSoonEvent.ref.source, 'line_command_due_soon_tasks');
+    assert.equal(dueSoonEvent.dueSoon, 1);
+    assert.equal(dueSoonEvent.overdue, 1);
 
     const regional = await handleJourneyLineCommand({
       lineUserId: 'U_PHASE741',
@@ -139,10 +152,17 @@ test('phase741: journey command handlers cover next/category/history/vendor/supp
     const category = await handleJourneyLineCommand({ lineUserId: 'U_PHASE741', text: 'カテゴリ:BANKING' }, deps);
     assert.equal(category.handled, true);
     assert.match(category.replyText, /カテゴリ:BANKING/);
+    const categoryEvent = deps.capturedEvents.find((event) => event && event.type === 'category_view_opened' && event.category === 'BANKING');
+    assert.ok(categoryEvent);
+    assert.equal(categoryEvent.openCount, 1);
+    assert.equal(categoryEvent.blockedCount, 0);
 
     const history = await handleJourneyLineCommand({ lineUserId: 'U_PHASE741', text: '通知履歴' }, deps);
     assert.equal(history.handled, true);
     assert.match(history.replyText, /直近の通知履歴/);
+    assert.match(history.replyText, /配信完了/);
+    assert.match(history.replyText, /タスク催促/);
+    assert.match(history.replyText, /n1/);
 
     const vendor = await handleJourneyLineCommand({ lineUserId: 'U_PHASE741', text: 'TODO業者:bank_open' }, deps);
     assert.equal(vendor.handled, true);

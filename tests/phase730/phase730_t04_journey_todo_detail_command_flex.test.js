@@ -69,6 +69,9 @@ test('phase730: TODO詳細 command returns flex task detail message', async () =
     assert.ok(labels.includes('📖 手順マニュアル'));
     assert.ok(labels.includes('🎥 3分動画'));
     assert.ok(labels.includes('⚠ よくある失敗'));
+    assert.ok(labels.includes('TODO完了:bank_open'));
+    assert.ok(labels.includes('TODO進行中:bank_open'));
+    assert.ok(labels.includes('TODOスヌーズ:bank_open:3'));
     assert.ok(events.some((event) => event && event.type === 'todo_detail_opened'));
   } finally {
     if (prevFlag === undefined) delete process.env.ENABLE_TASK_DETAIL_LINE_V1;
