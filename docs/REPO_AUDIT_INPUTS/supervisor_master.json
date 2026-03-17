@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T19:40:19-04:00",
-  "gitCommit": "e15bd55246711cbf953d900f2b0dfee3abc4b3ae",
-  "branch": "codex/gha-google-actions-node24-T008",
-  "sourceDigest": "1003727291b92ab237047fd92698401e4d60af0e30097c69de5d3ecce2d90d4f",
+  "generatedAt": "2026-03-16T19:49:20-04:00",
+  "gitCommit": "0d8ea7592c3140dadb15054eb8a22851b5221d1d",
+  "branch": "codex/gha-codeql-node24-T009",
+  "sourceDigest": "2224600a3ca2ba7742f5f51679b93f2a9dc53a6ac9df07d1dfe1455353ea2591",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
