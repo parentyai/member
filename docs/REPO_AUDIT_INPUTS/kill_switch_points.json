@@ -482,12 +482,17 @@
     },
     {
       "file": "src/routes/internal/opsSnapshotJob.js",
-      "line": 27,
+      "line": 30,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/internal/opsSnapshotJob.js",
-      "line": 28,
+      "line": 45,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/routes/internal/opsSnapshotJob.js",
+      "line": 46,
       "symbol": "killSwitch"
     },
     {
