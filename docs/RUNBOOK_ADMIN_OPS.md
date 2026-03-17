@@ -93,6 +93,10 @@
 - body 例: `{"targets":["ops_system_snapshot"],"dryRun":false,"scanLimit":3000}`
 - token: `x-city-pack-job-token`（internal token guard）
 - kill switch ON の場合は停止し、復旧後に再実行する。
+- route outcome:
+  - dry-run 正常: `success/dry_run`
+  - 一部 target skip: `partial/completed_with_skips`
+  - kill switch: `blocked/kill_switch_on`
 
 internal token matrix（routeごとの既定ヘッダー）:
 - CityPack / retention / ops snapshot / emergency / core outbox: `x-city-pack-job-token`（`CITY_PACK_JOB_TOKEN`）
@@ -100,6 +104,17 @@ internal token matrix（routeごとの既定ヘッダー）:
 - Task nudge: `x-task-job-token`（`TASK_JOB_TOKEN`）
 - Journey branch dispatch: `x-journey-branch-job-token`（`JOURNEY_BRANCH_JOB_TOKEN`）
 - LLM action reward finalize: `x-llm-action-job-token`（`LLM_ACTION_JOB_TOKEN`）
+
+### Retention dry-run / apply
+1) `POST /internal/jobs/retention-dry-run` は `x-city-pack-job-token` を付けて実行する。  
+2) dry-run 正常は `success/dry_run`、未定義 policy は `blocked/retention_policy_undefined`。  
+3) `POST /internal/jobs/retention-apply` は `RETENTION_APPLY_ENABLED=1` かつ `ENV_NAME=stg|stage|staging` のときだけ実行する。  
+4) apply 正常は `success/completed`、cursor 継続が残るときは `partial/completed_with_more_remaining`。  
+5) 実行不可条件:
+   - flag停止: `blocked/retention_apply_disabled`
+   - 環境不許可: `blocked/retention_apply_env_not_allowed`
+   - 対象なし: `blocked/retention_apply_no_eligible_collections`
+   - 未定義 policy: `blocked/retention_policy_undefined`
 
 ### 即時ロールバック
 - snapshot更新停止: `ENABLE_OPS_SYSTEM_SNAPSHOT_V1=0`
