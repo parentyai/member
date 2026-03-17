@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
@@ -15,7 +16,45 @@ const {
 const { NOTIFICATION_CATEGORIES } = require('../../domain/notificationCategory');
 const { createConfirmToken, verifyConfirmToken } = require('../../domain/confirmToken');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
-const { requireActor, resolveRequestId, resolveTraceId, parseJson } = require('./osContext');
+const { resolveRequestId, resolveTraceId } = require('./osContext');
+
+const ROUTE_KEY = 'admin_os_config';
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, Object.assign({
+    routeType: 'admin_route',
+    guard: { routeKey: ROUTE_KEY, decision: 'allow' }
+  }, outcomeOptions || {}));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function requireActor(req, res) {
+  const actor = req && req.headers && typeof req.headers['x-actor'] === 'string'
+    ? req.headers['x-actor'].trim()
+    : '';
+  if (actor) return actor;
+  writeJson(res, 400, { ok: false, error: 'x-actor required', traceId: resolveTraceId(req) }, {
+    state: 'error',
+    reason: 'actor_required',
+    guard: { routeKey: ROUTE_KEY, decision: 'block' }
+  });
+  return null;
+}
+
+function parseJson(body, req, res) {
+  try {
+    return JSON.parse(body || '{}');
+  } catch (_err) {
+    writeJson(res, 400, { ok: false, error: 'invalid json', traceId: resolveTraceId(req) }, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
+    return null;
+  }
+}
 
 function normalizeServicePhase(value) {
   if (value === null) return null;
@@ -367,8 +406,7 @@ async function handleStatus(req, res) {
     payloadSummary: { servicePhase, notificationPreset, notificationCaps, deliveryCountLegacyFallback }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, 200, {
     ok: true,
     serverTime,
     traceId,
@@ -377,7 +415,10 @@ async function handleStatus(req, res) {
     notificationPreset,
     notificationCaps,
     deliveryCountLegacyFallback
-  }));
+  }, {
+    state: 'success',
+    reason: 'status_viewed'
+  });
 }
 
 async function handlePlan(req, res, body) {
@@ -385,7 +426,7 @@ async function handlePlan(req, res, body) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJson(body, req, res);
   if (!payload) return;
 
   let servicePhase;
@@ -405,8 +446,11 @@ async function handlePlan(req, res, body) {
       currentDeliveryCountLegacyFallback
     );
   } catch (err) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: err && err.message ? err.message : 'invalid', traceId }));
+    writeJson(res, 400, { ok: false, error: err && err.message ? err.message : 'invalid', traceId }, {
+      state: 'error',
+      reason: 'invalid_request',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -441,8 +485,7 @@ async function handlePlan(req, res, body) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, 200, {
     ok: true,
     serverTime: new Date().toISOString(),
     traceId,
@@ -454,7 +497,10 @@ async function handlePlan(req, res, body) {
     planHash,
     confirmToken,
     impactPreview
-  }));
+  }, {
+    state: 'success',
+    reason: 'planned'
+  });
 }
 
 async function handleSet(req, res, body) {
@@ -462,14 +508,17 @@ async function handleSet(req, res, body) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJson(body, req, res);
   if (!payload) return;
 
   const planHash = typeof payload.planHash === 'string' ? payload.planHash : null;
   const confirmToken = typeof payload.confirmToken === 'string' ? payload.confirmToken : null;
   if (!planHash || !confirmToken) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'planHash/confirmToken required', traceId }));
+    writeJson(res, 400, { ok: false, error: 'planHash/confirmToken required', traceId }, {
+      state: 'error',
+      reason: 'confirm_token_required',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -490,8 +539,11 @@ async function handleSet(req, res, body) {
       currentDeliveryCountLegacyFallback
     );
   } catch (err) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: err && err.message ? err.message : 'invalid', traceId }));
+    writeJson(res, 400, { ok: false, error: err && err.message ? err.message : 'invalid', traceId }, {
+      state: 'error',
+      reason: 'invalid_request',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -511,8 +563,11 @@ async function handleSet(req, res, body) {
       requestId,
       payloadSummary: { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash }
     });
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId }));
+    writeJson(res, 409, { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId }, {
+      state: 'blocked',
+      reason: 'plan_hash_mismatch',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -527,8 +582,11 @@ async function handleSet(req, res, body) {
       requestId,
       payloadSummary: { ok: false, reason: 'confirm_token_mismatch' }
     });
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'confirm_token_mismatch', traceId }));
+    writeJson(res, 409, { ok: false, reason: 'confirm_token_mismatch', traceId }, {
+      state: 'blocked',
+      reason: 'confirm_token_mismatch',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -549,8 +607,7 @@ async function handleSet(req, res, body) {
     payloadSummary: { ok: true, servicePhase, notificationPreset, notificationCaps, deliveryCountLegacyFallback }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, 200, {
     ok: true,
     serverTime: new Date().toISOString(),
     traceId,
@@ -559,7 +616,10 @@ async function handleSet(req, res, body) {
     notificationPreset,
     notificationCaps,
     deliveryCountLegacyFallback
-  }));
+  }, {
+    state: 'success',
+    reason: 'config_updated'
+  });
 }
 
 module.exports = {
