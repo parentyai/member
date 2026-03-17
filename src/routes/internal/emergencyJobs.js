@@ -6,10 +6,15 @@ const { runEmergencySync } = require('../../usecases/emergency/runEmergencySync'
 const { fetchProviderSnapshot } = require('../../usecases/emergency/fetchProviderSnapshot');
 const { normalizeAndDiffProvider } = require('../../usecases/emergency/normalizeAndDiffProvider');
 const { summarizeDraftWithLLM } = require('../../usecases/emergency/summarizeDraftWithLLM');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
-function writeJson(res, status, payload) {
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = outcomeOptions && typeof outcomeOptions === 'object'
+    ? attachOutcome(payload || {}, outcomeOptions)
+    : payload;
+  if (body && body.outcome) applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
 }
 
 function parseJson(bodyText) {
@@ -30,6 +35,20 @@ function resolveInternalJobStatusCode(result) {
   return 500;
 }
 
+function resolveOutcome(result) {
+  const row = result && typeof result === 'object' ? result : {};
+  if (row.ok === false && (row.blocked === true || row.reason === 'kill_switch_on')) {
+    return { state: 'blocked', reason: typeof row.reason === 'string' && row.reason.trim() ? row.reason.trim() : 'blocked' };
+  }
+  if (row.ok === false && (row.partial === true || row.partialFailure === true)) {
+    return { state: 'partial', reason: typeof row.reason === 'string' && row.reason.trim() ? row.reason.trim() : 'completed_with_failures' };
+  }
+  if (row.ok === false) {
+    return { state: 'error', reason: typeof row.reason === 'string' && row.reason.trim() ? row.reason.trim() : 'emergency_job_failed' };
+  }
+  return { state: 'success', reason: 'completed' };
+}
+
 async function handleEmergencyJobs(req, res, bodyText, deps) {
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
   const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;
@@ -46,13 +65,13 @@ async function handleEmergencyJobs(req, res, bodyText, deps) {
 
   const killSwitchOn = await getKillSwitchFn();
   if (killSwitchOn) {
-    writeJson(res, 409, { ok: false, error: 'kill switch on' });
+    writeJson(res, 409, { ok: false, error: 'kill switch on' }, { state: 'blocked', reason: 'kill_switch_on' });
     return;
   }
 
   const payload = parseJson(bodyText);
   if (!payload) {
-    writeJson(res, 400, { ok: false, error: 'invalid json' });
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, { state: 'error', reason: 'invalid_json' });
     return;
   }
   const traceIdHeader = req.headers && typeof req.headers['x-trace-id'] === 'string'
@@ -73,7 +92,7 @@ async function handleEmergencyJobs(req, res, bodyText, deps) {
       dryRun: payload.dryRun === true,
       maxRecipientsPerRun: payload.maxRecipientsPerRun
     });
-    writeJson(res, resolveInternalJobStatusCode(result), result);
+    writeJson(res, resolveInternalJobStatusCode(result), result, resolveOutcome(result));
     return;
   }
 
@@ -85,7 +104,7 @@ async function handleEmergencyJobs(req, res, bodyText, deps) {
       actor: 'emergency_provider_fetch_job',
       forceRefresh: payload.forceRefresh === true
     });
-    writeJson(res, resolveInternalJobStatusCode(result), result);
+    writeJson(res, resolveInternalJobStatusCode(result), result, resolveOutcome(result));
     return;
   }
 
@@ -99,7 +118,7 @@ async function handleEmergencyJobs(req, res, bodyText, deps) {
       traceId,
       actor: 'emergency_provider_normalize_job'
     });
-    writeJson(res, resolveInternalJobStatusCode(result), result);
+    writeJson(res, resolveInternalJobStatusCode(result), result, resolveOutcome(result));
     return;
   }
 
@@ -110,7 +129,7 @@ async function handleEmergencyJobs(req, res, bodyText, deps) {
       traceId,
       actor: 'emergency_provider_summarize_job'
     });
-    writeJson(res, resolveInternalJobStatusCode(result), result);
+    writeJson(res, resolveInternalJobStatusCode(result), result, resolveOutcome(result));
     return;
   }
 

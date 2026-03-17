@@ -101,6 +101,12 @@ internal token matrix（routeごとの既定ヘッダー）:
 - Journey branch dispatch: `x-journey-branch-job-token`（`JOURNEY_BRANCH_JOB_TOKEN`）
 - LLM action reward finalize: `x-llm-action-job-token`（`LLM_ACTION_JOB_TOKEN`）
 
+internal outcome quick guide:
+- canonical core outbox sync: `success/dry_run`, `success/no_pending_items`, `partial/completed_with_failures`, `error/completed_with_failures`
+- struct drift backfill: `success/dry_run`, `partial/completed_with_more_remaining`, `success/no_changes`, `success/completed`
+- LLM action reward finalize: `blocked/kill_switch_on`, `success/dry_run`, `success/no_eligible_rows`, `partial/completed_with_errors`
+- emergency sync/provider jobs: `blocked/kill_switch_on`=`409`, `partial/completed_with_failures`=`207`, `error/*`=`500 or pass-through`
+
 ### 即時ロールバック
 - snapshot更新停止: `ENABLE_OPS_SYSTEM_SNAPSHOT_V1=0`
 - realtime画面停止: `ENABLE_OPS_REALTIME_DASHBOARD_V1=0`

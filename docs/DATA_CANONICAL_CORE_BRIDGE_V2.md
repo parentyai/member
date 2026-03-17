@@ -71,6 +71,11 @@
   - `typedMaterializedCount`, `typedSkippedCount`
   - `skippedReasonCounts`
   - `items[]`（event単位 outcome）
+- route outcome:
+  - `success/dry_run`: dry-run で side effect なし
+  - `success/no_pending_items`: pending event なし
+  - `partial/completed_with_failures`: 一部 sync 失敗あり
+  - `error/completed_with_failures`: sync が全失敗
 
 ## Rollout
 1. stg: `ENABLE_CANONICAL_CORE_OUTBOX_DUAL_WRITE_V1=true`, `STRICT=false`

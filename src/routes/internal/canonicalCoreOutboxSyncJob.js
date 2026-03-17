@@ -2,10 +2,15 @@
 
 const { requireInternalJobToken } = require('./cityPackSourceAuditJob');
 const { runCanonicalCoreOutboxSyncJob } = require('../../usecases/data/runCanonicalCoreOutboxSyncJob');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
-function writeJson(res, status, payload) {
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = outcomeOptions && typeof outcomeOptions === 'object'
+    ? attachOutcome(payload || {}, outcomeOptions)
+    : payload;
+  if (body && body.outcome) applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
 }
 
 function parseJson(bodyText) {
@@ -34,7 +39,20 @@ function resolveRequestId(req, payload) {
   return null;
 }
 
-async function handleCanonicalCoreOutboxSyncJob(req, res, bodyText) {
+function resolveOutcome(result) {
+  const row = result && typeof result === 'object' ? result : {};
+  if (row.dryRun === true) return { state: 'success', reason: 'dry_run' };
+  if (Number(row.failedCount) > 0 && Number(row.syncedCount) > 0) return { state: 'partial', reason: 'completed_with_failures' };
+  if (Number(row.failedCount) > 0) return { state: 'error', reason: 'completed_with_failures' };
+  if (Number(row.scannedCount) === 0) return { state: 'success', reason: 'no_pending_items' };
+  if (Number(row.skippedCount) > 0 && Number(row.syncedCount) === 0) return { state: 'success', reason: 'skipped' };
+  return { state: 'success', reason: 'completed' };
+}
+
+async function handleCanonicalCoreOutboxSyncJob(req, res, bodyText, deps) {
+  const runCanonicalCoreOutboxSyncJobFn = deps && typeof deps.runCanonicalCoreOutboxSyncJobFn === 'function'
+    ? deps.runCanonicalCoreOutboxSyncJobFn
+    : runCanonicalCoreOutboxSyncJob;
   if (req.method !== 'POST') {
     writeJson(res, 404, { ok: false, error: 'not found' });
     return;
@@ -50,14 +68,14 @@ async function handleCanonicalCoreOutboxSyncJob(req, res, bodyText) {
   const traceId = resolveTraceId(req, payload);
   const requestId = resolveRequestId(req, payload);
 
-  const result = await runCanonicalCoreOutboxSyncJob({
+  const result = await runCanonicalCoreOutboxSyncJobFn({
     dryRun: payload.dryRun,
     limit: payload.limit,
     traceId,
     requestId,
     actor: 'canonical_core_outbox_sync_job'
   });
-  writeJson(res, 200, result);
+  writeJson(res, 200, result, resolveOutcome(result));
 }
 
 module.exports = {

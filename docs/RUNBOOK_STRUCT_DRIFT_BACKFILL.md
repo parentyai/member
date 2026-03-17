@@ -30,6 +30,12 @@
 - `opsStateDriftCandidate=true` が継続し続ける
 - 同一 `resumeAfterUserId` で同じ結果を繰り返す
 
+## Route outcome
+- `success/dry_run`: dry-run 正常終了
+- `partial/completed_with_more_remaining`: `hasMore=true`。`nextResumeAfterUserId` を引き継いで継続
+- `success/no_changes`: drift 候補なし
+- `success/completed`: apply 完了
+
 ## 再開条件
 - 問題箇所の原因特定後、`resumeAfterUserId` を使って再開
 
