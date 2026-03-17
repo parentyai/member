@@ -46,7 +46,7 @@ function buildTemplate(templateId, target, richMenuId) {
           label: 'today',
           bounds: { x: 0, y: 0, width: 2500, height: 843 },
           actionType: 'postback',
-          actionPayload: { data: `open:${templateId}` }
+          actionPayload: { data: 'action=todo_list' }
         }
       ]
     },
@@ -191,4 +191,3 @@ test('phase663: resolver applies priority per-user > combined > plan > phase > d
     clearServerTimestampForTest();
   }
 });
-

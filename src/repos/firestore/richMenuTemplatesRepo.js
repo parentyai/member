@@ -7,6 +7,22 @@ const ALLOWED_KIND = Object.freeze(['default', 'phase', 'plan', 'combined']);
 const ALLOWED_STATUS = Object.freeze(['draft', 'active', 'deprecated']);
 const ALLOWED_ACTION_TYPE = Object.freeze(['uri', 'message', 'postback']);
 const ALLOWED_SIZE = Object.freeze(['large', 'small']);
+const ALLOWED_RICH_MENU_POSTBACK_ACTIONS = Object.freeze([
+  'next_tasks',
+  'due_soon_tasks',
+  'regional_procedures',
+  'todo_list',
+  'delivery_history',
+  'support_guide',
+  'category_view',
+  'category_pick',
+  'todo_detail',
+  'todo_detail_section',
+  'todo_vendor',
+  'city_pack_module_status',
+  'city_pack_module_subscribe',
+  'city_pack_module_unsubscribe'
+]);
 const ALLOWED_PLAN_TIER = Object.freeze(['free', 'paid']);
 const ALLOWED_LOCALE = Object.freeze(['ja', 'en']);
 
@@ -83,6 +99,11 @@ function normalizeArea(value) {
     const data = normalizeText(actionPayload.data, '');
     if (!data) return null;
     actionPayload.data = data;
+    const dataParams = new URLSearchParams(data);
+    const action = normalizeText(dataParams.get('action'));
+    if (!action) return null;
+    const normalizedAction = action.toLowerCase();
+    if (!ALLOWED_RICH_MENU_POSTBACK_ACTIONS.includes(normalizedAction)) return null;
     const displayText = normalizeText(actionPayload.displayText, '');
     actionPayload.displayText = displayText || null;
   }

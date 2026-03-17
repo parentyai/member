@@ -164,6 +164,18 @@ function formatTaskList(tasks, graphResult) {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function resolveDueSoonOverview(tasks, nowMs) {
+  const rows = Array.isArray(tasks) ? tasks : [];
+  const openWithDue = rows
+    .filter((row) => isOpenTask(row))
+    .map((task) => ({ task, dueMs: resolveTaskDueMillis(task) }))
+    .filter((row) => Number.isFinite(row.dueMs));
+  const horizonMs = nowMs + (7 * DAY_MS);
+  const dueSoon = openWithDue.filter((row) => row.dueMs >= nowMs && row.dueMs <= horizonMs).length;
+  const overdue = openWithDue.filter((row) => row.dueMs < nowMs).length;
+  return { dueSoon, overdue };
+}
+
 function formatNextTasksList(nextTasksResult) {
   const payload = nextTasksResult && typeof nextTasksResult === 'object' ? nextTasksResult : {};
   const tasks = Array.isArray(payload.tasks) ? payload.tasks : [];
@@ -303,6 +315,41 @@ function toDeliveryTimeLabel(value) {
   return new Date(parsed).toISOString().slice(0, 16).replace('T', ' ');
 }
 
+const DELIVERY_STATUS_LABELS = Object.freeze({
+  delivered: '配信完了',
+  sealed: '封印',
+  reserved: '予約済み',
+  error: '送信失敗',
+  failed: '送信失敗',
+  queued: 'キュー中',
+  unknown: '不明'
+});
+
+const DELIVERY_CATEGORY_LABELS = Object.freeze({
+  DEADLINE_REQUIRED: '期限対応',
+  IMMEDIATE_ACTION: '緊急対応',
+  SEQUENCE_GUIDANCE: '進行ガイダンス',
+  TARGETED_ONLY: '対象者限定',
+  COMPLETION_CONFIRMATION: '完了確認',
+  TASK_NUDGE: 'タスク催促',
+  ANNOUNCEMENT: 'お知らせ',
+  GENERAL: '一般',
+  VENDOR: 'ベンダー',
+  AB: 'A/B配信',
+  STEP: 'ステップ'
+});
+
+function resolveDeliveryStatusLabel(status, delivered) {
+  const resolved = normalizeText(status || (delivered ? 'delivered' : ''));
+  return DELIVERY_STATUS_LABELS[resolved] || '不明';
+}
+
+function resolveNotificationCategoryLabel(category) {
+  const normalized = normalizeText(category).toUpperCase();
+  if (!normalized) return '-';
+  return DELIVERY_CATEGORY_LABELS[normalized] || normalized;
+}
+
 function formatDeliveryHistory(deliveries) {
   const rows = Array.isArray(deliveries) ? deliveries : [];
   if (!rows.length) {
@@ -313,18 +360,43 @@ function formatDeliveryHistory(deliveries) {
     const row = item && typeof item === 'object' ? item : {};
     const sentAt = toDeliveryTimeLabel(row.sentAt || row.deliveredAt || row.createdAt);
     const status = row.delivered === true ? 'delivered' : (normalizeText(row.state, 'queued') || 'queued');
-    const category = normalizeText(row.notificationCategory, '-');
+    const category = row.notificationCategory || row.category || row.type || '-';
+    const statusLabel = resolveDeliveryStatusLabel(status, row.delivered === true);
+    const categoryLabel = resolveNotificationCategoryLabel(category);
     const notificationId = normalizeText(row.notificationId, row.id || '-');
-    lines.push(`${index + 1}. ${sentAt} / ${status} / ${category} / ${notificationId}`);
+    lines.push(`${index + 1}. ${sentAt} / ${statusLabel} / ${categoryLabel} / ${notificationId}`);
   });
   lines.push('詳細を確認する場合は管理画面の Notification Monitor を利用してください。');
   return lines.join('\n');
 }
 
+function resolveCategoryViewCounts(tasks, categoryFilter, ruleById) {
+  const rows = Array.isArray(tasks) ? tasks : [];
+  const normalizedFilter = normalizeTaskCategory(categoryFilter, null);
+  const ruleMap = ruleById && typeof ruleById.get === 'function' ? ruleById : null;
+  const open = rows.filter((item) => {
+    const status = normalizeText(item && item.status).toLowerCase();
+    return status === 'todo' || status === 'doing';
+  });
+  if (!normalizedFilter) {
+    return {
+      category: 'ALL',
+      openCount: open.length,
+      blockedCount: open.filter((task) => Boolean(resolveBlockedReason(task))).length
+    };
+  }
+  const filtered = open.filter((task) => resolveTaskCategoryForView(task, ruleMap) === normalizedFilter);
+  return {
+    category: normalizedFilter,
+    openCount: filtered.length,
+    blockedCount: filtered.filter((task) => Boolean(resolveBlockedReason(task))).length
+  };
+}
+
 function resolveTaskCategoryForView(task, ruleById) {
   const row = task && typeof task === 'object' ? task : {};
   const ruleId = normalizeText(row.ruleId);
-  const rule = ruleId ? ruleById.get(ruleId) : null;
+  const rule = ruleId && ruleById && typeof ruleById.get === 'function' ? ruleById.get(ruleId) : null;
   return normalizeTaskCategory(row.category, normalizeTaskCategory(rule && rule.category, 'LIFE_SETUP')) || 'LIFE_SETUP';
 }
 
@@ -342,14 +414,15 @@ async function buildCategoryViewReply(params, deps) {
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
   const lineUserId = normalizeText(payload.lineUserId);
   const categoryFilter = normalizeTaskCategory(payload.category, null);
-  const taskResult = await listUserTasks({
+  const providedRuleById = payload.ruleById && payload.ruleById instanceof Map ? payload.ruleById : null;
+  const taskResult = Array.isArray(payload.taskResult && payload.taskResult.tasks) ? payload.taskResult : await listUserTasks({
     userId: lineUserId,
     lineUserId,
     forceRefresh: false,
     actor: 'line_command_category_view'
   }, resolvedDeps).catch(() => ({ tasks: [] }));
   const tasks = Array.isArray(taskResult.tasks) ? taskResult.tasks : [];
-  const ruleById = await buildStepRuleMapForView(resolvedDeps);
+  const ruleById = providedRuleById || await buildStepRuleMapForView(resolvedDeps);
   const openTasks = tasks.filter((item) => {
     const status = normalizeText(item && item.status).toLowerCase();
     return status === 'todo' || status === 'doing';
@@ -1553,10 +1626,23 @@ async function handleJourneyLineCommand(params, deps) {
       forceRefresh: false,
       actor: 'line_command_due_soon_tasks'
     }, resolvedDeps).catch(() => ({ tasks: [] }));
+    const tasks = Array.isArray(result && result.tasks) ? result.tasks : [];
     const nowMs = resolveNowMillis(payload.now);
+    const dueSoonOverview = resolveDueSoonOverview(tasks, nowMs);
+    await appendJourneyEventBestEffort({
+      lineUserId,
+      type: 'due_soon_opened',
+      ref: { source: 'line_command_due_soon_tasks' },
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      fields: {
+        dueSoon: dueSoonOverview.dueSoon,
+        overdue: dueSoonOverview.overdue
+      }
+    }, resolvedDeps);
     return {
       handled: true,
-      replyText: formatDueSoonTasksList(result && result.tasks, nowMs)
+      replyText: formatDueSoonTasksList(tasks, nowMs)
     };
   }
 
@@ -1599,9 +1685,32 @@ async function handleJourneyLineCommand(params, deps) {
         replyText: 'Task OS入口は現在停止中です。'
       };
     }
+    const result = await listUserTasks({
+      lineUserId,
+      userId: lineUserId,
+      forceRefresh: false,
+      actor: 'line_command_category_view'
+    }, resolvedDeps).catch(() => ({ tasks: [] }));
+    const category = normalizeTaskCategory(command.category, null);
+    const ruleById = await buildStepRuleMapForView(resolvedDeps);
+    const counts = resolveCategoryViewCounts(result && result.tasks, category, ruleById);
+    await appendJourneyEventBestEffort({
+      lineUserId,
+      type: 'category_view_opened',
+      ref: { source: 'line_command_category_view' },
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      fields: {
+        category: counts.category,
+        openCount: counts.openCount,
+        blockedCount: counts.blockedCount
+      }
+    }, resolvedDeps);
     const textReply = await buildCategoryViewReply({
       lineUserId,
-      category: command.category || null
+      category: command.category || null,
+      taskResult: result,
+      ruleById
     }, resolvedDeps).catch(() => 'カテゴリ表示の取得に失敗しました。');
     return {
       handled: true,

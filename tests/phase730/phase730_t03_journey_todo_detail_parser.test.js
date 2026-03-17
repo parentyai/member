@@ -34,6 +34,23 @@ test('phase730: postback parser keeps detail attribution metadata when provided'
   assert.equal(action.attributionTraceId, 't1');
 });
 
+test('phase730: postback parser resolves todo_complete, todo_in_progress, and todo_snooze payloads', () => {
+  assert.deepEqual(parseJourneyPostbackData('action=todo_complete&todoKey=bank_open'), {
+    action: 'todo_complete',
+    todoKey: 'bank_open'
+  });
+  assert.deepEqual(parseJourneyPostbackData('action=todo_in_progress&todoKey=bank_open'), {
+    action: 'todo_in_progress',
+    todoKey: 'bank_open'
+  });
+  assert.deepEqual(parseJourneyPostbackData('action=todo_snooze&todoKey=bank_open&days=3'), {
+    action: 'todo_snooze',
+    todoKey: 'bank_open',
+    snoozeUntil: null,
+    snoozeDays: 3
+  });
+});
+
 test('phase730: postback parser rejects invalid todo_detail_section payload', () => {
   const action = parseJourneyPostbackData('action=todo_detail_section&todoKey=bank_open&section=unknown');
   assert.ok(action);
