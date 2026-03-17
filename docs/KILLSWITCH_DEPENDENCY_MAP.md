@@ -22,8 +22,8 @@
 | `src/routes/admin/notifications.js` | 180 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/osAlerts.js` | 102 | `systemFlagsRepo.getKillSwitch(),` |
 | `src/routes/admin/osDashboardKpi.js` | 213 | `systemFlagsRepo.getKillSwitch()` |
-| `src/routes/admin/osKillSwitch.js` | 5 | `const { getKillSwitch, setKillSwitch } = require('../../usecases/killSwitch/setKillSwitch');` |
-| `src/routes/admin/osKillSwitch.js` | 26 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/osKillSwitch.js` | 6 | `const { getKillSwitch, setKillSwitch } = require('../../usecases/killSwitch/setKillSwitch');` |
+| `src/routes/admin/osKillSwitch.js` | 65 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/productReadiness.js` | 285 | `systemFlagsRepo.getKillSwitch(),` |
 | `src/routes/admin/richMenuConfig.js` | 447 | `systemFlagsRepo.getKillSwitch()` |
 | `src/routes/internal/cityPackDraftGeneratorJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |

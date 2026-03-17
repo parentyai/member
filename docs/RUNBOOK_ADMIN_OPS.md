@@ -641,6 +641,13 @@ internal outcome quick guide:
 3) set（confirmToken 必須）
 4) trace search で `automation_config.plan` / `automation_config.set` を確認
 
+route outcome:
+- `status`: `success/status_viewed`
+- `plan`: `success/planned`
+- `set`: `success/config_updated`
+- `plan_hash_mismatch` / `confirm_token_mismatch`: `blocked/...`
+- `invalid_json` / `invalid_request` / `confirm_token_required`: `error/...`
+
 ## Notification Caps（送信上限制御）
 `/admin/master` の System Config で `notificationCaps` を設定する。
 
@@ -670,6 +677,13 @@ internal outcome quick guide:
 3) set（confirmToken 必須）
 4) trace search で `system_config.plan` / `system_config.set` を確認
 
+route outcome:
+- `status`: `success/status_viewed`
+- `plan`: `success/planned`
+- `set`: `success/config_updated`
+- `plan_hash_mismatch` / `confirm_token_mismatch`: `blocked/...`
+- `invalid_json` / `invalid_request` / `confirm_token_required`: `error/...`
+
 運用推奨:
 1) 先に `Delivery deliveredAt Backfill` を実行し、`fixableCount=0` まで補完
 2) その後 `deliveryCountLegacyFallback=false` に切り替える
@@ -695,6 +709,19 @@ internal outcome quick guide:
    - 再送/停止/テンプレ差し替え/リンク差し替え
 6) Rollback
    - 実装PR を revert（必要なら）
+
+## Kill Switch（two-step guard）
+操作手順:
+1) `GET /api/admin/os/kill-switch/status`
+2) `POST /api/admin/os/kill-switch/plan`
+3) `POST /api/admin/os/kill-switch/set`（confirmToken 必須）
+
+route outcome:
+- `status`: `success/status_viewed`
+- `plan`: `success/planned`
+- `set`: `success/kill_switch_updated`
+- `plan_hash_mismatch` / `confirm_token_mismatch`: `blocked/...`
+- `invalid_json` / `confirm_token_required`: `error/...`
 
 ## Delivery Recovery（reserved/in-flight 詰まり対応）
 対象: `notification_deliveries/{deliveryId}` が `reserved` のまま残り、再実行が skip され続けるケース。
