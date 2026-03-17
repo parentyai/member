@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T23:50:30.023Z",
-  "gitCommit": "0d8ea7592c3140dadb15054eb8a22851b5221d1d",
-  "branch": "codex/gha-codeql-node24-T009",
-  "sourceDigest": "8233ecea1caaac32567945b201ca176e20872659251857d272420ec617ef87f6",
+  "generatedAt": "2026-03-17T01:13:35.564Z",
+  "gitCommit": "bec89f07eb8514217d586f6b179d5f4fd4ddfc68",
+  "branch": "codex/internal-job-outcome-contract-T010",
+  "sourceDigest": "c92192bb08bfb250ba55bf2d0ec5e327ff123f216fd263b09db9f9bf7ca5b482",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -76,7 +76,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "60a6d51c9e2160ac705839abd54fd25888aaa931570a467654ae9ab4d0068561",
+      "sha256": "01bea0bdc04f7903ca45700e8412513793f2de90b69e8954a70bee49d82eafd4",
       "bytes": 79293
     },
     {
@@ -96,7 +96,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/kill_switch_points.json",
-      "sha256": "7d8d2b32abedc425a88d10b23121cd12ee9909cea76b50b6e25f4a6aa7d181d0",
+      "sha256": "f6d827ab4319648f232b559c60e0d677a23d972eae76917eebf34743ebd3f884",
       "bytes": 23701
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "8e7252a019c7b6d93cc05bbedfb3c58f6262b0660f03b668bbb03db515a1d48c",
+      "sha256": "ce6491aed9fd23a130974faeaac12f8c0ddec872df8442c2f11edf4badd9d0e9",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "d7af4c1299d5f51062ef5947cbd4936fc289d6c757b6b164aa372c1e0a8129ab",
+      "sha256": "f55ee51464f30503bc2f76d96fafbcd7aba26c0f927803d2db49f2c8c029508b",
       "bytes": 487
     },
     {
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "e114a5b8efa9aaa22d66bc09a05526c329f37253d4831e5b935d5e4759ef36e7",
+      "sha256": "f5bd7d8d781c82c04ad6a20900157e220effe3b8f7f574eb255bbb37533ab54f",
       "bytes": 453880
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "c2f8d5afad69962411b96858a16570ac0d3f91cc66e3143a1e283c93c271bd7f",
-      "bytes": 2414
+      "sha256": "0ace6e561df8b62a24f45a2526c8d91d76242d92f19063c93f7dbda25c225f45",
+      "bytes": 2426
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",

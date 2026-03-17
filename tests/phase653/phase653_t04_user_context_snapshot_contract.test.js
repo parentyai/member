@@ -17,7 +17,7 @@ function request({ port, method, path, headers, body }) {
     const req = http.request({ hostname: '127.0.0.1', port, method, path, headers: headers || {} }, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+      res.on('end', () => resolve({ status: res.statusCode, body: data, headers: res.headers || {} }));
     });
     req.on('error', reject);
     if (body) req.write(body);
@@ -107,6 +107,11 @@ test('phase653: internal user-context snapshot job writes snapshot and audit evi
   const payload = JSON.parse(res.body);
   assert.strictEqual(payload.ok, true);
   assert.strictEqual(payload.updated, 1);
+  assert.strictEqual(payload.outcome && payload.outcome.state, 'success');
+  assert.strictEqual(payload.outcome && payload.outcome.reason, 'completed');
+  assert.strictEqual(res.headers['x-member-outcome-state'], 'success');
+  assert.strictEqual(res.headers['x-member-outcome-reason'], 'completed');
+  assert.strictEqual(res.headers['x-member-outcome-route-type'], 'internal_job');
 
   const snapshotDoc = await db.collection('user_context_snapshots').doc('U_SNAPSHOT').get();
   assert.strictEqual(snapshotDoc.exists, true);

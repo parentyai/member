@@ -29,14 +29,14 @@
 | `src/routes/internal/cityPackDraftGeneratorJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/cityPackDraftGeneratorJob.js` | 26 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/cityPackSourceAuditJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/internal/cityPackSourceAuditJob.js` | 47 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/internal/cityPackSourceAuditJob.js` | 73 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/emergencyJobs.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/emergencyJobs.js` | 35 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
 | `src/routes/internal/emergencyJobs.js` | 47 | `const killSwitchOn = await getKillSwitchFn();` |
 | `src/routes/internal/journeyBranchDispatchJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/journeyBranchDispatchJob.js` | 50 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/journeyKpiBuildJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/internal/journeyKpiBuildJob.js` | 38 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/internal/journeyKpiBuildJob.js` | 57 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/journeyTodoReminderJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/journeyTodoReminderJob.js` | 68 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/municipalitySchoolsImportJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
@@ -49,9 +49,9 @@
 | `src/routes/internal/taskNudgeJob.js` | 43 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
 | `src/routes/internal/taskNudgeJob.js` | 53 | `killSwitch = await getKillSwitchFn();` |
 | `src/routes/internal/userContextSnapshotJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/internal/userContextSnapshotJob.js` | 59 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/internal/userContextSnapshotJob.js` | 78 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/userContextSnapshotRecompressJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/internal/userContextSnapshotRecompressJob.js` | 59 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/internal/userContextSnapshotRecompressJob.js` | 78 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/webhookLine.js` | 4960 | `const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'` |
 | `src/routes/webhookLine.js` | 4961 | `? options.getKillSwitchFn` |
 | `src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js` | 374 | `safeQuery('killSwitch', () => systemFlagsRepo.getKillSwitch()),` |

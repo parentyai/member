@@ -2,10 +2,28 @@
 
 const { runCityPackSourceAuditJob } = require('../../usecases/cityPack/runCityPackSourceAuditJob');
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
-function writeJson(res, status, payload) {
+function mergeOutcomeOptions(base, override) {
+  const left = base && typeof base === 'object' ? base : null;
+  const right = override && typeof override === 'object' ? override : null;
+  if (!left && !right) return null;
+  const merged = Object.assign({}, left || {}, right || {});
+  const baseGuard = left && left.guard && typeof left.guard === 'object' ? left.guard : null;
+  const overrideGuard = right && right.guard && typeof right.guard === 'object' ? right.guard : null;
+  if (baseGuard || overrideGuard) {
+    merged.guard = Object.assign({}, baseGuard || {}, overrideGuard || {});
+  }
+  return merged;
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = outcomeOptions && typeof outcomeOptions === 'object'
+    ? attachOutcome(payload || {}, outcomeOptions)
+    : payload;
+  if (body && body.outcome) applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
 }
 
 function parseJson(bodyText) {
@@ -24,15 +42,23 @@ function resolveInternalToken(req) {
   return '';
 }
 
-function requireInternalJobToken(req, res) {
+function requireInternalJobToken(req, res, outcomeOptions) {
   const expected = process.env.CITY_PACK_JOB_TOKEN || '';
   if (!expected) {
-    writeJson(res, 503, { ok: false, error: 'CITY_PACK_JOB_TOKEN not configured' });
+    writeJson(res, 503, { ok: false, error: 'CITY_PACK_JOB_TOKEN not configured' }, mergeOutcomeOptions(outcomeOptions, {
+      state: 'error',
+      reason: 'job_token_not_configured',
+      guard: { decision: 'block' }
+    }));
     return false;
   }
   const actual = resolveInternalToken(req);
   if (!actual || actual !== expected) {
-    writeJson(res, 401, { ok: false, error: 'unauthorized' });
+    writeJson(res, 401, { ok: false, error: 'unauthorized' }, mergeOutcomeOptions(outcomeOptions, {
+      state: 'blocked',
+      reason: 'unauthorized',
+      guard: { decision: 'block' }
+    }));
     return false;
   }
   return true;
