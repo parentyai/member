@@ -788,8 +788,8 @@ const USERS_SUMMARY_COLUMN_KEYS = Object.freeze([
 ]);
 const PANE_HEADER_MAP = Object.freeze({
   home: { titleKey: 'ui.label.nav.dashboard', subtitleKey: 'ui.desc.page.home' },
-  'ops-feature-catalog': { titleKey: 'ui.label.nav.dashboard', subtitleKey: 'ui.desc.page.home' },
-  'ops-system-health': { titleKey: 'ui.label.page.maintenance', subtitleKey: 'ui.desc.page.maintenance' },
+  'ops-feature-catalog': { titleKey: 'ui.label.page.featureCatalog', subtitleKey: 'ui.desc.page.featureCatalog' },
+  'ops-system-health': { titleKey: 'ui.label.page.systemHealth', subtitleKey: 'ui.desc.page.systemHealth' },
   alerts: { titleKey: 'ui.label.alerts.title', subtitleKey: 'ui.desc.page.alerts' },
   composer: { titleKey: 'ui.label.page.composer', subtitleKey: 'ui.desc.page.composer' },
   monitor: { titleKey: 'ui.label.page.monitor', subtitleKey: 'ui.desc.page.monitor' },
@@ -803,7 +803,7 @@ const PANE_HEADER_MAP = Object.freeze({
   'developer-map': { titleKey: 'ui.label.page.developerMap', subtitleKey: 'ui.desc.page.developerMap' },
   'developer-manual-redac': { titleKey: 'ui.label.page.developerManualRedac', subtitleKey: 'ui.desc.page.developerManualRedac' },
   'developer-manual-user': { titleKey: 'ui.label.page.developerManualUser', subtitleKey: 'ui.desc.page.developerManualUser' },
-  llm: { titleKey: 'ui.label.page.faq', subtitleKey: 'ui.desc.page.faq' },
+  llm: { titleKey: 'ui.label.page.llm', subtitleKey: 'ui.desc.page.llm' },
   settings: { titleKey: 'ui.label.page.settings', subtitleKey: 'ui.desc.page.settings' },
   maintenance: { titleKey: 'ui.label.page.maintenance', subtitleKey: 'ui.desc.page.maintenance' }
 });
@@ -3448,18 +3448,8 @@ function updatePageHeader(paneKey) {
   const secondaryAction = document.getElementById('page-action-secondary');
   if (titleEl) titleEl.textContent = t(meta.titleKey, titleEl.textContent || '');
   if (subtitleEl) {
-    if (
-      paneKey === 'composer'
-      || paneKey === 'monitor'
-      || paneKey === 'read-model'
-      || paneKey === 'city-pack'
-      || paneKey === 'vendors'
-      || paneKey === 'emergency-layer'
-    ) {
-      subtitleEl.textContent = '';
-    } else {
-      subtitleEl.textContent = t(meta.subtitleKey, subtitleEl.textContent || '');
-    }
+    subtitleEl.textContent = t(meta.subtitleKey, subtitleEl.textContent || '');
+    subtitleEl.setAttribute('data-pane-purpose', paneKey);
   }
   if (updatedEl) {
     const updatedAt = resolvePaneUpdatedAt(paneKey);

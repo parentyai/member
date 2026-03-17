@@ -12,9 +12,9 @@ test('phase674: left nav primary groups expose layer labels and keep one primary
   assert.ok(dashboardStart >= 0 && developerStart > dashboardStart, 'primary nav region missing');
 
   const primaryBlock = html.slice(dashboardStart, developerStart);
-  assert.ok(primaryBlock.includes('Dashboard（判断）'));
-  assert.ok(primaryBlock.includes('Workbench（実行）'));
-  assert.ok(primaryBlock.includes('Data / Evidence / System'));
+  assert.ok(primaryBlock.includes('判断 / Dashboard'));
+  assert.ok(primaryBlock.includes('実行 / Workbench'));
+  assert.ok(primaryBlock.includes('確認 / Data・Evidence・System'));
 
   const paneMatches = Array.from(primaryBlock.matchAll(/data-pane-target="([^"]+)"/g)).map((entry) => entry[1]);
   const counts = paneMatches.reduce((acc, pane) => {
@@ -35,9 +35,9 @@ test('phase674: control group keeps data/evidence/system layering and settings o
   assert.ok(controlStart >= 0 && developerStart > controlStart, 'control nav group missing');
 
   const controlBlock = html.slice(controlStart, developerStart);
-  assert.ok(controlBlock.includes('nav-layer-label">Data</div>'));
-  assert.ok(controlBlock.includes('nav-layer-label">Evidence</div>'));
-  assert.ok(controlBlock.includes('nav-layer-label">System</div>'));
+  assert.ok(controlBlock.includes('nav-layer-label" data-dict-key="ui.label.nav.layer.data">確認 / Data</div>'));
+  assert.ok(controlBlock.includes('nav-layer-label" data-dict-key="ui.label.nav.layer.evidence">証跡 / Evidence</div>'));
+  assert.ok(controlBlock.includes('nav-layer-label" data-dict-key="ui.label.nav.layer.system">保守 / System</div>'));
   assert.ok(controlBlock.includes('data-pane-target="read-model"'));
   assert.ok(controlBlock.includes('data-pane-target="alerts"'));
   assert.ok(controlBlock.includes('data-pane-target="errors"'));
