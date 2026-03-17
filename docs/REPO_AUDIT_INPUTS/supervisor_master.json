@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T20:59:48-04:00",
-  "gitCommit": "bec89f07eb8514217d586f6b179d5f4fd4ddfc68",
-  "branch": "codex/internal-job-outcome-contract-T010",
-  "sourceDigest": "2135cb7dfafd000155dfe38118fb336965eca5489721faa4187c8ce241a29683",
+  "generatedAt": "2026-03-16T21:19:27-04:00",
+  "gitCommit": "b2e70676d68d5d5d15d1a0dabb0233188e0c83d0",
+  "branch": "codex/internal-branch-nudge-outcome-T011",
+  "sourceDigest": "14e8f87d22f66bd2f5ab1701079e204a2bae47b1d531ef54effb3037d2be77cd",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

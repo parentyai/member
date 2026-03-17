@@ -1,7 +1,7 @@
 # KILLSWITCH_DEPENDENCY_MAP
 
 - killSwitch依存経路を静的抽出した一覧。
-- 抽出件数: 94
+- 抽出件数: 95
 
 | file | line | reference |
 | --- | --- | --- |
@@ -34,7 +34,8 @@
 | `src/routes/internal/emergencyJobs.js` | 35 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
 | `src/routes/internal/emergencyJobs.js` | 47 | `const killSwitchOn = await getKillSwitchFn();` |
 | `src/routes/internal/journeyBranchDispatchJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/internal/journeyBranchDispatchJob.js` | 50 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/internal/journeyBranchDispatchJob.js` | 61 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
+| `src/routes/internal/journeyBranchDispatchJob.js` | 73 | `const killSwitch = await getKillSwitchFn();` |
 | `src/routes/internal/journeyKpiBuildJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/journeyKpiBuildJob.js` | 57 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/journeyTodoReminderJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
@@ -46,8 +47,8 @@
 | `src/routes/internal/schoolCalendarAuditJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/schoolCalendarAuditJob.js` | 27 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/taskNudgeJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/internal/taskNudgeJob.js` | 43 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
-| `src/routes/internal/taskNudgeJob.js` | 53 | `killSwitch = await getKillSwitchFn();` |
+| `src/routes/internal/taskNudgeJob.js` | 59 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
+| `src/routes/internal/taskNudgeJob.js` | 73 | `killSwitch = await getKillSwitchFn();` |
 | `src/routes/internal/userContextSnapshotJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/userContextSnapshotJob.js` | 78 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/userContextSnapshotRecompressJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
