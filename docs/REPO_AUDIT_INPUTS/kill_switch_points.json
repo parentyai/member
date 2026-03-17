@@ -362,12 +362,17 @@
     },
     {
       "file": "src/routes/internal/cityPackDraftGeneratorJob.js",
-      "line": 26,
+      "line": 36,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/internal/cityPackDraftGeneratorJob.js",
-      "line": 27,
+      "line": 45,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/routes/internal/cityPackDraftGeneratorJob.js",
+      "line": 46,
       "symbol": "killSwitch"
     },
     {
@@ -377,12 +382,17 @@
     },
     {
       "file": "src/routes/internal/cityPackSourceAuditJob.js",
-      "line": 73,
+      "line": 70,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/internal/cityPackSourceAuditJob.js",
-      "line": 74,
+      "line": 76,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/routes/internal/cityPackSourceAuditJob.js",
+      "line": 77,
       "symbol": "killSwitch"
     },
     {
@@ -452,12 +462,17 @@
     },
     {
       "file": "src/routes/internal/municipalitySchoolsImportJob.js",
-      "line": 26,
+      "line": 34,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/internal/municipalitySchoolsImportJob.js",
-      "line": 27,
+      "line": 43,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/routes/internal/municipalitySchoolsImportJob.js",
+      "line": 44,
       "symbol": "killSwitch"
     },
     {
@@ -492,7 +507,12 @@
     },
     {
       "file": "src/routes/internal/schoolCalendarAuditJob.js",
-      "line": 28,
+      "line": 39,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/routes/internal/schoolCalendarAuditJob.js",
+      "line": 40,
       "symbol": "killSwitch"
     },
     {
