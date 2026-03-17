@@ -487,6 +487,24 @@ internal token matrix（routeごとの既定ヘッダー）:
 - 必須: `x-city-pack-job-token`（`CITY_PACK_JOB_TOKEN`）
 - kill switch が ON の場合は `409` で停止（送信副作用なし）。
 - 監査結果 `diff_detected` は `city_pack_bulletins` に draft を自動作成（自動送信はしない）。
+- route outcome:
+  - `success/no_targets`: 対象リンクなし。監査は正常終了で、追加対応は不要。
+  - `partial/completed_with_failures`: 一部 source audit が失敗。`traceId` で `city_pack.source_audit.run` を確認。
+  - `error/invalid_json` or `blocked/kill_switch_on`: 入力または停止条件。再実行前に payload / kill switch を確認。
+
+### 2.5) Draft / Source Audit / Municipality Import outcome
+- `POST /internal/jobs/city-pack-draft-generator`
+  - `success/completed`: draft city pack 作成完了
+  - `success/already_drafted`: 既存 draft を再利用した idempotent 完了
+  - `blocked/source_candidates_missing|source_candidates_invalid`: request は `needs_review` に寄る。source candidates を補正して再実行
+- `POST /internal/jobs/city-pack-source-audit`
+  - `success/completed`: 全件成功
+  - `success/no_targets`: 監査対象なし
+  - `partial/completed_with_failures`: 一部 sourceRef が失敗。`source_audit_runs` と `audit_logs` を確認
+- `POST /internal/jobs/municipality-schools-import`
+  - `success/dry_run`: dry-run 完了
+  - `partial/completed_with_failures`: 行単位の失敗あり。`errors[]` を確認して再投入
+  - `error/rows_required|invalid_json`: payload 不備。再送前に rows を見直す
 
 ### 3) Review/通知承認（人間）
 1. `Calendar Review` で `validUntil` / `diffSummary` / recommendation を確認。
