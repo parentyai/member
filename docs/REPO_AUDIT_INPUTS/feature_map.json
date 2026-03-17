@@ -1819,7 +1819,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 86,
+      "tests_count": 87,
       "ssot_refs": [],
       "completion": "legacy"
     },
@@ -2857,7 +2857,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 56,
+      "tests_count": 57,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -3359,7 +3359,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 73,
+      "tests_count": 74,
       "ssot_refs": [],
       "completion": "completed"
     }

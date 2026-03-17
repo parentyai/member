@@ -54,10 +54,48 @@ test('phase730: renderTaskFlexMessage renders checklist, understanding actions, 
   assert.ok(bodyTexts.includes('□ パスポート準備'));
   assert.ok(bodyTexts.includes('…ほか1件'));
 
-  const understandingBox = body.find((item) => item && item.type === 'box' && Array.isArray(item.contents));
+  const understandingBox = body.find((item) => {
+    if (!item || item.type !== 'box' || !Array.isArray(item.contents)) return false;
+    return item.contents.some((boxItem) => boxItem && boxItem.action && boxItem.action.label === '📖 手順マニュアル');
+  });
   assert.ok(understandingBox);
-  const labels = understandingBox.contents.map((item) => item && item.action && item.action.label).filter(Boolean);
-  assert.deepEqual(labels, ['📖 手順マニュアル', '🎥 3分動画', '⚠ よくある失敗']);
+  const understandingLabels = understandingBox.contents.map((item) => item && item.action && item.action.label).filter(Boolean);
+  assert.deepEqual(understandingLabels, ['📖 手順マニュアル', '🎥 3分動画', '⚠ よくある失敗']);
+
+  const actionButtons = body
+    .filter((item) => item && item.type === 'box' && Array.isArray(item.contents))
+    .flatMap((item) => item.contents)
+    .map((item) => item && item.action)
+    .filter(Boolean);
+  const statusLabels = [
+    'TODO完了:bank_open',
+    'TODO進行中:bank_open',
+    'TODOスヌーズ:bank_open:3'
+  ];
+  statusLabels.forEach((label) => assert.ok(
+    actionButtons.some((action) => action.label === label && action.type === 'postback')
+  ));
+
+  statusLabels.forEach((label) => {
+    const action = actionButtons.find((buttonAction) => buttonAction && buttonAction.label === label);
+    assert.equal(action.type, 'postback');
+    if (label === 'TODO完了:bank_open') {
+      const params = new URLSearchParams(action.data);
+      assert.equal(params.get('action'), 'todo_complete');
+      assert.equal(params.get('todoKey'), 'bank_open');
+    }
+    if (label === 'TODO進行中:bank_open') {
+      const params = new URLSearchParams(action.data);
+      assert.equal(params.get('action'), 'todo_in_progress');
+      assert.equal(params.get('todoKey'), 'bank_open');
+    }
+    if (label === 'TODOスヌーズ:bank_open:3') {
+      const params = new URLSearchParams(action.data);
+      assert.equal(params.get('action'), 'todo_snooze');
+      assert.equal(params.get('todoKey'), 'bank_open');
+      assert.equal(params.get('days'), '3');
+    }
+  });
 
   assert.ok(message.contents.footer);
   const cta = message.contents.footer.contents[0];

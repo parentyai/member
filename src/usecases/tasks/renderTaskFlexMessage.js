@@ -45,11 +45,18 @@ function resolveWhyNow(task, taskContent) {
   return '今のステージで前提条件を満たす優先タスクです。';
 }
 
-function buildPostbackData(action, todoKey, section) {
+function buildPostbackData(action, todoKey, sectionOrParams) {
   const params = new URLSearchParams();
   params.set('action', action);
   params.set('todoKey', todoKey || '');
-  if (section) params.set('section', section);
+  if (typeof sectionOrParams === 'string') {
+    params.set('section', sectionOrParams);
+  } else if (sectionOrParams && typeof sectionOrParams === 'object') {
+    Object.entries(sectionOrParams).forEach(([key, value]) => {
+      if (value === null || value === undefined) return;
+      params.set(key, String(value));
+    });
+  }
   return params.toString();
 }
 
@@ -101,6 +108,45 @@ function buildUnderstandingButtons(todoKey, linkRefs) {
     }
   });
   return rows;
+}
+
+function buildTaskStatusActionButtons(todoKey) {
+  const key = todoKey || '';
+  return [
+    {
+      type: 'button',
+      style: 'secondary',
+      height: 'sm',
+      action: {
+        type: 'postback',
+        label: `TODO完了:${key}`,
+        data: buildPostbackData('todo_complete', key),
+        displayText: `TODO完了:${key}`
+      }
+    },
+    {
+      type: 'button',
+      style: 'secondary',
+      height: 'sm',
+      action: {
+        type: 'postback',
+        label: `TODO進行中:${key}`,
+        data: buildPostbackData('todo_in_progress', key),
+        displayText: `TODO進行中:${key}`
+      }
+    },
+    {
+      type: 'button',
+      style: 'secondary',
+      height: 'sm',
+      action: {
+        type: 'postback',
+        label: `TODOスヌーズ:${key}:3`,
+        data: buildPostbackData('todo_snooze', key, { days: 3 }),
+        displayText: `TODOスヌーズ:${key}:3`
+      }
+    }
+  ];
 }
 
 function renderTaskFlexMessage(params) {
@@ -261,6 +307,24 @@ function renderTaskFlexMessage(params) {
     spacing: 'sm',
     margin: 'sm',
     contents: buildUnderstandingButtons(todoKey, linkRefs)
+  });
+  bodyContents.push({
+    type: 'separator',
+    margin: 'md'
+  });
+  bodyContents.push({
+    type: 'text',
+    text: '状態更新',
+    size: 'sm',
+    color: '#777777',
+    margin: 'md'
+  });
+  bodyContents.push({
+    type: 'box',
+    layout: 'vertical',
+    spacing: 'sm',
+    margin: 'sm',
+    contents: buildTaskStatusActionButtons(todoKey)
   });
 
   const footerContents = [];

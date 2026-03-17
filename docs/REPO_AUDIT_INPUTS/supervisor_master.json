@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T21:59:02-04:00",
-  "gitCommit": "f739cddf954f2ad0a35ae905fec2c7d80b039f11",
+  "generatedAt": "2026-03-16T22:11:06-04:00",
+  "gitCommit": "0d7b36f18baf05215d102c06e0f0e1a9e038d88f",
   "branch": "codex/admin-config-outcome-T015",
-  "sourceDigest": "c6c0c635f8a7f6edca37a50f7dfcdfaf843bc5a59581bbb87952ff3dc741b5ab",
+  "sourceDigest": "75fbb3bb0e0573ca676c70e86bfd9edd0b9fdb26cb7da8bbc1dbfe20d1b1a04a",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

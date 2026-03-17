@@ -94,6 +94,12 @@ function toCommandText(action) {
   if (action.action === 'next_tasks') {
     return '今日の3つ';
   }
+  if (action.action === 'due_soon_tasks') {
+    return '今週の期限';
+  }
+  if (action.action === 'regional_procedures') {
+    return '地域手続き';
+  }
   if (action.action === 'category_view') {
     if (action.category) return `カテゴリ:${action.category}`;
     return 'カテゴリ';
@@ -191,6 +197,20 @@ async function handleJourneyPostback(params, deps) {
 
   if (action.action === 'todo_detail_section') {
     return handleTodoDetailSectionAction(lineUserId, action, payload, deps);
+  }
+
+  if (action.action === 'todo_detail_missing') {
+    return {
+      handled: true,
+      replyText: 'TODO詳細を開くための情報が不足しています。もう一度一覧からTODOをお選びください。'
+    };
+  }
+
+  if (action.action === 'todo_detail_section_missing') {
+    return {
+      handled: true,
+      replyText: 'TODO詳細の続き情報が不足しています。まずはTODO詳細を開いてから再度お試しください。'
+    };
   }
 
   if (action.action === 'todo_detail') {
