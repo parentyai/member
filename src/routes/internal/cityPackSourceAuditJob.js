@@ -65,28 +65,30 @@ function requireInternalJobToken(req, res, outcomeOptions) {
 }
 
 async function handleCityPackSourceAuditJob(req, res, bodyText, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const runCityPackSourceAuditJobFn = opts.runCityPackSourceAuditJobFn || runCityPackSourceAuditJob;
+  const getKillSwitchFn = opts.getKillSwitchFn || getKillSwitch;
   if (req.method !== 'POST') {
     writeJson(res, 404, { ok: false, error: 'not found' });
     return;
   }
   if (!requireInternalJobToken(req, res)) return;
-  const killSwitch = await getKillSwitch();
+  const killSwitch = await getKillSwitchFn();
   if (killSwitch) {
-    writeJson(res, 409, { ok: false, error: 'kill switch on' });
+    writeJson(res, 409, { ok: false, error: 'kill switch on' }, { state: 'blocked', reason: 'kill_switch_on' });
     return;
   }
 
   const payload = parseJson(bodyText);
   if (!payload) {
-    writeJson(res, 400, { ok: false, error: 'invalid json' });
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, { state: 'error', reason: 'invalid_json' });
     return;
   }
 
   const traceIdHeader = req.headers && typeof req.headers['x-trace-id'] === 'string' ? req.headers['x-trace-id'].trim() : null;
-  const opts = options && typeof options === 'object' ? options : {};
   const forcedStage = typeof opts.stage === 'string' ? opts.stage : null;
   const forcedMode = typeof opts.mode === 'string' ? opts.mode : null;
-  const result = await runCityPackSourceAuditJob({
+  const result = await runCityPackSourceAuditJobFn({
     runId: payload.runId,
     mode: forcedMode || payload.mode,
     stage: forcedStage || payload.stage,
@@ -96,7 +98,15 @@ async function handleCityPackSourceAuditJob(req, res, bodyText, options) {
     actor: 'city_pack_source_audit_job',
     requestId: payload.requestId || null
   });
-  writeJson(res, 200, result);
+  let outcome = { state: 'success', reason: 'completed' };
+  if (Number(result && result.processed) === 0) {
+    outcome = { state: 'success', reason: 'no_targets' };
+  } else if (Number(result && result.failed) > 0 && Number(result && result.succeeded) > 0) {
+    outcome = { state: 'partial', reason: 'completed_with_failures' };
+  } else if (Number(result && result.failed) > 0) {
+    outcome = { state: 'error', reason: 'completed_with_failures' };
+  }
+  writeJson(res, 200, result, outcome);
 }
 
 module.exports = {

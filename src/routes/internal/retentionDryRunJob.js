@@ -4,12 +4,19 @@ const { getDb } = require('../../infra/firestore');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireInternalJobToken } = require('./cityPackSourceAuditJob');
 const { getRetentionPolicy } = require('../../domain/retention/retentionPolicy');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
 const DEFAULT_SAMPLE_LIMIT = 200;
+const ROUTE_KEY = 'internal_retention_dry_run_job';
 
-function writeJson(res, status, payload) {
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, Object.assign({
+    routeType: 'internal_job',
+    guard: { routeKey: ROUTE_KEY }
+  }, outcomeOptions || {}));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
 }
 
 function parseJson(bodyText) {
@@ -45,21 +52,39 @@ async function countCandidates(db, collection, sampleLimit) {
   };
 }
 
-async function handleRetentionDryRunJob(req, res, bodyText) {
+async function handleRetentionDryRunJob(req, res, bodyText, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const getDbFn = resolvedDeps.getDb || getDb;
+  const appendAuditLogFn = resolvedDeps.appendAuditLog || appendAuditLog;
   if (req.method !== 'POST') {
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, 404, { ok: false, error: 'not_found' }, {
+      state: 'error',
+      reason: 'not_found',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
-  if (!requireInternalJobToken(req, res)) return;
+  if (!requireInternalJobToken(req, res, {
+    routeType: 'internal_job',
+    guard: { routeKey: ROUTE_KEY }
+  })) return;
 
   const payload = parseJson(bodyText);
   if (!payload) {
-    writeJson(res, 400, { ok: false, error: 'invalid json' });
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
   const collections = normalizeCollections(payload.collections);
   if (!collections.length) {
-    writeJson(res, 400, { ok: false, error: 'collections required' });
+    writeJson(res, 400, { ok: false, error: 'collections required' }, {
+      state: 'error',
+      reason: 'collections_required',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -67,7 +92,7 @@ async function handleRetentionDryRunJob(req, res, bodyText) {
     ? req.headers['x-trace-id'].trim()
     : null;
   const sampleLimit = normalizeSampleLimit(payload.sampleLimit);
-  const db = getDb();
+  const db = getDbFn();
 
   const results = [];
   for (const collection of collections) {
@@ -85,7 +110,7 @@ async function handleRetentionDryRunJob(req, res, bodyText) {
   const hasUndefinedCollections = summary.undefinedCollections.length > 0;
 
   try {
-    await appendAuditLog({
+    await appendAuditLogFn({
       actor: 'retention_dry_run_job',
       action: hasUndefinedCollections ? 'retention.dry_run.blocked' : 'retention.dry_run.execute',
       entityType: 'retention_policy',
@@ -110,6 +135,10 @@ async function handleRetentionDryRunJob(req, res, bodyText) {
       traceId,
       summary,
       items: results
+    }, {
+      state: 'blocked',
+      reason: 'retention_policy_undefined',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
     });
     return;
   }
@@ -120,6 +149,10 @@ async function handleRetentionDryRunJob(req, res, bodyText) {
     traceId,
     summary,
     items: results
+  }, {
+    state: 'success',
+    reason: 'dry_run',
+    guard: { routeKey: ROUTE_KEY, decision: 'allow' }
   });
 }
 

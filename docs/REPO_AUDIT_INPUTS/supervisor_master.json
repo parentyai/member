@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T21:29:37-04:00",
-  "gitCommit": "c222c1db2b36a85c774314f9c91775509dcf7c7e",
+  "generatedAt": "2026-03-16T21:54:26-04:00",
+  "gitCommit": "032d2dac1ce5f781894c24801f32e6a011765ff1",
   "branch": "codex/internal-sync-emergency-outcome-T014",
-  "sourceDigest": "e341d7b3554e67df91c1410ede12fbfa1081a3cee06f8490a0258455426cf63f",
+  "sourceDigest": "16a7aaa4ca34d7fd95c0ee1de6b5a247bd31f7c91db980895ffb17e7954c284e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

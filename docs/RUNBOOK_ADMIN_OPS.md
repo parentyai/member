@@ -93,6 +93,10 @@
 - body 例: `{"targets":["ops_system_snapshot"],"dryRun":false,"scanLimit":3000}`
 - token: `x-city-pack-job-token`（internal token guard）
 - kill switch ON の場合は停止し、復旧後に再実行する。
+- route outcome:
+  - dry-run 正常: `success/dry_run`
+  - 一部 target skip: `partial/completed_with_skips`
+  - kill switch: `blocked/kill_switch_on`
 
 internal token matrix（routeごとの既定ヘッダー）:
 - CityPack / retention / ops snapshot / emergency / core outbox: `x-city-pack-job-token`（`CITY_PACK_JOB_TOKEN`）
@@ -100,6 +104,17 @@ internal token matrix（routeごとの既定ヘッダー）:
 - Task nudge: `x-task-job-token`（`TASK_JOB_TOKEN`）
 - Journey branch dispatch: `x-journey-branch-job-token`（`JOURNEY_BRANCH_JOB_TOKEN`）
 - LLM action reward finalize: `x-llm-action-job-token`（`LLM_ACTION_JOB_TOKEN`）
+
+### Retention dry-run / apply
+1) `POST /internal/jobs/retention-dry-run` は `x-city-pack-job-token` を付けて実行する。  
+2) dry-run 正常は `success/dry_run`、未定義 policy は `blocked/retention_policy_undefined`。  
+3) `POST /internal/jobs/retention-apply` は `RETENTION_APPLY_ENABLED=1` かつ `ENV_NAME=stg|stage|staging` のときだけ実行する。  
+4) apply 正常は `success/completed`、cursor 継続が残るときは `partial/completed_with_more_remaining`。  
+5) 実行不可条件:
+   - flag停止: `blocked/retention_apply_disabled`
+   - 環境不許可: `blocked/retention_apply_env_not_allowed`
+   - 対象なし: `blocked/retention_apply_no_eligible_collections`
+   - 未定義 policy: `blocked/retention_policy_undefined`
 
 internal outcome quick guide:
 - canonical core outbox sync: `success/dry_run`, `success/no_pending_items`, `partial/completed_with_failures`, `error/completed_with_failures`
@@ -493,6 +508,24 @@ internal outcome quick guide:
 - 必須: `x-city-pack-job-token`（`CITY_PACK_JOB_TOKEN`）
 - kill switch が ON の場合は `409` で停止（送信副作用なし）。
 - 監査結果 `diff_detected` は `city_pack_bulletins` に draft を自動作成（自動送信はしない）。
+- route outcome:
+  - `success/no_targets`: 対象リンクなし。監査は正常終了で、追加対応は不要。
+  - `partial/completed_with_failures`: 一部 source audit が失敗。`traceId` で `city_pack.source_audit.run` を確認。
+  - `error/invalid_json` or `blocked/kill_switch_on`: 入力または停止条件。再実行前に payload / kill switch を確認。
+
+### 2.5) Draft / Source Audit / Municipality Import outcome
+- `POST /internal/jobs/city-pack-draft-generator`
+  - `success/completed`: draft city pack 作成完了
+  - `success/already_drafted`: 既存 draft を再利用した idempotent 完了
+  - `blocked/source_candidates_missing|source_candidates_invalid`: request は `needs_review` に寄る。source candidates を補正して再実行
+- `POST /internal/jobs/city-pack-source-audit`
+  - `success/completed`: 全件成功
+  - `success/no_targets`: 監査対象なし
+  - `partial/completed_with_failures`: 一部 sourceRef が失敗。`source_audit_runs` と `audit_logs` を確認
+- `POST /internal/jobs/municipality-schools-import`
+  - `success/dry_run`: dry-run 完了
+  - `partial/completed_with_failures`: 行単位の失敗あり。`errors[]` を確認して再投入
+  - `error/rows_required|invalid_json`: payload 不備。再送前に rows を見直す
 
 ### 3) Review/通知承認（人間）
 1. `Calendar Review` で `validUntil` / `diffSummary` / recommendation を確認。

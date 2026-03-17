@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "31cc0f3fa5780c2b5fc32c03d56673946b138914",
+      "hash": "d8dda1f60e6bd826aaff5a04f876d81e933868b8",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 1540
+    "testCount": 1544
   },
   "systemOverview": {
     "what": [
@@ -4967,7 +4967,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 224,
+              "testsCount": 226,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -5025,7 +5025,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 116,
+              "testsCount": 118,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5073,7 +5073,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 56,
+              "testsCount": 57,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -5157,7 +5157,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 64,
+              "testsCount": 66,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -5288,7 +5288,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 97,
+              "testsCount": 98,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7851,7 +7851,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 63,
+              "testsCount": 64,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8018,7 +8018,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 11,
+              "testsCount": 12,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8054,7 +8054,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 55,
+              "testsCount": 56,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -9255,7 +9255,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 47,
+              "testsCount": 48,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -9297,7 +9297,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 48,
+              "testsCount": 49,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -9439,7 +9439,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 63,
+              "testsCount": 65,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
