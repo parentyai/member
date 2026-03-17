@@ -12,9 +12,14 @@ function createResponseRecorder() {
     statusCode: null,
     headers: {},
     body: '',
+    setHeader(name, value) {
+      this.headers[String(name).toLowerCase()] = String(value);
+    },
     writeHead(statusCode, headers) {
       this.statusCode = statusCode;
-      this.headers = Object.assign({}, headers || {});
+      Object.entries(headers || {}).forEach(([name, value]) => {
+        this.headers[String(name).toLowerCase()] = String(value);
+      });
     },
     end(text) {
       this.body = typeof text === 'string' ? text : '';
@@ -70,6 +75,10 @@ test('phase825: task nudge route returns 503 when usecase reports kill-switch re
     assert.equal(res.statusCode, 503);
     const body = JSON.parse(res.body);
     assert.equal(body.status, 'blocked_by_killswitch_read_failed');
+    assert.equal(body.outcome && body.outcome.state, 'blocked');
+    assert.equal(body.outcome && body.outcome.reason, 'kill_switch_read_failed');
+    assert.equal(res.headers['x-member-outcome-state'], 'blocked');
+    assert.equal(res.headers['x-member-outcome-reason'], 'kill_switch_read_failed');
   } finally {
     if (prevToken === undefined) delete process.env.TASK_JOB_TOKEN;
     else process.env.TASK_JOB_TOKEN = prevToken;

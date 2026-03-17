@@ -402,12 +402,17 @@
     },
     {
       "file": "src/routes/internal/journeyBranchDispatchJob.js",
-      "line": 50,
+      "line": 61,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/internal/journeyBranchDispatchJob.js",
-      "line": 51,
+      "line": 73,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/routes/internal/journeyBranchDispatchJob.js",
+      "line": 74,
       "symbol": "killSwitch"
     },
     {
@@ -492,22 +497,22 @@
     },
     {
       "file": "src/routes/internal/taskNudgeJob.js",
-      "line": 43,
+      "line": 59,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/internal/taskNudgeJob.js",
-      "line": 51,
+      "line": 71,
       "symbol": "killSwitch"
     },
     {
       "file": "src/routes/internal/taskNudgeJob.js",
-      "line": 53,
+      "line": 73,
       "symbol": "killSwitch"
     },
     {
       "file": "src/routes/internal/taskNudgeJob.js",
-      "line": 58,
+      "line": 82,
       "symbol": "killSwitch"
     },
     {

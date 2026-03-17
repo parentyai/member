@@ -845,6 +845,11 @@ API:
 2) payload で `dryRun` / `limit` を指定する（既定 `dryRun=false`, `limit=100`）。  
 3) 実行後は `journey_branch.dispatch` 監査ログを確認する。  
 4) queue item の `status` (`sent|skipped|failed`) と `notification_deliveries.branchDispatchStatus` を突合する。  
+5) route outcome:
+   - dry-run 正常: `success/dry_run`
+   - 一部 failed: `partial/completed_with_failures`
+   - 一部 skipped: `partial/completed_with_skips`
+   - flag停止: `blocked/disabled_by_flag`
 
 ### dispatch失敗時の切り分け
 1) `status=failed` で queue を絞り、`lastError` を確認する。  
@@ -941,6 +946,12 @@ API:
 4) 監査確認:
    - `tasks.nudge.send`
    - delivery payload に `taskId/ruleId/decision/checkedAt/blockedReason`
+5) route outcome:
+   - dry-run 正常: `success/dry_run`
+   - 一部 send失敗: `partial/completed_with_failures`
+   - 一部 skipのみ: `partial/completed_with_skips`
+   - flag停止: `blocked/disabled_by_env`
+   - kill switch / read失敗: `blocked/kill_switch_on|kill_switch_read_failed`
 
 ### 即時停止（Phase700）
 - `ENABLE_TASK_ENGINE_V1=0`
