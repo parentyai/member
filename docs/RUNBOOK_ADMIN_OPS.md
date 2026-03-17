@@ -748,7 +748,11 @@ API:
 4) 定期実行は workflow で運用する。  
    - `.github/workflows/journey-kpi-build.yml` -> `/internal/jobs/journey-kpi-build`  
    - `.github/workflows/user-context-snapshot-build.yml` -> `/internal/jobs/user-context-snapshot-build`  
-5) `llm_usage` エクスポートは `x-actor` 必須、CSVは `userIdMasked` のみ利用する。  
+5) route応答は `payload.outcome` と `x-member-outcome-*` header を返す。  
+   - 正常完了: `success/completed`  
+   - flag停止: `blocked/journey_kpi_disabled`  
+   - kill switch: `blocked/kill_switch_on`  
+6) `llm_usage` エクスポートは `x-actor` 必須、CSVは `userIdMasked` のみ利用する。  
 
 即時停止:
 - `ENABLE_JOURNEY_KPI=0`
@@ -770,7 +774,12 @@ API:
    - 単一: `{ "lineUserId": "U..." }`
    - 複数: `{ "lineUserIds": ["U1","U2"] }`
    - 全件: `{ "limit": 100 }`
-4) 監査確認（`audit_logs`）:
+4) route応答は `payload.outcome` と `x-member-outcome-*` header を返す。  
+   - 正常完了: `success/completed`  
+   - 一部skipあり: `partial/completed_with_skips`  
+   - flag停止: `blocked/context_snapshot_v2_disabled`  
+   - kill switch: `blocked/kill_switch_on`  
+5) 監査確認（`audit_logs`）:
    - `snapshot_recompressed`
    - `snapshot_trimmed`
    - 障害時 `snapshot_build_fallback`

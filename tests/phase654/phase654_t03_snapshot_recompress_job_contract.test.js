@@ -17,7 +17,7 @@ function request({ port, method, path, headers, body }) {
     const req = http.request({ hostname: '127.0.0.1', port, method, path, headers: headers || {} }, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+      res.on('end', () => resolve({ status: res.statusCode, body: data, headers: res.headers || {} }));
     });
     req.on('error', reject);
     if (body) req.write(body);
@@ -111,6 +111,11 @@ test('phase654: user-context snapshot recompress route writes v2 keys and audit 
   const payload = JSON.parse(res.body || '{}');
   assert.equal(payload.ok, true);
   assert.equal(payload.updated, 1);
+  assert.equal(payload.outcome && payload.outcome.state, 'success');
+  assert.equal(payload.outcome && payload.outcome.reason, 'completed');
+  assert.equal(res.headers['x-member-outcome-state'], 'success');
+  assert.equal(res.headers['x-member-outcome-reason'], 'completed');
+  assert.equal(res.headers['x-member-outcome-route-type'], 'internal_job');
 
   const snapshotDoc = await db.collection('user_context_snapshots').doc('U_PHASE654_SNAPSHOT').get();
   assert.equal(snapshotDoc.exists, true);

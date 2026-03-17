@@ -83,12 +83,12 @@ test('phase657: internal job handlers keep token guards (CITY_PACK_JOB_TOKEN / J
   const cityPackGuardSource = fs.readFileSync('src/routes/internal/cityPackSourceAuditJob.js', 'utf8');
   assert.ok(cityPackGuardSource.includes("req.headers['x-city-pack-job-token']"));
   assert.ok(cityPackGuardSource.includes('CITY_PACK_JOB_TOKEN'));
-  assert.ok(cityPackGuardSource.includes('requireInternalJobToken(req, res)'));
+  assert.ok(cityPackGuardSource.includes('function requireInternalJobToken(req, res'));
 
   for (const filePath of CITY_PACK_TOKEN_FILES) {
     const src = fs.readFileSync(filePath, 'utf8');
     if (filePath === 'src/routes/internal/cityPackSourceAuditJob.js') continue;
-    assert.ok(src.includes('requireInternalJobToken(req, res)'), `${filePath} must call requireInternalJobToken`);
+    assert.ok(src.includes('requireInternalJobToken(req, res'), `${filePath} must call requireInternalJobToken`);
   }
 
   for (const contract of DEDICATED_TOKEN_FILES) {

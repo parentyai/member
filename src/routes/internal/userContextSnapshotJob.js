@@ -4,10 +4,18 @@ const { requireInternalJobToken } = require('./cityPackSourceAuditJob');
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
 const { buildUserContextSnapshot } = require('../../usecases/context/buildUserContextSnapshot');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
-function writeJson(res, status, payload) {
+const ROUTE_KEY = 'internal_user_context_snapshot_build_job';
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, Object.assign({
+    routeType: 'internal_job',
+    guard: { routeKey: ROUTE_KEY }
+  }, outcomeOptions || {}));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
 }
 
 function parseJson(bodyText) {
@@ -47,24 +55,43 @@ function resolveLimit(value) {
 
 async function handleUserContextSnapshotJob(req, res, bodyText) {
   if (req.method !== 'POST') {
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, 404, { ok: false, error: 'not found' }, {
+      state: 'error',
+      reason: 'not_found',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
-  if (!requireInternalJobToken(req, res)) return;
+  if (!requireInternalJobToken(req, res, {
+    routeType: 'internal_job',
+    guard: { routeKey: ROUTE_KEY }
+  })) return;
   if (!resolveEnabled()) {
-    writeJson(res, 503, { ok: false, error: 'user_context_snapshot_disabled' });
+    writeJson(res, 503, { ok: false, error: 'user_context_snapshot_disabled' }, {
+      state: 'blocked',
+      reason: 'user_context_snapshot_disabled',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
   const killSwitch = await getKillSwitch();
   if (killSwitch) {
-    writeJson(res, 409, { ok: false, error: 'kill switch on' });
+    writeJson(res, 409, { ok: false, error: 'kill switch on' }, {
+      state: 'blocked',
+      reason: 'kill_switch_on',
+      guard: { routeKey: ROUTE_KEY, decision: 'block', killSwitchOn: true }
+    });
     return;
   }
 
   const payload = parseJson(bodyText);
   if (!payload) {
-    writeJson(res, 400, { ok: false, error: 'invalid json' });
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -101,6 +128,7 @@ async function handleUserContextSnapshotJob(req, res, bodyText) {
   const processed = items.length;
   const updated = items.filter((item) => item.ok).length;
   const skipped = processed - updated;
+  const state = skipped > 0 ? 'partial' : 'success';
 
   writeJson(res, 200, {
     ok: true,
@@ -110,6 +138,10 @@ async function handleUserContextSnapshotJob(req, res, bodyText) {
     updated,
     skipped,
     items
+  }, {
+    state,
+    reason: state === 'partial' ? 'completed_with_skips' : 'completed',
+    guard: { routeKey: ROUTE_KEY, decision: 'allow' }
   });
 }
 
