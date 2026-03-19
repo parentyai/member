@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T23:16:34-04:00",
-  "gitCommit": "d2e14a24fa8b350e9badc0cf70e206b0e2120ef4",
-  "branch": "codex/internal-llm-reward-outcome-T028",
-  "sourceDigest": "1071cdeef3419bc117db0f0138fbcca56eccde011af761a7f9b37250f30aa2ed",
+  "generatedAt": "2026-03-18T23:31:03-04:00",
+  "gitCommit": "3fbe1fa56ae3aab1ab31ec6bcea8b62d412d7c2a",
+  "branch": "codex/admin-ui-stack3-pr4-evidence",
+  "sourceDigest": "9091955d1dadc8434305c6c02bc701c73e393dae2208ab39adc0bac402e87266",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
