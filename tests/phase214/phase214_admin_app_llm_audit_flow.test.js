@@ -18,7 +18,7 @@ test('phase214: admin app wires llm trace to audit pane search', () => {
   const text = fs.readFileSync(file, 'utf8');
 
   assert.match(text, /function copyLlmTraceToAudit\(\)/);
-  assert.match(text, /activatePane\('audit'\)/);
-  assert.match(text, /loadAudit\(\)\.catch/);
+  assert.match(text, /openAuditFromSource\('llm', traceId, \{ historyMode: 'push' \}\)/);
+  assert.match(text, /openAuditFromSource\('llm', ensureTraceInput\('audit-trace'\), \{ historyMode: 'push' \}\)/);
   assert.match(text, /document\.getElementById\('llm-open-audit'\)\?\.addEventListener/);
 });
