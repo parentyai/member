@@ -8,11 +8,31 @@ const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySched
 const journeyTodoStatsRepo = require('../../repos/firestore/journeyTodoStatsRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const { JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.os_user_billing_detail';
 
 function normalizeLineUserId(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
+}
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
 }
 
 async function handleUserBillingDetail(req, res) {
@@ -25,8 +45,10 @@ async function handleUserBillingDetail(req, res) {
     const url = new URL(req.url, 'http://localhost');
     const lineUserId = normalizeLineUserId(url.searchParams.get('lineUserId'));
     if (!lineUserId) {
-      res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: 'lineUserId required', traceId, requestId }));
+      writeJson(res, 400, { ok: false, error: 'lineUserId required', traceId, requestId }, {
+        state: 'error',
+        reason: 'line_user_id_required'
+      });
       return;
     }
 
@@ -41,8 +63,7 @@ async function handleUserBillingDetail(req, res) {
     const lastEventId = subscription && subscription.lastEventId ? subscription.lastEventId : null;
     const lastStripeEvent = lastEventId ? await stripeWebhookEventsRepo.getStripeWebhookEvent(lastEventId) : null;
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       traceId,
       requestId,
@@ -105,11 +126,16 @@ async function handleUserBillingDetail(req, res) {
         })) : []
       },
       lastStripeEvent
-    }));
+    }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
-    logRouteError('admin.os_user_billing_detail', err, { traceId, requestId, actor });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    logRouteError(ROUTE_KEY, err, { traceId, requestId, actor });
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
