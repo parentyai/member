@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T03:02:38.275Z",
-  "gitCommit": "9963d59e0a3434a9bda470b65e0f97849baed09b",
-  "branch": "codex/internal-emergency-outcome-T025",
-  "sourceDigest": "bafdbbf01e72c19ca92d6ae04281d3c0d78915e71bffb870ed39912654aa2e97",
+  "generatedAt": "2026-03-19T03:14:13.818Z",
+  "gitCommit": "edb480b2758056076748cf96dcaf588f8abe9ce7",
+  "branch": "codex/internal-city-source-school-outcome-T027",
+  "sourceDigest": "38fcac698456f1e33f111c0968989a4ad41280086c327f8fe12c798740b850d8",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -96,7 +96,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/kill_switch_points.json",
-      "sha256": "3c2284b8e5540d2443c29ce2d76de2959e14735160da25b1a3597ea8d42e8405",
+      "sha256": "62c0a48a46a3a6c5d62b634bd371502ce71153bae13ff3517e833d31427bfb16",
       "bytes": 24442
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "a8b18c671832bf1e5c5cbd83078165d96a6a0cd17537fcf3cf71067f6ccbf399",
+      "sha256": "f6d6ab10ea775fd246bf8786f6abaef44a35fa484f847095b18a3064c50bad12",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "95ec3174f422ccacf7d4239b4586f87ec8640c254f1720d63319aa9af1d3201b",
+      "sha256": "d1cb5f1d16d0efa16de8e14cb4ed6905dda114f5896ea5c7f57a1465fe43fe54",
       "bytes": 487
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "8666726dc0800c01140fb4d6bdf06abdd4f9c4e5c586f36f351c50485ddcd4db",
-      "bytes": 2423
+      "sha256": "bbc4dbea45c5755abb92794a2b58874a6de397d8f72e3bc04078e2289b1def74",
+      "bytes": 2432
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",
