@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T19:29:32-04:00",
-  "gitCommit": "e0bc3cdece9d523c86294549aa5c4789baf6a926",
-  "branch": "codex/admin-city-pack-feedback-outcome-T047",
-  "sourceDigest": "faa6c6647a25f67d2bebf7da4e9d4447fc84288388925459d863aff9813c0d69",
+  "generatedAt": "2026-03-19T19:37:47-04:00",
+  "gitCommit": "33a223e49d667786e25e82d286931451d893c4e7",
+  "branch": "codex/admin-city-pack-education-links-outcome-T050",
+  "sourceDigest": "c57a8c51bf627b5f083a41864d2f47cc1fca6a2622a50cd249305b91d71d1830",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
