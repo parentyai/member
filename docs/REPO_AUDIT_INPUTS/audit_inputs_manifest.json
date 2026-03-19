@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T04:13:28.578Z",
-  "gitCommit": "005b3e3ca763ad42e4decfb14505fd28e200c407",
-  "branch": "codex/internal-jobs-merge-regen-wrapper-T030",
-  "sourceDigest": "f60605a0fb5a579f4cc7687debf5187485202b6a12fe151f68b016413a3ccf28",
+  "generatedAt": "2026-03-19T04:19:43.029Z",
+  "gitCommit": "2f15f8781c5700b4db3e876e5009fa42051adeee",
+  "branch": "codex/internal-jobs-pr-template-preflight-T031",
+  "sourceDigest": "e300ada4b0c7c83301d938b45bac307af2b3989af7872e379f314e3196088668",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "f7c7f82be34526693bcf9408598a07343795d9d95dbf1637ef6d51a064abea89",
+      "sha256": "b1f8a7b6e2b348fabe82b5a158a0348921fcb97f13dd99c959e50bbc1d319bd4",
       "bytes": 453881
     },
     {
