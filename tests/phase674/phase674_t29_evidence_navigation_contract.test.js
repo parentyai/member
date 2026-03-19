@@ -42,8 +42,9 @@ test('phase674: runtime binds evidence navigation contract without altering writ
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
 
   assert.ok(js.includes('async function navigateToAuditWithTrace(traceId, options = {})'));
+  assert.ok(js.includes('async function openAuditFromSource(sourcePane, traceId, options = {}) {'));
   assert.ok(js.includes('function resolveEvidenceTraceId(traceId)'));
-  assert.ok(js.includes("await navigateToAuditWithTrace(traceId, { historyMode: 'push' }).catch(() => {"));
+  assert.ok(js.includes("await openAuditFromSource('composer', traceId, { historyMode: 'push' }).catch(() => {"));
   assert.ok(js.includes("document.getElementById('audit-open-monitor')?.addEventListener('click', () => {"));
   assert.ok(js.includes("document.getElementById('monitor-open-audit-from-detail')?.addEventListener('click', openAuditFromMonitor);"));
   assert.ok(js.includes("document.getElementById('monitor-open-trace')?.addEventListener('click', openAuditFromMonitor);"));

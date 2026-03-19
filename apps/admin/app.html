@@ -4020,10 +4020,19 @@
                   <div class="note">Audit: traceIdで証跡JSONと判断ログを追跡します。</div>
                   <div class="note">Monitor: 配信結果と運用状態を確認します。</div>
                   <div class="note">Decision timeline: 監査詳細で判断履歴を時系列に確認します。</div>
+                  <div id="audit-entry-context" class="audit-entry-context" data-ui="audit-entry-context">
+                    <div class="metric-label" data-dict-key="ui.label.audit.entryContext">証跡の見方</div>
+                    <div id="audit-entry-boundary" class="note" data-dict-key="ui.desc.audit.boundaryDefault">この画面は証跡の確認専用です。修正や再送は元の画面へ戻って行います。</div>
+                    <div class="audit-entry-meta">
+                      <span id="audit-entry-source" class="badge badge-info">元の画面: 未設定</span>
+                      <span id="audit-entry-trace" class="note">traceIdを入力または引き継いで検索してください。</span>
+                    </div>
+                  </div>
                   <div id="audit-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="audit" role="status" aria-live="polite">
                     証跡参照は全ロールで利用できます。補正操作は管理ロールのみ表示されます。
                   </div>
-                  <div class="row row-top">
+                  <div class="row row-top audit-entry-actions">
+                    <button id="audit-open-source" type="button" class="secondary-btn">元の画面へ戻る</button>
                     <button id="audit-open-monitor" type="button" class="button-subtle">配信結果へ（trace）</button>
                     <button id="audit-open-composer" type="button" class="button-subtle">通知作成へ戻る</button>
                   </div>

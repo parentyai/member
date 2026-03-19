@@ -11,7 +11,7 @@ test('phase854: trace refs stay operator-focused and preserve one-click audit ha
   assert.ok(html.includes('id="quality-patrol-trace-note"'));
   assert.ok(html.includes('id="quality-patrol-trace-refs"'));
   assert.ok(js.includes('function openQualityPatrolTrace(traceId)'));
-  assert.ok(js.includes("activatePane('audit', { historyMode: 'push' })"));
+  assert.ok(js.includes("void openAuditFromSource('quality-patrol', normalized, { historyMode: 'push' }).catch(() => {"));
   assert.ok(js.includes('trace 参照は operator view で確認できます。'));
   assert.ok(js.includes('Open Trace'));
 });
