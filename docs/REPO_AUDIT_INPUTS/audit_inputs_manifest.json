@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T03:48:43.328Z",
-  "gitCommit": "24f79b3543f53a78842345cf8c0d7cf8eb0d468f",
-  "branch": "codex/internal-jobs-conflict-watchlist-T029",
-  "sourceDigest": "d47e792401eb0d97e73d2392375460c186fcb17e8f7000e6fd8857077097761f",
+  "generatedAt": "2026-03-19T04:13:28.578Z",
+  "gitCommit": "005b3e3ca763ad42e4decfb14505fd28e200c407",
+  "branch": "codex/internal-jobs-merge-regen-wrapper-T030",
+  "sourceDigest": "f60605a0fb5a579f4cc7687debf5187485202b6a12fe151f68b016413a3ccf28",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "6bcbbbcffafa73e1da30346501bf2f935587a23d76e235fa0842ee719caedb01",
+      "sha256": "02edfcdd6c6fed861bfb8fa0346d37aaac598cf8aa06a632d2c5c21dd19e50f7",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "007b5e62d08c95983da36e44d219792859ae46469e599e55b539d8813032a313",
+      "sha256": "7f10628033efcb60f40a928e2b67a7a330dbd0c68b9ff3556eb3d2b1d0bd0d60",
       "bytes": 487
     },
     {
@@ -146,12 +146,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "cd3e723526e628ba7288ed82383d85fb25029255b37556771800b18d2f725f0d",
+      "sha256": "f7c7f82be34526693bcf9408598a07343795d9d95dbf1637ef6d51a064abea89",
       "bytes": 453881
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "6bb40a45b8bc3667f1082cca76a901a410102d11201661ab013a738597ceefa3",
+      "sha256": "e4c130c46a81f38c4bba94f3cea3305873fbdbcd2857e1badfc0ccc8021a754b",
       "bytes": 740
     },
     {
@@ -166,13 +166,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "b4fdde1d8e39fb92d0197ad58ee4ce247e8ade9265b2f520cae801ac2f3f598f",
+      "sha256": "c951820c278218b54dfb9c04e8a3f93618a2e9e3fd7cd04026cf3a6c0a94a480",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "e7ab9f8951a2291ed7d0fd3d26c02a536564c7f931671aa69d7e1342bb81dc68",
-      "bytes": 2429
+      "sha256": "212b65fcf589deea3970a8c92f95f63ddbd12476998c7b1b93bd577af235c1b1",
+      "bytes": 2430
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",

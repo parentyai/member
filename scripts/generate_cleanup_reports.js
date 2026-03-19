@@ -449,7 +449,9 @@ function buildCIChecklist() {
     '- `npm run internal-jobs:conflict-watchlist`',
     '- 特に `docs/REPO_AUDIT_INPUTS/audit_inputs_manifest.json` / `load_risk.json` / `missing_index_surface.json` / `supervisor_master.json` は衝突しやすい',
     '- `docs/KILLSWITCH_DEPENDENCY_MAP.md` と `repo_map_ui.json` も shared route/docs 変更と一緒に動きやすい',
-    '- main を取り込んだあとに `docs-artifacts:generate` と `audit-inputs:generate` を先に回してから `catchup:drift-check` へ進む',
+    '- `npm run internal-jobs:merge-regen` は main 取り込み後の再生成順を固定する',
+    '- Run this after merging origin/main into the working branch.',
+    '- 手動で回す場合は `docs-artifacts:generate` と `audit-inputs:generate` を先に回してから `catchup:drift-check` へ進む',
     ''
   ].join('\n');
 }

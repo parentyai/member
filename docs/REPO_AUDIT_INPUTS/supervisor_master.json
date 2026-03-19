@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T23:36:49-04:00",
-  "gitCommit": "24f79b3543f53a78842345cf8c0d7cf8eb0d468f",
-  "branch": "codex/internal-jobs-conflict-watchlist-T029",
-  "sourceDigest": "3c46b42dc0f517029c6b26586dd30e6ac1f58f173703dcfa15ca16df97862e99",
+  "generatedAt": "2026-03-19T00:10:30-04:00",
+  "gitCommit": "005b3e3ca763ad42e4decfb14505fd28e200c407",
+  "branch": "codex/internal-jobs-merge-regen-wrapper-T030",
+  "sourceDigest": "70873a19ac863f8443db04d79a3d8cbce8bd78f0e0e646694236631eb4ac8651",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
