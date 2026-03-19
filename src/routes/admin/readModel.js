@@ -3,18 +3,42 @@
 const { getNotificationReadModel } = require('../../usecases/admin/getNotificationReadModel');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { logReadPathLoadMetric } = require('../../ops/readPathLoadMetric');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { resolveActor, resolveRequestId, resolveTraceId } = require('./osContext');
 const SCENARIO_KEY_FIELD = String.fromCharCode(115,99,101,110,97,114,105,111,75,101,121);
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.read_model';
 
-function handleError(res, err) {
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function handleError(res, err, traceId, requestId) {
   const message = err && err.message ? err.message : 'error';
   if (message.includes('required')) {
-    res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end(message);
+    writeJson(res, 400, { ok: false, error: message, traceId, requestId }, {
+      state: 'error',
+      reason: 'invalid_request',
+      guard: { decision: 'block' }
+    });
     return;
   }
-  res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-  res.end('error');
+  writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+    state: 'error',
+    reason: 'error'
+  });
 }
 
 async function handleNotificationReadModel(req, res) {
@@ -64,10 +88,12 @@ async function handleNotificationReadModel(req, res) {
     } catch (_err) {
       // best-effort only
     }
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, items, traceId, serverTime: new Date().toISOString() }));
+    writeJson(res, 200, { ok: true, items, traceId, serverTime: new Date().toISOString() }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
-    handleError(res, err);
+    handleError(res, err, traceId, requestId);
   }
 }
 
