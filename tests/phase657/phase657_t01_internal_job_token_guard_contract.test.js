@@ -68,7 +68,7 @@ const DEDICATED_TOKEN_FILES = [
     filePath: 'src/routes/internal/llmActionRewardFinalizeJob.js',
     header: "req.headers['x-llm-action-job-token']",
     envKey: 'LLM_ACTION_JOB_TOKEN',
-    guardCall: 'requireLlmActionJobToken(req, res)'
+    guardCall: 'requireLlmActionJobToken(req, res, {'
   }
 ];
 

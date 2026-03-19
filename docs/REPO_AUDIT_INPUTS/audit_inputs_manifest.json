@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T03:22:16.045Z",
-  "gitCommit": "71541ac2954eb03d1cfa702ca9e75076a8a1d950",
-  "branch": "codex/internal-city-source-school-outcome-T027",
-  "sourceDigest": "6878ec32eb2c182fcc8ae6116f1e7622eb88970265db3bdad222ca0d1a4bb90f",
+  "generatedAt": "2026-03-19T03:27:33.411Z",
+  "gitCommit": "d2e14a24fa8b350e9badc0cf70e206b0e2120ef4",
+  "branch": "codex/internal-llm-reward-outcome-T028",
+  "sourceDigest": "56f6c296b03992f04491fe43e0a1ee012efdd2b69c97cda8d04838a6ed90f2bf",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "34211a5c2e1f9bb9cadfd13e68c2d4775955a999bd6712d8e39e30147c830ecd",
+      "sha256": "591e67b8bda9d8584a74071fb75be309a665a75fe5e68e6c7b62047f0ada03a3",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "3cbce6b16f594a486752aa1884ffc976de03bce7376ebb9e35d29555de91f0d9",
+      "sha256": "8e349768d9ce3c73e9d2fe3c04d0d14fcca734c83de6619fc47c5fa983fcc6ee",
       "bytes": 487
     },
     {
@@ -151,7 +151,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "c76f94457f45db16162f10086d8c708d5b0d7641016c238d13ae7d44184a0830",
+      "sha256": "07917b92d8631752503e95d6d3c5694af198c27a28daf63c6c5d5d578b445bde",
       "bytes": 740
     },
     {
@@ -166,13 +166,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "e3e351609d5f15099e182be9372d402c51ee3cc625c03df025544ad9a36fc641",
+      "sha256": "0c9e3041b8ad7ae45e7c4588300b2406d226d15c0851489afc567e86fd01e44b",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "78e03a8d03b91cdadcc5a794f9fddc0ccb642e4309a79732bc690a774fd53055",
-      "bytes": 2432
+      "sha256": "2c8326ad05e0f21450bc502b8120c55166e0e9822ee71a90b11f86d5bc7cf8dc",
+      "bytes": 2424
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",

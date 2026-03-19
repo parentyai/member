@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T23:16:51-04:00",
-  "gitCommit": "71541ac2954eb03d1cfa702ca9e75076a8a1d950",
-  "branch": "codex/internal-city-source-school-outcome-T027",
-  "sourceDigest": "a6fe5b33fb219ea88bab814dc0468745cfa156973f1c8bae6f481b69f35f32a9",
+  "generatedAt": "2026-03-18T23:16:34-04:00",
+  "gitCommit": "d2e14a24fa8b350e9badc0cf70e206b0e2120ef4",
+  "branch": "codex/internal-llm-reward-outcome-T028",
+  "sourceDigest": "1071cdeef3419bc117db0f0138fbcca56eccde011af761a7f9b37250f30aa2ed",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
