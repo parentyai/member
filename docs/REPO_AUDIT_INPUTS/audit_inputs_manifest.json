@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T01:14:42.985Z",
-  "gitCommit": "addc79341152e2ec8588170213abd091cb368286",
+  "generatedAt": "2026-03-19T01:24:10.784Z",
+  "gitCommit": "1d6364e0b287df70e8d0406f787c398aa6e709fe",
   "branch": "codex/admin-support-read-outcome-T020",
-  "sourceDigest": "54e93376ff1bb59bbdc88b7077f05f83f9c16d8cf4c85daac0192c3f3ab64b52",
+  "sourceDigest": "9a214b560973c94f17befacf531c04c53c1e6d4f94d51ad082c7ff47a3119216",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "749d127764725f47498065a63a0c14af6b7ca6fff63ee8dc33769276b4668f06",
+      "sha256": "78f474cbee07d904789ac661d86a626e897cdf6870baa7c37dfed848fd0309bf",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "cef94c90e563318e2ea916eb81a256bc2001d297c05bfa2af90f236c0efd70e8",
+      "sha256": "ad9f3b60a11aac20f9bc96bafd1f81e6944ddb32a45c20f7c72f803a5847aee4",
       "bytes": 487
     },
     {
@@ -146,12 +146,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "4def496ce41bc28acb9973b0026df0116cf94adfb7b7210776626fc0c291c767",
+      "sha256": "730e0c61ed2adf61437ca80e2560296180846a096876b66e0c477e2f61137493",
       "bytes": 453881
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "ba28c4668e56bf056d7efbfd2e676730a73ca764fd0da8cde9a0097983edff5a",
+      "sha256": "2cbe0edc72c054f2bf4a1820002a4ebe59e9014f07f2d38c30be00386f806082",
       "bytes": 740
     },
     {
@@ -166,12 +166,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "ba279aea75a31ba60ed98d5f98b035f051869704184002449c274193aad4b30e",
+      "sha256": "80742562b1e824c8a8adbdbcead1b7d10ab0725efa79aa89273adc9344b8daed",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "b2e2025a1c60b648b6a49bf2b5815c87a93d16e2505dc8b4165826506386c908",
+      "sha256": "0d5824678099d32e9b0e290fe16ec250af28ad76cc0c055cbe80be35a309fce0",
       "bytes": 2423
     },
     {

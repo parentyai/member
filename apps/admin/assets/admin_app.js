@@ -15618,6 +15618,19 @@ function applyComposerActionGateState(gateState) {
   if (approveBtn) approveBtn.disabled = !gate.canApprove;
   if (planBtn) planBtn.disabled = !gate.canPlan;
   if (executeBtn) executeBtn.disabled = !gate.canExecute;
+  const previewTriggerBtn = document.getElementById('composer-preview-trigger');
+  if (previewTriggerBtn) previewTriggerBtn.disabled = !gate.canPreview;
+  [
+    ['composer-card-draft', gate.canDraft],
+    ['composer-card-approve', gate.canApprove],
+    ['composer-card-plan', gate.canPlan],
+    ['composer-card-execute', gate.canExecute]
+  ].forEach(([id, enabled]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.disabled = !enabled;
+  });
+  document.getElementById('composer-card-preview')?.classList.toggle('is-preview-disabled', !gate.canPreview);
 }
 
 function renderComposerCategoryWizard(payload, gateState) {
@@ -15841,6 +15854,32 @@ function renderComposerFixGuidance(gateState, issues) {
   el.appendChild(list);
 }
 
+function renderComposerNextStep(gateState) {
+  const el = document.getElementById('composer-next-step');
+  if (!el) return;
+  const gate = gateState && typeof gateState === 'object' ? gateState : {};
+  const mappedStatus = mapComposerStatusLabel(state.currentComposerStatus);
+  let message = '';
+  if (mappedStatus === 'executed') {
+    message = t('ui.desc.composer.nextStep.reviewEvidence', '結果確認と監査ログで配信結果を確認します。');
+  } else if (gate.validationError) {
+    message = t('ui.desc.composer.nextStep.fixValidation', '必須項目を入力して下書き作成へ進んでください。');
+  } else if (!gate.hasNotificationId) {
+    message = t('ui.desc.composer.nextStep.createDraft', '下書き作成で通知IDを確定します。');
+  } else if (mappedStatus === 'draft') {
+    message = t('ui.desc.composer.nextStep.approve', '承認（有効化）で配信対象へ切り替えます。');
+  } else if (!gate.hasPlanToken) {
+    message = t('ui.desc.composer.nextStep.plan', '送信計画で対象件数と確認トークンを確定します。');
+  } else if (gate.hasSafetyIssue) {
+    message = t('ui.desc.composer.nextStep.fixSafety', '安全チェックのNG項目を先に解消してください。');
+  } else if (gate.canExecute) {
+    message = t('ui.desc.composer.nextStep.execute', '送信実行で配信を開始します。');
+  } else {
+    message = t('ui.desc.composer.nextStep.reviewEvidence', '結果確認と監査ログで配信結果を確認します。');
+  }
+  el.textContent = `${t('ui.label.composer.nextStep', '次の一手')}: ${message}`;
+}
+
 function buildComposerNotificationMeta(type) {
   if (type === 'ANNOUNCEMENT') {
     const expiry = document.getElementById('metaAnnouncementExpiry')?.value?.trim() || '';
@@ -16061,7 +16100,8 @@ function updateComposerSummary() {
   state.composerActionGateState = gateState;
   renderComposerStateBar(gateState);
   renderComposerFixGuidance(gateState, issues);
-  applyComposerActionGateState(COMPOSER_CATEGORY_WIZARD_V1 ? gateState : null);
+  renderComposerNextStep(gateState);
+  applyComposerActionGateState(gateState);
   renderComposerCategoryWizard(payload, gateState);
 }
 
@@ -16882,8 +16922,11 @@ function bindComposerCardActionMirrors() {
     const mirror = document.getElementById(mapping.mirrorId);
     if (!mirror) return;
     const source = document.getElementById(mapping.sourceId);
-    mirror.disabled = !source || source.disabled;
+    if ('disabled' in mirror) mirror.disabled = !source || source.disabled;
     mirror.addEventListener('click', (event) => {
+      if (mapping.mirrorId === 'composer-card-preview' && !event.target.closest('[data-composer-preview-trigger="true"]')) {
+        return;
+      }
       event.preventDefault();
       const linked = document.getElementById(mapping.sourceId);
       if (!linked || linked.disabled) return;

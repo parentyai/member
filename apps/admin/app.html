@@ -675,6 +675,7 @@
                     <div class="composer-status-wrap">
                       <span class="metric-label" data-dict-key="ui.label.composer.statusSimple">状態</span>
                       <span id="composer-status-pill" class="badge badge-info">draft</span>
+                      <div id="composer-next-step" class="note composer-next-step">-</div>
                     </div>
                     <div class="composer-primary-actions">
                       <button id="create-draft" type="button" class="composer-hidden-action" data-dict-key="ui.label.composer.create">下書き作成</button>
@@ -726,7 +727,10 @@
                   <div id="composer-card-preview" class="composer-preview-top panel composer-preview-panel">
                     <div class="panel-title" data-dict-key="ui.label.composer.livePreview">ライブプレビュー</div>
                     <div class="panel-body">
-                      <div class="note">プレビュー / 検証 / 修正ガイド</div>
+                      <div class="composer-preview-header-row">
+                        <div class="note">プレビュー / 検証 / 修正ガイド</div>
+                        <button id="composer-preview-trigger" type="button" class="button-subtle composer-preview-trigger" data-composer-preview-trigger="true" data-dict-key="ui.label.composer.preview">プレビュー</button>
+                      </div>
                       <div class="composer-preview-fixed-wrap">
                         <div class="line-preview-phone">
                           <div class="line-preview-header">LINE</div>
