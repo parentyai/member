@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T23:07:01-04:00",
-  "gitCommit": "edb480b2758056076748cf96dcaf588f8abe9ce7",
+  "generatedAt": "2026-03-18T23:16:51-04:00",
+  "gitCommit": "71541ac2954eb03d1cfa702ca9e75076a8a1d950",
   "branch": "codex/internal-city-source-school-outcome-T027",
-  "sourceDigest": "40dd5119756ffa8f949371551e174f690ba041001b4e2cb971bfce5b5d23595f",
+  "sourceDigest": "a6fe5b33fb219ea88bab814dc0468745cfa156973f1c8bae6f481b69f35f32a9",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
