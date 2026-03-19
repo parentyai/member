@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T18:52:00-04:00",
-  "gitCommit": "5ce1348a89f0232974d3b1a4d1a3730ac7100e25",
-  "branch": "codex/admin-os-link-registry-impact-outcome-T043",
-  "sourceDigest": "cc8d4a6f8f27aa2ed6c3cfe0f8ffb1f76ae0c5287eaad5d0ef9a9fc1b8e65644",
+  "generatedAt": "2026-03-19T19:00:13-04:00",
+  "gitCommit": "fcbdfb00407c11946c5aeda7995543e076d1b619",
+  "branch": "codex/admin-next-best-action-outcome-T044",
+  "sourceDigest": "6f731548bee7985cb14e3a5d82e67a1ab97eec44fc7423259e0240eff6679675",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

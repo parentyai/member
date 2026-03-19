@@ -3,8 +3,29 @@
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { getNextBestAction } = require('../../usecases/tasks/getNextBestAction');
 const { computeNotificationFatigueWarning } = require('../../usecases/notifications/computeNotificationFatigueWarning');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { isUxOsFatigueWarnEnabled } = require('../../domain/tasks/featureFlags');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const NEXT_BEST_ACTION_ROUTE_KEY = 'admin.os_next_best_action';
+const FATIGUE_WARNING_ROUTE_KEY = 'admin.os_notification_fatigue_warning';
+
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, routeKey, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
 
 function parseLineUserId(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -36,8 +57,10 @@ async function handleNextBestAction(req, res, deps) {
   const requestId = resolveRequestId(req);
   const lineUserId = parseLineUserId(req);
   if (!lineUserId) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'lineUserId required', traceId, requestId }));
+    writeJson(res, NEXT_BEST_ACTION_ROUTE_KEY, 400, { ok: false, error: 'lineUserId required', traceId, requestId }, {
+      state: 'error',
+      reason: 'line_user_id_required'
+    });
     return;
   }
 
@@ -72,17 +95,21 @@ async function handleNextBestAction(req, res, deps) {
       }
     });
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, NEXT_BEST_ACTION_ROUTE_KEY, 200, {
       ok: true,
       traceId,
       requestId,
       result
-    }));
+    }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
     logRouteError('admin.os_next_best_action', err, { traceId, requestId, actor, lineUserId });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, NEXT_BEST_ACTION_ROUTE_KEY, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
@@ -93,8 +120,10 @@ async function handleNotificationFatigueWarning(req, res, deps) {
   const requestId = resolveRequestId(req);
   const lineUserId = parseLineUserId(req);
   if (!lineUserId) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'lineUserId required', traceId, requestId }));
+    writeJson(res, FATIGUE_WARNING_ROUTE_KEY, 400, { ok: false, error: 'lineUserId required', traceId, requestId }, {
+      state: 'error',
+      reason: 'line_user_id_required'
+    });
     return;
   }
 
@@ -122,13 +151,15 @@ async function handleNotificationFatigueWarning(req, res, deps) {
         fallbackReason: 'ENABLE_UXOS_FATIGUE_WARN_V1_off'
       }
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, FATIGUE_WARNING_ROUTE_KEY, 200, {
       ok: true,
       traceId,
       requestId,
       result: disabledResult
-    }));
+    }, {
+      state: 'blocked',
+      reason: 'uxos_fatigue_warn_disabled'
+    });
     return;
   }
 
@@ -172,17 +203,21 @@ async function handleNotificationFatigueWarning(req, res, deps) {
       }
     });
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, FATIGUE_WARNING_ROUTE_KEY, 200, {
       ok: true,
       traceId,
       requestId,
       result
-    }));
+    }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
     logRouteError('admin.os_notification_fatigue_warning', err, { traceId, requestId, actor, lineUserId });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, FATIGUE_WARNING_ROUTE_KEY, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
