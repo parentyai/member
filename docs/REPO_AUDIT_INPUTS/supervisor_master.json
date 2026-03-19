@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T00:10:30-04:00",
-  "gitCommit": "005b3e3ca763ad42e4decfb14505fd28e200c407",
-  "branch": "codex/internal-jobs-merge-regen-wrapper-T030",
-  "sourceDigest": "70873a19ac863f8443db04d79a3d8cbce8bd78f0e0e646694236631eb4ac8651",
+  "generatedAt": "2026-03-19T00:24:04-04:00",
+  "gitCommit": "13d1a84ad08060c79d450c311503d56369538107",
+  "branch": "codex/admin-monitor-insights-outcome-T033",
+  "sourceDigest": "53d9948b65e5758e979b9daad8e16a95a324e34887c8a182917283cca34e6f21",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
