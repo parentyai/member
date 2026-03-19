@@ -53,9 +53,11 @@
 
 ## API（最小）
 - POST /admin/phase2/automation/run
-  - Body: { runId, targetDate, dryRun }
-  - 成功: { ok: true, summary }
-  - 失敗: { ok: false, error }
+  - Body: { runId, targetDate, dryRun, fallbackMode? }
+  - `fallbackMode` は add-only で `allow | block`
+  - 成功: `{ ok: true, summary, outcome }`
+  - 失敗: `{ ok: false, error, outcome }`
+  - Header: `x-member-outcome-state`, `x-member-outcome-route-type`, `x-member-outcome-reason?`
 
 ## 集計対象と出力（概要）
 - events（日次/週次）

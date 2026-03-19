@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T20:13:48-04:00",
-  "gitCommit": "3d98f738995b70c1d26307a0c2bda766134a6857",
-  "branch": "codex/admin-ui-stack2-pr2-dashboard",
-  "sourceDigest": "eabdde9955291704a24700d77c611ad9a3126a105bef0c2f27d33d8fdad920fc",
+  "generatedAt": "2026-03-18T20:21:53-04:00",
+  "gitCommit": "b4b8aee3e0dd3cb46a40d42bc81ac93c2e237196",
+  "branch": "codex/outcome-contract-T017",
+  "sourceDigest": "2a0c0dde5df88c8e808136a62615ef0f144dac453cf2fb66c4bc0c9656370271",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

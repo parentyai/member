@@ -4,6 +4,26 @@ const journeyKpiDailyRepo = require('../../repos/firestore/journeyKpiDailyRepo')
 const { aggregateJourneyKpis } = require('../../usecases/journey/aggregateJourneyKpis');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.os_journey_kpi';
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
 
 function resolveEnabled() {
   const raw = process.env.ENABLE_JOURNEY_KPI;
@@ -18,15 +38,17 @@ function parseDateKey(value) {
   return String(value);
 }
 
-async function handleJourneyKpi(req, res) {
+async function handleJourneyKpi(req, res, deps) {
   const actor = requireActor(req, res);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
 
   if (!resolveEnabled()) {
-    res.writeHead(503, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'journey_kpi_disabled', traceId, requestId }));
+    writeJson(res, 503, { ok: false, error: 'journey_kpi_disabled', traceId, requestId }, {
+      state: 'blocked',
+      reason: 'journey_kpi_disabled'
+    });
     return;
   }
 
@@ -39,14 +61,17 @@ async function handleJourneyKpi(req, res) {
     let source = 'snapshot';
 
     if (dateKey) {
-      kpi = await journeyKpiDailyRepo.getJourneyKpiDaily(dateKey);
+      kpi = await (deps && deps.journeyKpiDailyRepo ? deps.journeyKpiDailyRepo : journeyKpiDailyRepo)
+        .getJourneyKpiDaily(dateKey);
     } else {
-      kpi = await journeyKpiDailyRepo.getLatestJourneyKpiDaily();
+      kpi = await (deps && deps.journeyKpiDailyRepo ? deps.journeyKpiDailyRepo : journeyKpiDailyRepo)
+        .getLatestJourneyKpiDaily();
     }
 
     if (!kpi || refresh) {
       source = 'computed';
-      kpi = await aggregateJourneyKpis({
+      const aggregateFn = deps && deps.aggregateJourneyKpis ? deps.aggregateJourneyKpis : aggregateJourneyKpis;
+      kpi = await aggregateFn({
         dateKey: dateKey || null,
         lookbackDays: 120,
         scanLimit: 4000,
@@ -57,7 +82,8 @@ async function handleJourneyKpi(req, res) {
       });
     }
 
-    await appendAuditLog({
+    const auditFn = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
+    await auditFn({
       actor,
       action: 'journey_kpi.view',
       entityType: 'journey_kpi_daily',
@@ -72,18 +98,16 @@ async function handleJourneyKpi(req, res) {
       }
     });
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       traceId,
       requestId,
       source,
       kpi
-    }));
+    }, { reason: 'completed' });
   } catch (err) {
     logRouteError('admin.os_journey_kpi', err, { traceId, requestId, actor });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, { reason: 'error' });
   }
 }
 

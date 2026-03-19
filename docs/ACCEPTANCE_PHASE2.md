@@ -3,7 +3,7 @@
 ## A. Dry-run Automation
 - Given: PHASE2_AUTOMATION_ENABLED=true
 - When: POST /admin/phase2/automation/run (dryRun=true)
-- Then: 200 OK with summary payload
+- Then: 200 OK with summary payload and `success/completed` outcome metadata
 - Evidence: 2026-01-28 / executor nshimamura@parentyai.com
 - Status: YES
 
@@ -13,7 +13,11 @@ Request Body:
 {"runId":"run-2026-01-28-dryrun","targetDate":"2026-01-28","dryRun":true}
 Response:
 HTTP/2 200
-{"ok":true,"summary":{"runId":"run-2026-01-28-dryrun","targetDate":"2026-01-28","dryRun":true,"counts":{"eventsProcessed":0,"dailyReports":0,"weeklyReports":0,"checklistReports":0,"skipped":0}}}
+Headers:
+x-member-outcome-state: success
+x-member-outcome-route-type: admin_route
+x-member-outcome-reason: completed
+{"ok":true,"summary":{"runId":"run-2026-01-28-dryrun","targetDate":"2026-01-28","dryRun":true,"counts":{"eventsProcessed":0,"dailyReports":0,"weeklyReports":0,"checklistReports":0,"skipped":0}},"outcome":{"state":"success","reason":"completed","routeType":"admin_route","guard":{"routeKey":"admin.phase2.automation","failCloseMode":null,"readError":false,"killSwitchOn":false,"decision":null}}}
 
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence | Notes |
