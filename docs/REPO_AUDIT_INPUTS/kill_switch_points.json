@@ -362,17 +362,17 @@
     },
     {
       "file": "src/routes/internal/cityPackDraftGeneratorJob.js",
-      "line": 36,
+      "line": 50,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/internal/cityPackDraftGeneratorJob.js",
-      "line": 45,
+      "line": 66,
       "symbol": "killSwitch"
     },
     {
       "file": "src/routes/internal/cityPackDraftGeneratorJob.js",
-      "line": 46,
+      "line": 67,
       "symbol": "killSwitch"
     },
     {

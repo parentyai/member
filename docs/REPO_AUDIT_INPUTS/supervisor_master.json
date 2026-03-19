@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T23:17:39-04:00",
-  "gitCommit": "8e71640342dcb7757676bf24cfa290a50b11fd4c",
+  "generatedAt": "2026-03-18T23:22:53-04:00",
+  "gitCommit": "c5dc8a5bc6485d507c8fbe8a6569cdb4be72c3d9",
   "branch": "codex/admin-ui-stack3-pr4-evidence",
-  "sourceDigest": "de5feb51900b1117f4223b60d768045f874d9bb22f91b18e8d8dcb01bd2e3c78",
+  "sourceDigest": "9293e5dc1025335d677d5fb3e6595365093d25e7f965f72741169e535a6a4c9c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
