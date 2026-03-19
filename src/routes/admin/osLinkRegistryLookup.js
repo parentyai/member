@@ -3,6 +3,26 @@
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.os_link_registry_lookup';
+
+function normalizeOutcomeOptions(outcomeOptions) {
+  const input = outcomeOptions && typeof outcomeOptions === 'object' ? outcomeOptions : {};
+  const guard = input.guard && typeof input.guard === 'object' ? input.guard : {};
+  return Object.assign({}, input, {
+    routeType: ROUTE_TYPE,
+    guard: Object.assign({}, guard, { routeKey: ROUTE_KEY })
+  });
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
 
 async function handleLookup(req, res) {
   const actor = requireActor(req, res);
@@ -12,15 +32,19 @@ async function handleLookup(req, res) {
   const match = req.url && req.url.match(/^\/api\/admin\/os\/link-registry\/([^/?#]+)/);
   const linkId = match && match[1] ? decodeURIComponent(match[1]) : '';
   if (!linkId) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'linkRegistryId required', traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: 'linkRegistryId required', traceId, requestId }, {
+      state: 'error',
+      reason: 'link_registry_id_required'
+    });
     return;
   }
   try {
     const row = await linkRegistryRepo.getLink(linkId);
     if (!row) {
-      res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: 'link not found', traceId, requestId }));
+      writeJson(res, 404, { ok: false, error: 'link not found', traceId, requestId }, {
+        state: 'error',
+        reason: 'link_not_found'
+      });
       return;
     }
     await appendAuditLog({
@@ -32,8 +56,7 @@ async function handleLookup(req, res) {
       requestId,
       payloadSummary: { linkRegistryId: linkId }
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       traceId,
       requestId,
@@ -51,11 +74,16 @@ async function handleLookup(req, res) {
         regionKey: row.regionKey || null,
         tags: Array.isArray(row.tags) ? row.tags : []
       }
-    }));
+    }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
     logRouteError('admin.os_link_registry.lookup', err, { traceId, requestId, actor, linkId });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 

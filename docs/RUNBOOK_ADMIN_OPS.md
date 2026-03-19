@@ -838,6 +838,16 @@ route outcome:
 - llm usage summary: `success/completed`, `error/invalid_query`, `error/error`
 - notification deliveries: `success/completed`, `error/line_user_id_or_member_id_required`, `error/error`
 
+### Admin support read routes
+- `GET /api/admin/user-timeline?lineUserId=...`
+- `GET /api/admin/os/link-registry/:linkRegistryId`
+- `GET /api/admin/local-preflight`
+
+route outcome:
+- user timeline: `success/completed`, `error/line_user_id_required`, `error/error`
+- link registry lookup: `success/completed`, `error/link_registry_id_required`, `error/link_not_found`, `error/error`
+- local preflight: `success/completed`, `degraded/not_ready`, `error/error`
+
 ### Journey KPI運用（Retention/LTV）
 1) `GET /api/admin/os/journey-kpi` で最新KPIを取得する。  
 2) 日次バッチは `POST /internal/jobs/journey-kpi-build` を実行する（internal token必須）。  
