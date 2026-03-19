@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T02:15:13.066Z",
-  "gitCommit": "9638a049c8d445872fad5129080bd29878dbf99b",
+  "generatedAt": "2026-03-19T02:56:28.224Z",
+  "gitCommit": "7994cc9734506c177dfc6a2fb9215f5c9bca39a4",
   "branch": "codex/internal-canonical-outcome-T023",
-  "sourceDigest": "9e247618f1b30bc0e4c235573bd1f7911cde3063cf86bde7b880af1989629227",
+  "sourceDigest": "fdee91640f0bd55603d9411883f6f52eff5c5d927fd70f5c0939f541729b77a2",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "162bb0b1cdb12aa45373458134d9ca98affc5cfad47aae5984f7a4e55174dd69",
+      "sha256": "fdb16a2064a8e9994c09eec327d013291ab309def8370e9e119e030c8a37de30",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "2b9916c81ee0c3e5d71681964f78a3da1950ea39cde8b3dc96bdba38ea5b4695",
+      "sha256": "79d9fda469c0ef89c10e5bfe8fc2af6925e0ec2431f8de058c626cd2344ceb9e",
       "bytes": 487
     },
     {
@@ -151,7 +151,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "7ddffecdc146d57dc0dba8b4a2dc0ffae89f06143089021411262cdc221707c5",
+      "sha256": "0bdba6dd518011596951fa5cd97483d82d38c76ddbff03f01186871af305df65",
       "bytes": 740
     },
     {
@@ -166,12 +166,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "3f239b8d26df22f80e8717d2b04a4b3a6d490aa98f1c8dcd985a444128550ef2",
+      "sha256": "957408c5894d1948126d846b0289c8e8239b3334485c7f54ab33125ef0067df7",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "8538f0c53383887cc3c16de67213990f750b3d2f4e1cecaa5f8879aab61f1d9c",
+      "sha256": "ae5e4eed94f1def3e317d7e6e3470553269366ab69d1a7d9c6b092aa86cd3f00",
       "bytes": 2423
     },
     {

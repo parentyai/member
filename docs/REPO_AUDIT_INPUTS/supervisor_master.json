@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T22:14:36-04:00",
-  "gitCommit": "9638a049c8d445872fad5129080bd29878dbf99b",
+  "generatedAt": "2026-03-18T22:15:13-04:00",
+  "gitCommit": "7994cc9734506c177dfc6a2fb9215f5c9bca39a4",
   "branch": "codex/internal-canonical-outcome-T023",
-  "sourceDigest": "dbaf0f0d6a372d175f98a6266a031058a490f59026dba91bbbaa5c4cf31b8e16",
+  "sourceDigest": "3ef18fec1f6bf71dacb7fdc1d47addc9e99bcf7c8078467d057ee30fbbfc5bec",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

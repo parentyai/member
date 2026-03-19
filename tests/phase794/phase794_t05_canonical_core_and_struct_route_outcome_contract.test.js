@@ -102,8 +102,11 @@ test('phase794: struct drift backfill emits partial outcome when more rows remai
     const body = JSON.parse(res.body);
     assert.equal(body.outcome && body.outcome.state, 'partial');
     assert.equal(body.outcome && body.outcome.reason, 'completed_with_more_remaining');
+    assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
+    assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_struct_drift_backfill_job');
     assert.equal(res.headers['x-member-outcome-state'], 'partial');
     assert.equal(res.headers['x-member-outcome-reason'], 'completed_with_more_remaining');
+    assert.equal(res.headers['x-member-outcome-route-type'], 'internal_job');
   } finally {
     if (prevToken === undefined) delete process.env.CITY_PACK_JOB_TOKEN;
     else process.env.CITY_PACK_JOB_TOKEN = prevToken;

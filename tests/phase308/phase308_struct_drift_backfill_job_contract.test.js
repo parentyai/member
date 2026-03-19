@@ -75,6 +75,10 @@ test('phase308: struct drift backfill supports dry-run and apply with audit trac
   assert.strictEqual(dryRunRes.status, 200);
   const dryRunPayload = JSON.parse(dryRunRes.body);
   assert.strictEqual(dryRunPayload.ok, true);
+  assert.strictEqual(dryRunPayload.outcome && dryRunPayload.outcome.state, 'success');
+  assert.strictEqual(dryRunPayload.outcome && dryRunPayload.outcome.reason, 'dry_run');
+  assert.strictEqual(dryRunPayload.outcome && dryRunPayload.outcome.routeType, 'internal_job');
+  assert.strictEqual(dryRunPayload.outcome && dryRunPayload.outcome.guard && dryRunPayload.outcome.guard.routeKey, 'internal_struct_drift_backfill_job');
   assert.strictEqual(dryRunPayload.summary.dryRun, true);
   assert.strictEqual(dryRunPayload.summary.scenarioDriftCandidates, 1);
   assert.strictEqual(dryRunPayload.summary.opsStateDriftCandidate, true);
@@ -98,6 +102,10 @@ test('phase308: struct drift backfill supports dry-run and apply with audit trac
   assert.strictEqual(applyRes.status, 200);
   const applyPayload = JSON.parse(applyRes.body);
   assert.strictEqual(applyPayload.ok, true);
+  assert.strictEqual(applyPayload.outcome && applyPayload.outcome.state, 'success');
+  assert.strictEqual(applyPayload.outcome && applyPayload.outcome.reason, 'completed');
+  assert.strictEqual(applyPayload.outcome && applyPayload.outcome.routeType, 'internal_job');
+  assert.strictEqual(applyPayload.outcome && applyPayload.outcome.guard && applyPayload.outcome.guard.routeKey, 'internal_struct_drift_backfill_job');
   assert.strictEqual(applyPayload.summary.dryRun, false);
   assert.strictEqual(applyPayload.summary.scenarioBackfilled, 1);
   assert.strictEqual(applyPayload.summary.opsStateBackfilled, true);
