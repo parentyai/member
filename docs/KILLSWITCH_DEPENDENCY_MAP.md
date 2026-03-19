@@ -20,7 +20,7 @@
 | `src/routes/admin/notifications.js` | 7 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/notifications.js` | 128 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/notifications.js` | 180 | `const killSwitch = await getKillSwitch();` |
-| `src/routes/admin/osAlerts.js` | 102 | `systemFlagsRepo.getKillSwitch(),` |
+| `src/routes/admin/osAlerts.js` | 121 | `systemFlagsRepo.getKillSwitch(),` |
 | `src/routes/admin/osDashboardKpi.js` | 254 | `systemFlagsRepo.getKillSwitch()` |
 | `src/routes/admin/osKillSwitch.js` | 6 | `const { getKillSwitch, setKillSwitch } = require('../../usecases/killSwitch/setKillSwitch');` |
 | `src/routes/admin/osKillSwitch.js` | 65 | `const killSwitch = await getKillSwitch();` |

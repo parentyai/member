@@ -6,10 +6,13 @@ const sendRetryQueueRepo = require('../../repos/firestore/sendRetryQueueRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { getNotificationReadModel } = require('../../usecases/admin/getNotificationReadModel');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 500;
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.os_alerts_summary';
 
 function parseLimit(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -89,6 +92,22 @@ function buildAlertItems(summary) {
   ];
 }
 
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
 async function handleAlertsSummary(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -145,8 +164,7 @@ async function handleAlertsSummary(req, res) {
       }
     });
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       traceId,
       requestId,
@@ -156,11 +174,16 @@ async function handleAlertsSummary(req, res) {
       },
       note: 'operational_actionable_only',
       items
-    }));
+    }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
     logRouteError('admin.os_alerts_summary', err, { traceId, requestId, actor });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 

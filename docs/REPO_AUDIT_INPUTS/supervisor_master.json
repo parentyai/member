@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T00:37:30-04:00",
-  "gitCommit": "2be2101fd8eb9c88b48071d1b79cbd1834435de1",
-  "branch": "codex/admin-read-model-outcome-T034",
-  "sourceDigest": "60284e560ac472d1941ce661564e785da8c03fb27289ae20e84cca15412418d6",
+  "generatedAt": "2026-03-19T00:47:28-04:00",
+  "gitCommit": "dbef57cb59cf00e97198c85774a2605a9a70b100",
+  "branch": "codex/admin-os-alerts-outcome-T035",
+  "sourceDigest": "4d23e2e6e09e50602a4ea3fd68a9f54de9ccd7fbd4ef17ef974a19d8929eea3f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
