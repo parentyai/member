@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T19:19:50-04:00",
-  "gitCommit": "d28d2dc6feedc3a3bdce33112139bed89e1675b3",
-  "branch": "codex/admin-kb-articles-outcome-T046",
-  "sourceDigest": "8112f200998e4c527d71b79aed49765a949a80a024879db3f5b019d83e201daf",
+  "generatedAt": "2026-03-19T19:29:32-04:00",
+  "gitCommit": "e0bc3cdece9d523c86294549aa5c4789baf6a926",
+  "branch": "codex/admin-city-pack-feedback-outcome-T047",
+  "sourceDigest": "faa6c6647a25f67d2bebf7da4e9d4447fc84288388925459d863aff9813c0d69",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

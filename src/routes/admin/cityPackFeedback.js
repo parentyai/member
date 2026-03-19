@@ -3,6 +3,7 @@
 const cityPackFeedbackRepo = require('../../repos/firestore/cityPackFeedbackRepo');
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const {
   resolveActor,
   resolveRequestId,
@@ -11,9 +12,25 @@ const {
   logRouteError
 } = require('./osContext');
 
-function writeJson(res, status, payload) {
+const ROUTE_TYPE = 'admin_route';
+const LIST_ROUTE_KEY = 'admin.city_pack_feedback_list';
+const DETAIL_ROUTE_KEY = 'admin.city_pack_feedback_detail';
+const ACTION_ROUTE_KEY = 'admin.city_pack_feedback_action';
+
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, routeKey, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
 }
 
 function normalizeLimit(value, fallback, max) {
@@ -34,15 +51,22 @@ function parseDetailPath(pathname) {
   return match[1];
 }
 
-async function handleList(req, res, context) {
+async function handleList(req, res, context, deps) {
   const url = new URL(req.url, 'http://localhost');
   const status = url.searchParams.get('status') || '';
   const packClass = url.searchParams.get('packClass') || '';
   const language = url.searchParams.get('language') || '';
   const limit = normalizeLimit(url.searchParams.get('limit'), 50, 200);
-  const items = await cityPackFeedbackRepo.listFeedback({ status, packClass, language, limit });
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const listFeedback = typeof resolvedDeps.listFeedback === 'function'
+    ? resolvedDeps.listFeedback
+    : cityPackFeedbackRepo.listFeedback;
+  const appendAudit = typeof resolvedDeps.appendAuditLog === 'function'
+    ? resolvedDeps.appendAuditLog
+    : appendAuditLog;
+  const items = await listFeedback({ status, packClass, language, limit });
 
-  await appendAuditLog({
+  await appendAudit({
     actor: context.actor,
     action: 'city_pack.feedback.list',
     entityType: 'city_pack_feedback',
@@ -57,7 +81,7 @@ async function handleList(req, res, context) {
     }
   });
 
-  writeJson(res, 200, {
+  writeJson(res, LIST_ROUTE_KEY, 200, {
     ok: true,
     traceId: context.traceId,
     items: items.map((item) => ({
@@ -79,17 +103,30 @@ async function handleList(req, res, context) {
       createdAt: item.createdAt || null,
       updatedAt: item.updatedAt || null
     }))
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
-async function handleDetail(req, res, context, feedbackId) {
-  const feedback = await cityPackFeedbackRepo.getFeedback(feedbackId);
+async function handleDetail(req, res, context, feedbackId, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const getFeedback = typeof resolvedDeps.getFeedback === 'function'
+    ? resolvedDeps.getFeedback
+    : cityPackFeedbackRepo.getFeedback;
+  const appendAudit = typeof resolvedDeps.appendAuditLog === 'function'
+    ? resolvedDeps.appendAuditLog
+    : appendAuditLog;
+  const feedback = await getFeedback(feedbackId);
   if (!feedback) {
-    writeJson(res, 404, { ok: false, error: 'feedback not found' });
+    writeJson(res, DETAIL_ROUTE_KEY, 404, { ok: false, error: 'feedback not found' }, {
+      state: 'error',
+      reason: 'feedback_not_found'
+    });
     return;
   }
 
-  await appendAuditLog({
+  await appendAudit({
     actor: context.actor,
     action: 'city_pack.feedback.view',
     entityType: 'city_pack_feedback',
@@ -104,17 +141,27 @@ async function handleDetail(req, res, context, feedbackId) {
     }
   });
 
-  writeJson(res, 200, {
+  writeJson(res, DETAIL_ROUTE_KEY, 200, {
     ok: true,
     traceId: context.traceId,
     item: Object.assign({ feedbackId: feedback.id }, feedback)
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
-async function ensureCityPackFeedbackWriteAllowed(res, context, feedback) {
-  const killSwitch = await getKillSwitch();
+async function ensureCityPackFeedbackWriteAllowed(res, context, feedback, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const readKillSwitch = typeof resolvedDeps.getKillSwitch === 'function'
+    ? resolvedDeps.getKillSwitch
+    : getKillSwitch;
+  const appendAudit = typeof resolvedDeps.appendAuditLog === 'function'
+    ? resolvedDeps.appendAuditLog
+    : appendAuditLog;
+  const killSwitch = await readKillSwitch();
   if (!killSwitch) return true;
-  await appendAuditLog({
+  await appendAudit({
     actor: context.actor,
     action: 'city_pack.feedback.blocked',
     entityType: 'city_pack_feedback',
@@ -126,17 +173,33 @@ async function ensureCityPackFeedbackWriteAllowed(res, context, feedback) {
       regionKey: feedback && feedback.regionKey ? feedback.regionKey : null
     }
   });
-  writeJson(res, 409, { ok: false, error: 'kill switch on', traceId: context.traceId });
+  writeJson(res, ACTION_ROUTE_KEY, 409, { ok: false, error: 'kill switch on', traceId: context.traceId }, {
+    state: 'blocked',
+    reason: 'kill_switch_on'
+  });
   return false;
 }
 
-async function handleAction(req, res, bodyText, context, feedbackId, action) {
-  const feedback = await cityPackFeedbackRepo.getFeedback(feedbackId);
+async function handleAction(req, res, bodyText, context, feedbackId, action, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const getFeedback = typeof resolvedDeps.getFeedback === 'function'
+    ? resolvedDeps.getFeedback
+    : cityPackFeedbackRepo.getFeedback;
+  const updateFeedback = typeof resolvedDeps.updateFeedback === 'function'
+    ? resolvedDeps.updateFeedback
+    : cityPackFeedbackRepo.updateFeedback;
+  const appendAudit = typeof resolvedDeps.appendAuditLog === 'function'
+    ? resolvedDeps.appendAuditLog
+    : appendAuditLog;
+  const feedback = await getFeedback(feedbackId);
   if (!feedback) {
-    writeJson(res, 404, { ok: false, error: 'feedback not found' });
+    writeJson(res, ACTION_ROUTE_KEY, 404, { ok: false, error: 'feedback not found' }, {
+      state: 'error',
+      reason: 'feedback_not_found'
+    });
     return;
   }
-  const writeAllowed = await ensureCityPackFeedbackWriteAllowed(res, context, feedback);
+  const writeAllowed = await ensureCityPackFeedbackWriteAllowed(res, context, feedback, resolvedDeps);
   if (!writeAllowed) return;
 
   const payload = parseJson(bodyText || '{}', res);
@@ -155,13 +218,13 @@ async function handleAction(req, res, bodyText, context, feedbackId, action) {
     : action === 'propose'
       ? (resolutionInput || feedback.resolution || null)
       : (feedback.resolution || null);
-  await cityPackFeedbackRepo.updateFeedback(feedbackId, {
+  await updateFeedback(feedbackId, {
     status: nextStatus,
     resolution,
     resolvedAt: action === 'resolve' ? new Date().toISOString() : (feedback.resolvedAt || null)
   });
 
-  await appendAuditLog({
+  await appendAudit({
     actor: context.actor,
     action: `city_pack.feedback.${action}`,
     entityType: 'city_pack_feedback',
@@ -177,47 +240,65 @@ async function handleAction(req, res, bodyText, context, feedbackId, action) {
     }
   });
 
-  writeJson(res, 200, {
+  writeJson(res, ACTION_ROUTE_KEY, 200, {
     ok: true,
     traceId: context.traceId,
     feedbackId,
     status: nextStatus
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
-async function handleCityPackFeedback(req, res, bodyText) {
+async function handleCityPackFeedback(req, res, bodyText, deps) {
   const context = {
     actor: resolveActor(req),
     traceId: resolveTraceId(req),
     requestId: resolveRequestId(req)
   };
+  let routeKey = LIST_ROUTE_KEY;
   try {
     const actionMatch = parseActionPath(req.url);
     if (actionMatch) {
+      routeKey = ACTION_ROUTE_KEY;
       if (req.method !== 'POST') {
-        writeJson(res, 405, { ok: false, error: 'method not allowed' });
+        writeJson(res, ACTION_ROUTE_KEY, 405, { ok: false, error: 'method not allowed' }, {
+          state: 'error',
+          reason: 'method_not_allowed'
+        });
         return;
       }
-      await handleAction(req, res, bodyText, context, decodeURIComponent(actionMatch.feedbackId), actionMatch.action);
+      await handleAction(req, res, bodyText, context, decodeURIComponent(actionMatch.feedbackId), actionMatch.action, deps);
       return;
     }
     const detailId = parseDetailPath(req.url);
     if (detailId) {
+      routeKey = DETAIL_ROUTE_KEY;
       if (req.method !== 'GET') {
-        writeJson(res, 405, { ok: false, error: 'method not allowed' });
+        writeJson(res, DETAIL_ROUTE_KEY, 405, { ok: false, error: 'method not allowed' }, {
+          state: 'error',
+          reason: 'method_not_allowed'
+        });
         return;
       }
-      await handleDetail(req, res, context, decodeURIComponent(detailId));
+      await handleDetail(req, res, context, decodeURIComponent(detailId), deps);
       return;
     }
     if (req.method !== 'GET') {
-      writeJson(res, 405, { ok: false, error: 'method not allowed' });
+      writeJson(res, LIST_ROUTE_KEY, 405, { ok: false, error: 'method not allowed' }, {
+        state: 'error',
+        reason: 'method_not_allowed'
+      });
       return;
     }
-    await handleList(req, res, context);
+    await handleList(req, res, context, deps);
   } catch (err) {
     logRouteError('admin.city_pack_feedback', err, context);
-    writeJson(res, 500, { ok: false, error: 'error' });
+    writeJson(res, routeKey, 500, { ok: false, error: 'error' }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
