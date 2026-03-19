@@ -2,6 +2,7 @@
 
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const {
   requireActor,
   resolveRequestId,
@@ -24,6 +25,9 @@ const ACTION_ENDPOINT_MAP = Object.freeze({
   'read_path.fallback.dashboard_kpi': '/api/admin/os/dashboard/kpi',
   'read_path.fallback.monitor_insights': '/api/admin/monitor-insights'
 });
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.read_path_fallback_summary';
 
 function parseLimit(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -116,6 +120,22 @@ function aggregateByAction(rows, limit) {
     }));
 }
 
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
 async function listFallbackRows(limit, windowHours) {
   const perActionLimit = Math.max(limit * 3, 50);
   const grouped = await Promise.all(READ_PATH_FALLBACK_ACTIONS.map((action) => auditLogsRepo.listAuditLogs({
@@ -164,8 +184,7 @@ async function handleReadPathFallbackSummary(req, res) {
       logRouteError('admin.read_path_fallback_summary.audit', auditErr, { actor, traceId, requestId });
     }
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       traceId,
       requestId,
@@ -173,11 +192,10 @@ async function handleReadPathFallbackSummary(req, res) {
       windowHours,
       items,
       recent
-    }));
+    }, { state: 'success', reason: 'completed' });
   } catch (err) {
     logRouteError('admin.read_path_fallback_summary.view', err, { actor, traceId, requestId });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, { state: 'error', reason: 'error' });
   }
 }
 

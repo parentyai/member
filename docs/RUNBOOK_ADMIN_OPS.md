@@ -127,6 +127,9 @@ internal outcome quick guide:
 - admin dashboard KPI view: `success/completed_from_snapshot`, `success/completed`, `degraded/completed_with_fallback`, `degraded/not_available`, `error/invalid_fallback_mode`, `error/invalid_fallback_on_empty`, `error/invalid_snapshot_refresh`, `error/error`
 - admin ops system snapshot view/rebuild: `success/completed`, `success/dry_run`, `blocked/ops_system_snapshot_disabled`, `error/invalid_json`, `error/error`
 - admin ops snapshot health: `success/completed`, `error/invalid_stale_after_minutes`, `error/error`
+- admin read-path fallback summary: `success/completed`, `error/error`
+- admin missing-index surface: `success/completed`, `error/error`
+- admin ops feature catalog status: `success/completed`, `degraded/completed_with_catalog_fallback`, `degraded/not_available`, `blocked/ops_system_snapshot_disabled`, `error/error`
 - admin struct drift routes now also emit `payload.outcome` + `x-member-outcome-*` with `routeKey=admin.struct_drift.backfill`; state is inferred from `ok/partial` unless an explicit reason is supplied
 
 ### 即時ロールバック
