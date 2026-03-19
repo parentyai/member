@@ -3,6 +3,10 @@
 const { getUsersSummaryFiltered } = require('../../usecases/phase5/getUsersSummaryFiltered');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.os_users_summary_analyze';
 
 function parsePositiveInt(value, fallback, min, max) {
   if (value === null || value === undefined || value === '') return fallback;
@@ -105,6 +109,32 @@ function buildSummary(items) {
   };
 }
 
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function resolveAnalyzeReason(message) {
+  const text = typeof message === 'string' ? message : 'error';
+  if (text === 'invalid limit') return 'invalid_limit';
+  if (text === 'invalid plan') return 'invalid_plan';
+  if (text === 'invalid subscriptionStatus') return 'invalid_subscription_status';
+  if (text === 'invalid quickFilter') return 'invalid_quick_filter';
+  if (text === 'invalid billingIntegrity') return 'invalid_billing_integrity';
+  return 'invalid_query';
+}
+
 async function handleUsersSummaryAnalyze(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -163,23 +193,30 @@ async function handleUsersSummaryAnalyze(req, res) {
       }
     });
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       traceId,
       requestId,
       analyze
-    }));
+    }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
     const message = err && err.message ? err.message : 'error';
     if (message.startsWith('invalid ')) {
-      res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: message, traceId, requestId }));
+      writeJson(res, 400, { ok: false, error: message, traceId, requestId }, {
+        state: 'error',
+        reason: resolveAnalyzeReason(message),
+        guard: { decision: 'block' }
+      });
       return;
     }
     logRouteError('admin.os_users_summary_analyze', err, { traceId, requestId, actor });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
