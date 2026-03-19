@@ -10,8 +10,9 @@ test('phase261: /admin/app uses decision cards and removes summary header blocks
   assert.ok(!html.includes('summary-header'), 'summary-header should be removed');
   assert.ok(!html.includes('今日の流れ'), 'flow explanation should be removed');
 
+  assert.ok(!html.includes('id="home-pane-details"'), 'home details panel should be removed');
+
   [
-    'home',
     'composer',
     'monitor',
     'emergency-layer',

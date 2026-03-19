@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T22:14:36-04:00",
-  "gitCommit": "059d65cf4364e66b07d3bb4b60212d56adcefd78",
+  "generatedAt": "2026-03-18T22:15:12-04:00",
+  "gitCommit": "fe9e12fb080d08b10be1aca11fd2b313414c3ad2",
   "branch": "codex/internal-emergency-outcome-T025",
-  "sourceDigest": "e0b51d8fc12feb425efb4b94f1d3cf5abe651bb68260d918f5a10899c0f3dbf1",
+  "sourceDigest": "bfd5ffa146fc1bbb060626bab8c40909b7cc083c7db676fc2e3dabbe23af8bea",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
