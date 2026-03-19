@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const {
   requireActor,
   resolveRequestId,
@@ -12,6 +13,24 @@ const {
 } = require('./osContext');
 
 const REPO_MAP_PATH = path.resolve(__dirname, '..', '..', '..', 'docs', 'REPO_AUDIT_INPUTS', 'repo_map_ui.json');
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.repo_map';
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
 
 async function handleRepoMap(req, res) {
   const actor = requireActor(req, res);
@@ -21,8 +40,12 @@ async function handleRepoMap(req, res) {
 
   try {
     if (!fs.existsSync(REPO_MAP_PATH)) {
-      res.writeHead(503, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: 'repo_map_not_generated', traceId, requestId }));
+      writeJson(
+        res,
+        503,
+        { ok: false, error: 'repo_map_not_generated', traceId, requestId },
+        { state: 'blocked', reason: 'repo_map_not_generated' }
+      );
       return;
     }
     const text = fs.readFileSync(REPO_MAP_PATH, 'utf8');
@@ -46,19 +69,17 @@ async function handleRepoMap(req, res) {
       logRouteError('admin.repo_map.audit', auditErr, { actor, traceId, requestId });
     }
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       traceId,
       requestId,
       generatedAt: payload.meta && payload.meta.generatedAt ? payload.meta.generatedAt : null,
       layers: payload.layers || null,
       repoMap: payload
-    }));
+    }, { state: 'success', reason: 'completed' });
   } catch (err) {
     logRouteError('admin.repo_map.view', err, { actor, traceId, requestId });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, { state: 'error', reason: 'error' });
   }
 }
 
