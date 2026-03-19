@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const { test } = require('node:test');
+const { handleCanonicalCoreOutboxSyncJob } = require('../../src/routes/internal/canonicalCoreOutboxSyncJob');
 
 const { createDbStub } = require('../phase0/firestoreStub');
 const {
@@ -23,6 +24,26 @@ function request({ port, method, path, headers, body }) {
     if (body) req.write(body);
     req.end();
   });
+}
+
+function createResponseRecorder() {
+  return {
+    statusCode: null,
+    headers: {},
+    body: '',
+    setHeader(name, value) {
+      this.headers[String(name).toLowerCase()] = String(value);
+    },
+    writeHead(statusCode, headers) {
+      this.statusCode = statusCode;
+      Object.entries(headers || {}).forEach(([name, value]) => {
+        this.headers[String(name).toLowerCase()] = String(value);
+      });
+    },
+    end(text) {
+      this.body = typeof text === 'string' ? text : '';
+    }
+  };
 }
 
 test('phase794: canonical core outbox sync route requires internal token and handles dry-run payload', async (t) => {
@@ -61,6 +82,11 @@ test('phase794: canonical core outbox sync route requires internal token and han
     body: JSON.stringify({ dryRun: true, limit: 5 })
   });
   assert.equal(unauthorized.status, 401);
+  const unauthorizedBody = JSON.parse(unauthorized.body);
+  assert.equal(unauthorizedBody.outcome && unauthorizedBody.outcome.state, 'blocked');
+  assert.equal(unauthorizedBody.outcome && unauthorizedBody.outcome.reason, 'unauthorized');
+  assert.equal(unauthorizedBody.outcome && unauthorizedBody.outcome.routeType, 'internal_job');
+  assert.equal(unauthorizedBody.outcome && unauthorizedBody.outcome.guard && unauthorizedBody.outcome.guard.routeKey, 'internal_canonical_core_outbox_sync_job');
 
   const invalidJson = await request({
     port,
@@ -73,6 +99,11 @@ test('phase794: canonical core outbox sync route requires internal token and han
     body: '{"dryRun":true'
   });
   assert.equal(invalidJson.status, 400);
+  const invalidJsonBody = JSON.parse(invalidJson.body);
+  assert.equal(invalidJsonBody.outcome && invalidJsonBody.outcome.state, 'error');
+  assert.equal(invalidJsonBody.outcome && invalidJsonBody.outcome.reason, 'invalid_json');
+  assert.equal(invalidJsonBody.outcome && invalidJsonBody.outcome.routeType, 'internal_job');
+  assert.equal(invalidJsonBody.outcome && invalidJsonBody.outcome.guard && invalidJsonBody.outcome.guard.routeKey, 'internal_canonical_core_outbox_sync_job');
 
   const allowed = await request({
     port,
@@ -92,4 +123,23 @@ test('phase794: canonical core outbox sync route requires internal token and han
   assert.equal(payload.scannedCount, 1);
   assert.equal(payload.items[0].id, 'cco_phase794_1');
   assert.equal(payload.items[0].outcome, 'dry_run');
+  assert.equal(payload.outcome && payload.outcome.state, 'success');
+  assert.equal(payload.outcome && payload.outcome.reason, 'dry_run');
+  assert.equal(payload.outcome && payload.outcome.routeType, 'internal_job');
+  assert.equal(payload.outcome && payload.outcome.guard && payload.outcome.guard.routeKey, 'internal_canonical_core_outbox_sync_job');
+});
+
+test('phase794: canonical core outbox sync handler returns not_found outcome for non-POST requests', async () => {
+  const res = createResponseRecorder();
+  await handleCanonicalCoreOutboxSyncJob({
+    method: 'GET',
+    url: '/internal/jobs/canonical-core-outbox-sync',
+    headers: {}
+  }, res, '');
+  assert.equal(res.statusCode, 404);
+  const body = JSON.parse(res.body);
+  assert.equal(body.outcome && body.outcome.state, 'error');
+  assert.equal(body.outcome && body.outcome.reason, 'not_found');
+  assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
+  assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_canonical_core_outbox_sync_job');
 });
