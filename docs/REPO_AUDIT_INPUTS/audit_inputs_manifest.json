@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T01:10:03.867Z",
-  "gitCommit": "2343977b9bd80b063537e211894331eb91ef8434",
+  "generatedAt": "2026-03-19T01:15:27.772Z",
+  "gitCommit": "addc79341152e2ec8588170213abd091cb368286",
   "branch": "codex/admin-analytics-outcome-T019",
-  "sourceDigest": "54c674cec324e1be4c38fb930dd23c104672b30dc8cb0ba3070773443816425c",
+  "sourceDigest": "ce3c8716f8e9b75cca9b0efbd1865a64f8718bbc2cc1a5b7b7b0ec00ce1452f1",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "1dd86c3582fe32336b9a272d77fde5fdff3aea580bbc06c65a00f583abc5bf35",
+      "sha256": "b0049c31f9c4d1787099e699267f7fb33e0360a1351547a870148cff129aace2",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "6461c0f1439f20e101b84c30dc0dd3f0cb71fe437edd4ae88bd0ec9086cec84e",
+      "sha256": "5b8c47ace354fe7aae6b32f94607d056ef11b47f031c0e723665cae2eded4f05",
       "bytes": 487
     },
     {
@@ -146,12 +146,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "2be9eb82567736a92befbf22b7accd3a92e4df0fde23177321995efd778ad95f",
+      "sha256": "9bfc237c13ef325ad547a19f629f114c5c3c137b42d77148c5c36882723a0408",
       "bytes": 453880
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "9b34d16e9cf7d18fd9e8c8365cd5a78611f24cc0dbb86e2095a49f625bab82a1",
+      "sha256": "23520d5825bd56012c8ac84ee3e2a1bbd7232f2447cd38ab2426072715dd4ed7",
       "bytes": 740
     },
     {
@@ -166,12 +166,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "a7e427028fe129234d9f9669fad0c9772b8a91ec09fb0be23e99305a5054206c",
+      "sha256": "8d8ea1042d13ca39d326349dc793c112cf616f1cac1667826e406113624208d5",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "3e7a6608f8da23033b4c63f8d0b02179952a2380207c1fa171e7ba724513a815",
+      "sha256": "e42c37e69f9cff79e8f5ce203307c71245a2420b5087e98263967053c0cb1f29",
       "bytes": 2420
     },
     {

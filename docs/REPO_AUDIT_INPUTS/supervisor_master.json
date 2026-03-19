@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T21:05:38-04:00",
-  "gitCommit": "2343977b9bd80b063537e211894331eb91ef8434",
+  "generatedAt": "2026-03-18T21:11:35-04:00",
+  "gitCommit": "addc79341152e2ec8588170213abd091cb368286",
   "branch": "codex/admin-analytics-outcome-T019",
-  "sourceDigest": "497000084e244fd6327d8c370edf397a117700b740dce61c2f4a4965e028612f",
+  "sourceDigest": "2f51b5daead694af5732f66990ff1e7a8a95b8a16e5db6107a2dca304ffee58c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
