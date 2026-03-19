@@ -27,8 +27,8 @@
 | `src/routes/admin/productReadiness.js` | 285 | `systemFlagsRepo.getKillSwitch(),` |
 | `src/routes/admin/richMenuConfig.js` | 447 | `systemFlagsRepo.getKillSwitch()` |
 | `src/routes/internal/cityPackDraftGeneratorJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/internal/cityPackDraftGeneratorJob.js` | 36 | `const getKillSwitchFn = deps && typeof deps.getKillSwitchFn === 'function' ? deps.getKillSwitchFn : getKillSwitch;` |
-| `src/routes/internal/cityPackDraftGeneratorJob.js` | 45 | `const killSwitch = await getKillSwitchFn();` |
+| `src/routes/internal/cityPackDraftGeneratorJob.js` | 50 | `const getKillSwitchFn = deps && typeof deps.getKillSwitchFn === 'function' ? deps.getKillSwitchFn : getKillSwitch;` |
+| `src/routes/internal/cityPackDraftGeneratorJob.js` | 66 | `const killSwitch = await getKillSwitchFn();` |
 | `src/routes/internal/cityPackSourceAuditJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/cityPackSourceAuditJob.js` | 70 | `const getKillSwitchFn = opts.getKillSwitchFn || getKillSwitch;` |
 | `src/routes/internal/cityPackSourceAuditJob.js` | 76 | `const killSwitch = await getKillSwitchFn();` |

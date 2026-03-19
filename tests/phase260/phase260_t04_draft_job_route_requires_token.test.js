@@ -73,6 +73,14 @@ test('phase260: internal city-pack draft job requires token', async (t) => {
     body: JSON.stringify({ requestId: requestRec.id })
   });
   assert.strictEqual(noToken.status, 401);
+  const unauthorizedBody = JSON.parse(noToken.body);
+  assert.strictEqual(unauthorizedBody.outcome && unauthorizedBody.outcome.state, 'blocked');
+  assert.strictEqual(unauthorizedBody.outcome && unauthorizedBody.outcome.reason, 'unauthorized');
+  assert.strictEqual(unauthorizedBody.outcome && unauthorizedBody.outcome.routeType, 'internal_job');
+  assert.strictEqual(
+    unauthorizedBody.outcome && unauthorizedBody.outcome.guard && unauthorizedBody.outcome.guard.routeKey,
+    'internal_city_pack_draft_generator_job'
+  );
 
   const withToken = await request({
     port,
@@ -87,4 +95,8 @@ test('phase260: internal city-pack draft job requires token', async (t) => {
   assert.strictEqual(withToken.status, 200);
   const body = JSON.parse(withToken.body);
   assert.strictEqual(body.ok, true);
+  assert.strictEqual(body.outcome && body.outcome.state, 'success');
+  assert.strictEqual(body.outcome && body.outcome.reason, 'completed');
+  assert.strictEqual(body.outcome && body.outcome.routeType, 'internal_job');
+  assert.strictEqual(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_city_pack_draft_generator_job');
 });
