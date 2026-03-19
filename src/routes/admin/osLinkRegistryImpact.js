@@ -5,8 +5,28 @@ const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { isLinkRegistryImpactMapEnabled } = require('../../domain/tasks/featureFlags');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.os_link_registry_impact';
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -192,8 +212,10 @@ async function handleImpact(req, res) {
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   if (!isLinkRegistryImpactMapEnabled()) {
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'link_registry_impact_map_disabled', traceId, requestId }));
+    writeJson(res, 409, { ok: false, error: 'link_registry_impact_map_disabled', traceId, requestId }, {
+      state: 'blocked',
+      reason: 'link_registry_impact_map_disabled'
+    });
     return;
   }
   try {
@@ -213,20 +235,23 @@ async function handleImpact(req, res) {
         referencedWarnOrDisabledCount: impact.summary.referencedWarnOrDisabledCount
       }
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(Object.assign({
+    writeJson(res, 200, Object.assign({
       ok: true,
       traceId,
       requestId
-    }, impact)));
+    }, impact), {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
     logRouteError('admin.os_link_registry.impact', err, { traceId, requestId, actor });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
 module.exports = {
   handleImpact
 };
-

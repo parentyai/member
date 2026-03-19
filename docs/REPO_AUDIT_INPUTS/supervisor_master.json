@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T18:44:28-04:00",
-  "gitCommit": "ea3f001d66b91cee808aba8762a6b1d211db9412",
-  "branch": "codex/admin-os-redac-status-outcome-T042",
-  "sourceDigest": "ab7fb6fa1972bd7afcc52a626231247d31b83de4f3bec26048b4e2fda7a1a525",
+  "generatedAt": "2026-03-19T18:52:00-04:00",
+  "gitCommit": "5ce1348a89f0232974d3b1a4d1a3730ac7100e25",
+  "branch": "codex/admin-os-link-registry-impact-outcome-T043",
+  "sourceDigest": "cc8d4a6f8f27aa2ed6c3cfe0f8ffb1f76ae0c5287eaad5d0ef9a9fc1b8e65644",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
