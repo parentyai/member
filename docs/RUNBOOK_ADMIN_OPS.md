@@ -334,6 +334,11 @@ internal outcome quick guide:
 3) archive（非表示化・非破壊）
 - `npm run admin:seed-notifications -- --archive --seedRunId "<seedRunId>"`
 - 削除は行わず、seed archive フィールドで除外する
+- route outcome:
+  - `archived`: 一致した seed 通知をすべて archive
+  - `no_targets`: 対象なし
+  - `completed_with_skips`: すでに archive 済みが混在
+  - `invalid_limit`: limit 不正
 
 4) composer画面での確認
 - 既定: archive済みseedは一覧/Matrixで非表示
@@ -732,6 +737,12 @@ route outcome:
 4) `execute(seal)` 実行（confirmToken 必須）
 5) `status` 再確認で `sealed=true` を確認
 6) trace search で `delivery_recovery.plan` / `delivery_recovery.execute` を確認
+7) route outcome:
+   - `status_viewed`: status 成功
+   - `planned`: plan 成功
+   - `already_delivered`: delivered 済みで block
+   - `plan_hash_mismatch` / `confirm_token_mismatch`: execute fail-close
+   - `already_sealed`: execute の再実行は成功扱いで noop
 
 期待結果:
 - `sealed=true` の delivery は以後の送信で skip される
@@ -752,6 +763,13 @@ route outcome:
 4) `execute(backfill)` 実行（confirmToken 必須）
 5) `status` 再確認で `missingDeliveredAtCount` が減っていることを確認
 6) trace search で `delivery_backfill.plan` / `delivery_backfill.execute` を確認
+7) route outcome:
+   - `status_viewed`: status 成功
+   - `planned`: plan 成功
+   - `confirm_token_required`: execute の二段階ガード不足
+   - `plan_hash_mismatch` / `confirm_token_mismatch`: execute fail-close
+   - `completed_with_more_remaining`: fixable 行が残る partial
+   - `completed_with_skips`: 更新は終わったが skip 行あり
 
 期待結果:
 - `deliveredAt` 欠損行のうち `sentAt` がある行が補完される

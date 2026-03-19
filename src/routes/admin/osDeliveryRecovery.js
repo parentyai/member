@@ -1,5 +1,6 @@
 'use strict';
 
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { createConfirmToken, verifyConfirmToken } = require('../../domain/confirmToken');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const {
@@ -11,11 +12,77 @@ const {
   planRecovery,
   executeRecovery
 } = require('../../usecases/deliveries/deliveryRecoveryAdmin');
-const { requireActor, resolveRequestId, resolveTraceId, parseJson } = require('./osContext');
+const { resolveRequestId, resolveTraceId } = require('./osContext');
 
-function writeJson(res, statusCode, payload) {
+const ROUTE_KEY = 'admin_os_delivery_recovery';
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, Object.assign({
+    routeType: 'admin_route',
+    guard: { routeKey: ROUTE_KEY, decision: 'allow' }
+  }, outcomeOptions || {}));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
+}
+
+function requireActor(req, res) {
+  const actor = req && req.headers && typeof req.headers['x-actor'] === 'string'
+    ? req.headers['x-actor'].trim()
+    : '';
+  if (actor) return actor;
+  writeJson(res, 400, { ok: false, error: 'x-actor required', traceId: resolveTraceId(req) }, {
+    state: 'error',
+    reason: 'actor_required',
+    guard: { routeKey: ROUTE_KEY, decision: 'block' }
+  });
+  return null;
+}
+
+function parseJson(body, req, res) {
+  try {
+    return JSON.parse(body || '{}');
+  } catch (_err) {
+    writeJson(res, 400, { ok: false, error: 'invalid json', traceId: resolveTraceId(req) }, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
+    return null;
+  }
+}
+
+function resolveStatusOutcome(result) {
+  if (result && result.statusCode === 404) {
+    return {
+      state: 'error',
+      reason: 'not_found',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    };
+  }
+  return { state: 'success', reason: 'status_viewed' };
+}
+
+function resolvePlanOrExecuteOutcome(result, successReason) {
+  const body = result && result.body && typeof result.body === 'object' ? result.body : {};
+  if (result && result.statusCode === 404 && body.reason === 'not_found') {
+    return {
+      state: 'error',
+      reason: 'not_found',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    };
+  }
+  if (result && result.statusCode === 409 && body.reason === 'already_delivered') {
+    return {
+      state: 'blocked',
+      reason: 'already_delivered',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    };
+  }
+  if (result && result.statusCode === 200 && body.alreadySealed === true) {
+    return { state: 'success', reason: 'already_sealed' };
+  }
+  return { state: 'success', reason: successReason };
 }
 
 function resolveDeliveryIdFromQuery(req) {
@@ -43,7 +110,7 @@ async function handleStatus(req, res) {
     traceId,
     requestId
   });
-  writeJson(res, result.statusCode, result.body);
+  writeJson(res, result.statusCode, result.body, resolveStatusOutcome(result));
 }
 
 async function handlePlan(req, res, body) {
@@ -51,7 +118,7 @@ async function handlePlan(req, res, body) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const bodyPayload = parseJson(body, res);
+  const bodyPayload = parseJson(body, req, res);
   if (!bodyPayload) return;
 
   let deliveryId;
@@ -60,7 +127,11 @@ async function handlePlan(req, res, body) {
     deliveryId = normalizeDeliveryId(bodyPayload.deliveryId);
     sealedReason = normalizeReason(bodyPayload.sealedReason);
   } catch (err) {
-    writeJson(res, 400, { ok: false, error: err && err.message ? err.message : 'invalid', traceId });
+    writeJson(res, 400, { ok: false, error: err && err.message ? err.message : 'invalid', traceId }, {
+      state: 'error',
+      reason: 'invalid_request',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -72,12 +143,15 @@ async function handlePlan(req, res, body) {
     requestId
   });
   if (planned.statusCode !== 200) {
-    writeJson(res, planned.statusCode, planned.body);
+    writeJson(res, planned.statusCode, planned.body, resolvePlanOrExecuteOutcome(planned, 'planned'));
     return;
   }
 
   const confirmToken = createConfirmToken(confirmTokenData(planned.body.planHash, deliveryId), { now: new Date() });
-  writeJson(res, 200, Object.assign({}, planned.body, { confirmToken }));
+  writeJson(res, 200, Object.assign({}, planned.body, { confirmToken }), {
+    state: 'success',
+    reason: 'planned'
+  });
 }
 
 async function handleExecute(req, res, body) {
@@ -85,7 +159,7 @@ async function handleExecute(req, res, body) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const bodyPayload = parseJson(body, res);
+  const bodyPayload = parseJson(body, req, res);
   if (!bodyPayload) return;
 
   let deliveryId;
@@ -94,14 +168,22 @@ async function handleExecute(req, res, body) {
     deliveryId = normalizeDeliveryId(bodyPayload.deliveryId);
     sealedReason = normalizeReason(bodyPayload.sealedReason);
   } catch (err) {
-    writeJson(res, 400, { ok: false, error: err && err.message ? err.message : 'invalid', traceId });
+    writeJson(res, 400, { ok: false, error: err && err.message ? err.message : 'invalid', traceId }, {
+      state: 'error',
+      reason: 'invalid_request',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
   const planHash = typeof bodyPayload.planHash === 'string' ? bodyPayload.planHash : null;
   const confirmToken = typeof bodyPayload.confirmToken === 'string' ? bodyPayload.confirmToken : null;
   if (!planHash || !confirmToken) {
-    writeJson(res, 400, { ok: false, error: 'planHash/confirmToken required', traceId });
+    writeJson(res, 400, { ok: false, error: 'planHash/confirmToken required', traceId }, {
+      state: 'error',
+      reason: 'confirm_token_required',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -116,7 +198,11 @@ async function handleExecute(req, res, body) {
       requestId,
       payloadSummary: { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, deliveryId }
     });
-    writeJson(res, 409, { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId });
+    writeJson(res, 409, { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId }, {
+      state: 'blocked',
+      reason: 'plan_hash_mismatch',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -131,7 +217,11 @@ async function handleExecute(req, res, body) {
       requestId,
       payloadSummary: { ok: false, reason: 'confirm_token_mismatch', deliveryId }
     });
-    writeJson(res, 409, { ok: false, reason: 'confirm_token_mismatch', traceId });
+    writeJson(res, 409, { ok: false, reason: 'confirm_token_mismatch', traceId }, {
+      state: 'blocked',
+      reason: 'confirm_token_mismatch',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -143,7 +233,7 @@ async function handleExecute(req, res, body) {
     traceId,
     requestId
   });
-  writeJson(res, executed.statusCode, executed.body);
+  writeJson(res, executed.statusCode, executed.body, resolvePlanOrExecuteOutcome(executed, 'completed'));
 }
 
 module.exports = {

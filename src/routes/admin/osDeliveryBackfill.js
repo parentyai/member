@@ -1,5 +1,6 @@
 'use strict';
 
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { createConfirmToken, verifyConfirmToken } = require('../../domain/confirmToken');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const {
@@ -9,13 +10,58 @@ const {
   planBackfill,
   executeBackfill
 } = require('../../usecases/deliveries/deliveryBackfillAdmin');
-const { requireActor, resolveRequestId, resolveTraceId, parseJson } = require('./osContext');
+const { resolveRequestId, resolveTraceId } = require('./osContext');
 
 const MAX_LIMIT = 1000;
+const ROUTE_KEY = 'admin_os_delivery_backfill';
 
-function writeJson(res, statusCode, payload) {
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, Object.assign({
+    routeType: 'admin_route',
+    guard: { routeKey: ROUTE_KEY, decision: 'allow' }
+  }, outcomeOptions || {}));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
+}
+
+function requireActor(req, res) {
+  const actor = req && req.headers && typeof req.headers['x-actor'] === 'string'
+    ? req.headers['x-actor'].trim()
+    : '';
+  if (actor) return actor;
+  writeJson(res, 400, { ok: false, error: 'x-actor required', traceId: resolveTraceId(req) }, {
+    state: 'error',
+    reason: 'actor_required',
+    guard: { routeKey: ROUTE_KEY, decision: 'block' }
+  });
+  return null;
+}
+
+function parseJson(body, req, res) {
+  try {
+    return JSON.parse(body || '{}');
+  } catch (_err) {
+    writeJson(res, 400, { ok: false, error: 'invalid json', traceId: resolveTraceId(req) }, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
+    return null;
+  }
+}
+
+function resolveExecuteOutcome(executed) {
+  const body = executed && executed.body && typeof executed.body === 'object' ? executed.body : {};
+  const result = body.result && typeof body.result === 'object' ? body.result : {};
+  const summaryAfter = body.summaryAfter && typeof body.summaryAfter === 'object' ? body.summaryAfter : {};
+  if (Number(summaryAfter.fixableCount) > 0) {
+    return { state: 'partial', reason: 'completed_with_more_remaining' };
+  }
+  if (Number(result.skippedCount) > 0) {
+    return { state: 'partial', reason: 'completed_with_skips' };
+  }
+  return { state: 'success', reason: 'completed' };
 }
 
 function resolveLimitFromQuery(req) {
@@ -34,7 +80,11 @@ async function handleStatus(req, res) {
   const requestId = resolveRequestId(req);
   const limit = resolveLimitFromQuery(req);
   if (!limit) {
-    writeJson(res, 400, { ok: false, error: `limit must be integer 1-${MAX_LIMIT}`, traceId });
+    writeJson(res, 400, { ok: false, error: `limit must be integer 1-${MAX_LIMIT}`, traceId }, {
+      state: 'error',
+      reason: 'invalid_limit',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
   const payload = await getBackfillStatus({
@@ -43,7 +93,10 @@ async function handleStatus(req, res) {
     traceId,
     requestId
   });
-  writeJson(res, 200, payload);
+  writeJson(res, 200, payload, {
+    state: 'success',
+    reason: 'status_viewed'
+  });
 }
 
 async function handlePlan(req, res, body) {
@@ -51,14 +104,18 @@ async function handlePlan(req, res, body) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const bodyPayload = parseJson(body, res);
+  const bodyPayload = parseJson(body, req, res);
   if (!bodyPayload) return;
 
   let limit;
   try {
     limit = normalizeLimit(bodyPayload.limit);
   } catch (err) {
-    writeJson(res, 400, { ok: false, error: err && err.message ? err.message : 'invalid', traceId });
+    writeJson(res, 400, { ok: false, error: err && err.message ? err.message : 'invalid', traceId }, {
+      state: 'error',
+      reason: 'invalid_limit',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -69,7 +126,10 @@ async function handlePlan(req, res, body) {
     requestId
   });
   const confirmToken = createConfirmToken(confirmTokenData(planned.planHash, limit), { now: new Date() });
-  writeJson(res, 200, Object.assign({}, planned, { confirmToken }));
+  writeJson(res, 200, Object.assign({}, planned, { confirmToken }), {
+    state: 'success',
+    reason: 'planned'
+  });
 }
 
 async function handleExecute(req, res, body) {
@@ -77,13 +137,17 @@ async function handleExecute(req, res, body) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const bodyPayload = parseJson(body, res);
+  const bodyPayload = parseJson(body, req, res);
   if (!bodyPayload) return;
 
   const planHash = typeof bodyPayload.planHash === 'string' ? bodyPayload.planHash : null;
   const confirmToken = typeof bodyPayload.confirmToken === 'string' ? bodyPayload.confirmToken : null;
   if (!planHash || !confirmToken) {
-    writeJson(res, 400, { ok: false, error: 'planHash/confirmToken required', traceId });
+    writeJson(res, 400, { ok: false, error: 'planHash/confirmToken required', traceId }, {
+      state: 'error',
+      reason: 'confirm_token_required',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -91,7 +155,11 @@ async function handleExecute(req, res, body) {
   try {
     limit = normalizeLimit(bodyPayload.limit);
   } catch (err) {
-    writeJson(res, 400, { ok: false, error: err && err.message ? err.message : 'invalid', traceId });
+    writeJson(res, 400, { ok: false, error: err && err.message ? err.message : 'invalid', traceId }, {
+      state: 'error',
+      reason: 'invalid_limit',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -106,7 +174,11 @@ async function handleExecute(req, res, body) {
       requestId,
       payloadSummary: { ok: false, reason: 'confirm_token_mismatch', limit }
     });
-    writeJson(res, 409, { ok: false, reason: 'confirm_token_mismatch', traceId });
+    writeJson(res, 409, { ok: false, reason: 'confirm_token_mismatch', traceId }, {
+      state: 'blocked',
+      reason: 'confirm_token_mismatch',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -117,7 +189,15 @@ async function handleExecute(req, res, body) {
     traceId,
     requestId
   });
-  writeJson(res, executed.statusCode, executed.body);
+  if (executed.statusCode === 409 && executed.body && executed.body.reason === 'plan_hash_mismatch') {
+    writeJson(res, executed.statusCode, executed.body, {
+      state: 'blocked',
+      reason: 'plan_hash_mismatch',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
+    return;
+  }
+  writeJson(res, executed.statusCode, executed.body, resolveExecuteOutcome(executed));
 }
 
 module.exports = {

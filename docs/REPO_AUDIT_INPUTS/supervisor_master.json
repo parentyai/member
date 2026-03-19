@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T20:08:04-04:00",
-  "gitCommit": "ff50c87b858b42a49e63d7933327e3eec02c5e6d",
+  "generatedAt": "2026-03-18T20:13:48-04:00",
+  "gitCommit": "3d98f738995b70c1d26307a0c2bda766134a6857",
   "branch": "codex/admin-ui-stack2-pr2-dashboard",
-  "sourceDigest": "49a2772cc964c8260d2b9fc0a69652d58b863381b48cc587159bd72e87c8701f",
+  "sourceDigest": "eabdde9955291704a24700d77c611ad9a3126a105bef0c2f27d33d8fdad920fc",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

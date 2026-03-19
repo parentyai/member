@@ -1,12 +1,52 @@
 'use strict';
 
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
-const { requireActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
+const { resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
-function writeJson(res, statusCode, payload) {
+const ROUTE_KEY = 'admin_os_notification_seed';
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, Object.assign({
+    routeType: 'admin_route',
+    guard: { routeKey: ROUTE_KEY, decision: 'allow' }
+  }, outcomeOptions || {}));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
+}
+
+function requireActor(req, res) {
+  const actor = req && req.headers && typeof req.headers['x-actor'] === 'string'
+    ? req.headers['x-actor'].trim()
+    : '';
+  if (actor) return actor;
+  writeJson(res, 400, { ok: false, error: 'x-actor required', traceId: resolveTraceId(req) }, {
+    state: 'error',
+    reason: 'actor_required',
+    guard: { routeKey: ROUTE_KEY, decision: 'block' }
+  });
+  return null;
+}
+
+function parseJson(body, req, res) {
+  try {
+    return JSON.parse(body || '{}');
+  } catch (_err) {
+    writeJson(res, 400, { ok: false, error: 'invalid json', traceId: resolveTraceId(req) }, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
+    return null;
+  }
+}
+
+function resolveArchiveOutcome(rows, archivedCount) {
+  if (!rows || rows.length === 0) return { state: 'success', reason: 'no_targets' };
+  if (archivedCount < rows.length) return { state: 'partial', reason: 'completed_with_skips' };
+  return { state: 'success', reason: 'archived' };
 }
 
 function normalizeSeedTag(value) {
@@ -44,14 +84,18 @@ async function handleSeedArchive(req, res, body) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJson(body, req, res);
   if (!payload) return;
   const seedTag = normalizeSeedTag(payload.seedTag);
   const seedRunId = normalizeSeedRunId(payload.seedRunId);
   const reason = normalizeReason(payload.reason);
   const limit = normalizeLimit(payload.limit);
   if (!limit) {
-    writeJson(res, 400, { ok: false, error: 'limit invalid', traceId, requestId });
+    writeJson(res, 400, { ok: false, error: 'limit invalid', traceId, requestId }, {
+      state: 'error',
+      reason: 'invalid_limit',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
   try {
@@ -98,15 +142,23 @@ async function handleSeedArchive(req, res, body) {
       seedRunId: seedRunId || null,
       matchedCount: rows.length,
       archivedCount: targets.length
-    });
+    }, resolveArchiveOutcome(rows, targets.length));
   } catch (err) {
     const message = err && err.message ? err.message : 'error';
     if (message.includes('required') || message.includes('invalid')) {
-      writeJson(res, 400, { ok: false, error: message, traceId, requestId });
+      writeJson(res, 400, { ok: false, error: message, traceId, requestId }, {
+        state: 'error',
+        reason: 'invalid_request',
+        guard: { routeKey: ROUTE_KEY, decision: 'block' }
+      });
       return;
     }
     logRouteError('admin.os_notification_seed_archive', err, { traceId, requestId, actor });
-    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId });
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
   }
 }
 
