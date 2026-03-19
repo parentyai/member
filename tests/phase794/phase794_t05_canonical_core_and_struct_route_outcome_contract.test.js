@@ -57,8 +57,11 @@ test('phase794: canonical core outbox sync emits success dry_run outcome', async
     const body = JSON.parse(res.body);
     assert.equal(body.outcome && body.outcome.state, 'success');
     assert.equal(body.outcome && body.outcome.reason, 'dry_run');
+    assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
+    assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_canonical_core_outbox_sync_job');
     assert.equal(res.headers['x-member-outcome-state'], 'success');
     assert.equal(res.headers['x-member-outcome-reason'], 'dry_run');
+    assert.equal(res.headers['x-member-outcome-route-type'], 'internal_job');
   } finally {
     if (prevToken === undefined) delete process.env.CITY_PACK_JOB_TOKEN;
     else process.env.CITY_PACK_JOB_TOKEN = prevToken;

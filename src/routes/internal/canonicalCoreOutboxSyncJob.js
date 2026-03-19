@@ -4,11 +4,14 @@ const { requireInternalJobToken } = require('./cityPackSourceAuditJob');
 const { runCanonicalCoreOutboxSyncJob } = require('../../usecases/data/runCanonicalCoreOutboxSyncJob');
 const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
+const ROUTE_KEY = 'internal_canonical_core_outbox_sync_job';
+
 function writeJson(res, status, payload, outcomeOptions) {
-  const body = outcomeOptions && typeof outcomeOptions === 'object'
-    ? attachOutcome(payload || {}, outcomeOptions)
-    : payload;
-  if (body && body.outcome) applyOutcomeHeaders(res, body.outcome);
+  const body = attachOutcome(payload || {}, Object.assign({
+    routeType: 'internal_job',
+    guard: { routeKey: ROUTE_KEY }
+  }, outcomeOptions || {}));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
 }
@@ -54,14 +57,25 @@ async function handleCanonicalCoreOutboxSyncJob(req, res, bodyText, deps) {
     ? deps.runCanonicalCoreOutboxSyncJobFn
     : runCanonicalCoreOutboxSyncJob;
   if (req.method !== 'POST') {
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, 404, { ok: false, error: 'not found' }, {
+      state: 'error',
+      reason: 'not_found',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
-  if (!requireInternalJobToken(req, res)) return;
+  if (!requireInternalJobToken(req, res, {
+    routeType: 'internal_job',
+    guard: { routeKey: ROUTE_KEY }
+  })) return;
 
   const payload = parseJson(bodyText);
   if (!payload) {
-    writeJson(res, 400, { ok: false, error: 'invalid json' });
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -75,7 +89,9 @@ async function handleCanonicalCoreOutboxSyncJob(req, res, bodyText, deps) {
     requestId,
     actor: 'canonical_core_outbox_sync_job'
   });
-  writeJson(res, 200, result, resolveOutcome(result));
+  writeJson(res, 200, result, Object.assign(resolveOutcome(result), {
+    guard: { routeKey: ROUTE_KEY, decision: 'allow' }
+  }));
 }
 
 module.exports = {
