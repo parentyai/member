@@ -23,7 +23,7 @@ function request({ port, method, path, headers, body }) {
     }, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+      res.on('end', () => resolve({ status: res.statusCode, body: data, headers: res.headers }));
     });
     req.on('error', reject);
     if (body) req.write(body);
@@ -63,6 +63,13 @@ test('phase668: school-calendar-audit internal job requires CITY_PACK_JOB_TOKEN 
     body: JSON.stringify({})
   });
   assert.strictEqual(unauthorized.status, 401);
+  const unauthorizedBody = JSON.parse(unauthorized.body);
+  assert.strictEqual(unauthorizedBody.outcome && unauthorizedBody.outcome.state, 'blocked');
+  assert.strictEqual(unauthorizedBody.outcome && unauthorizedBody.outcome.reason, 'unauthorized');
+  assert.strictEqual(unauthorizedBody.outcome && unauthorizedBody.outcome.routeType, 'internal_job');
+  assert.strictEqual(unauthorizedBody.outcome && unauthorizedBody.outcome.guard && unauthorizedBody.outcome.guard.routeKey, 'internal_school_calendar_audit_job');
+  assert.strictEqual(unauthorized.headers && unauthorized.headers['x-member-outcome-route-type'], 'internal_job');
+  assert.strictEqual(unauthorized.headers && unauthorized.headers['x-member-outcome-reason'], 'unauthorized');
 
   const authorized = await request({
     port,

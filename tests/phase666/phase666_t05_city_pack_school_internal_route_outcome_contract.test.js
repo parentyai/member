@@ -58,8 +58,11 @@ test('phase666: municipality schools import emits partial outcome when some rows
     const body = JSON.parse(res.body);
     assert.equal(body.outcome && body.outcome.state, 'partial');
     assert.equal(body.outcome && body.outcome.reason, 'completed_with_failures');
+    assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
+    assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_municipality_schools_import_job');
     assert.equal(res.headers['x-member-outcome-state'], 'partial');
     assert.equal(res.headers['x-member-outcome-reason'], 'completed_with_failures');
+    assert.equal(res.headers['x-member-outcome-route-type'], 'internal_job');
   } finally {
     if (prevToken === undefined) delete process.env.CITY_PACK_JOB_TOKEN;
     else process.env.CITY_PACK_JOB_TOKEN = prevToken;
@@ -100,10 +103,47 @@ test('phase666: school calendar audit emits success no_targets outcome when no l
     assert.deepEqual(body.targetSourceRefIds, []);
     assert.equal(body.outcome && body.outcome.state, 'success');
     assert.equal(body.outcome && body.outcome.reason, 'no_targets');
+    assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
+    assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_school_calendar_audit_job');
     assert.equal(res.headers['x-member-outcome-state'], 'success');
     assert.equal(res.headers['x-member-outcome-reason'], 'no_targets');
+    assert.equal(res.headers['x-member-outcome-route-type'], 'internal_job');
   } finally {
     if (prevToken === undefined) delete process.env.CITY_PACK_JOB_TOKEN;
     else process.env.CITY_PACK_JOB_TOKEN = prevToken;
   }
+});
+
+test('phase666: municipality schools import returns not_found outcome for non-POST requests', async () => {
+  const res = createResponseRecorder();
+  await handleMunicipalitySchoolsImportJob({
+    method: 'GET',
+    url: '/internal/jobs/municipality-schools-import',
+    headers: {}
+  }, res, '');
+  assert.equal(res.statusCode, 404);
+  const body = JSON.parse(res.body);
+  assert.equal(body.outcome && body.outcome.state, 'error');
+  assert.equal(body.outcome && body.outcome.reason, 'not_found');
+  assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
+  assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_municipality_schools_import_job');
+  assert.equal(res.headers['x-member-outcome-route-type'], 'internal_job');
+  assert.equal(res.headers['x-member-outcome-reason'], 'not_found');
+});
+
+test('phase666: school calendar audit returns not_found outcome for non-POST requests', async () => {
+  const res = createResponseRecorder();
+  await handleSchoolCalendarAuditJob({
+    method: 'GET',
+    url: '/internal/jobs/school-calendar-audit',
+    headers: {}
+  }, res, '');
+  assert.equal(res.statusCode, 404);
+  const body = JSON.parse(res.body);
+  assert.equal(body.outcome && body.outcome.state, 'error');
+  assert.equal(body.outcome && body.outcome.reason, 'not_found');
+  assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
+  assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_school_calendar_audit_job');
+  assert.equal(res.headers['x-member-outcome-route-type'], 'internal_job');
+  assert.equal(res.headers['x-member-outcome-reason'], 'not_found');
 });

@@ -5,11 +5,14 @@ const { requireInternalJobToken } = require('./cityPackSourceAuditJob');
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
+const ROUTE_KEY = 'internal_city_pack_draft_generator_job';
+
 function writeJson(res, status, payload, outcomeOptions) {
-  const body = outcomeOptions && typeof outcomeOptions === 'object'
-    ? attachOutcome(payload || {}, outcomeOptions)
-    : payload;
-  if (body && body.outcome) applyOutcomeHeaders(res, body.outcome);
+  const body = attachOutcome(payload || {}, Object.assign({
+    routeType: 'internal_job',
+    guard: { routeKey: ROUTE_KEY }
+  }, outcomeOptions || {}));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
 }
@@ -32,25 +35,51 @@ function resolveOutcome(result) {
   return { state: 'error', reason: typeof result.reason === 'string' && result.reason.trim() ? result.reason.trim() : 'draft_job_failed' };
 }
 
+function withGuardDecision(outcome) {
+  const normalized = outcome && typeof outcome === 'object' ? outcome : { state: 'error', reason: 'draft_job_failed' };
+  const state = typeof normalized.state === 'string' ? normalized.state : 'error';
+  return Object.assign({}, normalized, {
+    guard: {
+      routeKey: ROUTE_KEY,
+      decision: state === 'success' || state === 'partial' ? 'allow' : 'block'
+    }
+  });
+}
+
 async function handleCityPackDraftGeneratorJob(req, res, bodyText, deps) {
   const getKillSwitchFn = deps && typeof deps.getKillSwitchFn === 'function' ? deps.getKillSwitchFn : getKillSwitch;
   const runCityPackDraftJobFn = deps && typeof deps.runCityPackDraftJobFn === 'function'
     ? deps.runCityPackDraftJobFn
     : runCityPackDraftJob;
   if (req.method !== 'POST') {
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, 404, { ok: false, error: 'not found' }, {
+      state: 'error',
+      reason: 'not_found',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
-  if (!requireInternalJobToken(req, res)) return;
+  if (!requireInternalJobToken(req, res, {
+    routeType: 'internal_job',
+    guard: { routeKey: ROUTE_KEY }
+  })) return;
   const killSwitch = await getKillSwitchFn();
   if (killSwitch) {
-    writeJson(res, 409, { ok: false, error: 'kill switch on' }, { state: 'blocked', reason: 'kill_switch_on' });
+    writeJson(res, 409, { ok: false, error: 'kill switch on' }, {
+      state: 'blocked',
+      reason: 'kill_switch_on',
+      guard: { routeKey: ROUTE_KEY, decision: 'block', killSwitchOn: true }
+    });
     return;
   }
 
   const payload = parseJson(bodyText);
   if (!payload) {
-    writeJson(res, 400, { ok: false, error: 'invalid json' }, { state: 'error', reason: 'invalid_json' });
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -62,7 +91,7 @@ async function handleCityPackDraftGeneratorJob(req, res, bodyText, deps) {
     traceId: traceIdHeader || payload.traceId || null,
     actor: 'city_pack_draft_job'
   });
-  writeJson(res, 200, result, resolveOutcome(result));
+  writeJson(res, 200, result, withGuardDecision(resolveOutcome(result)));
 }
 
 module.exports = {
