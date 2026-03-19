@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T01:15:35-04:00",
-  "gitCommit": "2b579c5aac2c4bf681cb2e33d962681b0d733d83",
-  "branch": "codex/admin-os-errors-outcome-T036",
-  "sourceDigest": "6e532e4397d4aee15a156b46c371a5953c1c899e314ad7b5b32c847e161f475f",
+  "generatedAt": "2026-03-19T06:05:39-04:00",
+  "gitCommit": "ccee98aefa6e244b76ff8605e1c73bee50d59f10",
+  "branch": "codex/admin-os-view-outcome-T038",
+  "sourceDigest": "9c19d13232a0c86496a7ccddb831ff17f401029cf52fb4c3192a3d4cc8706eff",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
