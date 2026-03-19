@@ -7,7 +7,11 @@ const {
   logRouteError
 } = require('./osContext');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { ADMIN_UI_ROUTES_V2, buildAdminAppPaneLocation, resolveLegacyHtmlForAdminRoute } = require('../../shared/adminUiRoutesV2');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.legacy_status';
 
 const LEGACY_ITEMS = Object.freeze(
   ADMIN_UI_ROUTES_V2
@@ -31,6 +35,22 @@ const LEGACY_ITEMS = Object.freeze(
       });
     })
 );
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
 
 async function handleLegacyStatus(req, res) {
   const actor = requireActor(req, res);
@@ -61,19 +81,17 @@ async function handleLegacyStatus(req, res) {
       logRouteError('admin.legacy_status.audit', auditErr, { actor, traceId, requestId });
     }
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       traceId,
       requestId,
       generatedAt: new Date().toISOString(),
       summary,
       items: LEGACY_ITEMS
-    }));
+    }, { state: 'success', reason: 'completed' });
   } catch (err) {
     logRouteError('admin.legacy_status.view', err, { actor, traceId, requestId });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, { state: 'error', reason: 'error' });
   }
 }
 

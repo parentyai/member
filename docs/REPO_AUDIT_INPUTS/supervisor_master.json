@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T21:24:25-04:00",
-  "gitCommit": "8234a5b4ebb9947808d7615f30294d6b7198f1b6",
-  "branch": "codex/admin-maintenance-read-outcome-T021",
-  "sourceDigest": "b0dc64e36e98549be43dcad2c5ea4266c3048f8ba57feb1c3ec620968cf027c8",
+  "generatedAt": "2026-03-18T21:33:36-04:00",
+  "gitCommit": "7f49ca18f919738c722d541bba25721cc33562ab",
+  "branch": "codex/admin-platform-read-outcome-T022",
+  "sourceDigest": "bd03e8760ac4e5cb122695f9c89c77f52429d47cf6a8f7b9d645ca563f5b21aa",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
