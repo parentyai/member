@@ -9,6 +9,7 @@ const { listSnapshots } = require('../../repos/firestore/kpiSnapshotsReadRepo');
 const faqAnswerLogsRepo = require('../../repos/firestore/faqAnswerLogsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { resolveActor, resolveRequestId, resolveTraceId } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const {
   normalizeSnapshotMode,
   resolveSnapshotReadMode,
@@ -23,6 +24,8 @@ const { USER_SCENARIO_FIELD } = require('../../domain/constants');
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DEFAULT_DELIVERIES_READ_LIMIT = 1000;
 const MAX_DELIVERIES_READ_LIMIT = 5000;
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.monitor_insights';
 
 function normalizeWindowDays(value) {
   if (String(value) === '30') return 30;
@@ -53,6 +56,41 @@ function parseFallbackOnEmpty(value) {
   if (value === 'true') return true;
   if (value === 'false') return false;
   return null;
+}
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function resolveMonitorValidationReason(err) {
+  const message = err && err.message ? String(err.message) : 'invalid_request';
+  if (message === 'invalid snapshotMode') return 'invalid_snapshot_mode';
+  if (message === 'invalid fallbackMode') return 'invalid_fallback_mode';
+  if (message === 'invalid fallbackOnEmpty') return 'invalid_fallback_on_empty';
+  return 'invalid_request';
+}
+
+function resolveMonitorOutcome(payload) {
+  const row = payload && typeof payload === 'object' ? payload : {};
+  if (row.dataSource === 'not_available' || row.source === 'not_available' || row.fallbackBlocked === true) {
+    return { state: 'degraded', reason: 'not_available' };
+  }
+  if (row.fallbackUsed === true) {
+    return { state: 'degraded', reason: 'completed_with_fallback' };
+  }
+  return { state: 'success', reason: 'completed' };
 }
 
 function buildReadLimitWarning(sourceLength, payloadSummaryLength, readLimitUsed) {
@@ -110,20 +148,29 @@ async function handleMonitorInsights(req, res) {
   const fallbackOnEmptyRaw = url.searchParams.get('fallbackOnEmpty');
   const parsedSnapshotMode = normalizeSnapshotMode(snapshotModeRaw);
   if (snapshotModeRaw && !parsedSnapshotMode) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid snapshotMode' }));
+    writeJson(res, 400, { ok: false, error: 'invalid snapshotMode' }, {
+      state: 'error',
+      reason: resolveMonitorValidationReason(new Error('invalid snapshotMode')),
+      guard: { decision: 'block' }
+    });
     return;
   }
   const fallbackMode = resolveFallbackMode(fallbackModeRaw);
   if (fallbackModeRaw && !fallbackMode) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid fallbackMode' }));
+    writeJson(res, 400, { ok: false, error: 'invalid fallbackMode' }, {
+      state: 'error',
+      reason: resolveMonitorValidationReason(new Error('invalid fallbackMode')),
+      guard: { decision: 'block' }
+    });
     return;
   }
   const fallbackOnEmpty = parseFallbackOnEmpty(fallbackOnEmptyRaw);
   if (fallbackOnEmptyRaw && fallbackOnEmpty === null) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid fallbackOnEmpty' }));
+    writeJson(res, 400, { ok: false, error: 'invalid fallbackOnEmpty' }, {
+      state: 'error',
+      reason: resolveMonitorValidationReason(new Error('invalid fallbackOnEmpty')),
+      guard: { decision: 'block' }
+    });
     return;
   }
   const fallbackBlocked = fallbackMode === 'block';
@@ -335,57 +382,59 @@ async function handleMonitorInsights(req, res) {
       // best effort only
     }
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({
-        ok: true,
-        serverTime: new Date().toISOString(),
-        traceId,
-        windowDays,
+    const responsePayload = {
+      ok: true,
+      serverTime: new Date().toISOString(),
+      traceId,
+      windowDays,
+      windowStart: windowStartDate.toISOString(),
+      windowEnd: windowEndDate.toISOString(),
+      readLimitUsed,
+      resultRows,
+      matchedDeliveryCount,
+      snapshotMode,
+      snapshotModeRaw: snapshotModeRaw || null,
+      fallbackMode,
+      fallbackModeRaw: fallbackModeRaw || null,
+      fallbackOnEmpty,
+      fallbackOnEmptyRaw: fallbackOnEmptyRaw || null,
+      fallbackSourceTrace,
+      dataSource,
+      source: dataSource,
+      asOf,
+      freshnessMinutes,
+      note,
+      fallbackUsed,
+      fallbackBlocked: fallbackBlockedFlag,
+      fallbackSources,
+      diagnostics: {
+        asOf,
+        freshnessMinutes,
         windowStart: windowStartDate.toISOString(),
         windowEnd: windowEndDate.toISOString(),
         readLimitUsed,
         resultRows,
         matchedDeliveryCount,
-        snapshotMode,
-        snapshotModeRaw: snapshotModeRaw || null,
-        fallbackMode,
-        fallbackModeRaw: fallbackModeRaw || null,
-        fallbackOnEmpty,
-        fallbackOnEmptyRaw: fallbackOnEmptyRaw || null,
-        fallbackSourceTrace,
-        dataSource,
         source: dataSource,
-        asOf,
-        freshnessMinutes,
-        note,
-        fallbackUsed,
-        fallbackBlocked: fallbackBlockedFlag,
-        fallbackSources,
-        diagnostics: {
-          asOf,
-          freshnessMinutes,
-          windowStart: windowStartDate.toISOString(),
-          windowEnd: windowEndDate.toISOString(),
-          readLimitUsed,
-          resultRows,
-          matchedDeliveryCount,
-          source: dataSource,
-          note: readLimitNote,
-          fallback: {
-            used: fallbackUsed,
-            blocked: fallbackBlockedFlag,
-            sources: fallbackSourceTrace
-          }
-        },
-        vendorCtrTop,
-        ctrTop,
-        abSnapshot,
-        faqReferenceTop
-      }));
+        note: readLimitNote,
+        fallback: {
+          used: fallbackUsed,
+          blocked: fallbackBlockedFlag,
+          sources: fallbackSourceTrace
+        }
+      },
+      vendorCtrTop,
+      ctrTop,
+      abSnapshot,
+      faqReferenceTop
+    };
+    writeJson(res, 200, responsePayload, resolveMonitorOutcome(responsePayload));
   } catch (err) {
     const message = err && err.message ? err.message : 'error';
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: message }));
+    writeJson(res, 500, { ok: false, error: message }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
