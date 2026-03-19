@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T06:54:22-04:00",
-  "gitCommit": "f6030373ac0a96f9f10c40401a3498e5aaae6d39",
-  "branch": "codex/admin-trace-search-outcome-T040",
-  "sourceDigest": "4d2519de17096b807fc6f9ae7c152007d1e8396257e3aba2d9827e79f900e412",
+  "generatedAt": "2026-03-19T18:40:28-04:00",
+  "gitCommit": "e95aa660fc2d18f0ab37565c5bcc6e3a21cc9645",
+  "branch": "codex/admin-city-pack-evidence-outcome-T041",
+  "sourceDigest": "6205e08b7add2c89221237c49423e0a3e4ee366a10b45a00333e222f9cbf0173",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
