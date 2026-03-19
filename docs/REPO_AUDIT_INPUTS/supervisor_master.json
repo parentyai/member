@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T22:57:53-04:00",
-  "gitCommit": "9963d59e0a3434a9bda470b65e0f97849baed09b",
-  "branch": "codex/internal-emergency-outcome-T025",
-  "sourceDigest": "b723c13a961137aa95cb9f1e256fb1eec73c82db38156275fc85c5ac2a9b1834",
+  "generatedAt": "2026-03-18T23:07:01-04:00",
+  "gitCommit": "edb480b2758056076748cf96dcaf588f8abe9ce7",
+  "branch": "codex/internal-llm-reward-outcome-T028",
+  "sourceDigest": "15ea9d202af4d47afcc176bf96e34b3a81373f7233775a1509dff7f203bd0a3a",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

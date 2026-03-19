@@ -59,8 +59,71 @@ test('phase716: llm reward finalize emits partial outcome when finalize finishes
     const body = JSON.parse(res.body);
     assert.equal(body.outcome && body.outcome.state, 'partial');
     assert.equal(body.outcome && body.outcome.reason, 'completed_with_errors');
+    assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
+    assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_llm_action_reward_finalize_job');
     assert.equal(res.headers['x-member-outcome-state'], 'partial');
     assert.equal(res.headers['x-member-outcome-reason'], 'completed_with_errors');
+    assert.equal(res.headers['x-member-outcome-route-type'], 'internal_job');
+  } finally {
+    if (prevToken === undefined) delete process.env.LLM_ACTION_JOB_TOKEN;
+    else process.env.LLM_ACTION_JOB_TOKEN = prevToken;
+  }
+});
+
+test('phase716: llm reward finalize returns not_found outcome for method mismatch', async () => {
+  const res = createResponseRecorder();
+
+  await handleLlmActionRewardFinalizeJob({
+    method: 'GET',
+    url: '/internal/jobs/llm-action-reward-finalize',
+    headers: {}
+  }, res, '', {
+    enforceLlmGenerationKillSwitchFn: async () => true,
+    finalizeLlmActionRewardsFn: async () => null,
+    appendLlmGateDecisionFn: async () => null
+  });
+
+  assert.equal(res.statusCode, 404);
+  const body = JSON.parse(res.body);
+  assert.equal(body.outcome && body.outcome.state, 'error');
+  assert.equal(body.outcome && body.outcome.reason, 'not_found');
+  assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
+  assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_llm_action_reward_finalize_job');
+  assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.decision, 'block');
+  assert.equal(res.headers['x-member-outcome-state'], 'error');
+  assert.equal(res.headers['x-member-outcome-route-type'], 'internal_job');
+  assert.equal(res.headers['x-member-outcome-reason'], 'not_found');
+});
+
+test('phase716: llm reward finalize attaches route metadata on token guard failure', async () => {
+  const prevToken = process.env.LLM_ACTION_JOB_TOKEN;
+  delete process.env.LLM_ACTION_JOB_TOKEN;
+  try {
+    const req = {
+      method: 'POST',
+      url: '/internal/jobs/llm-action-reward-finalize',
+      headers: {
+        'content-type': 'application/json; charset=utf-8'
+      }
+    };
+    const res = createResponseRecorder();
+
+    await handleLlmActionRewardFinalizeJob(req, res, '{}', {
+      enforceLlmGenerationKillSwitchFn: async () => true,
+      finalizeLlmActionRewardsFn: async () => null,
+      appendLlmGateDecisionFn: async () => null
+    });
+
+    assert.equal(res.statusCode, 503);
+    const body = JSON.parse(res.body);
+    assert.equal(body.outcome && body.outcome.state, 'error');
+    assert.equal(body.outcome && body.outcome.reason, 'job_token_not_configured');
+    assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
+    assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_llm_action_reward_finalize_job');
+    assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.decision, 'block');
+    assert.equal(res.headers['x-member-outcome-state'], 'error');
+    assert.equal(res.headers['x-member-outcome-route-type'], 'internal_job');
+    assert.equal(res.headers['x-member-outcome-reason'], 'job_token_not_configured');
   } finally {
     if (prevToken === undefined) delete process.env.LLM_ACTION_JOB_TOKEN;
     else process.env.LLM_ACTION_JOB_TOKEN = prevToken;

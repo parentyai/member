@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T03:02:38.275Z",
-  "gitCommit": "9963d59e0a3434a9bda470b65e0f97849baed09b",
-  "branch": "codex/internal-emergency-outcome-T025",
-  "sourceDigest": "bafdbbf01e72c19ca92d6ae04281d3c0d78915e71bffb870ed39912654aa2e97",
+  "generatedAt": "2026-03-19T03:12:39.289Z",
+  "gitCommit": "edb480b2758056076748cf96dcaf588f8abe9ce7",
+  "branch": "codex/internal-llm-reward-outcome-T028",
+  "sourceDigest": "10f825ca1dad86d4f0a0c6bab58812c9f76050027350346943ae93d4d6e76f62",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "a8b18c671832bf1e5c5cbd83078165d96a6a0cd17537fcf3cf71067f6ccbf399",
+      "sha256": "81aef9d9350b58769d4a5b5478668c6ed0ecd7e8e22e5a7087e8cdc9645321b8",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "95ec3174f422ccacf7d4239b4586f87ec8640c254f1720d63319aa9af1d3201b",
+      "sha256": "c62144e4a8f419d306012936a3242c8bc1bf3a43273ad0552fc880fb438d6c84",
       "bytes": 487
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "8666726dc0800c01140fb4d6bdf06abdd4f9c4e5c586f36f351c50485ddcd4db",
-      "bytes": 2423
+      "sha256": "ffcc5ca9f2c530e00344318cb6145be6d8bbfc01b1e02bb7141a26ff180a4655",
+      "bytes": 2424
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",
