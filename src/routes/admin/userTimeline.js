@@ -8,6 +8,10 @@ const eventsRepo = require('../../repos/firestore/eventsRepo');
 const { buildTemplateKey } = require('../../usecases/adminOs/planNotificationSend');
 const { mapFailureCode } = require('../../domain/notificationFailureTaxonomy');
 const { USER_SCENARIO_FIELD } = require('../../domain/constants');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.user_timeline';
 
 function normalizeLimit(value, fallback, max) {
   const num = Number(value);
@@ -20,12 +24,30 @@ function resolveDeliveredAt(record) {
   return record.deliveredAt || record.sentAt || null;
 }
 
+function normalizeOutcomeOptions(outcomeOptions) {
+  const input = outcomeOptions && typeof outcomeOptions === 'object' ? outcomeOptions : {};
+  const guard = input.guard && typeof input.guard === 'object' ? input.guard : {};
+  return Object.assign({}, input, {
+    routeType: ROUTE_TYPE,
+    guard: Object.assign({}, guard, { routeKey: ROUTE_KEY })
+  });
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
 async function handleUserTimeline(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const lineUserId = url.searchParams.get('lineUserId');
   if (!lineUserId || !String(lineUserId).trim()) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'lineUserId required' }));
+    writeJson(res, 400, { ok: false, error: 'lineUserId required' }, {
+      state: 'error',
+      reason: 'line_user_id_required'
+    });
     return;
   }
   const limit = normalizeLimit(url.searchParams.get('limit'), 50, 200);
@@ -86,8 +108,7 @@ async function handleUserTimeline(req, res) {
       });
     }
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       lineUserId: String(lineUserId),
       deliveries: enrichedDeliveries,
@@ -96,11 +117,16 @@ async function handleUserTimeline(req, res) {
       audits,
       traceIds,
       serverTime: new Date().toISOString()
-    }));
+    }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
     const message = err && err.message ? err.message : 'error';
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: message }));
+    writeJson(res, 500, { ok: false, error: message }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
