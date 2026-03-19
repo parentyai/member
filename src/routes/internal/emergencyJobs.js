@@ -8,11 +8,20 @@ const { normalizeAndDiffProvider } = require('../../usecases/emergency/normalize
 const { summarizeDraftWithLLM } = require('../../usecases/emergency/summarizeDraftWithLLM');
 const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
-function writeJson(res, status, payload, outcomeOptions) {
-  const body = outcomeOptions && typeof outcomeOptions === 'object'
-    ? attachOutcome(payload || {}, outcomeOptions)
-    : payload;
-  if (body && body.outcome) applyOutcomeHeaders(res, body.outcome);
+function resolveRouteKey(pathname) {
+  if (pathname === '/internal/jobs/emergency-sync') return 'internal_emergency_sync_job';
+  if (pathname === '/internal/jobs/emergency-provider-fetch') return 'internal_emergency_provider_fetch_job';
+  if (pathname === '/internal/jobs/emergency-provider-normalize') return 'internal_emergency_provider_normalize_job';
+  if (pathname === '/internal/jobs/emergency-provider-summarize') return 'internal_emergency_provider_summarize_job';
+  return 'internal_emergency_jobs';
+}
+
+function writeJson(res, status, payload, routeKey, outcomeOptions) {
+  const body = attachOutcome(payload || {}, Object.assign({
+    routeType: 'internal_job',
+    guard: { routeKey }
+  }, outcomeOptions || {}));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
 }
@@ -57,21 +66,37 @@ async function handleEmergencyJobs(req, res, bodyText, deps) {
   const normalizeAndDiffProviderFn = resolvedDeps.normalizeAndDiffProvider || normalizeAndDiffProvider;
   const summarizeDraftWithLLMFn = resolvedDeps.summarizeDraftWithLLM || summarizeDraftWithLLM;
   const pathname = new URL(req.url, 'http://localhost').pathname;
+  const routeKey = resolveRouteKey(pathname);
   if (req.method !== 'POST') {
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, 404, { ok: false, error: 'not found' }, routeKey, {
+      state: 'error',
+      reason: 'not_found',
+      guard: { routeKey, decision: 'block' }
+    });
     return;
   }
-  if (!requireInternalJobToken(req, res)) return;
+  if (!requireInternalJobToken(req, res, {
+    routeType: 'internal_job',
+    guard: { routeKey }
+  })) return;
 
   const killSwitchOn = await getKillSwitchFn();
   if (killSwitchOn) {
-    writeJson(res, 409, { ok: false, error: 'kill switch on' }, { state: 'blocked', reason: 'kill_switch_on' });
+    writeJson(res, 409, { ok: false, error: 'kill switch on' }, routeKey, {
+      state: 'blocked',
+      reason: 'kill_switch_on',
+      guard: { routeKey, decision: 'block', killSwitchOn: true }
+    });
     return;
   }
 
   const payload = parseJson(bodyText);
   if (!payload) {
-    writeJson(res, 400, { ok: false, error: 'invalid json' }, { state: 'error', reason: 'invalid_json' });
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, routeKey, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { routeKey, decision: 'block' }
+    });
     return;
   }
   const traceIdHeader = req.headers && typeof req.headers['x-trace-id'] === 'string'
@@ -92,7 +117,10 @@ async function handleEmergencyJobs(req, res, bodyText, deps) {
       dryRun: payload.dryRun === true,
       maxRecipientsPerRun: payload.maxRecipientsPerRun
     });
-    writeJson(res, resolveInternalJobStatusCode(result), result, resolveOutcome(result));
+    const outcome = resolveOutcome(result);
+    writeJson(res, resolveInternalJobStatusCode(result), result, routeKey, Object.assign(outcome, {
+      guard: { routeKey, decision: outcome.state === 'blocked' || outcome.state === 'error' ? 'block' : 'allow' }
+    }));
     return;
   }
 
@@ -104,7 +132,10 @@ async function handleEmergencyJobs(req, res, bodyText, deps) {
       actor: 'emergency_provider_fetch_job',
       forceRefresh: payload.forceRefresh === true
     });
-    writeJson(res, resolveInternalJobStatusCode(result), result, resolveOutcome(result));
+    const outcome = resolveOutcome(result);
+    writeJson(res, resolveInternalJobStatusCode(result), result, routeKey, Object.assign(outcome, {
+      guard: { routeKey, decision: outcome.state === 'blocked' || outcome.state === 'error' ? 'block' : 'allow' }
+    }));
     return;
   }
 
@@ -118,7 +149,10 @@ async function handleEmergencyJobs(req, res, bodyText, deps) {
       traceId,
       actor: 'emergency_provider_normalize_job'
     });
-    writeJson(res, resolveInternalJobStatusCode(result), result, resolveOutcome(result));
+    const outcome = resolveOutcome(result);
+    writeJson(res, resolveInternalJobStatusCode(result), result, routeKey, Object.assign(outcome, {
+      guard: { routeKey, decision: outcome.state === 'blocked' || outcome.state === 'error' ? 'block' : 'allow' }
+    }));
     return;
   }
 
@@ -129,11 +163,18 @@ async function handleEmergencyJobs(req, res, bodyText, deps) {
       traceId,
       actor: 'emergency_provider_summarize_job'
     });
-    writeJson(res, resolveInternalJobStatusCode(result), result, resolveOutcome(result));
+    const outcome = resolveOutcome(result);
+    writeJson(res, resolveInternalJobStatusCode(result), result, routeKey, Object.assign(outcome, {
+      guard: { routeKey, decision: outcome.state === 'blocked' || outcome.state === 'error' ? 'block' : 'allow' }
+    }));
     return;
   }
 
-  writeJson(res, 404, { ok: false, error: 'not found' });
+  writeJson(res, 404, { ok: false, error: 'not found' }, routeKey, {
+    state: 'error',
+    reason: 'not_found',
+    guard: { routeKey, decision: 'block' }
+  });
 }
 
 module.exports = {
