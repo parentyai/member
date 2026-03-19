@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T06:05:39-04:00",
-  "gitCommit": "ccee98aefa6e244b76ff8605e1c73bee50d59f10",
-  "branch": "codex/admin-os-user-billing-outcome-T037",
-  "sourceDigest": "8da7f4e16cd4fec63aff4413f4dc09107628dd73282993c87788f7907d6ebb69",
+  "generatedAt": "2026-03-19T06:29:57-04:00",
+  "gitCommit": "dab34e150f0e58e476c6482563a8b07fc69706ce",
+  "branch": "codex/admin-os-view-outcome-T038",
+  "sourceDigest": "e0e32b70cd77fc73a3b22236c0b0279506b62345f531c1e48290d25e57e2f139",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
