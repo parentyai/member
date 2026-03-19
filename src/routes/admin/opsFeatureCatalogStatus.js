@@ -2,12 +2,16 @@
 
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const {
   requireActor,
   resolveRequestId,
   resolveTraceId,
   logRouteError
 } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.ops_feature_catalog_status';
 
 function resolveBooleanEnvFlag(name, defaultValue) {
   const raw = process.env[name];
@@ -59,6 +63,33 @@ function sortRows(rows) {
   });
 }
 
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function resolveCatalogOutcome(payload) {
+  const row = payload && typeof payload === 'object' ? payload : {};
+  if (row.available === false) {
+    return { state: 'degraded', reason: 'not_available' };
+  }
+  if (Array.isArray(row.warnings) && row.warnings.includes('ROW_DOCS_UNAVAILABLE')) {
+    return { state: 'degraded', reason: 'completed_with_catalog_fallback' };
+  }
+  return { state: 'success', reason: 'completed' };
+}
+
 async function handleOpsFeatureCatalogStatus(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -67,8 +98,12 @@ async function handleOpsFeatureCatalogStatus(req, res) {
   const requestId = resolveRequestId(req);
 
   if (!resolveOpsSystemSnapshotEnabled()) {
-    res.writeHead(503, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'ops system snapshot disabled', traceId, requestId }));
+    writeJson(
+      res,
+      503,
+      { ok: false, error: 'ops system snapshot disabled', traceId, requestId },
+      { state: 'blocked', reason: 'ops_system_snapshot_disabled' }
+    );
     return;
   }
 
@@ -122,8 +157,7 @@ async function handleOpsFeatureCatalogStatus(req, res) {
       logRouteError('admin.ops_feature_catalog_status.audit', auditErr, { actor, traceId, requestId });
     }
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    const responseBody = {
       ok: true,
       traceId,
       requestId,
@@ -133,11 +167,11 @@ async function handleOpsFeatureCatalogStatus(req, res) {
       rows,
       rowSource,
       warnings
-    }));
+    };
+    writeJson(res, 200, responseBody, resolveCatalogOutcome(responseBody));
   } catch (err) {
     logRouteError('admin.ops_feature_catalog_status.view', err, { actor, traceId, requestId });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, { state: 'error', reason: 'error' });
   }
 }
 
