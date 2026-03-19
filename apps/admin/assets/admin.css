@@ -3740,3 +3740,67 @@ pre[data-visual-noise="evidence-placeholder"] {
 #monitor-insights-handoff-reason {
   flex: 1;
 }
+
+/* PR3 workbench focus cleanup: reduce duplicate CTA noise and keep the action path visible. */
+#pane-composer #composer-pane-details > summary {
+  display: none;
+}
+
+#pane-composer #composer-decision-card .decision-actions {
+  display: none;
+}
+
+#pane-composer .composer-header-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+#pane-composer .composer-status-wrap {
+  display: grid !important;
+  justify-items: start;
+  align-content: start;
+}
+
+.composer-next-step {
+  max-width: 44rem;
+  line-height: 1.45;
+}
+
+.composer-preview-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.composer-preview-trigger[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+#pane-composer .composer-card-actions .composer-hidden-action {
+  display: inline-flex;
+}
+
+#pane-composer .composer-main-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#pane-composer #composer-saved-panel {
+  order: 3;
+}
+
+#pane-composer #composer-card-preview.is-preview-disabled {
+  opacity: 0.82;
+}
+
+@media (max-width: 1100px) {
+  #pane-composer .composer-header-row {
+    grid-template-columns: 1fr;
+  }
+
+  .composer-preview-header-row {
+    align-items: flex-start;
+  }
+}
