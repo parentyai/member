@@ -34,6 +34,7 @@
     "repo-map:generate": "node scripts/generate_repo_map.js",
     "repo-map:check": "node scripts/generate_repo_map.js --check",
     "internal-jobs:conflict-watchlist": "node scripts/report_internal_job_conflict_watchlist.js",
+    "internal-jobs:merge-regen": "node scripts/run_internal_job_merge_regen.js",
     "phase-path-map:generate": "node scripts/generate_phase_path_map.js",
     "phase-path-map:check": "node scripts/check_phase_path_map.js",
     "phase-path-rewrite:apply": "node scripts/apply_phase_path_rewrite.js",
