@@ -3342,11 +3342,61 @@ details:not([open]) > *:not(summary) {
   margin-bottom: var(--space-3);
 }
 
+.dashboard-summary-body {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .dashboard-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
   margin-bottom: var(--space-2);
+}
+
+.dashboard-secondary-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.dashboard-link-btn {
+  min-width: 156px;
+}
+
+.dashboard-panel-lead {
+  margin: 0 0 var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--font-14);
+  line-height: 1.5;
+}
+
+.dashboard-kpi-band {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.dashboard-kpi-band:first-of-type {
+  margin-top: 0;
+}
+
+.dashboard-kpi-band-header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.dashboard-kpi-band-title {
+  margin: 0;
+  font-size: var(--font-16);
+  font-weight: 700;
+}
+
+.dashboard-kpi-band-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-13);
+  line-height: 1.5;
 }
 
 .dashboard-journey-panel {
@@ -3473,6 +3523,10 @@ details:not([open]) > *:not(summary) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .dashboard-secondary-links {
+    flex-direction: column;
+  }
+
   .dashboard-journey-grid {
     grid-template-columns: 1fr;
   }
@@ -3497,6 +3551,10 @@ details:not([open]) > *:not(summary) {
 
   .dashboard-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-link-btn {
+    width: 100%;
   }
 
   .dashboard-kpi-header {
@@ -3625,13 +3683,21 @@ details:not([open]) > *:not(summary) {
 .app-shell.home-clean-surface-v1 .top-developer,
 .app-shell.home-clean-surface-v1 #admin-guard-banner,
 .app-shell.home-clean-surface-v1 #ops-home-dashboard,
-.app-shell.home-clean-surface-v1 #home-decision-card .decision-actions,
 .app-shell.home-clean-surface-v1 .dashboard-journey-panel {
   display: none !important;
 }
 
 .app-shell.home-clean-surface-v1[data-view-pane="home"] #managed-action-evidence {
   display: none !important;
+}
+
+.app-shell.home-clean-surface-v1[data-view-pane="home"] #home-decision-card {
+  display: grid !important;
+}
+
+.app-shell.home-clean-surface-v1 #home-decision-card .decision-actions,
+.app-shell.home-clean-surface-v1[data-view-pane="home"] #home-decision-card .decision-actions {
+  display: flex !important;
 }
 
 /* PR7 visual system cleanup: keep evidence/raw payloads collapsed by default without changing core contracts. */

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T22:33:20-04:00",
-  "gitCommit": "624c8b7b10cce279969e1b1c3e58cc85c5460bb0",
+  "generatedAt": "2026-03-18T20:21:53-04:00",
+  "gitCommit": "b4b8aee3e0dd3cb46a40d42bc81ac93c2e237196",
   "branch": "codex/outcome-contract-T017",
-  "sourceDigest": "aeb1c6fcad4040fbb97b81af8c5d2d6b2ee01a6990aff8fdb6c8a612a7145c43",
+  "sourceDigest": "2a0c0dde5df88c8e808136a62615ef0f144dac453cf2fb66c4bc0c9656370271",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -247,8 +247,6 @@
             </div>
             <div class="decision-actions">
               <button id="home-action-alerts" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="alerts">要対応を確認</button>
-              <button id="home-action-monitor" type="button" class="decision-action-btn" data-action-kind="secondary" data-open-pane="monitor">配信結果を確認</button>
-              <button id="home-action-read-model" type="button" class="decision-action-btn" data-action-kind="tertiary" data-open-pane="read-model">通知集計を確認</button>
             </div>
           </div>
           <div id="home-reflection-state" class="panel data-reflection-panel" data-reflection-pane="home" data-ui="data-reflection-state" data-ui-state="unset" role="status" aria-live="polite">
@@ -265,33 +263,28 @@
               </div>
             </div>
           </div>
-          <details id="home-pane-details" class="decision-details section" open>
+          <details id="home-pane-details" class="decision-details section hidden" data-legacy-dashboard-details="true">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
           </details>
           <div class="panel dashboard-summary-panel">
-            <div class="panel-title">要対応サマリ</div>
-            <div class="panel-body">
+            <div class="panel-title" data-dict-key="ui.label.home.prioritySummary">要対応サマリ</div>
+            <div class="panel-body dashboard-summary-body">
               <div class="dashboard-summary-grid">
                 <div class="note">未対応アラート: <strong id="dashboard-summary-open-alerts">-</strong></div>
                 <div class="note">本日配信予定: <strong id="dashboard-summary-scheduled-today">-</strong></div>
                 <div class="note">登録者数（直近）: <strong id="dashboard-summary-registered-count">-</strong></div>
               </div>
-              <div class="task-card-list dashboard-shortcuts" data-dashboard-links="summary">
-                <button type="button" class="task-card-btn" data-open-pane="alerts">
-                  <span>要対応一覧へ</span>
-                </button>
-                <button type="button" class="task-card-btn" data-open-pane="audit">
-                  <span>証跡ログへ</span>
-                </button>
-                <button type="button" class="task-card-btn" data-open-pane="ops-system-health">
-                  <span>System状態へ</span>
-                </button>
+              <div class="dashboard-secondary-links" data-dashboard-links="summary">
+                <button id="dashboard-link-monitor" type="button" class="secondary-btn dashboard-link-btn" data-open-pane="monitor" data-dict-key="ui.label.home.task.monitor">配信結果を確認</button>
+                <button id="dashboard-link-read-model" type="button" class="secondary-btn dashboard-link-btn" data-open-pane="read-model" data-dict-key="ui.label.home.task.readModel">通知集計を確認</button>
+                <button id="dashboard-link-system" type="button" class="secondary-btn dashboard-link-btn" data-open-pane="ops-system-health" data-dict-key="ui.label.home.task.systemHealth">System状態へ</button>
               </div>
             </div>
           </div>
           <div class="panel dashboard-panel">
-            <div class="panel-title" data-dict-key="ui.label.home.dashboard">ダッシュボード</div>
+            <div class="panel-title" data-dict-key="ui.label.home.primaryMetrics">判断指標</div>
             <div class="panel-body">
+              <p class="dashboard-panel-lead" data-dict-key="ui.desc.home.primaryMetrics">利用状況、配信成果、運用リスクの順に確認します。</p>
               <div class="row dashboard-controls hidden">
                 <label for="dashboard-window-months" data-dict-key="ui.label.home.window">期間</label>
                 <select id="dashboard-window-months" class="select-inline">
@@ -303,8 +296,13 @@
                 </select>
                 <button id="dashboard-reload" type="button" data-dict-key="ui.label.home.reload">指標を更新</button>
               </div>
-              <div class="dashboard-kpi-grid">
-                <div class="dashboard-kpi-card" data-dashboard-card="registrations">
+              <section class="dashboard-kpi-band" data-dashboard-band="usage">
+                <div class="dashboard-kpi-band-header">
+                  <div class="dashboard-kpi-band-title" data-dict-key="ui.label.home.band.usage">利用状況</div>
+                  <p class="dashboard-kpi-band-note" data-dict-key="ui.desc.home.band.usage">登録・会員化・継続利用の動きを確認します。</p>
+                </div>
+                <div class="dashboard-kpi-grid">
+                  <div class="dashboard-kpi-card" data-dashboard-card="registrations">
                   <div class="dashboard-kpi-header">
                     <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.lineRegistered">登録者数推移</div>
                     <select id="dashboard-window-registrations" class="select-inline dashboard-window-select" data-dashboard-metric="registrations">
@@ -324,7 +322,7 @@
                   <div id="dashboard-kpi-registrations-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-registrations-note" class="dashboard-kpi-note">-</div>
                 </div>
-                <div class="dashboard-kpi-card" data-dashboard-card="membership">
+                  <div class="dashboard-kpi-card" data-dashboard-card="membership">
                   <div class="dashboard-kpi-header">
                     <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.redacMatch">メンバーID登録率</div>
                     <select id="dashboard-window-membership" class="select-inline dashboard-window-select" data-dashboard-metric="membership">
@@ -344,87 +342,7 @@
                   <div id="dashboard-kpi-membership-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-membership-note" class="dashboard-kpi-note">-</div>
                 </div>
-                <div class="dashboard-kpi-card" data-dashboard-card="engagement">
-                  <div class="dashboard-kpi-header">
-                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.engagement">エンゲージメント</div>
-                    <select id="dashboard-window-engagement" class="select-inline dashboard-window-select" data-dashboard-metric="engagement">
-                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
-                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
-                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
-                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
-                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
-                    </select>
-                  </div>
-                  <div id="dashboard-kpi-engagement-current" class="dashboard-kpi-value">-</div>
-                  <div class="dashboard-kpi-compare">
-                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
-                    <span id="dashboard-kpi-engagement-previous" class="dashboard-kpi-previous">-</span>
-                    <span id="dashboard-kpi-engagement-delta" class="dashboard-kpi-delta">-</span>
-                  </div>
-                  <div id="dashboard-kpi-engagement-chart" class="dashboard-kpi-chart"></div>
-                  <div id="dashboard-kpi-engagement-note" class="dashboard-kpi-note">-</div>
-                </div>
-                <div class="dashboard-kpi-card" data-dashboard-card="notifications">
-                  <div class="dashboard-kpi-header">
-                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.notificationCount">通知件数</div>
-                    <select id="dashboard-window-notifications" class="select-inline dashboard-window-select" data-dashboard-metric="notifications">
-                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
-                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
-                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
-                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
-                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
-                    </select>
-                  </div>
-                  <div id="dashboard-kpi-notifications-current" class="dashboard-kpi-value">-</div>
-                  <div class="dashboard-kpi-compare">
-                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
-                    <span id="dashboard-kpi-notifications-previous" class="dashboard-kpi-previous">-</span>
-                    <span id="dashboard-kpi-notifications-delta" class="dashboard-kpi-delta">-</span>
-                  </div>
-                  <div id="dashboard-kpi-notifications-chart" class="dashboard-kpi-chart"></div>
-                  <div id="dashboard-kpi-notifications-note" class="dashboard-kpi-note">-</div>
-                </div>
-                <div class="dashboard-kpi-card" data-dashboard-card="reaction">
-                  <div class="dashboard-kpi-header">
-                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.reactionRate">反応率</div>
-                    <select id="dashboard-window-reaction" class="select-inline dashboard-window-select" data-dashboard-metric="reaction">
-                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
-                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
-                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
-                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
-                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
-                    </select>
-                  </div>
-                  <div id="dashboard-kpi-reaction-current" class="dashboard-kpi-value">-</div>
-                  <div class="dashboard-kpi-compare">
-                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
-                    <span id="dashboard-kpi-reaction-previous" class="dashboard-kpi-previous">-</span>
-                    <span id="dashboard-kpi-reaction-delta" class="dashboard-kpi-delta">-</span>
-                  </div>
-                  <div id="dashboard-kpi-reaction-chart" class="dashboard-kpi-chart"></div>
-                  <div id="dashboard-kpi-reaction-note" class="dashboard-kpi-note">-</div>
-                </div>
-                <div class="dashboard-kpi-card" data-dashboard-card="faq">
-                  <div class="dashboard-kpi-header">
-                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.faqUsage">FAQ利用件数</div>
-                    <select id="dashboard-window-faq" class="select-inline dashboard-window-select" data-dashboard-metric="faq">
-                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
-                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
-                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
-                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
-                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
-                    </select>
-                  </div>
-                  <div id="dashboard-kpi-faq-current" class="dashboard-kpi-value">-</div>
-                  <div class="dashboard-kpi-compare">
-                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
-                    <span id="dashboard-kpi-faq-previous" class="dashboard-kpi-previous">-</span>
-                    <span id="dashboard-kpi-faq-delta" class="dashboard-kpi-delta">-</span>
-                  </div>
-                  <div id="dashboard-kpi-faq-chart" class="dashboard-kpi-chart"></div>
-                  <div id="dashboard-kpi-faq-note" class="dashboard-kpi-note">-</div>
-                </div>
-                <div class="dashboard-kpi-card" data-dashboard-card="proRatio">
+                  <div class="dashboard-kpi-card" data-dashboard-card="proRatio">
                   <div class="dashboard-kpi-header">
                     <div class="dashboard-kpi-title">Pro比率</div>
                     <select id="dashboard-window-proRatio" class="select-inline dashboard-window-select" data-dashboard-metric="proRatio">
@@ -444,10 +362,38 @@
                   <div id="dashboard-kpi-proRatio-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-proRatio-note" class="dashboard-kpi-note">-</div>
                 </div>
-                <div class="dashboard-kpi-card" data-dashboard-card="proActive">
+                  <div class="dashboard-kpi-card" data-dashboard-card="proActive">
+                    <div class="dashboard-kpi-header">
+                      <div class="dashboard-kpi-title">有料ユーザー数</div>
+                      <select id="dashboard-window-proActive" class="select-inline dashboard-window-select" data-dashboard-metric="proActive">
+                        <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                        <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                        <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                        <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                        <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                      </select>
+                    </div>
+                    <div id="dashboard-kpi-proActive-current" class="dashboard-kpi-value">-</div>
+                    <div class="dashboard-kpi-compare">
+                      <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                      <span id="dashboard-kpi-proActive-previous" class="dashboard-kpi-previous">-</span>
+                      <span id="dashboard-kpi-proActive-delta" class="dashboard-kpi-delta">-</span>
+                    </div>
+                    <div id="dashboard-kpi-proActive-chart" class="dashboard-kpi-chart"></div>
+                    <div id="dashboard-kpi-proActive-note" class="dashboard-kpi-note">-</div>
+                  </div>
+                </div>
+              </section>
+              <section class="dashboard-kpi-band" data-dashboard-band="delivery">
+                <div class="dashboard-kpi-band-header">
+                  <div class="dashboard-kpi-band-title" data-dict-key="ui.label.home.band.delivery">配信成果</div>
+                  <p class="dashboard-kpi-band-note" data-dict-key="ui.desc.home.band.delivery">配信量、反応、FAQ利用の変化を確認します。</p>
+                </div>
+                <div class="dashboard-kpi-grid">
+                  <div class="dashboard-kpi-card" data-dashboard-card="notifications">
                   <div class="dashboard-kpi-header">
-                    <div class="dashboard-kpi-title">有料ユーザー数</div>
-                    <select id="dashboard-window-proActive" class="select-inline dashboard-window-select" data-dashboard-metric="proActive">
+                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.notificationCount">通知件数</div>
+                    <select id="dashboard-window-notifications" class="select-inline dashboard-window-select" data-dashboard-metric="notifications">
                       <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
                       <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
                       <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
@@ -455,16 +401,84 @@
                       <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
                     </select>
                   </div>
-                  <div id="dashboard-kpi-proActive-current" class="dashboard-kpi-value">-</div>
+                  <div id="dashboard-kpi-notifications-current" class="dashboard-kpi-value">-</div>
                   <div class="dashboard-kpi-compare">
                     <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
-                    <span id="dashboard-kpi-proActive-previous" class="dashboard-kpi-previous">-</span>
-                    <span id="dashboard-kpi-proActive-delta" class="dashboard-kpi-delta">-</span>
+                    <span id="dashboard-kpi-notifications-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-notifications-delta" class="dashboard-kpi-delta">-</span>
                   </div>
-                  <div id="dashboard-kpi-proActive-chart" class="dashboard-kpi-chart"></div>
-                  <div id="dashboard-kpi-proActive-note" class="dashboard-kpi-note">-</div>
+                  <div id="dashboard-kpi-notifications-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-notifications-note" class="dashboard-kpi-note">-</div>
                 </div>
-                <div class="dashboard-kpi-card" data-dashboard-card="llmUsage">
+                  <div class="dashboard-kpi-card" data-dashboard-card="reaction">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.reactionRate">反応率</div>
+                    <select id="dashboard-window-reaction" class="select-inline dashboard-window-select" data-dashboard-metric="reaction">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-reaction-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-reaction-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-reaction-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-reaction-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-reaction-note" class="dashboard-kpi-note">-</div>
+                </div>
+                  <div class="dashboard-kpi-card" data-dashboard-card="faq">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.faqUsage">FAQ利用件数</div>
+                    <select id="dashboard-window-faq" class="select-inline dashboard-window-select" data-dashboard-metric="faq">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-faq-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-faq-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-faq-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-faq-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-faq-note" class="dashboard-kpi-note">-</div>
+                </div>
+                  <div class="dashboard-kpi-card" data-dashboard-card="engagement">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.engagement">エンゲージメント</div>
+                    <select id="dashboard-window-engagement" class="select-inline dashboard-window-select" data-dashboard-metric="engagement">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-engagement-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-engagement-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-engagement-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-engagement-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-engagement-note" class="dashboard-kpi-note">-</div>
+                </div>
+                </div>
+              </section>
+              <section class="dashboard-kpi-band" data-dashboard-band="risk">
+                <div class="dashboard-kpi-band-header">
+                  <div class="dashboard-kpi-band-title" data-dict-key="ui.label.home.band.risk">運用リスク</div>
+                  <p class="dashboard-kpi-band-note" data-dict-key="ui.desc.home.band.risk">LLM・進行停滞・依存詰まりの兆候を確認します。</p>
+                </div>
+                <div class="dashboard-kpi-grid">
+                  <div class="dashboard-kpi-card" data-dashboard-card="llmUsage">
                   <div class="dashboard-kpi-header">
                     <div class="dashboard-kpi-title">LLM利用件数</div>
                     <select id="dashboard-window-llmUsage" class="select-inline dashboard-window-select" data-dashboard-metric="llmUsage">
@@ -484,7 +498,7 @@
                   <div id="dashboard-kpi-llmUsage-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-llmUsage-note" class="dashboard-kpi-note">-</div>
                 </div>
-                <div class="dashboard-kpi-card" data-dashboard-card="llmBlockRate">
+                  <div class="dashboard-kpi-card" data-dashboard-card="llmBlockRate">
                   <div class="dashboard-kpi-header">
                     <div class="dashboard-kpi-title">LLMブロック率</div>
                     <select id="dashboard-window-llmBlockRate" class="select-inline dashboard-window-select" data-dashboard-metric="llmBlockRate">
@@ -504,7 +518,7 @@
                   <div id="dashboard-kpi-llmBlockRate-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-llmBlockRate-note" class="dashboard-kpi-note">-</div>
                 </div>
-                <div class="dashboard-kpi-card" data-dashboard-card="avgTaskCompletion">
+                  <div class="dashboard-kpi-card" data-dashboard-card="avgTaskCompletion">
                   <div class="dashboard-kpi-header">
                     <div class="dashboard-kpi-title">平均タスク完了率</div>
                     <select id="dashboard-window-avgTaskCompletion" class="select-inline dashboard-window-select" data-dashboard-metric="avgTaskCompletion">
@@ -524,7 +538,7 @@
                   <div id="dashboard-kpi-avgTaskCompletion-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-avgTaskCompletion-note" class="dashboard-kpi-note">-</div>
                 </div>
-                <div class="dashboard-kpi-card" data-dashboard-card="dependencyBlockRate">
+                  <div class="dashboard-kpi-card" data-dashboard-card="dependencyBlockRate">
                   <div class="dashboard-kpi-header">
                     <div class="dashboard-kpi-title">依存ブロック率</div>
                     <select id="dashboard-window-dependencyBlockRate" class="select-inline dashboard-window-select" data-dashboard-metric="dependencyBlockRate">
@@ -544,7 +558,8 @@
                   <div id="dashboard-kpi-dependencyBlockRate-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-dependencyBlockRate-note" class="dashboard-kpi-note">-</div>
                 </div>
-              </div>
+                </div>
+              </section>
             </div>
           </div>
         </section>
