@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T00:09:16.612Z",
-  "gitCommit": "e6651d9023cd6a970961121b37f5c1bfe83ce4fd",
-  "branch": "codex/admin-delivery-outcome-T016",
-  "sourceDigest": "7609897196b8f3635ce321401c228e1cfcf1c0b6f823243a3e0757dff3c9eb3a",
+  "generatedAt": "2026-03-19T00:20:24.449Z",
+  "gitCommit": "3d98f738995b70c1d26307a0c2bda766134a6857",
+  "branch": "codex/admin-ui-stack2-pr2-dashboard",
+  "sourceDigest": "dbdae252d82e58ce052052d4f795ee66b5babf0a577012915802d0291277d449",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "1ac517785714ea0b781f23ac7332de6414500fa2df6417791a2f7de08a721368",
+      "sha256": "6d76c0fcf70621694f570cb0ccb4e66404ddfb765f5e38b986e09bfd50ba82db",
       "bytes": 453880
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "91d2c8a314bb0f47e204ce37e87b134e7962fc9aa7d6d91510d5affd7a1978d2",
-      "bytes": 2419
+      "sha256": "f13be0e6d8fd65ebc972dfd587fc3c257594e374251b1849ea698f30116ca6cf",
+      "bytes": 2421
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",
