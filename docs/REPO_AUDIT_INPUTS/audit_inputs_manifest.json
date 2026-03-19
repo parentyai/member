@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T01:15:27.772Z",
-  "gitCommit": "addc79341152e2ec8588170213abd091cb368286",
-  "branch": "codex/admin-analytics-outcome-T019",
-  "sourceDigest": "ce3c8716f8e9b75cca9b0efbd1865a64f8718bbc2cc1a5b7b7b0ec00ce1452f1",
+  "generatedAt": "2026-03-19T01:29:06.119Z",
+  "gitCommit": "96573c191d20d7a29d97f51ac3939fe95e060047",
+  "branch": "codex/admin-ui-stack2-pr4-evidence",
+  "sourceDigest": "fc10df652e9495db15da1a9b4c8e03c364ba376a71bf0e79e5c413a6afd5cd85",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "9bfc237c13ef325ad547a19f629f114c5c3c137b42d77148c5c36882723a0408",
+      "sha256": "695b11dadf51da22cacbe7b5b3384764dd72f11e340c89f0fe4bf5ce6525501a",
       "bytes": 453880
     },
     {
@@ -171,7 +171,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "e42c37e69f9cff79e8f5ce203307c71245a2420b5087e98263967053c0cb1f29",
+      "sha256": "8c2c026fd6949bf9e3ade6b0a8deeefc72178da86af0045f3cc9e3202fa70fe3",
       "bytes": 2420
     },
     {

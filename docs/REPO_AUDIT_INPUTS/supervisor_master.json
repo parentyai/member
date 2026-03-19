@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T21:11:35-04:00",
-  "gitCommit": "addc79341152e2ec8588170213abd091cb368286",
-  "branch": "codex/admin-analytics-outcome-T019",
-  "sourceDigest": "2f51b5daead694af5732f66990ff1e7a8a95b8a16e5db6107a2dca304ffee58c",
+  "generatedAt": "2026-03-18T21:27:37-04:00",
+  "gitCommit": "96573c191d20d7a29d97f51ac3939fe95e060047",
+  "branch": "codex/admin-ui-stack2-pr4-evidence",
+  "sourceDigest": "6029f960df58ca552f52abd02e3c4e46f3713be82faaaa4320ab76ede5e0c4fe",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
