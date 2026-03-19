@@ -1,7 +1,12 @@
 'use strict';
 
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { getTraceBundle } = require('../../usecases/admin/getTraceBundle');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { logRouteError } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.trace_search';
 
 function resolveActor(req) {
   const actor = req && req.headers && req.headers['x-actor'];
@@ -17,15 +22,51 @@ function resolveRequestId(req) {
   return 'unknown';
 }
 
-function handleError(res, err) {
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function handleError(res, err, context) {
   const message = err && err.message ? err.message : 'error';
+  const meta = context && typeof context === 'object' ? context : {};
   if (message.includes('required') || message.includes('invalid')) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: message }));
+    writeJson(res, 400, {
+      ok: false,
+      error: message,
+      traceId: meta.traceId || null,
+      requestId: meta.requestId || 'unknown'
+    }, {
+      state: 'error',
+      reason: 'invalid_request'
+    });
     return;
   }
-  res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: false, error: 'error' }));
+  logRouteError(ROUTE_KEY, err, {
+    actor: meta.actor || 'unknown',
+    traceId: meta.traceId || null,
+    requestId: meta.requestId || 'unknown'
+  });
+  writeJson(res, 500, {
+    ok: false,
+    error: 'error',
+    traceId: meta.traceId || null,
+    requestId: meta.requestId || 'unknown'
+  }, {
+    state: 'error',
+    reason: 'error'
+  });
 }
 
 async function handleAdminTraceSearch(req, res) {
@@ -63,10 +104,12 @@ async function handleAdminTraceSearch(req, res) {
     } catch (_err) {
       // best-effort only
     }
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(result));
+    writeJson(res, 200, result, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
-    handleError(res, err);
+    handleError(res, err, { actor, traceId, requestId });
   }
 }
 
