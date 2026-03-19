@@ -12,9 +12,9 @@ test('phase674: left nav primary groups expose layer labels and keep one primary
   assert.ok(dashboardStart >= 0 && developerStart > dashboardStart, 'primary nav region missing');
 
   const primaryBlock = html.slice(dashboardStart, developerStart);
-  assert.ok(primaryBlock.includes('Dashboard（判断）'));
-  assert.ok(primaryBlock.includes('Workbench（実行）'));
-  assert.ok(primaryBlock.includes('Data / Evidence / System'));
+  assert.ok(primaryBlock.includes('判断 / Dashboard'));
+  assert.ok(primaryBlock.includes('実行 / Workbench'));
+  assert.ok(primaryBlock.includes('確認 / Data・Evidence・System'));
 
   const paneMatches = Array.from(primaryBlock.matchAll(/data-pane-target="([^"]+)"/g)).map((entry) => entry[1]);
   const counts = paneMatches.reduce((acc, pane) => {
@@ -35,9 +35,9 @@ test('phase674: control group keeps data/evidence/system layering and settings o
   assert.ok(controlStart >= 0 && developerStart > controlStart, 'control nav group missing');
 
   const controlBlock = html.slice(controlStart, developerStart);
-  assert.ok(controlBlock.includes('nav-layer-label">Data</div>'));
-  assert.ok(controlBlock.includes('nav-layer-label">Evidence</div>'));
-  assert.ok(controlBlock.includes('nav-layer-label">System</div>'));
+  assert.ok(controlBlock.includes('nav-layer-label" data-dict-key="ui.label.nav.layer.data">確認 / Data</div>'));
+  assert.ok(controlBlock.includes('nav-layer-label" data-dict-key="ui.label.nav.layer.evidence">証跡 / Evidence</div>'));
+  assert.ok(controlBlock.includes('nav-layer-label" data-dict-key="ui.label.nav.layer.system">保守 / System</div>'));
   assert.ok(controlBlock.includes('data-pane-target="read-model"'));
   assert.ok(controlBlock.includes('data-pane-target="alerts"'));
   assert.ok(controlBlock.includes('data-pane-target="errors"'));
@@ -45,4 +45,25 @@ test('phase674: control group keeps data/evidence/system layering and settings o
   assert.ok(controlBlock.includes('data-pane-target="ops-feature-catalog"'));
   assert.ok(controlBlock.includes('data-pane-target="ops-system-health"'));
   assert.ok(controlBlock.indexOf('data-pane-target="errors"') < controlBlock.indexOf('id="nav-open-settings"'));
+});
+
+test('phase674: developer shortcut layer label is Japanese-first', () => {
+  const html = fs.readFileSync('apps/admin/app.html', 'utf8');
+  const developerLayerStart = html.indexOf('data-role="developer"');
+  assert.ok(developerLayerStart >= 0, 'developer layer label missing');
+  const developerLayerEnd = html.indexOf('</div>', developerLayerStart);
+  assert.ok(developerLayerEnd > developerLayerStart, 'developer layer label closing tag missing');
+  const developerLayer = html.slice(developerLayerStart, developerLayerEnd);
+  assert.ok(developerLayer.includes('開発者ショートカット'), 'developer layer label must show the Japanese shortcut text');
+});
+
+test('phase674: core panes show the page-purpose subtitle', () => {
+  const html = fs.readFileSync('apps/admin/app.html', 'utf8');
+  const subtitleStart = html.indexOf('<p id="page-subtitle"');
+  assert.ok(subtitleStart >= 0, 'page subtitle element missing');
+  const subtitleEnd = html.indexOf('</p>', subtitleStart);
+  assert.ok(subtitleEnd > subtitleStart, 'page subtitle closing tag missing');
+  const subtitleBlock = html.slice(subtitleStart, subtitleEnd);
+  assert.ok(subtitleBlock.includes('data-dict-key="ui.desc.page.home"'), 'page subtitle must reference the purpose dict key');
+  assert.ok(subtitleBlock.includes('通知配信の判断指標を期間別に確認します。'), 'subtitle text must describe the home pane purpose');
 });

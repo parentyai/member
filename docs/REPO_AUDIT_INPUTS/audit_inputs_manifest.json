@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-17T02:23:34.030Z",
-  "gitCommit": "1cab60e8b743c8c0c8d3b29e98a01b9b7b4ce27a",
+  "generatedAt": "2026-03-19T00:09:16.612Z",
+  "gitCommit": "e6651d9023cd6a970961121b37f5c1bfe83ce4fd",
   "branch": "codex/admin-delivery-outcome-T016",
-  "sourceDigest": "6b5b086ee36a97fc920c957b27f582752e7a721daabfed3d13ec74184dbc4cfb",
+  "sourceDigest": "7609897196b8f3635ce321401c228e1cfcf1c0b6f823243a3e0757dff3c9eb3a",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "c0ecdca569520cd09db1590bb16ec5550bffd9daba05dd3eecc63cc9e0f2ce23",
+      "sha256": "40a7d97a6b68494feed39814043aaf8adabda6a9785bfa36d7abd8c9ba7ed1ca",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "f32abf88c4f9395ed3934965971318daae41df559d3dd1d0e8779449314978af",
+      "sha256": "4a108c08ab182de27d55196570024f973f5fe13eebeb19015730f48bb10eb7d8",
       "bytes": 487
     },
     {
@@ -146,12 +146,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "7b9fb5f8b3c2f5954835720a7dce98e5c0ba3dfeff18e86eddc6a13f3e78d57f",
+      "sha256": "1ac517785714ea0b781f23ac7332de6414500fa2df6417791a2f7de08a721368",
       "bytes": 453880
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "f0bdc0b2a81264ea04d7c042f3e8cd8076a8232d47c2104ed7fcce3d6f1188ea",
+      "sha256": "c697527be4b54650ea82116c6785319078586d444f4458f2f8494f1ae8bb9ba5",
       "bytes": 740
     },
     {
@@ -166,12 +166,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "5e290e84923092d3b23225ab730a507385e82e5eebcf26be860e25c683a74109",
+      "sha256": "3d877e2e3170191101e088e90a10573afdcc01925e5cf1e72c7621129d4d7c61",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "0bb95be4d2c53743769de6f983ce7cd2ab3d2e2aeeead33905dfc16aa5227973",
+      "sha256": "91d2c8a314bb0f47e204ce37e87b134e7962fc9aa7d6d91510d5affd7a1978d2",
       "bytes": 2419
     },
     {

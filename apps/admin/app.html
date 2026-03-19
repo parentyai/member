@@ -12,7 +12,7 @@
         <div class="nav-title" data-dict-key="ui.label.nav.title">運用ナビ</div>
 
         <div class="nav-group nav-group-dashboard" data-nav-group="dashboard" data-nav-surface="primary">
-          <div class="nav-group-label nav-group-label-dashboard">Dashboard（判断）</div>
+          <div class="nav-group-label nav-group-label-dashboard" data-dict-key="ui.label.nav.group.decision">判断 / Dashboard</div>
           <button class="nav-item is-active" data-pane-target="home" data-nav-priority="100">
             <span class="nav-icon" aria-hidden="true">D</span>
             <span data-dict-key="ui.label.nav.dashboard">ダッシュボード</span>
@@ -20,7 +20,7 @@
         </div>
 
         <div class="nav-group nav-group-run" data-nav-group="run" data-nav-surface="primary">
-          <div class="nav-group-label">Workbench（実行）</div>
+          <div class="nav-group-label" data-dict-key="ui.label.nav.group.workbench">実行 / Workbench</div>
           <button class="nav-item" data-pane-target="composer" data-nav-priority="240">
             <span class="nav-icon" aria-hidden="true">N</span>
             <span data-dict-key="ui.label.nav.notifyCreate">作成</span>
@@ -44,13 +44,13 @@
         </div>
 
         <div class="nav-group nav-group-control" data-nav-group="control" data-nav-surface="primary">
-          <div class="nav-group-label">Data / Evidence / System</div>
-          <div class="nav-layer-label">Data</div>
+          <div class="nav-group-label" data-dict-key="ui.label.nav.group.dataEvidenceSystem">確認 / Data・Evidence・System</div>
+          <div class="nav-layer-label" data-dict-key="ui.label.nav.layer.data">確認 / Data</div>
           <button class="nav-item" data-pane-target="read-model" data-nav-priority="236">
             <span class="nav-icon" aria-hidden="true">RM</span>
             <span data-dict-key="ui.label.nav.readModel">通知集計</span>
           </button>
-          <div class="nav-layer-label">Evidence</div>
+          <div class="nav-layer-label" data-dict-key="ui.label.nav.layer.evidence">証跡 / Evidence</div>
           <button class="nav-item" data-pane-target="alerts" data-nav-priority="235">
             <span class="nav-icon" aria-hidden="true">!</span>
             <span data-dict-key="ui.label.nav.alerts">要対応</span>
@@ -67,7 +67,7 @@
             <span class="nav-icon" aria-hidden="true">QP</span>
             <span data-dict-key="ui.label.nav.qualityPatrol">Quality Patrol</span>
           </button>
-          <div class="nav-layer-label">System</div>
+          <div class="nav-layer-label" data-dict-key="ui.label.nav.layer.system">保守 / System</div>
           <button id="nav-open-settings" class="nav-item" data-pane-target="settings" data-nav-priority="232">
             <span class="nav-icon" aria-hidden="true">S</span>
             <span data-dict-key="ui.label.nav.settings">設定</span>
@@ -84,12 +84,12 @@
             <span class="nav-icon" aria-hidden="true">MT</span>
             <span data-dict-key="ui.label.nav.maintenance">回復・保守</span>
           </button>
-          <div class="nav-layer-label" data-role="admin" data-role-allow="admin,developer">LLM</div>
+          <div class="nav-layer-label" data-role="admin" data-role-allow="admin,developer" data-dict-key="ui.label.nav.layer.llm">支援 / LLM</div>
           <button class="nav-item" data-pane-target="llm" data-role="admin" data-role-allow="admin,developer" data-nav-priority="228">
             <span class="nav-icon" aria-hidden="true">L</span>
             <span data-dict-key="ui.label.nav.llm">LLM支援</span>
           </button>
-          <div class="nav-layer-label" data-role="developer">Developer Shortcut</div>
+          <div class="nav-layer-label" data-role="developer" data-dict-key="ui.label.nav.layer.developer">開発者ショートカット</div>
           <button class="nav-item" data-pane-target="developer-map" data-scroll-target="developer-map-legacy" data-role="developer" data-nav-priority="227">
             <span class="nav-icon" aria-hidden="true">LR</span>
             <span>運用証跡マップ</span>
@@ -132,7 +132,7 @@
       <main class="app-content" data-ui="content-root">
         <header class="app-topbar" data-ui="topbar">
           <div class="top-metric top-metric-wide">
-            <div class="top-label" data-dict-key="ui.label.nav.home">ダッシュボード</div>
+            <div class="top-label" data-dict-key="ui.label.top.summary">現在の状況</div>
             <div id="topbar-summary-line" class="top-summary-line">
               <span class="top-summary-item">
                 <span data-dict-key="ui.label.top.registered">登録者数</span>:
