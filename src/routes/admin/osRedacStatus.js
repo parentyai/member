@@ -3,6 +3,7 @@
 const { getDb } = require('../../infra/firestore');
 const usersRepo = require('../../repos/firestore/usersRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
 const {
   REDAC_CANONICAL_LINK_COLLECTION,
@@ -11,6 +12,25 @@ const {
   resolveRedacLinkRecord,
   logCanonicalAuthorityLegacyRead
 } = require('../../domain/canonicalAuthority');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.os_redac_status';
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
 
 function parseLimit(req) {
   const rawUrl = req && req.url ? String(req.url) : '/';
@@ -127,53 +147,67 @@ async function handleStatus(req, res) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const serverTime = new Date().toISOString();
-  const sampleLimit = parseLimit(req);
-  const secretConfigured = Boolean(normalizeHash(process.env.REDAC_MEMBERSHIP_ID_HMAC_SECRET));
+  try {
+    const serverTime = new Date().toISOString();
+    const sampleLimit = parseLimit(req);
+    const secretConfigured = Boolean(normalizeHash(process.env.REDAC_MEMBERSHIP_ID_HMAC_SECRET));
 
-  const [users, linksResult] = await Promise.all([
-    usersRepo.listUsers({ limit: sampleLimit }),
-    listLinksSample(sampleLimit)
-  ]);
+    const [users, linksResult] = await Promise.all([
+      usersRepo.listUsers({ limit: sampleLimit }),
+      listLinksSample(sampleLimit)
+    ]);
 
-  const links = linksResult && Array.isArray(linksResult.items) ? linksResult.items : [];
-  const authority = linksResult && linksResult.authority ? linksResult.authority : {
-    canonicalCollection: REDAC_CANONICAL_LINK_COLLECTION,
-    legacyCollection: REDAC_LEGACY_LINK_COLLECTION,
-    canonicalSampleCount: 0,
-    legacySampleCount: 0,
-    legacyReadUsed: false
-  };
-  if (authority.legacyReadUsed) {
-    logCanonicalAuthorityLegacyRead('redac_membership.status_view', {
+    const links = linksResult && Array.isArray(linksResult.items) ? linksResult.items : [];
+    const authority = linksResult && linksResult.authority ? linksResult.authority : {
+      canonicalCollection: REDAC_CANONICAL_LINK_COLLECTION,
+      legacyCollection: REDAC_LEGACY_LINK_COLLECTION,
+      canonicalSampleCount: 0,
+      legacySampleCount: 0,
+      legacyReadUsed: false
+    };
+    if (authority.legacyReadUsed) {
+      logCanonicalAuthorityLegacyRead('redac_membership.status_view', {
+        requestId,
+        legacyCollection: authority.legacyCollection,
+        legacySampleCount: authority.legacySampleCount
+      });
+    }
+    const summary = summarize(users, links, secretConfigured);
+
+    await appendAuditLog({
+      actor,
+      action: 'redac_membership.status.view',
+      entityType: 'admin_os',
+      entityId: 'redac_status',
+      traceId,
       requestId,
-      legacyCollection: authority.legacyCollection,
-      legacySampleCount: authority.legacySampleCount
+      payloadSummary: Object.assign({ secretConfigured, sampleLimit, authority }, summary)
+    });
+
+    writeJson(res, 200, {
+      ok: true,
+      serverTime,
+      traceId,
+      requestId,
+      sampleLimit,
+      secretConfigured,
+      authority,
+      summary
+    }, {
+      state: summary.status === 'OK' ? 'success' : 'degraded',
+      reason: summary.status === 'OK' ? 'completed' : 'issues_detected'
+    });
+  } catch (err) {
+    writeJson(res, 500, {
+      ok: false,
+      error: 'error',
+      traceId,
+      requestId
+    }, {
+      state: 'error',
+      reason: 'error'
     });
   }
-  const summary = summarize(users, links, secretConfigured);
-
-  await appendAuditLog({
-    actor,
-    action: 'redac_membership.status.view',
-    entityType: 'admin_os',
-    entityId: 'redac_status',
-    traceId,
-    requestId,
-    payloadSummary: Object.assign({ secretConfigured, sampleLimit, authority }, summary)
-  });
-
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
-    ok: true,
-    serverTime,
-    traceId,
-    requestId,
-    sampleLimit,
-    secretConfigured,
-    authority,
-    summary
-  }));
 }
 
 module.exports = {
