@@ -7,9 +7,13 @@ const {
   requireActor,
   resolveRequestId,
   resolveTraceId,
-  parseJson,
   logRouteError
 } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
+
+const ROUTE_TYPE = 'admin_route';
+const VIEW_ROUTE_KEY = 'admin.ops_system_snapshot';
+const REBUILD_ROUTE_KEY = 'admin.ops_system_snapshot_rebuild';
 
 function resolveBooleanEnvFlag(name, defaultValue) {
   const raw = process.env[name];
@@ -60,6 +64,35 @@ function normalizeSnapshotDoc(snapshot) {
   }, data);
 }
 
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, routeKey, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function parseRebuildJson(bodyText, req, res, traceId, requestId) {
+  try {
+    return JSON.parse(bodyText || '{}');
+  } catch (_err) {
+    writeJson(res, 400, { ok: false, error: 'invalid json', traceId, requestId }, REBUILD_ROUTE_KEY, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { decision: 'block' }
+    });
+    return null;
+  }
+}
+
 async function handleOpsSystemSnapshot(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -68,8 +101,11 @@ async function handleOpsSystemSnapshot(req, res) {
   const requestId = resolveRequestId(req);
 
   if (!resolveOpsSystemSnapshotEnabled()) {
-    res.writeHead(503, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'ops system snapshot disabled', traceId, requestId }));
+    writeJson(res, 503, { ok: false, error: 'ops system snapshot disabled', traceId, requestId }, VIEW_ROUTE_KEY, {
+      state: 'blocked',
+      reason: 'ops_system_snapshot_disabled',
+      guard: { decision: 'block' }
+    });
     return;
   }
 
@@ -95,19 +131,23 @@ async function handleOpsSystemSnapshot(req, res) {
       logRouteError('admin.ops_system_snapshot.audit', auditErr, { actor, traceId, requestId });
     }
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       traceId,
       requestId,
       source: 'snapshot',
       available: Boolean(snapshot),
       snapshot
-    }));
+    }, VIEW_ROUTE_KEY, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
     logRouteError('admin.ops_system_snapshot.view', err, { actor, traceId, requestId });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, VIEW_ROUTE_KEY, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
@@ -118,12 +158,15 @@ async function handleOpsSystemSnapshotRebuild(req, res, bodyText) {
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   if (!resolveOpsSystemSnapshotEnabled()) {
-    res.writeHead(503, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'ops system snapshot disabled', traceId, requestId }));
+    writeJson(res, 503, { ok: false, error: 'ops system snapshot disabled', traceId, requestId }, REBUILD_ROUTE_KEY, {
+      state: 'blocked',
+      reason: 'ops_system_snapshot_disabled',
+      guard: { decision: 'block' }
+    });
     return;
   }
 
-  const payload = parseJson(bodyText, res);
+  const payload = parseRebuildJson(bodyText, req, res, traceId, requestId);
   if (!payload) return;
 
   try {
@@ -135,12 +178,16 @@ async function handleOpsSystemSnapshotRebuild(req, res, bodyText) {
       scanLimit: parseScanLimit(payload.scanLimit),
       targets: ['ops_system_snapshot']
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(Object.assign({ ok: true }, result)));
+    writeJson(res, 200, Object.assign({ ok: true }, result), REBUILD_ROUTE_KEY, {
+      state: 'success',
+      reason: payload.dryRun === true ? 'dry_run' : 'completed'
+    });
   } catch (err) {
     logRouteError('admin.ops_system_snapshot.rebuild', err, { actor, traceId, requestId });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, REBUILD_ROUTE_KEY, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
@@ -148,4 +195,3 @@ module.exports = {
   handleOpsSystemSnapshot,
   handleOpsSystemSnapshotRebuild
 };
-
