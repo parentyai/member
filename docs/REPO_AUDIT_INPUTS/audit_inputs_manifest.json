@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T22:31:30.351Z",
-  "gitCommit": "e954ef89d7dc78c8ec4498dc26a4924b69c49536",
+  "generatedAt": "2026-03-19T22:40:34.007Z",
+  "gitCommit": "e95aa660fc2d18f0ab37565c5bcc6e3a21cc9645",
   "branch": "codex/admin-city-pack-evidence-outcome-T041",
-  "sourceDigest": "f6fffde45b7eab621db989119860f8dfe63d63c18fac8f80407fa2dfacb1ac5f",
+  "sourceDigest": "468bbae0c7c4507ac3048a17a75574d41d227c33e9d0614a4a3601e9e3d5ac55",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -171,7 +171,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "b5dda63c86bc27139fe95101ec5fc089abe8674612ed92ea322221fc37554089",
+      "sha256": "538297f03712588ab3f8d6e52191e270e5c021a0508c6fec00abb9729940ffe6",
       "bytes": 2429
     },
     {

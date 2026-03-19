@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T07:46:43-04:00",
-  "gitCommit": "e954ef89d7dc78c8ec4498dc26a4924b69c49536",
+  "generatedAt": "2026-03-19T18:40:28-04:00",
+  "gitCommit": "e95aa660fc2d18f0ab37565c5bcc6e3a21cc9645",
   "branch": "codex/admin-city-pack-evidence-outcome-T041",
-  "sourceDigest": "3d3c11b8f74ee9f1f08ad2370b6855d66ea78b91a6e95fe161212d3ff7975ae9",
+  "sourceDigest": "6205e08b7add2c89221237c49423e0a3e4ee366a10b45a00333e222f9cbf0173",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
