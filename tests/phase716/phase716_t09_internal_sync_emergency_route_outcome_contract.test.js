@@ -94,8 +94,42 @@ test('phase716: emergency sync emits partial outcome headers when provider run p
     const body = JSON.parse(res.body);
     assert.equal(body.outcome && body.outcome.state, 'partial');
     assert.equal(body.outcome && body.outcome.reason, 'completed_with_failures');
+    assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
+    assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_emergency_sync_job');
     assert.equal(res.headers['x-member-outcome-state'], 'partial');
     assert.equal(res.headers['x-member-outcome-reason'], 'completed_with_failures');
+    assert.equal(res.headers['x-member-outcome-route-type'], 'internal_job');
+  } finally {
+    if (prevToken === undefined) delete process.env.CITY_PACK_JOB_TOKEN;
+    else process.env.CITY_PACK_JOB_TOKEN = prevToken;
+  }
+});
+
+test('phase716: emergency handler returns not_found outcome for unknown route in direct execution', async () => {
+  const prevToken = process.env.CITY_PACK_JOB_TOKEN;
+  process.env.CITY_PACK_JOB_TOKEN = 'phase716_city_pack_token';
+  try {
+    const req = {
+      method: 'POST',
+      url: '/internal/jobs/emergency-unknown',
+      headers: {
+        'x-city-pack-job-token': 'phase716_city_pack_token',
+        'content-type': 'application/json; charset=utf-8'
+      }
+    };
+    const res = createResponseRecorder();
+
+    await handleEmergencyJobs(req, res, '{}', {
+      getKillSwitch: async () => false
+    });
+
+    assert.equal(res.statusCode, 404);
+    const body = JSON.parse(res.body);
+    assert.equal(body.outcome && body.outcome.state, 'error');
+    assert.equal(body.outcome && body.outcome.reason, 'not_found');
+    assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
+    assert.equal(body.outcome && body.outcome.guard && body.outcome.guard.routeKey, 'internal_emergency_jobs');
+    assert.equal(res.headers['x-member-outcome-route-type'], 'internal_job');
   } finally {
     if (prevToken === undefined) delete process.env.CITY_PACK_JOB_TOKEN;
     else process.env.CITY_PACK_JOB_TOKEN = prevToken;

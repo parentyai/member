@@ -402,7 +402,7 @@
     },
     {
       "file": "src/routes/internal/emergencyJobs.js",
-      "line": 54,
+      "line": 63,
       "symbol": "getKillSwitch"
     },
     {

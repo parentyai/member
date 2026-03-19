@@ -90,6 +90,11 @@ test('phase669: emergency admin/internal routes require token and respect kill s
     body: JSON.stringify({ runId: 'run_phase669_internal_unauth' })
   });
   assert.equal(internalUnauthorized.status, 401);
+  const unauthorizedBody = JSON.parse(internalUnauthorized.body);
+  assert.equal(unauthorizedBody.outcome && unauthorizedBody.outcome.state, 'blocked');
+  assert.equal(unauthorizedBody.outcome && unauthorizedBody.outcome.reason, 'unauthorized');
+  assert.equal(unauthorizedBody.outcome && unauthorizedBody.outcome.routeType, 'internal_job');
+  assert.equal(unauthorizedBody.outcome && unauthorizedBody.outcome.guard && unauthorizedBody.outcome.guard.routeKey, 'internal_emergency_sync_job');
 
   await systemFlagsRepo.setKillSwitch(true);
   const internalBlocked = await request({
@@ -107,5 +112,8 @@ test('phase669: emergency admin/internal routes require token and respect kill s
   const blockedBody = JSON.parse(internalBlocked.body);
   assert.equal(blockedBody.ok, false);
   assert.equal(blockedBody.error, 'kill switch on');
+  assert.equal(blockedBody.outcome && blockedBody.outcome.state, 'blocked');
+  assert.equal(blockedBody.outcome && blockedBody.outcome.reason, 'kill_switch_on');
+  assert.equal(blockedBody.outcome && blockedBody.outcome.routeType, 'internal_job');
+  assert.equal(blockedBody.outcome && blockedBody.outcome.guard && blockedBody.outcome.guard.routeKey, 'internal_emergency_sync_job');
 });
-

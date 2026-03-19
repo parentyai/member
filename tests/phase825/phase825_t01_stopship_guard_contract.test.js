@@ -77,6 +77,7 @@ test('phase825: task nudge route returns 503 when usecase reports kill-switch re
     assert.equal(body.status, 'blocked_by_killswitch_read_failed');
     assert.equal(body.outcome && body.outcome.state, 'blocked');
     assert.equal(body.outcome && body.outcome.reason, 'kill_switch_read_failed');
+    assert.equal(body.outcome && body.outcome.routeType, 'internal_job');
     assert.equal(res.headers['x-member-outcome-state'], 'blocked');
     assert.equal(res.headers['x-member-outcome-reason'], 'kill_switch_read_failed');
   } finally {
@@ -111,6 +112,9 @@ test('phase825: emergency internal route maps failed outcomes to non-200 status'
       runEmergencySync: async () => ({ ok: false, partialFailure: true, reason: 'completed_with_failures' })
     });
     assert.equal(partialRes.statusCode, 207);
+    const partialBody = JSON.parse(partialRes.body);
+    assert.equal(partialBody.outcome && partialBody.outcome.routeType, 'internal_job');
+    assert.equal(partialBody.outcome && partialBody.outcome.guard && partialBody.outcome.guard.routeKey, 'internal_emergency_sync_job');
 
     const errorRes = createResponseRecorder();
     await handleEmergencyJobs(reqBase, errorRes, '{}', {
@@ -118,6 +122,9 @@ test('phase825: emergency internal route maps failed outcomes to non-200 status'
       runEmergencySync: async () => ({ ok: false, reason: 'upstream_failed' })
     });
     assert.equal(errorRes.statusCode, 500);
+    const errorBody = JSON.parse(errorRes.body);
+    assert.equal(errorBody.outcome && errorBody.outcome.routeType, 'internal_job');
+    assert.equal(errorBody.outcome && errorBody.outcome.guard && errorBody.outcome.guard.routeKey, 'internal_emergency_sync_job');
   } finally {
     if (prevToken === undefined) delete process.env.CITY_PACK_JOB_TOKEN;
     else process.env.CITY_PACK_JOB_TOKEN = prevToken;
