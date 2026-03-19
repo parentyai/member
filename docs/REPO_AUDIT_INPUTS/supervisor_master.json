@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T19:12:20-04:00",
-  "gitCommit": "3f2baec66be01d03d82a776f7a379d4f6efbb2be",
-  "branch": "codex/admin-notification-test-outcome-T045",
-  "sourceDigest": "fee80cf1d56d6125d5108d5e39aafc4e7374bc02fe25fe28e472f87cb3f3810a",
+  "generatedAt": "2026-03-19T19:19:50-04:00",
+  "gitCommit": "d28d2dc6feedc3a3bdce33112139bed89e1675b3",
+  "branch": "codex/admin-kb-articles-outcome-T046",
+  "sourceDigest": "8112f200998e4c527d71b79aed49765a949a80a024879db3f5b019d83e201daf",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
