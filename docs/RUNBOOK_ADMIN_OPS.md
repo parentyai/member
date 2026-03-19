@@ -831,6 +831,12 @@ API:
 - `GET /api/admin/os/users-summary/export`
 - `GET /api/admin/os/llm-usage/summary`
 - `GET /api/admin/os/llm-usage/export`（CSV / userIdマスク済み）
+- `GET /api/admin/notification-deliveries`
+
+route outcome:
+- users summary analyze: `success/completed`, `error/invalid_limit`, `error/invalid_plan`, `error/invalid_subscription_status`, `error/invalid_quick_filter`, `error/invalid_billing_integrity`, `error/error`
+- llm usage summary: `success/completed`, `error/invalid_query`, `error/error`
+- notification deliveries: `success/completed`, `error/line_user_id_or_member_id_required`, `error/error`
 
 ### Journey KPI運用（Retention/LTV）
 1) `GET /api/admin/os/journey-kpi` で最新KPIを取得する。  
