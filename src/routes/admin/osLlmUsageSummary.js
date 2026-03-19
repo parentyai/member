@@ -8,9 +8,13 @@ const specContractRegistry = require('../../../contracts/llm_spec_contract_regis
 const { buildBacklogRowsFromSignals } = require('../../../tools/generate_llm_improvement_plan');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { buildCounterexampleQueueFromSignalEntries } = require('../../domain/llm/quality/counterexampleQueue');
 const { buildTraceProbeRows } = require('../../usecases/admin/buildTraceProbeRows');
 const { resolveTelemetryCoverageSignals } = require('../../domain/llm/quality/resolveTelemetryCoverageSignals');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.os_llm_usage_summary';
 
 function parsePositiveInt(value, fallback, min, max) {
   if (value === null || value === undefined || value === '') return fallback;
@@ -26,6 +30,22 @@ function parseRate(value, fallback) {
   if (!Number.isFinite(num)) return null;
   if (num < 0 || num > 1) return null;
   return Math.round(num * 10000) / 10000;
+}
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
 }
 
 const DEFAULT_RELEASE_READINESS_THRESHOLDS = Object.freeze({
@@ -3063,23 +3083,30 @@ async function handleLlmUsageSummary(req, res) {
       }
     });
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       traceId,
       requestId,
       summary
-    }));
+    }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
     const message = err && err.message ? err.message : 'error';
     if (message.startsWith('invalid ')) {
-      res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: message, traceId, requestId }));
+      writeJson(res, 400, { ok: false, error: message, traceId, requestId }, {
+        state: 'error',
+        reason: 'invalid_query',
+        guard: { decision: 'block' }
+      });
       return;
     }
     logRouteError('admin.os_llm_usage_summary', err, { traceId, requestId, actor });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
