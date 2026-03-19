@@ -5,11 +5,14 @@ const { runStructDriftBackfill } = require('../../usecases/structure/runStructDr
 const { requireInternalJobToken } = require('./cityPackSourceAuditJob');
 const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
+const ROUTE_KEY = 'internal_struct_drift_backfill_job';
+
 function writeJson(res, status, payload, outcomeOptions) {
-  const body = outcomeOptions && typeof outcomeOptions === 'object'
-    ? attachOutcome(payload || {}, outcomeOptions)
-    : payload;
-  if (body && body.outcome) applyOutcomeHeaders(res, body.outcome);
+  const body = attachOutcome(payload || {}, Object.assign({
+    routeType: 'internal_job',
+    guard: { routeKey: ROUTE_KEY }
+  }, outcomeOptions || {}));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
 }
@@ -47,14 +50,25 @@ async function handleStructDriftBackfillJob(req, res, bodyText, deps) {
     ? deps.appendAuditLogFn
     : appendAuditLog;
   if (req.method !== 'POST') {
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, 404, { ok: false, error: 'not found' }, {
+      state: 'error',
+      reason: 'not_found',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
-  if (!requireInternalJobToken(req, res)) return;
+  if (!requireInternalJobToken(req, res, {
+    routeType: 'internal_job',
+    guard: { routeKey: ROUTE_KEY }
+  })) return;
 
   const payload = parseJson(bodyText);
   if (!payload) {
-    writeJson(res, 400, { ok: false, error: 'invalid json' });
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -94,7 +108,9 @@ async function handleStructDriftBackfillJob(req, res, bodyText, deps) {
     // best-effort audit
   }
 
-  writeJson(res, 200, Object.assign({}, result, { traceId }), resolveOutcome(result));
+  writeJson(res, 200, Object.assign({}, result, { traceId }), Object.assign(resolveOutcome(result), {
+    guard: { routeKey: ROUTE_KEY, decision: 'allow' }
+  }));
 }
 
 module.exports = {

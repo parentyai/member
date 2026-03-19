@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T21:33:36-04:00",
-  "gitCommit": "7f49ca18f919738c722d541bba25721cc33562ab",
-  "branch": "codex/admin-platform-read-outcome-T022",
-  "sourceDigest": "bd03e8760ac4e5cb122695f9c89c77f52429d47cf6a8f7b9d645ca563f5b21aa",
+  "generatedAt": "2026-03-18T22:14:36-04:00",
+  "gitCommit": "96e580e41f02b4efbf24c17a8d2f0b7cdd6f51d0",
+  "branch": "codex/internal-struct-outcome-T024",
+  "sourceDigest": "0307739b5fdcb9bfb5b9dba0e78b332b7f3351f9a191dc642c57748298f7546f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
