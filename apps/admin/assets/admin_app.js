@@ -299,6 +299,8 @@ const state = {
   qualityPatrolError: null,
   paneUpdatedAt: {},
   activePane: 'home',
+  auditEntrySourcePane: null,
+  auditEntryTraceId: null,
   buildMeta: null,
   navPolicyHashCore: null,
   navPolicyHashApp: null,
@@ -2934,7 +2936,7 @@ function renderAllPaneReflectionStates() {
 
 async function openPaneReflectionAudit(paneKey) {
   const traceId = resolvePaneReflectionTraceId(paneKey) || newTraceId();
-  await navigateToAuditWithTrace(traceId, { historyMode: 'push' }).catch(() => {
+  await openAuditFromSource(paneKey, traceId, { historyMode: 'push' }).catch(() => {
     showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
   });
 }
@@ -4127,9 +4129,9 @@ function openQualityPatrolTrace(traceId) {
     showToast('trace は未観測です', 'warn');
     return;
   }
-  const auditTrace = document.getElementById('audit-trace');
-  if (auditTrace) auditTrace.value = normalized;
-  activatePane('audit', { historyMode: 'push' });
+  void openAuditFromSource('quality-patrol', normalized, { historyMode: 'push' }).catch(() => {
+    showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+  });
 }
 
 function renderQualityPatrolTraceRefs(result) {
@@ -4295,7 +4297,9 @@ function setupQualityPatrolControls() {
     void loadQualityPatrolInsights({ notify: true });
   });
   document.getElementById('quality-patrol-open-audit')?.addEventListener('click', () => {
-    activatePane('audit', { historyMode: 'push' });
+    void openAuditFromSource('quality-patrol', ensureTraceInput('audit-trace'), { historyMode: 'push' }).catch(() => {
+      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+    });
   });
 }
 
@@ -5088,8 +5092,7 @@ function setupDeveloperMenu() {
   openMap?.addEventListener('click', () => activatePane('developer-map'));
   openSystem?.addEventListener('click', () => activatePane('settings'));
   openAudit?.addEventListener('click', async () => {
-    activatePane('audit');
-    await loadAudit().catch(() => {
+    await openAuditFromSource('developer-map', ensureTraceInput('audit-trace'), { historyMode: 'push' }).catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });
@@ -5112,8 +5115,7 @@ function setupDeveloperMenu() {
   // Legacy routes surface is read-only (P0): keep element IDs for compatibility, but disable manual actions.
   paneSystem?.addEventListener('click', () => activatePane('settings'));
   paneAudit?.addEventListener('click', async () => {
-    activatePane('audit');
-    await loadAudit().catch(() => {
+    await openAuditFromSource('developer-map', ensureTraceInput('audit-trace'), { historyMode: 'push' }).catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });
@@ -5250,6 +5252,13 @@ function activatePane(target, options) {
   document.querySelectorAll('.app-pane').forEach((pane) => {
     pane.classList.toggle('is-active', pane.dataset.pane === nextPane);
   });
+  if (nextPane === 'audit') {
+    if (opts.preserveAuditContext === true) {
+      renderAuditEntryContext(state.auditEntryTraceId);
+    } else {
+      clearAuditEntryContext();
+    }
+  }
   state.activePane = nextPane;
   syncSystemDiagnosticsVisibility();
   if (appShell) appShell.setAttribute('data-view-pane', nextPane);
@@ -5469,10 +5478,7 @@ function renderActionEvidence(params) {
       showToast('traceId が取得できませんでした', 'warn');
       return;
     }
-    const auditTrace = document.getElementById('audit-trace');
-    if (auditTrace) auditTrace.value = trace;
-    activatePane('audit', { historyMode: 'push' });
-    await loadAudit().catch(() => {
+    await openAuditFromSource(state.activePane || null, trace, { historyMode: 'push' }).catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   };
@@ -14755,11 +14761,98 @@ function resolveEvidenceTraceId(traceId) {
   return null;
 }
 
+function resolveAuditSourceMeta(sourcePane) {
+  const normalizedPane = typeof sourcePane === 'string' ? sourcePane.trim() : '';
+  const paneMeta = normalizedPane ? PANE_HEADER_MAP[normalizedPane] : null;
+  const sourceLabel = paneMeta && paneMeta.titleKey
+    ? t(paneMeta.titleKey, normalizedPane)
+    : t('ui.label.audit.sourceUnknown', '元の画面');
+  if (!normalizedPane || normalizedPane === 'audit') {
+    return {
+      sourcePane: null,
+      sourceLabel,
+      boundaryCopy: t('ui.desc.audit.boundaryDefault', 'この画面は証跡の確認専用です。修正や再送は元の画面へ戻って行います。')
+    };
+  }
+  if (normalizedPane === 'composer') {
+    return {
+      sourcePane: normalizedPane,
+      sourceLabel,
+      boundaryCopy: t('ui.desc.audit.boundaryComposer', '証跡を確認したら通知作成へ戻り、内容修正・承認・送信を続けてください。')
+    };
+  }
+  if (normalizedPane === 'monitor') {
+    return {
+      sourcePane: normalizedPane,
+      sourceLabel,
+      boundaryCopy: t('ui.desc.audit.boundaryMonitor', '証跡を確認したら配信結果へ戻り、絞り込みや対象確認を続けてください。')
+    };
+  }
+  return {
+    sourcePane: normalizedPane,
+    sourceLabel,
+    boundaryCopy: t('ui.desc.audit.boundaryGeneric', `${sourceLabel}へ戻って元の作業を続けてください。`)
+  };
+}
+
+function renderAuditEntryContext(traceId) {
+  const sourceEl = document.getElementById('audit-entry-source');
+  const traceEl = document.getElementById('audit-entry-trace');
+  const boundaryEl = document.getElementById('audit-entry-boundary');
+  const openSourceBtn = document.getElementById('audit-open-source');
+  const openMonitorBtn = document.getElementById('audit-open-monitor');
+  const openComposerBtn = document.getElementById('audit-open-composer');
+  const normalizedTrace = resolveEvidenceTraceId(traceId || state.auditEntryTraceId || ensureTraceInput('audit-trace'));
+  const meta = resolveAuditSourceMeta(state.auditEntrySourcePane);
+  if (sourceEl) {
+    sourceEl.textContent = `${t('ui.label.audit.source', '元の画面')}: ${meta.sourceLabel}`;
+  }
+  if (traceEl) {
+    traceEl.textContent = normalizedTrace
+      ? `${t('ui.label.audit.traceActive', '選択中のtraceId')}: ${normalizedTrace}`
+      : t('ui.desc.audit.traceMissing', 'traceIdを入力または引き継いで検索してください。');
+  }
+  if (boundaryEl) {
+    boundaryEl.textContent = meta.boundaryCopy;
+  }
+  if (openSourceBtn) {
+    const canReturn = Boolean(meta.sourcePane);
+    openSourceBtn.hidden = !canReturn;
+    openSourceBtn.disabled = !canReturn;
+    openSourceBtn.textContent = canReturn
+      ? `${meta.sourceLabel}${t('ui.label.audit.returnSuffix', 'へ戻る')}`
+      : t('ui.label.audit.returnDefault', '元の画面へ戻る');
+  }
+  if (openMonitorBtn) openMonitorBtn.classList.toggle('is-hidden', meta.sourcePane === 'monitor');
+  if (openComposerBtn) openComposerBtn.classList.toggle('is-hidden', meta.sourcePane === 'composer');
+}
+
+function clearAuditEntryContext() {
+  state.auditEntrySourcePane = null;
+  state.auditEntryTraceId = null;
+  renderAuditEntryContext(null);
+}
+
+async function openAuditFromSource(sourcePane, traceId, options = {}) {
+  const normalizedSourcePane = typeof sourcePane === 'string' && sourcePane.trim()
+    ? sourcePane.trim()
+    : (state.activePane || null);
+  await navigateToAuditWithTrace(traceId, {
+    ...options,
+    sourcePane: normalizedSourcePane
+  });
+}
+
 async function navigateToAuditWithTrace(traceId, options = {}) {
   const normalizedTrace = resolveEvidenceTraceId(traceId);
+  state.auditEntrySourcePane = typeof options.sourcePane === 'string' && options.sourcePane.trim() && options.sourcePane.trim() !== 'audit'
+    ? options.sourcePane.trim()
+    : null;
+  state.auditEntryTraceId = normalizedTrace;
   const auditTrace = document.getElementById('audit-trace');
   if (auditTrace && normalizedTrace) auditTrace.value = normalizedTrace;
-  activatePane('audit', { historyMode: options.historyMode || 'push' });
+  activatePane('audit', { historyMode: options.historyMode || 'push', preserveAuditContext: true });
+  renderAuditEntryContext(normalizedTrace);
   await loadAudit();
 }
 
@@ -14814,6 +14907,7 @@ async function runHomeSafeTest() {
 
 async function loadAudit() {
   const traceId = ensureTraceInput('audit-trace');
+  renderAuditEntryContext(traceId);
   if (!traceId) return;
   const res = await fetch(`/api/admin/trace?traceId=${encodeURIComponent(traceId)}`, { headers: buildHeaders({}, traceId) });
   const data = await res.json();
@@ -16951,7 +17045,7 @@ function setupComposerActions() {
   applyComposerTypeOptionVisibility();
   document.getElementById('composer-open-audit')?.addEventListener('click', async () => {
     const traceId = ensureTraceInput('traceId') || newTraceId();
-    await navigateToAuditWithTrace(traceId, { historyMode: 'push' }).catch(() => {
+    await openAuditFromSource('composer', traceId, { historyMode: 'push' }).catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });
@@ -17266,9 +17360,20 @@ function setupAudit() {
     const traceId = ensureTraceInput('audit-trace') || newTraceId();
     navigateToMonitorWithTrace(traceId, null);
   });
+  document.getElementById('audit-open-source')?.addEventListener('click', () => {
+    const sourcePane = state.auditEntrySourcePane;
+    const traceId = resolveEvidenceTraceId(state.auditEntryTraceId || ensureTraceInput('audit-trace')) || newTraceId();
+    if (!sourcePane) return;
+    if (sourcePane === 'monitor') {
+      navigateToMonitorWithTrace(traceId, null);
+      return;
+    }
+    activatePane(sourcePane, { historyMode: 'push' });
+  });
   document.getElementById('audit-open-composer')?.addEventListener('click', () => {
     activatePane('composer', { historyMode: 'push' });
   });
+  renderAuditEntryContext(null);
   void loadStructDriftRuns({ notify: false });
 }
 
@@ -17277,7 +17382,7 @@ function setupMonitorControls() {
     const traceId = ensureTraceInput('monitor-trace')
       || (document.getElementById('monitor-insights-trace-id')?.textContent || '').trim()
       || newTraceId();
-    void navigateToAuditWithTrace(traceId, { historyMode: 'push' }).catch(() => {
+    void openAuditFromSource('monitor', traceId, { historyMode: 'push' }).catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   };
@@ -18385,10 +18490,7 @@ function setupCityPackControls() {
       showToast(t('ui.toast.cityPack.traceMissing', '追跡IDが未選択です'), 'warn');
       return;
     }
-    const auditTrace = document.getElementById('audit-trace');
-    if (auditTrace && trace) auditTrace.value = trace;
-    activatePane('audit');
-    await loadAudit().catch(() => {
+    await openAuditFromSource('city-pack', trace, { historyMode: 'push' }).catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });
@@ -18665,10 +18767,7 @@ async function loadUxPolicyReadonlySnapshot(options) {
 
 async function openUxPolicyAuditPane() {
   const traceId = state.uxPolicyLastTraceId || ensureTraceInput('traceId') || newTraceId();
-  const auditTrace = document.getElementById('audit-trace');
-  if (auditTrace) auditTrace.value = traceId;
-  activatePane('audit');
-  await loadAudit().catch(() => {
+  await openAuditFromSource('settings', traceId, { historyMode: 'push' }).catch(() => {
     showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
   });
 }
@@ -18717,8 +18816,7 @@ function setupMaintenanceControls() {
     void loadProductReadiness({ notify: true });
   });
   document.getElementById('maintenance-open-audit')?.addEventListener('click', async () => {
-    activatePane('audit');
-    await loadAudit().catch(() => {
+    await openAuditFromSource('maintenance', ensureTraceInput('audit-trace'), { historyMode: 'push' }).catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });
@@ -18999,8 +19097,7 @@ async function openLlmRouteTraceFromRoutePanel() {
     const data = await readJsonResponse(res);
     renderLlmResult('llm-route-trace-result', data);
     renderLlmTraceJoinSummary(data);
-    activatePane('audit');
-    await loadAudit().catch(() => null);
+    await openAuditFromSource('llm', traceId, { historyMode: 'push' }).catch(() => null);
     showToast(data && data.ok ? 'trace を追跡しました' : 'trace 追跡でエラーが発生しました', data && data.ok ? 'ok' : 'warn');
   } catch (_err) {
     renderLlmResult('llm-route-trace-result', { ok: false, error: 'trace_fetch_error', traceId });
@@ -19913,8 +20010,7 @@ function setupLlmControls() {
   });
   document.getElementById('llm-open-audit')?.addEventListener('click', async () => {
     copyLlmTraceToAudit();
-    activatePane('audit');
-    await loadAudit().catch(() => {
+    await openAuditFromSource('llm', ensureTraceInput('audit-trace'), { historyMode: 'push' }).catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });

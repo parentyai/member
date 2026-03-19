@@ -30,8 +30,10 @@ test('phase674: audit pane defines evidence boundary and one-click transitions',
   const auditPane = extractPaneSection(html, 'audit');
 
   assert.ok(auditPane.includes('Evidence Hub（trace / audit / decision timeline）'));
+  assert.ok(auditPane.includes('id="audit-entry-context"'));
   assert.ok(auditPane.includes('id="audit-open-monitor"'));
   assert.ok(auditPane.includes('id="audit-open-composer"'));
+  assert.ok(auditPane.includes('id="audit-open-source"'));
   assert.ok(auditPane.includes('Decision Timeline / 詳細'));
 
   const monitorPane = extractPaneSection(html, 'monitor');
@@ -42,9 +44,11 @@ test('phase674: runtime binds evidence navigation contract without altering writ
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
 
   assert.ok(js.includes('async function navigateToAuditWithTrace(traceId, options = {})'));
+  assert.ok(js.includes('async function openAuditFromSource(sourcePane, traceId, options = {})'));
   assert.ok(js.includes('function resolveEvidenceTraceId(traceId)'));
-  assert.ok(js.includes("await navigateToAuditWithTrace(traceId, { historyMode: 'push' }).catch(() => {"));
+  assert.ok(js.includes("await openAuditFromSource('composer', traceId, { historyMode: 'push' }).catch(() => {"));
   assert.ok(js.includes("document.getElementById('audit-open-monitor')?.addEventListener('click', () => {"));
+  assert.ok(js.includes("document.getElementById('audit-open-source')?.addEventListener('click', () => {"));
   assert.ok(js.includes("document.getElementById('monitor-open-audit-from-detail')?.addEventListener('click', openAuditFromMonitor);"));
   assert.ok(js.includes("document.getElementById('monitor-open-trace')?.addEventListener('click', openAuditFromMonitor);"));
 

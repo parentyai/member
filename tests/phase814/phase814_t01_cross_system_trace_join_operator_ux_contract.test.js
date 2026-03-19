@@ -19,5 +19,5 @@ test('phase814: admin llm pane keeps one-click trace flow and adds cross-system 
   assert.match(appJs, /renderLlmTraceJoinSummary/);
   assert.match(appJs, /llm-route-trace-open/);
   assert.match(appJs, /llm-route-trace-join-summary/);
-  assert.match(appJs, /activatePane\('audit'\)/);
+  assert.match(appJs, /openAuditFromSource\('llm', traceId, \{ historyMode: 'push' \}\)/);
 });
