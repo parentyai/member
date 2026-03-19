@@ -1,8 +1,12 @@
 'use strict';
 
 const journeyBranchQueueRepo = require('../../repos/firestore/journeyBranchQueueRepo');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
-const { requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
+const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.journey_graph_branch_queue_status';
 
 function parseLimit(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -33,6 +37,22 @@ function buildSummary(items) {
   return summary;
 }
 
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
 async function handleStatus(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -42,38 +62,48 @@ async function handleStatus(req, res) {
   const status = parseString(req, 'status');
   const lineUserId = parseString(req, 'lineUserId');
 
-  const items = await journeyBranchQueueRepo.listJourneyBranchItems({
-    status,
-    lineUserId,
-    limit
-  }).catch(() => []);
+  try {
+    const items = await journeyBranchQueueRepo.listJourneyBranchItems({
+      status,
+      lineUserId,
+      limit
+    }).catch(() => []);
 
-  await appendAuditLog({
-    actor,
-    action: 'journey_graph.branch_queue.view',
-    entityType: 'journey_branch_queue',
-    entityId: lineUserId || status || 'all',
-    traceId,
-    requestId,
-    payloadSummary: {
+    await appendAuditLog({
+      actor,
+      action: 'journey_graph.branch_queue.view',
+      entityType: 'journey_branch_queue',
+      entityId: lineUserId || status || 'all',
+      traceId,
+      requestId,
+      payloadSummary: {
+        limit,
+        status,
+        lineUserId,
+        count: items.length
+      }
+    });
+
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
       limit,
       status,
       lineUserId,
-      count: items.length
-    }
-  });
-
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
-    ok: true,
-    traceId,
-    requestId,
-    limit,
-    status,
-    lineUserId,
-    summary: buildSummary(items),
-    items
-  }));
+      summary: buildSummary(items),
+      items
+    }, {
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (err) {
+    logRouteError(ROUTE_KEY, err, { traceId, requestId, actor });
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error'
+    });
+  }
 }
 
 module.exports = {
