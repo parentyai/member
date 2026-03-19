@@ -9,10 +9,24 @@ const ROUTE_KEY = 'internal_llm_action_reward_finalize_job';
 const ENTRY_TYPE = 'job';
 const GATES_APPLIED = ['kill_switch', 'snapshot'];
 
+function mergeOutcomeOptions(base, override) {
+  const left = base && typeof base === 'object' ? base : null;
+  const right = override && typeof override === 'object' ? override : null;
+  if (!left && !right) return null;
+  const merged = Object.assign({}, left || {}, right || {});
+  const baseGuard = left && left.guard && typeof left.guard === 'object' ? left.guard : null;
+  const overrideGuard = right && right.guard && typeof right.guard === 'object' ? right.guard : null;
+  if (baseGuard || overrideGuard) {
+    merged.guard = Object.assign({}, baseGuard || {}, overrideGuard || {});
+  }
+  return merged;
+}
+
 function writeJson(res, status, payload, outcomeOptions) {
-  const body = outcomeOptions && typeof outcomeOptions === 'object'
-    ? attachOutcome(payload || {}, outcomeOptions)
-    : payload;
+  const body = attachOutcome(payload || {}, mergeOutcomeOptions({
+    routeType: 'internal_job',
+    guard: { routeKey: ROUTE_KEY }
+  }, outcomeOptions));
   if (body && body.outcome) applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
@@ -36,15 +50,23 @@ function resolveToken(req) {
   return '';
 }
 
-function requireLlmActionJobToken(req, res) {
+function requireLlmActionJobToken(req, res, outcomeOptions) {
   const expected = process.env.LLM_ACTION_JOB_TOKEN || '';
   if (!expected) {
-    writeJson(res, 503, { ok: false, error: 'LLM_ACTION_JOB_TOKEN not configured' }, { state: 'error', reason: 'job_token_not_configured' });
+    writeJson(res, 503, { ok: false, error: 'LLM_ACTION_JOB_TOKEN not configured' }, mergeOutcomeOptions(outcomeOptions, {
+      state: 'error',
+      reason: 'job_token_not_configured',
+      guard: { decision: 'block' }
+    }));
     return false;
   }
   const actual = resolveToken(req);
   if (!actual || actual !== expected) {
-    writeJson(res, 401, { ok: false, error: 'unauthorized' }, { state: 'blocked', reason: 'unauthorized' });
+    writeJson(res, 401, { ok: false, error: 'unauthorized' }, mergeOutcomeOptions(outcomeOptions, {
+      state: 'blocked',
+      reason: 'unauthorized',
+      guard: { decision: 'block' }
+    }));
     return false;
   }
   return true;
@@ -70,10 +92,16 @@ async function handleLlmActionRewardFinalizeJob(req, res, bodyText, deps) {
     ? deps.appendLlmGateDecisionFn
     : appendLlmGateDecision;
   if (req.method !== 'POST') {
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, 404, { ok: false, error: 'not found' }, {
+      state: 'error',
+      reason: 'not_found',
+      guard: { decision: 'block' }
+    });
     return;
   }
-  if (!requireLlmActionJobToken(req, res)) return;
+  if (!requireLlmActionJobToken(req, res, {
+    guard: { routeKey: ROUTE_KEY }
+  })) return;
 
   const traceIdHeader = req.headers && typeof req.headers['x-trace-id'] === 'string'
     ? req.headers['x-trace-id'].trim()
