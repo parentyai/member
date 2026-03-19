@@ -275,6 +275,10 @@ MUST:
   - legacy compat は `src/index.js` の `resolveAdminUiCompatState`（`role=admin|developer` + `confirm` 一致）を根拠に確認する。
 - Evidence:
   - write成功時は `traceId/actionKey/entityId` を即時表示し、Audit pane の trace 検索へ1操作で遷移可能にする。
+- Navigation / IA cleanup（add-only）:
+  - 左ナビの visible label は `判断 / Dashboard`、`実行 / Workbench`、`確認 / Data・Evidence・System` を基準にする。
+  - `Data / Evidence / System` 配下の layer label は `確認 / Data`、`証跡 / Evidence`、`保守 / System`、`支援 / LLM`、`開発補助` を使う。
+  - page header subtitle は画面目的の説明として常時表示し、topbar は状況表示を優先する。
 
 ## IA (Information Architecture) — Screens
 以下は ServicePhase1 の「運用OS v1」で最低限提供される画面（追加は add-only）。
