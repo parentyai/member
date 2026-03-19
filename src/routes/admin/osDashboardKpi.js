@@ -22,11 +22,14 @@ const {
 } = require('../../domain/readModel/fallbackPolicy');
 const { resolveRedacMembershipFromRecord } = require('../../domain/canonicalAuthority');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
 const MONTHS_ALLOWED = new Set([1, 3, 6, 12, 36]);
 const MAX_SCAN_LIMIT = 3000;
 const DEFAULT_SCAN_LIMIT = 2000;
 const DEFAULT_SNAPSHOT_FRESHNESS_MINUTES = 60;
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.os_dashboard_kpi';
 
 function parseWindowMonths(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -170,6 +173,44 @@ function resolveSnapshotFreshnessMinutes() {
   const value = Number(process.env.OPS_SNAPSHOT_FRESHNESS_MINUTES);
   if (!Number.isFinite(value) || value <= 0) return DEFAULT_SNAPSHOT_FRESHNESS_MINUTES;
   return Math.min(Math.floor(value), 1440);
+}
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function resolveDashboardValidationReason(err) {
+  const message = err && err.message ? String(err.message) : 'error';
+  if (message === 'invalid fallbackMode') return 'invalid_fallback_mode';
+  if (message === 'invalid fallbackOnEmpty') return 'invalid_fallback_on_empty';
+  if (message === 'invalid snapshotRefresh') return 'invalid_snapshot_refresh';
+  return 'invalid_request';
+}
+
+function resolveDashboardOutcome(payload) {
+  const row = payload && typeof payload === 'object' ? payload : {};
+  if (row.dataSource === 'not_available' || row.source === 'not_available' || row.fallbackBlocked === true) {
+    return { state: 'degraded', reason: 'not_available' };
+  }
+  if (row.fallbackUsed === true) {
+    return { state: 'degraded', reason: 'completed_with_fallback' };
+  }
+  if (row.source === 'snapshot') {
+    return { state: 'success', reason: 'completed_from_snapshot' };
+  }
+  return { state: 'success', reason: 'completed' };
 }
 
 function isSnapshotFresh(snapshot, freshnessMinutes) {
@@ -576,8 +617,11 @@ async function handleDashboardKpi(req, res) {
     fallbackOnEmpty = parseFallbackOnEmpty(req);
     snapshotRefresh = parseSnapshotRefresh(req);
   } catch (err) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: err.message, traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: err.message, traceId, requestId }, {
+      state: 'error',
+      reason: resolveDashboardValidationReason(err),
+      guard: { decision: 'block' }
+    });
     return;
   }
   const freshnessMinutes = resolveSnapshotFreshnessMinutes();
@@ -589,8 +633,7 @@ async function handleDashboardKpi(req, res) {
     if (snapshotReadEnabled && !skipSnapshotRead) {
       const snapshot = await opsSnapshotsRepo.getSnapshot('dashboard_kpi', snapshotKey);
       if (isSnapshotFresh(snapshot, freshnessMinutes) && snapshot && snapshot.data && snapshot.data.kpis) {
-        res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({
+        writeJson(res, 200, {
           ok: true,
           traceId,
           requestId,
@@ -605,14 +648,13 @@ async function handleDashboardKpi(req, res) {
           fallbackBlocked: false,
           fallbackSources: [],
           kpis: snapshot.data.kpis
-        }));
+        }, { state: 'success', reason: 'completed_from_snapshot' });
         return;
       }
 
       if (isSnapshotRequired(snapshotMode)) {
         const kpis = buildNotAvailableKpis('NOT AVAILABLE');
-        res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({
+        writeJson(res, 200, {
           ok: true,
           traceId,
           requestId,
@@ -628,13 +670,12 @@ async function handleDashboardKpi(req, res) {
           fallbackSources: [],
           snapshotRefresh,
           kpis
-        }));
+        }, { state: 'degraded', reason: 'not_available' });
         return;
       }
     } else if (isSnapshotRequired(snapshotMode)) {
       const kpis = buildNotAvailableKpis('NOT AVAILABLE');
-      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({
+      writeJson(res, 200, {
         ok: true,
         traceId,
         requestId,
@@ -650,14 +691,13 @@ async function handleDashboardKpi(req, res) {
         fallbackSources: [],
         snapshotRefresh,
         kpis
-      }));
+      }, { state: 'degraded', reason: 'not_available' });
       return;
     }
 
     if (!isFallbackAllowed(snapshotMode)) {
       const kpis = buildNotAvailableKpis('NOT AVAILABLE');
-      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({
+      writeJson(res, 200, {
         ok: true,
         traceId,
         requestId,
@@ -672,7 +712,7 @@ async function handleDashboardKpi(req, res) {
         fallbackBlocked: true,
         fallbackSources: [],
         kpis
-      }));
+      }, { state: 'degraded', reason: 'not_available' });
       return;
     }
 
@@ -726,8 +766,7 @@ async function handleDashboardKpi(req, res) {
       }
     }
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    const responseBody = {
       ok: true,
       traceId,
       requestId,
@@ -744,11 +783,14 @@ async function handleDashboardKpi(req, res) {
       fallbackBlocked: computed.fallbackBlocked === true,
       fallbackSources: Array.isArray(computed.fallbackSources) ? computed.fallbackSources : [],
       kpis
-    }));
+    };
+    writeJson(res, 200, responseBody, resolveDashboardOutcome(responseBody));
   } catch (err) {
     logRouteError('admin.os_dashboard_kpi', err, { traceId, requestId, actor });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
