@@ -30,8 +30,8 @@
 | `src/routes/internal/cityPackDraftGeneratorJob.js` | 50 | `const getKillSwitchFn = deps && typeof deps.getKillSwitchFn === 'function' ? deps.getKillSwitchFn : getKillSwitch;` |
 | `src/routes/internal/cityPackDraftGeneratorJob.js` | 66 | `const killSwitch = await getKillSwitchFn();` |
 | `src/routes/internal/cityPackSourceAuditJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/internal/cityPackSourceAuditJob.js` | 70 | `const getKillSwitchFn = opts.getKillSwitchFn || getKillSwitch;` |
-| `src/routes/internal/cityPackSourceAuditJob.js` | 76 | `const killSwitch = await getKillSwitchFn();` |
+| `src/routes/internal/cityPackSourceAuditJob.js` | 75 | `const getKillSwitchFn = opts.getKillSwitchFn || getKillSwitch;` |
+| `src/routes/internal/cityPackSourceAuditJob.js` | 88 | `const killSwitch = await getKillSwitchFn();` |
 | `src/routes/internal/emergencyJobs.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/emergencyJobs.js` | 63 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
 | `src/routes/internal/emergencyJobs.js` | 83 | `const killSwitchOn = await getKillSwitchFn();` |
@@ -43,14 +43,14 @@
 | `src/routes/internal/journeyTodoReminderJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/journeyTodoReminderJob.js` | 68 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/municipalitySchoolsImportJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/internal/municipalitySchoolsImportJob.js` | 34 | `const getKillSwitchFn = deps && typeof deps.getKillSwitchFn === 'function' ? deps.getKillSwitchFn : getKillSwitch;` |
-| `src/routes/internal/municipalitySchoolsImportJob.js` | 43 | `const killSwitch = await getKillSwitchFn();` |
+| `src/routes/internal/municipalitySchoolsImportJob.js` | 52 | `const getKillSwitchFn = deps && typeof deps.getKillSwitchFn === 'function' ? deps.getKillSwitchFn : getKillSwitch;` |
+| `src/routes/internal/municipalitySchoolsImportJob.js` | 68 | `const killSwitch = await getKillSwitchFn();` |
 | `src/routes/internal/opsSnapshotJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/opsSnapshotJob.js` | 30 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
 | `src/routes/internal/opsSnapshotJob.js` | 45 | `const killSwitch = await getKillSwitchFn();` |
 | `src/routes/internal/schoolCalendarAuditJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/internal/schoolCalendarAuditJob.js` | 27 | `const getKillSwitchFn = deps && typeof deps.getKillSwitchFn === 'function' ? deps.getKillSwitchFn : getKillSwitch;` |
-| `src/routes/internal/schoolCalendarAuditJob.js` | 39 | `const killSwitch = await getKillSwitchFn();` |
+| `src/routes/internal/schoolCalendarAuditJob.js` | 45 | `const getKillSwitchFn = deps && typeof deps.getKillSwitchFn === 'function' ? deps.getKillSwitchFn : getKillSwitch;` |
+| `src/routes/internal/schoolCalendarAuditJob.js` | 64 | `const killSwitch = await getKillSwitchFn();` |
 | `src/routes/internal/taskNudgeJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/taskNudgeJob.js` | 59 | `const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;` |
 | `src/routes/internal/taskNudgeJob.js` | 73 | `killSwitch = await getKillSwitchFn();` |

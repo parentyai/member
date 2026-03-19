@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T23:07:01-04:00",
-  "gitCommit": "edb480b2758056076748cf96dcaf588f8abe9ce7",
-  "branch": "codex/internal-city-pack-draft-outcome-T026",
-  "sourceDigest": "46bb78c5d0c483ad75540e272a9a63c2d310e635836020a37f0ccf136b755a8d",
+  "generatedAt": "2026-03-18T23:16:51-04:00",
+  "gitCommit": "71541ac2954eb03d1cfa702ca9e75076a8a1d950",
+  "branch": "codex/internal-city-source-school-outcome-T027",
+  "sourceDigest": "a6fe5b33fb219ea88bab814dc0468745cfa156973f1c8bae6f481b69f35f32a9",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

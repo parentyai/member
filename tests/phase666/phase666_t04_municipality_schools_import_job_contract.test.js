@@ -25,7 +25,7 @@ function request({ port, method, path, headers, body }) {
     }, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+      res.on('end', () => resolve({ status: res.statusCode, body: data, headers: res.headers }));
     });
     req.on('error', reject);
     if (body) req.write(body);
@@ -83,6 +83,13 @@ test('phase666: municipality schools import internal job requires token and upse
     body: JSON.stringify({ rows: [] })
   });
   assert.strictEqual(unauthorized.status, 401);
+  const unauthorizedBody = JSON.parse(unauthorized.body);
+  assert.strictEqual(unauthorizedBody.outcome && unauthorizedBody.outcome.state, 'blocked');
+  assert.strictEqual(unauthorizedBody.outcome && unauthorizedBody.outcome.reason, 'unauthorized');
+  assert.strictEqual(unauthorizedBody.outcome && unauthorizedBody.outcome.routeType, 'internal_job');
+  assert.strictEqual(unauthorizedBody.outcome && unauthorizedBody.outcome.guard && unauthorizedBody.outcome.guard.routeKey, 'internal_municipality_schools_import_job');
+  assert.strictEqual(unauthorized.headers && unauthorized.headers['x-member-outcome-route-type'], 'internal_job');
+  assert.strictEqual(unauthorized.headers && unauthorized.headers['x-member-outcome-reason'], 'unauthorized');
 
   const authorized = await request({
     port,
