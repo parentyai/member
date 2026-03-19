@@ -130,6 +130,9 @@ internal outcome quick guide:
 - admin read-path fallback summary: `success/completed`, `error/error`
 - admin missing-index surface: `success/completed`, `error/error`
 - admin ops feature catalog status: `success/completed`, `degraded/completed_with_catalog_fallback`, `degraded/not_available`, `blocked/ops_system_snapshot_disabled`, `error/error`
+- admin legacy status: `success/completed`, `error/error`
+- admin retention runs: `success/completed`, `error/error`
+- admin repo map: `success/completed`, `blocked/repo_map_not_generated`, `error/error`
 - admin struct drift routes now also emit `payload.outcome` + `x-member-outcome-*` with `routeKey=admin.struct_drift.backfill`; state is inferred from `ok/partial` unless an explicit reason is supplied
 
 ### 即時ロールバック

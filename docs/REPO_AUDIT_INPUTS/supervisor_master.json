@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T21:53:16-04:00",
-  "gitCommit": "b3fa1be40b990df44dbb5e186d29553ca41d93f0",
+  "generatedAt": "2026-03-18T22:14:36-04:00",
+  "gitCommit": "96e580e41f02b4efbf24c17a8d2f0b7cdd6f51d0",
   "branch": "codex/internal-struct-outcome-T024",
-  "sourceDigest": "cfe802a6caf17bab2764a6ddbf67f4f5d6b30be922463ee475dfdae7ef8d7e39",
+  "sourceDigest": "0307739b5fdcb9bfb5b9dba0e78b332b7f3351f9a191dc642c57748298f7546f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
