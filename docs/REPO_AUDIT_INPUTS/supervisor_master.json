@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-18T23:31:03-04:00",
-  "gitCommit": "3fbe1fa56ae3aab1ab31ec6bcea8b62d412d7c2a",
-  "branch": "codex/admin-ui-stack3-pr4-evidence",
-  "sourceDigest": "9091955d1dadc8434305c6c02bc701c73e393dae2208ab39adc0bac402e87266",
+  "generatedAt": "2026-03-18T23:36:49-04:00",
+  "gitCommit": "24f79b3543f53a78842345cf8c0d7cf8eb0d468f",
+  "branch": "codex/internal-jobs-conflict-watchlist-T029",
+  "sourceDigest": "3c46b42dc0f517029c6b26586dd30e6ac1f58f173703dcfa15ca16df97862e99",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
