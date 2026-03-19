@@ -4,6 +4,8 @@ const { runCityPackSourceAuditJob } = require('../../usecases/cityPack/runCityPa
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
+const ROUTE_KEY = 'internal_city_pack_source_audit_job';
+
 function mergeOutcomeOptions(base, override) {
   const left = base && typeof base === 'object' ? base : null;
   const right = override && typeof override === 'object' ? override : null;
@@ -19,7 +21,10 @@ function mergeOutcomeOptions(base, override) {
 
 function writeJson(res, status, payload, outcomeOptions) {
   const body = outcomeOptions && typeof outcomeOptions === 'object'
-    ? attachOutcome(payload || {}, outcomeOptions)
+    ? attachOutcome(payload || {}, mergeOutcomeOptions({
+      routeType: 'internal_job',
+      guard: { routeKey: ROUTE_KEY }
+    }, outcomeOptions))
     : payload;
   if (body && body.outcome) applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
@@ -69,19 +74,34 @@ async function handleCityPackSourceAuditJob(req, res, bodyText, options) {
   const runCityPackSourceAuditJobFn = opts.runCityPackSourceAuditJobFn || runCityPackSourceAuditJob;
   const getKillSwitchFn = opts.getKillSwitchFn || getKillSwitch;
   if (req.method !== 'POST') {
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, 404, { ok: false, error: 'not found' }, {
+      state: 'error',
+      reason: 'not_found',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
-  if (!requireInternalJobToken(req, res)) return;
+  if (!requireInternalJobToken(req, res, {
+    routeType: 'internal_job',
+    guard: { routeKey: ROUTE_KEY }
+  })) return;
   const killSwitch = await getKillSwitchFn();
   if (killSwitch) {
-    writeJson(res, 409, { ok: false, error: 'kill switch on' }, { state: 'blocked', reason: 'kill_switch_on' });
+    writeJson(res, 409, { ok: false, error: 'kill switch on' }, {
+      state: 'blocked',
+      reason: 'kill_switch_on',
+      guard: { routeKey: ROUTE_KEY, decision: 'block', killSwitchOn: true }
+    });
     return;
   }
 
   const payload = parseJson(bodyText);
   if (!payload) {
-    writeJson(res, 400, { ok: false, error: 'invalid json' }, { state: 'error', reason: 'invalid_json' });
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    });
     return;
   }
 
@@ -106,7 +126,9 @@ async function handleCityPackSourceAuditJob(req, res, bodyText, options) {
   } else if (Number(result && result.failed) > 0) {
     outcome = { state: 'error', reason: 'completed_with_failures' };
   }
-  writeJson(res, 200, result, outcome);
+  writeJson(res, 200, result, Object.assign({}, outcome, {
+    guard: { routeKey: ROUTE_KEY, decision: 'allow' }
+  }));
 }
 
 module.exports = {
