@@ -9,9 +9,12 @@ const {
   resolveTraceId,
   logRouteError
 } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 200;
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.ops_snapshot_health';
 
 function parseLimit(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -88,6 +91,22 @@ function normalizeSnapshot(snapshot, staleAfterMinutes) {
   };
 }
 
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
 async function handleOpsSnapshotHealth(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -101,8 +120,11 @@ async function handleOpsSnapshotHealth(req, res) {
   try {
     staleAfterMinutes = parseStaleAfterMinutes(req);
   } catch (err) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: err.message }));
+    writeJson(res, 400, { ok: false, error: err.message, traceId, requestId }, {
+      state: 'error',
+      reason: 'invalid_stale_after_minutes',
+      guard: { decision: 'block' }
+    });
     return;
   }
 
@@ -129,8 +151,7 @@ async function handleOpsSnapshotHealth(req, res) {
       logRouteError('admin.ops_snapshot_health.audit', auditErr, { actor, traceId, requestId });
     }
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       traceId,
       requestId,
@@ -138,11 +159,16 @@ async function handleOpsSnapshotHealth(req, res) {
       snapshotType,
       staleAfterMinutes,
       items
-    }));
+    }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
     logRouteError('admin.ops_snapshot_health.view', err, { actor, traceId, requestId });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
