@@ -1,12 +1,34 @@
 'use strict';
 
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveTraceId, resolveRequestId } = require('./osContext');
 
+const ROUTE_TYPE = 'admin_route';
+const STATUS_ROUTE_KEY = 'admin.llm_consent_status';
+const VERIFY_ROUTE_KEY = 'admin.llm_consent_verify';
+const REVOKE_ROUTE_KEY = 'admin.llm_consent_revoke';
+
 // Consent verify is only valid when lawfulBasis is already set to 'consent'.
 // Revoking consent is always allowed (sets consentVerified = false).
 // Neither operation requires the plan/confirmToken ceremony — admin auth is sufficient.
+
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, routeKey, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
 
 async function handleConsentStatus(req, res, deps) {
   const actor = requireActor(req, res);
@@ -36,8 +58,7 @@ async function handleConsentStatus(req, res, deps) {
     }
   }).catch(() => null);
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, STATUS_ROUTE_KEY, 200, {
     ok: true,
     traceId,
     requestId,
@@ -46,7 +67,10 @@ async function handleConsentStatus(req, res, deps) {
     consentVerified,
     consentRequired,
     guideModeLocked
-  }));
+  }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleConsentVerify(req, res, deps) {
@@ -75,13 +99,15 @@ async function handleConsentVerify(req, res, deps) {
         lawfulBasis: policy.lawfulBasis
       }
     }).catch(() => null);
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, VERIFY_ROUTE_KEY, 409, {
       ok: false,
       reason: 'lawful_basis_not_consent',
       lawfulBasis: policy.lawfulBasis,
       traceId
-    }));
+    }, {
+      state: 'blocked',
+      reason: 'lawful_basis_not_consent'
+    });
     return;
   }
 
@@ -103,8 +129,7 @@ async function handleConsentVerify(req, res, deps) {
     }
   }).catch(() => null);
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, VERIFY_ROUTE_KEY, 200, {
     ok: true,
     traceId,
     requestId,
@@ -112,7 +137,10 @@ async function handleConsentVerify(req, res, deps) {
     lawfulBasis: updated.lawfulBasis,
     consentVerified: true,
     guideModeLocked: false
-  }));
+  }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleConsentRevoke(req, res, deps) {
@@ -144,8 +172,7 @@ async function handleConsentRevoke(req, res, deps) {
     }
   }).catch(() => null);
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, REVOKE_ROUTE_KEY, 200, {
     ok: true,
     traceId,
     requestId,
@@ -153,7 +180,10 @@ async function handleConsentRevoke(req, res, deps) {
     lawfulBasis: updated.lawfulBasis,
     consentVerified: false,
     guideModeLocked: updated.lawfulBasis === 'consent'
-  }));
+  }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 module.exports = {
