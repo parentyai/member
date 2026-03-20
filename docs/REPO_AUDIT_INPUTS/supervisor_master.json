@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T21:34:15-04:00",
-  "gitCommit": "85e0fe4c851a097444fc15d9b58580cc1ad30e87",
-  "branch": "codex/admin-redac-membership-unlink-outcome-T056",
-  "sourceDigest": "efaf6e22539b554b418de5f6ae7181dac638454a56ac440320b8a467380429a1",
+  "generatedAt": "2026-03-19T21:53:19-04:00",
+  "gitCommit": "6c5b193a3c732e7403c470bf3bd58deb52070ba6",
+  "branch": "codex/admin-llm-policy-outcome-T059",
+  "sourceDigest": "ae24246ce32a5911ac56ee82f6061ac45c4cb59b2d94d7d53a1762f87e776cf6",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
