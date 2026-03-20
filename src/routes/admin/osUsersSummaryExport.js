@@ -3,6 +3,10 @@
 const { getUsersSummaryFiltered } = require('../../usecases/phase5/getUsersSummaryFiltered');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders, buildOutcome } = require('../../domain/routeOutcomeContract');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.os_users_summary_export';
 
 function parsePositiveInt(value, fallback, min, max) {
   if (value === null || value === undefined || value === '') return fallback;
@@ -141,6 +145,29 @@ function toCsv(items) {
   return `${rows.join('\n')}\n`;
 }
 
+function normalizeOutcomeOptions(options) {
+  const row = options && typeof options === 'object' ? options : {};
+  const guard = row.guard && typeof row.guard === 'object' ? row.guard : {};
+  return Object.assign({}, row, {
+    routeType: ROUTE_TYPE,
+    guard: Object.assign({}, guard, { routeKey: ROUTE_KEY })
+  });
+}
+
+function writeJson(res, statusCode, payload, options) {
+  const body = attachOutcome(payload, normalizeOutcomeOptions(options));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function writeCsv(res, statusCode, headers, payload, options) {
+  const outcome = buildOutcome(null, normalizeOutcomeOptions(options));
+  applyOutcomeHeaders(res, outcome);
+  res.writeHead(statusCode, headers);
+  res.end(payload || '');
+}
+
 async function handleUsersSummaryExport(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -205,22 +232,28 @@ async function handleUsersSummaryExport(req, res) {
     });
 
     const filename = `users_summary_${new Date().toISOString().slice(0, 10)}.csv`;
-    res.writeHead(200, {
+    writeCsv(res, 200, {
       'content-type': 'text/csv; charset=utf-8',
       'content-disposition': `attachment; filename="${filename}"`,
       'cache-control': 'no-store'
+    }, csv, {
+      state: 'success',
+      reason: 'completed'
     });
-    res.end(csv);
   } catch (err) {
     const message = err && err.message ? err.message : 'error';
     if (message.startsWith('invalid ')) {
-      res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: message, traceId, requestId }));
+      writeJson(res, 400, { ok: false, error: message, traceId, requestId }, {
+        state: 'error',
+        reason: 'invalid_query'
+      });
       return;
     }
     logRouteError('admin.os_users_summary_export', err, { traceId, requestId, actor });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
