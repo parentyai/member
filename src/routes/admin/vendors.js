@@ -1,5 +1,6 @@
 'use strict';
 
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const eventsRepo = require('../../repos/firestore/eventsRepo');
 const { updateLink } = require('../../usecases/linkRegistry/updateLink');
@@ -10,8 +11,37 @@ const {
   requireActor,
   resolveRequestId,
   resolveTraceId,
-  parseJson
+  parseJson,
+  logRouteError
 } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEYS = Object.freeze({
+  list: 'admin.vendors_list',
+  shadowRelevance: 'admin.vendors_shadow_relevance',
+  edit: 'admin.vendors_edit',
+  activate: 'admin.vendors_activate',
+  disable: 'admin.vendors_disable',
+  route: 'admin.vendors'
+});
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = typeof opts.routeKey === 'string' && opts.routeKey.trim()
+    ? opts.routeKey.trim()
+    : ROUTE_KEYS.route;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
 
 function normalizeLimit(value) {
   const num = Number(value);
@@ -77,8 +107,11 @@ async function handleList(req, res, actor, traceId, requestId) {
     requestId,
     payloadSummary: { limit, state: state || null, count: items.length }
   });
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, traceId, items }));
+  writeJson(res, 200, { ok: true, traceId, items }, {
+    routeKey: ROUTE_KEYS.list,
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 function normalizeShadowItem(item) {
@@ -168,8 +201,11 @@ async function handleShadowRelevanceList(req, res, actor, traceId, requestId) {
     : '';
   const limit = normalizeShadowLimit(url.searchParams.get('limit'));
   if (!lineUserId) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'lineUserId required' }));
+    writeJson(res, 400, { ok: false, error: 'lineUserId required', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.shadowRelevance,
+      state: 'error',
+      reason: 'line_user_id_required'
+    });
     return;
   }
   const rows = await eventsRepo.listEventsByType({
@@ -196,8 +232,11 @@ async function handleShadowRelevanceList(req, res, actor, traceId, requestId) {
       orderDivergenceCount: summary.orderDivergenceCount
     }
   });
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, traceId, items, summary }));
+  writeJson(res, 200, { ok: true, traceId, items, summary }, {
+    routeKey: ROUTE_KEYS.shadowRelevance,
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleEdit(req, res, actor, traceId, requestId, linkId, bodyText) {
@@ -209,8 +248,11 @@ async function handleEdit(req, res, actor, traceId, requestId, linkId, bodyText)
   if (typeof body.vendorKey === 'string') patch.vendorKey = body.vendorKey.trim();
   if (typeof body.url === 'string') patch.url = body.url.trim();
   if (!Object.keys(patch).length) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'patch fields required' }));
+    writeJson(res, 400, { ok: false, error: 'patch fields required', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.edit,
+      state: 'error',
+      reason: 'patch_fields_required'
+    });
     return;
   }
   await updateLink(linkId, patch);
@@ -222,11 +264,14 @@ async function handleEdit(req, res, actor, traceId, requestId, linkId, bodyText)
     requestId,
     payloadSummary: { fields: Object.keys(patch) }
   });
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, traceId, id: linkId }));
+  writeJson(res, 200, { ok: true, traceId, id: linkId }, {
+    routeKey: ROUTE_KEYS.edit,
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
-async function handleSetHealth(res, actor, traceId, requestId, linkId, state, statusCode, action) {
+async function handleSetHealth(res, actor, traceId, requestId, linkId, state, statusCode, action, routeKey) {
   await checkLinkHealth(linkId, {
     state,
     statusCode,
@@ -240,8 +285,11 @@ async function handleSetHealth(res, actor, traceId, requestId, linkId, state, st
     requestId,
     payloadSummary: { state, statusCode }
   });
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, traceId, id: linkId }));
+  writeJson(res, 200, { ok: true, traceId, id: linkId }, {
+    routeKey,
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleVendors(req, res, bodyText) {
@@ -251,45 +299,60 @@ async function handleVendors(req, res, bodyText) {
   const requestId = resolveRequestId(req);
   const url = new URL(req.url, 'http://localhost');
   const pathname = url.pathname;
-  if (req.method === 'GET' && pathname === '/api/admin/vendors') {
-    await handleList(req, res, actor, traceId, requestId);
-    return;
-  }
-  if (req.method === 'GET' && pathname === '/api/admin/vendors/shadow-relevance') {
-    await handleShadowRelevanceList(req, res, actor, traceId, requestId);
-    return;
-  }
-  const actionMatch = pathname.match(/^\/api\/admin\/vendors\/([^/]+)\/(edit|activate|disable)$/);
-  if (req.method === 'POST' && actionMatch) {
-    const linkId = decodeURIComponent(actionMatch[1]);
-    const action = actionMatch[2];
-    const actionKey = action === 'edit'
-      ? 'vendors.edit'
-      : (action === 'activate' ? 'vendors.activate' : 'vendors.disable');
-    const guard = await enforceManagedFlowGuard({
-      req,
-      res,
-      actionKey,
-      payload: {}
+  try {
+    if (req.method === 'GET' && pathname === '/api/admin/vendors') {
+      await handleList(req, res, actor, traceId, requestId);
+      return;
+    }
+    if (req.method === 'GET' && pathname === '/api/admin/vendors/shadow-relevance') {
+      await handleShadowRelevanceList(req, res, actor, traceId, requestId);
+      return;
+    }
+    const actionMatch = pathname.match(/^\/api\/admin\/vendors\/([^/]+)\/(edit|activate|disable)$/);
+    if (req.method === 'POST' && actionMatch) {
+      const linkId = decodeURIComponent(actionMatch[1]);
+      const action = actionMatch[2];
+      const actionKey = action === 'edit'
+        ? 'vendors.edit'
+        : (action === 'activate' ? 'vendors.activate' : 'vendors.disable');
+      const routeKey = action === 'edit'
+        ? ROUTE_KEYS.edit
+        : (action === 'activate' ? ROUTE_KEYS.activate : ROUTE_KEYS.disable);
+      const guard = await enforceManagedFlowGuard({
+        req,
+        res,
+        actionKey,
+        payload: {}
+      });
+      if (!guard) return;
+      const guardedActor = guard.actor || actor;
+      const guardedTraceId = guard.traceId || traceId;
+      if (action === 'edit') {
+        await handleEdit(req, res, guardedActor, guardedTraceId, requestId, linkId, bodyText);
+        return;
+      }
+      if (action === 'activate') {
+        await handleSetHealth(res, guardedActor, guardedTraceId, requestId, linkId, 'OK', 200, 'vendors.activate', routeKey);
+        return;
+      }
+      if (action === 'disable') {
+        await handleSetHealth(res, guardedActor, guardedTraceId, requestId, linkId, 'WARN', 409, 'vendors.disable', routeKey);
+        return;
+      }
+    }
+    writeJson(res, 404, { ok: false, error: 'not found', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.route,
+      state: 'error',
+      reason: 'not_found'
     });
-    if (!guard) return;
-    const guardedActor = guard.actor || actor;
-    const guardedTraceId = guard.traceId || traceId;
-    if (action === 'edit') {
-      await handleEdit(req, res, guardedActor, guardedTraceId, requestId, linkId, bodyText);
-      return;
-    }
-    if (action === 'activate') {
-      await handleSetHealth(res, guardedActor, guardedTraceId, requestId, linkId, 'OK', 200, 'vendors.activate');
-      return;
-    }
-    if (action === 'disable') {
-      await handleSetHealth(res, guardedActor, guardedTraceId, requestId, linkId, 'WARN', 409, 'vendors.disable');
-      return;
-    }
+  } catch (err) {
+    logRouteError('admin.vendors', err, { traceId, requestId, actor });
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.route,
+      state: 'error',
+      reason: 'error'
+    });
   }
-  res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: false, error: 'not found' }));
 }
 
 module.exports = {

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T22:12:40-04:00",
-  "gitCommit": "e4b8627fe75989d438424b520a6412ef1d71174b",
+  "generatedAt": "2026-03-19T23:54:18-04:00",
+  "gitCommit": "271823b157ba0d8b58508f723539d032f528af71",
   "branch": "codex/admin-notifications-outcome-T061",
-  "sourceDigest": "fb4ff9fd7c49ee62a1dc5f1b6b9a8a6687783a12dbbdecf186033cb8dc5a8365",
+  "sourceDigest": "ec0059e99366bc2b32bfd109de67e924e3c49700deb68d756ed2773c337147f8",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
