@@ -4,11 +4,20 @@ const crypto = require('crypto');
 
 const { createConfirmToken, verifyConfirmToken } = require('../../domain/confirmToken');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const opsConfigRepo = require('../../repos/firestore/opsConfigRepo');
 const llmPolicyChangeLogsRepo = require('../../repos/firestore/llmPolicyChangeLogsRepo');
 const { parseJson, requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEYS = Object.freeze({
+  status: 'admin.llm_policy_status',
+  plan: 'admin.llm_policy_plan',
+  set: 'admin.llm_policy_set',
+  history: 'admin.llm_policy_history'
+});
 
 function serializePolicy(policy) {
   const payload = policy && typeof policy === 'object' ? policy : {};
@@ -108,45 +117,74 @@ function resolveCanonicalizationInfo(sourcePolicy, normalized) {
   };
 }
 
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = typeof opts.routeKey === 'string' && opts.routeKey.trim()
+    ? opts.routeKey.trim()
+    : null;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
 async function handleStatus(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
 
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const [llmPolicy, systemLlmEnabled] = await Promise.all([
-    opsConfigRepo.getLlmPolicy(),
-    systemFlagsRepo.getLlmEnabled()
-  ]);
-  const envFlag = isLlmFeatureEnabled(process.env);
-  const effectiveEnabled = Boolean(llmPolicy.enabled && systemLlmEnabled && envFlag);
+  try {
+    const [llmPolicy, systemLlmEnabled] = await Promise.all([
+      opsConfigRepo.getLlmPolicy(),
+      systemFlagsRepo.getLlmEnabled()
+    ]);
+    const envFlag = isLlmFeatureEnabled(process.env);
+    const effectiveEnabled = Boolean(llmPolicy.enabled && systemLlmEnabled && envFlag);
 
-  await appendAuditLog({
-    actor,
-    action: 'llm_policy.status.view',
-    entityType: 'opsConfig',
-    entityId: 'llmPolicy',
-    traceId,
-    requestId,
-    payloadSummary: {
-      effectiveEnabled,
+    await appendAuditLog({
+      actor,
+      action: 'llm_policy.status.view',
+      entityType: 'opsConfig',
+      entityId: 'llmPolicy',
+      traceId,
+      requestId,
+      payloadSummary: {
+        effectiveEnabled,
+        systemLlmEnabled,
+        envFlag,
+        llmPolicy
+      }
+    });
+
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
+      llmPolicy,
       systemLlmEnabled,
       envFlag,
-      llmPolicy
-    }
-  });
-
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
-    ok: true,
-    traceId,
-    requestId,
-    llmPolicy,
-    systemLlmEnabled,
-    envFlag,
-    effectiveEnabled,
-    serverTime: new Date().toISOString()
-  }));
+      effectiveEnabled,
+      serverTime: new Date().toISOString()
+    }, {
+      routeKey: ROUTE_KEYS.status,
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (_err) {
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.status,
+      state: 'error',
+      reason: 'error'
+    });
+  }
 }
 
 async function handlePlan(req, res, body) {
@@ -156,47 +194,60 @@ async function handlePlan(req, res, body) {
   const requestId = resolveRequestId(req);
   const payload = parseJson(body, res);
   if (!payload) return;
-
-  const basePolicy = await opsConfigRepo.getLlmPolicy();
-  const candidate = payload.policy === undefined
-    ? basePolicy
-    : buildCandidatePolicy(basePolicy, payload.policy);
-  const normalized = opsConfigRepo.normalizeLlmPolicy(candidate);
-  if (!normalized) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid llmPolicy', traceId, requestId }));
-    return;
-  }
-  const canonicalization = resolveCanonicalizationInfo(payload.policy, normalized);
-
-  const planHash = computePlanHash(normalized);
-  const confirmToken = createConfirmToken(confirmTokenData(planHash), { now: new Date() });
-
-  await appendAuditLog({
-    actor,
-    action: 'llm_policy.plan',
-    entityType: 'opsConfig',
-    entityId: 'llmPolicy',
-    traceId,
-    requestId,
-    payloadSummary: {
-      planHash,
-      llmPolicy: normalized,
-      canonicalization
+  try {
+    const basePolicy = await opsConfigRepo.getLlmPolicy();
+    const candidate = payload.policy === undefined
+      ? basePolicy
+      : buildCandidatePolicy(basePolicy, payload.policy);
+    const normalized = opsConfigRepo.normalizeLlmPolicy(candidate);
+    if (!normalized) {
+      writeJson(res, 400, { ok: false, error: 'invalid llmPolicy', traceId, requestId }, {
+        routeKey: ROUTE_KEYS.plan,
+        state: 'error',
+        reason: 'invalid_llm_policy'
+      });
+      return;
     }
-  });
+    const canonicalization = resolveCanonicalizationInfo(payload.policy, normalized);
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
-    ok: true,
-    traceId,
-    requestId,
-    llmPolicy: normalized,
-    canonicalization,
-    planHash,
-    confirmToken,
-    serverTime: new Date().toISOString()
-  }));
+    const planHash = computePlanHash(normalized);
+    const confirmToken = createConfirmToken(confirmTokenData(planHash), { now: new Date() });
+
+    await appendAuditLog({
+      actor,
+      action: 'llm_policy.plan',
+      entityType: 'opsConfig',
+      entityId: 'llmPolicy',
+      traceId,
+      requestId,
+      payloadSummary: {
+        planHash,
+        llmPolicy: normalized,
+        canonicalization
+      }
+    });
+
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
+      llmPolicy: normalized,
+      canonicalization,
+      planHash,
+      confirmToken,
+      serverTime: new Date().toISOString()
+    }, {
+      routeKey: ROUTE_KEYS.plan,
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (_err) {
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.plan,
+      state: 'error',
+      reason: 'error'
+    });
+  }
 }
 
 async function handleSet(req, res, body) {
@@ -206,29 +257,90 @@ async function handleSet(req, res, body) {
   const requestId = resolveRequestId(req);
   const payload = parseJson(body, res);
   if (!payload) return;
+  try {
+    const basePolicy = await opsConfigRepo.getLlmPolicy();
+    const candidate = payload.policy === undefined
+      ? basePolicy
+      : buildCandidatePolicy(basePolicy, payload.policy);
+    const normalized = opsConfigRepo.normalizeLlmPolicy(candidate);
+    if (!normalized) {
+      writeJson(res, 400, { ok: false, error: 'invalid llmPolicy', traceId, requestId }, {
+        routeKey: ROUTE_KEYS.set,
+        state: 'error',
+        reason: 'invalid_llm_policy'
+      });
+      return;
+    }
+    const canonicalization = resolveCanonicalizationInfo(payload.policy, normalized);
 
-  const basePolicy = await opsConfigRepo.getLlmPolicy();
-  const candidate = payload.policy === undefined
-    ? basePolicy
-    : buildCandidatePolicy(basePolicy, payload.policy);
-  const normalized = opsConfigRepo.normalizeLlmPolicy(candidate);
-  if (!normalized) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid llmPolicy', traceId, requestId }));
-    return;
-  }
-  const canonicalization = resolveCanonicalizationInfo(payload.policy, normalized);
+    const planHash = typeof payload.planHash === 'string' ? payload.planHash.trim() : '';
+    const confirmToken = typeof payload.confirmToken === 'string' ? payload.confirmToken.trim() : '';
+    if (!planHash || !confirmToken) {
+      writeJson(res, 400, { ok: false, error: 'planHash/confirmToken required', traceId, requestId }, {
+        routeKey: ROUTE_KEYS.set,
+        state: 'error',
+        reason: 'planhash_confirmtoken_required'
+      });
+      return;
+    }
 
-  const planHash = typeof payload.planHash === 'string' ? payload.planHash.trim() : '';
-  const confirmToken = typeof payload.confirmToken === 'string' ? payload.confirmToken.trim() : '';
-  if (!planHash || !confirmToken) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'planHash/confirmToken required', traceId, requestId }));
-    return;
-  }
+    const expectedPlanHash = computePlanHash(normalized);
+    if (expectedPlanHash !== planHash) {
+      await appendAuditLog({
+        actor,
+        action: 'llm_policy.set',
+        entityType: 'opsConfig',
+        entityId: 'llmPolicy',
+        traceId,
+        requestId,
+        payloadSummary: {
+          ok: false,
+          reason: 'plan_hash_mismatch',
+          expectedPlanHash,
+          planHash,
+          canonicalization
+        }
+      });
+      writeJson(res, 409, { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId }, {
+        routeKey: ROUTE_KEYS.set,
+        state: 'blocked',
+        reason: 'plan_hash_mismatch'
+      });
+      return;
+    }
 
-  const expectedPlanHash = computePlanHash(normalized);
-  if (expectedPlanHash !== planHash) {
+    const tokenValid = verifyConfirmToken(confirmToken, confirmTokenData(planHash), { now: new Date() });
+    if (!tokenValid) {
+      await appendAuditLog({
+        actor,
+        action: 'llm_policy.set',
+        entityType: 'opsConfig',
+        entityId: 'llmPolicy',
+        traceId,
+        requestId,
+        payloadSummary: {
+          ok: false,
+          reason: 'confirm_token_mismatch'
+        }
+      });
+      writeJson(res, 409, { ok: false, reason: 'confirm_token_mismatch', traceId, requestId }, {
+        routeKey: ROUTE_KEYS.set,
+        state: 'blocked',
+        reason: 'confirm_token_mismatch'
+      });
+      return;
+    }
+
+    const saved = await opsConfigRepo.setLlmPolicy(normalized, actor);
+    await llmPolicyChangeLogsRepo.appendLlmPolicyChangeLog({
+      actor,
+      traceId,
+      requestId,
+      planHash,
+      policy: saved,
+      canonicalization,
+      createdAt: new Date().toISOString()
+    }).catch(() => null);
     await appendAuditLog({
       actor,
       action: 'llm_policy.set',
@@ -237,70 +349,31 @@ async function handleSet(req, res, body) {
       traceId,
       requestId,
       payloadSummary: {
-        ok: false,
-        reason: 'plan_hash_mismatch',
-        expectedPlanHash,
-        planHash,
+        ok: true,
+        llmPolicy: saved,
         canonicalization
       }
     });
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId }));
-    return;
-  }
 
-  const tokenValid = verifyConfirmToken(confirmToken, confirmTokenData(planHash), { now: new Date() });
-  if (!tokenValid) {
-    await appendAuditLog({
-      actor,
-      action: 'llm_policy.set',
-      entityType: 'opsConfig',
-      entityId: 'llmPolicy',
+    writeJson(res, 200, {
+      ok: true,
       traceId,
       requestId,
-      payloadSummary: {
-        ok: false,
-        reason: 'confirm_token_mismatch'
-      }
-    });
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'confirm_token_mismatch', traceId, requestId }));
-    return;
-  }
-
-  const saved = await opsConfigRepo.setLlmPolicy(normalized, actor);
-  await llmPolicyChangeLogsRepo.appendLlmPolicyChangeLog({
-    actor,
-    traceId,
-    requestId,
-    planHash,
-    policy: saved,
-    canonicalization,
-    createdAt: new Date().toISOString()
-  }).catch(() => null);
-  await appendAuditLog({
-    actor,
-    action: 'llm_policy.set',
-    entityType: 'opsConfig',
-    entityId: 'llmPolicy',
-    traceId,
-    requestId,
-    payloadSummary: {
-      ok: true,
       llmPolicy: saved,
-      canonicalization
-    }
-  });
-
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
-    ok: true,
-    traceId,
-    requestId,
-    llmPolicy: saved,
-    canonicalization,
-    serverTime: new Date().toISOString()
-  }));
+      canonicalization,
+      serverTime: new Date().toISOString()
+    }, {
+      routeKey: ROUTE_KEYS.set,
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (_err) {
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.set,
+      state: 'error',
+      reason: 'error'
+    });
+  }
 }
 
 function parseLimit(req) {
@@ -316,29 +389,39 @@ async function handleHistory(req, res) {
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   const limit = parseLimit(req);
+  try {
+    const items = await llmPolicyChangeLogsRepo.listLlmPolicyChangeLogs(limit).catch(() => []);
+    await appendAuditLog({
+      actor,
+      action: 'llm_policy.history.view',
+      entityType: 'opsConfig',
+      entityId: 'llmPolicy',
+      traceId,
+      requestId,
+      payloadSummary: {
+        limit,
+        count: items.length
+      }
+    });
 
-  const items = await llmPolicyChangeLogsRepo.listLlmPolicyChangeLogs(limit).catch(() => []);
-  await appendAuditLog({
-    actor,
-    action: 'llm_policy.history.view',
-    entityType: 'opsConfig',
-    entityId: 'llmPolicy',
-    traceId,
-    requestId,
-    payloadSummary: {
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
       limit,
-      count: items.length
-    }
-  });
-
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
-    ok: true,
-    traceId,
-    requestId,
-    limit,
-    items
-  }));
+      items
+    }, {
+      routeKey: ROUTE_KEYS.history,
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (_err) {
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.history,
+      state: 'error',
+      reason: 'error'
+    });
+  }
 }
 
 module.exports = {
