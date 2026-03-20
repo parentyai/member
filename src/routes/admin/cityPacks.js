@@ -7,11 +7,56 @@ const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { activateCityPack } = require('../../usecases/cityPack/activateCityPack');
 const { adaptSingleSheetCityPackTemplate } = require('../../usecases/cityPack/singleSheetCityPackImportAdapter');
 const { composeCityAndNationwidePacks } = require('../../usecases/nationwidePack/composeCityAndNationwidePacks');
-const { resolveActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
+const { resolveActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
-function writeJson(res, status, payload) {
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.city_packs';
+
+function normalizeOutcomeReason(value, fallback) {
+  const normalized = typeof value === 'string'
+    ? value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+    : '';
+  return normalized || fallback;
+}
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function resolveDefaultOutcomeReason(status, payload) {
+  if (Number(status) >= 500) return 'error';
+  if (Number(status) === 404) return 'not_found';
+  if (Number(status) >= 400) {
+    return normalizeOutcomeReason(payload && payload.error, 'error');
+  }
+  return 'completed';
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const options = normalizeOutcomeOptions(outcomeOptions);
+  if (!options.reason) options.reason = resolveDefaultOutcomeReason(status, payload);
+  const body = attachOutcome(payload || {}, options);
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
+}
+
+function parseJsonBody(bodyText, res) {
+  try {
+    return JSON.parse(bodyText || '{}');
+  } catch (_err) {
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json'
+    });
+    return null;
+  }
 }
 
 function normalizeLimit(value) {
@@ -134,7 +179,7 @@ function importConfirmTokenData(planHash) {
 }
 
 async function handleCreateCityPack(req, res, bodyText, context) {
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
   const normalizedPackClass = cityPacksRepo.normalizePackClass(payload.packClass);
   const normalizedLanguage = cityPacksRepo.normalizeLanguage(payload.language);
@@ -292,7 +337,7 @@ async function handleExportCityPack(req, res, context, cityPackId) {
 }
 
 async function handleImportCityPackDryRun(req, res, bodyText, context) {
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
   const normalized = normalizeImportTemplate(payload);
   const planHash = computeImportPlanHash(normalized);
@@ -322,7 +367,7 @@ async function handleImportCityPackDryRun(req, res, bodyText, context) {
 }
 
 async function handleImportCityPackApply(req, res, bodyText, context) {
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
   const planHash = typeof payload.planHash === 'string' ? payload.planHash.trim() : '';
   const confirmToken = typeof payload.confirmToken === 'string' ? payload.confirmToken.trim() : '';
@@ -404,7 +449,7 @@ async function handleUpdateCityPackStructure(req, res, bodyText, context, cityPa
     writeJson(res, 404, { ok: false, error: 'city pack not found' });
     return;
   }
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
   const structurePatch = cityPacksRepo.normalizeCityPackStructurePatch(payload);
   if (structurePatch.basePackId) {
@@ -453,7 +498,7 @@ async function handleUpdateCityPackContent(req, res, bodyText, context, cityPack
     writeJson(res, 409, { ok: false, error: 'city_pack_not_editable' });
     return;
   }
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
   const contentPatch = cityPacksRepo.normalizeCityPackContentPatch(payload);
   if (!Object.keys(contentPatch).length) {

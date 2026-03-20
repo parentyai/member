@@ -11,11 +11,56 @@ const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { reviewSourceRefDecision } = require('../../usecases/cityPack/reviewSourceRefDecision');
 const { runCityPackSourceAuditJob } = require('../../usecases/cityPack/runCityPackSourceAuditJob');
 const { computeCityPackMetrics, normalizeWindowDays, normalizeLimit: normalizeMetricsLimit } = require('../../usecases/cityPack/computeCityPackMetrics');
-const { resolveActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
+const { resolveActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
-function writeJson(res, status, payload) {
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.city_pack_review_inbox';
+
+function normalizeOutcomeReason(value, fallback) {
+  const normalized = typeof value === 'string'
+    ? value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+    : '';
+  return normalized || fallback;
+}
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function resolveDefaultOutcomeReason(status, payload) {
+  if (Number(status) >= 500) return 'error';
+  if (Number(status) === 404) return 'not_found';
+  if (Number(status) >= 400) {
+    return normalizeOutcomeReason(payload && payload.error, 'error');
+  }
+  return 'completed';
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const options = normalizeOutcomeOptions(outcomeOptions);
+  if (!options.reason) options.reason = resolveDefaultOutcomeReason(status, payload);
+  const body = attachOutcome(payload || {}, options);
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
+}
+
+function parseJsonBody(bodyText, res) {
+  try {
+    return JSON.parse(bodyText || '{}');
+  } catch (_err) {
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json'
+    });
+    return null;
+  }
 }
 
 function normalizeLimit(value) {
@@ -157,7 +202,10 @@ async function ensureCityPackWriteAllowed(res, context, entityType, entityId) {
       regionKey: null
     }
   });
-  writeJson(res, 409, { ok: false, error: 'kill switch on', traceId: context.traceId });
+  writeJson(res, 409, { ok: false, error: 'kill switch on', traceId: context.traceId }, {
+    state: 'blocked',
+    reason: 'kill_switch_on'
+  });
   return false;
 }
 
@@ -361,7 +409,7 @@ async function handleReviewInbox(req, res, context) {
 async function handleSourceRefDecision(req, res, bodyText, context, sourceRefId, decision) {
   const writeAllowed = await ensureCityPackWriteAllowed(res, context, 'source_ref', sourceRefId);
   if (!writeAllowed) return;
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
   const result = await reviewSourceRefDecision({
     sourceRefId,
@@ -386,7 +434,7 @@ async function handleSourceRefPolicy(req, res, bodyText, context, sourceRefId) {
     writeJson(res, 404, { ok: false, error: 'source ref not found' });
     return;
   }
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
   const policyPatch = sourceRefsRepo.normalizeSourcePolicyPatch(payload);
   const nextAuthorityLevel = Object.prototype.hasOwnProperty.call(policyPatch, 'authorityLevel')
@@ -614,7 +662,7 @@ async function handleCityPackAuditRunDetail(req, res, context, runId) {
 async function handleCityPackAuditRun(req, res, bodyText, context) {
   const writeAllowed = await ensureCityPackWriteAllowed(res, context, 'source_audit_run', 'manual');
   if (!writeAllowed) return;
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
   const stage = typeof payload.stage === 'string' ? payload.stage : null;
   const result = await runCityPackSourceAuditJob({

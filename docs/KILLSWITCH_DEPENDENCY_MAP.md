@@ -18,7 +18,7 @@
 | `src/routes/admin/cityPackRequests.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/cityPackRequests.js` | 114 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/cityPackReviewInbox.js` | 8 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/admin/cityPackReviewInbox.js` | 146 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/cityPackReviewInbox.js` | 191 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/notifications.js` | 7 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/notifications.js` | 198 | `const getKillSwitchSnapshot = typeof resolvedDeps.getKillSwitch === 'function'` |
 | `src/routes/admin/notifications.js` | 199 | `? resolvedDeps.getKillSwitch` |
