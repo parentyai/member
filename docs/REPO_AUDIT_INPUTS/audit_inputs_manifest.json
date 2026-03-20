@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-20T19:30:25.389Z",
-  "gitCommit": "d695c424b31440a753608d0e37bca6bb121ee3ac",
-  "branch": "codex/admin-next-outcome-T070",
-  "sourceDigest": "cf63ad864ea5ea83b58ad28cae5660c6b6ac878b4332158d91075c4e483b6abe",
+  "generatedAt": "2026-03-20T20:02:10.640Z",
+  "gitCommit": "0a364009c25333843efdf48a7b137befd796bf11",
+  "branch": "codex/admin-next-outcome-T071",
+  "sourceDigest": "4a064b6150cc8dba22367e0921170bcfa6aeba2b2c2cedfef4ca2036645fe59b",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -76,7 +76,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "34ae96ab58c1ee7c7c7bdf3ff92069d5125fa8ddea53fa759172edfeeb44ef9b",
+      "sha256": "ef83f80ce03ed41920d9b5e0256edcfa5e782712c88cf490e49843c28bcb9cdf",
       "bytes": 79297
     },
     {
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "0165da80d1f51a8fa2ae1fb4ac6a0f157370d58e09a4346c5b1ab1b5215d6647",
+      "sha256": "670322dad985b52b1458414a582e47ba5d0bc696ae881a9973a96b769f888de7",
       "bytes": 453884
     },
     {
