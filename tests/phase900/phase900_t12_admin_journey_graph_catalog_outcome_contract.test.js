@@ -17,6 +17,8 @@ const {
   handleHistory
 } = require('../../src/routes/admin/journeyGraphCatalogConfig');
 
+const originalOpsConfirmTokenSecret = process.env.OPS_CONFIRM_TOKEN_SECRET;
+
 function createResCapture() {
   const stagedHeaders = {};
   const result = { statusCode: null, headers: null, body: '' };
@@ -46,11 +48,14 @@ function createResCapture() {
 beforeEach(() => {
   setDbForTest(createDbStub());
   setServerTimestampForTest('SERVER_TIMESTAMP');
+  process.env.OPS_CONFIRM_TOKEN_SECRET = 'phase900-journey-graph-catalog-secret';
 });
 
 afterEach(() => {
   clearDbForTest();
   clearServerTimestampForTest();
+  if (originalOpsConfirmTokenSecret === undefined) delete process.env.OPS_CONFIRM_TOKEN_SECRET;
+  else process.env.OPS_CONFIRM_TOKEN_SECRET = originalOpsConfirmTokenSecret;
 });
 
 test('phase900: journey graph catalog status returns completed outcome metadata', async () => {
