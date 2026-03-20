@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-20T09:44:13-04:00",
-  "gitCommit": "86269180cc1314183eee3c7c2f2a64bb64f814b6",
+  "generatedAt": "2026-03-20T10:06:01-04:00",
+  "gitCommit": "b8b321a3633116228a0fe56f094048611b44a6ec",
   "branch": "codex/admin-managed-flow-guard-outcome-T065",
-  "sourceDigest": "9ce8d36bb4044f048cae60cb594aed28d684d1f9b65f6ab001264b3937263fcc",
+  "sourceDigest": "ad49eb29928ed355bb2388dd201fdfe71e640b32d84f5879bcc6f02c9fc4f8da",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

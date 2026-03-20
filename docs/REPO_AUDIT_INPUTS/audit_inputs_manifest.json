@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-20T14:03:12.299Z",
-  "gitCommit": "86269180cc1314183eee3c7c2f2a64bb64f814b6",
+  "generatedAt": "2026-03-20T14:48:04.280Z",
+  "gitCommit": "b8b321a3633116228a0fe56f094048611b44a6ec",
   "branch": "codex/admin-managed-flow-guard-outcome-T065",
-  "sourceDigest": "0e9522d25419ebd2029fe5a95b8962167c7d2c9ffa0300d49f53201d6910af82",
+  "sourceDigest": "b63a39a3c426b7710afc1f7719f1b6d0f12dce4d44a162af4fb8fe115f39862c",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "232b873de5cb69fb4f57ac44a28de1867aa3695a87be4e88eaba3bb5d51e2d21",
+      "sha256": "cef4eb0b88dd599ac9258ac9b89bd75cc1e8c28c2fc8e0b1d29bcd88fa7f4b96",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "d78fa56eb55ca1408c4c81c5d08337526c2e4bf03f05e44e34a52ee3f0ded605",
+      "sha256": "0d0aa3df069a81f05d79a5af9f6ada0d734ccd0d41c4df8d8b28e8c67261e72a",
       "bytes": 487
     },
     {
@@ -151,7 +151,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "600e1e2cf4be62dc2cfb5921082a9171f472fc630079ccf009aa5249c52ac0e8",
+      "sha256": "8209642eec34c848272b02782582c07cdbed16fba89691a0c5dffe3ba80ffad5",
       "bytes": 740
     },
     {
@@ -166,12 +166,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "30849e51edb54c807cca4b560a4d2c174c981455d8a4557df955dc0b91a1b8df",
+      "sha256": "c7e720854356e26a09525e6f1d0f0e4a07e7f49783170fccc7330d0cb5552e33",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "7a2c0fdbb2a6733b1ac14120fd20cb4535d027d16f6129fd9af34c4cf62a3cf8",
+      "sha256": "5f513e9a09aebdbb3ad70df4029e96d9c403944eea196eb87a0a77521b89b33d",
       "bytes": 2429
     },
     {
