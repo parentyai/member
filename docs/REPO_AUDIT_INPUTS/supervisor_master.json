@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-20T08:49:30-04:00",
-  "gitCommit": "d2e9a5f24b788cdd47454c30d4585a69399472ca",
-  "branch": "codex/admin-os-users-summary-export-outcome-T064",
-  "sourceDigest": "be673df2c7c518679380e7464fbab41bcbe7547304ef90b94636ca02581a98ec",
+  "generatedAt": "2026-03-20T09:44:13-04:00",
+  "gitCommit": "86269180cc1314183eee3c7c2f2a64bb64f814b6",
+  "branch": "codex/admin-managed-flow-guard-outcome-T065",
+  "sourceDigest": "9ce8d36bb4044f048cae60cb594aed28d684d1f9b65f6ab001264b3937263fcc",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

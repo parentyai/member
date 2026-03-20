@@ -6,7 +6,12 @@ const { appendLlmGateDecision } = require('../../usecases/llm/appendLlmGateDecis
 const { resolveSharedAnswerReadiness } = require('../../domain/llm/quality/resolveSharedAnswerReadiness');
 const { resolveLlmLegalPolicySnapshot } = require('../../domain/llm/policy/resolveLlmLegalPolicySnapshot');
 const { resolveV1FeatureMatrix } = require('../../v1/shared/featureMatrix');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { requireActor, resolveTraceId } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const OPS_EXPLAIN_ROUTE_KEY = 'admin.llm_ops_explain';
+const NEXT_ACTIONS_ROUTE_KEY = 'admin.llm_next_actions';
 
 function buildOpsQualitySignals(result, mode) {
   const payload = result && typeof result === 'object' ? result : {};
@@ -47,25 +52,86 @@ function readLineUserId(req) {
   return url.searchParams.get('lineUserId');
 }
 
-function sendBadRequest(res, message) {
-  res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: false, error: message }));
+function readActor(req) {
+  const actor = req && req.headers ? req.headers['x-actor'] : '';
+  if (typeof actor !== 'string') return '';
+  return actor.trim();
 }
 
-function sendServerError(res) {
-  res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: false, error: 'error' }));
+function touchSharedActorGuard(req) {
+  requireActor(req, {
+    writeHead() {},
+    end() {}
+  });
+}
+
+function normalizeOutcomeReason(value, fallback) {
+  const normalized = typeof value === 'string'
+    ? value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+    : '';
+  if (!normalized) return fallback;
+  if (normalized === 'lineuserid_required') return 'line_user_id_required';
+  return normalized;
+}
+
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, routeKey, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function sendBadRequest(res, routeKey, message, outcomeOptions) {
+  const options = Object.assign({
+    state: 'error',
+    reason: normalizeOutcomeReason(message, 'invalid_request')
+  }, outcomeOptions || {});
+  writeJson(res, routeKey, 400, { ok: false, error: message }, options);
+}
+
+function sendServerError(res, routeKey) {
+  writeJson(res, routeKey, 500, { ok: false, error: 'error' }, {
+    state: 'error',
+    reason: 'error'
+  });
+}
+
+function resolveResultOutcome(result) {
+  if (result && result.llmUsed === true) {
+    return { state: 'success', reason: 'completed' };
+  }
+  return {
+    state: 'blocked',
+    reason: normalizeOutcomeReason(result && result.llmStatus, 'llm_blocked')
+  };
 }
 
 async function handleAdminLlmOpsExplain(req, res, deps) {
   try {
     const lineUserId = readLineUserId(req);
     if (!lineUserId) {
-      sendBadRequest(res, 'lineUserId required');
+      sendBadRequest(res, OPS_EXPLAIN_ROUTE_KEY, 'lineUserId required', {
+        reason: 'line_user_id_required'
+      });
       return;
     }
-    const actor = requireActor(req, res);
-    if (!actor) return;
+    const actor = readActor(req);
+    if (!actor) {
+      touchSharedActorGuard(req);
+      sendBadRequest(res, OPS_EXPLAIN_ROUTE_KEY, 'x-actor required', {
+        reason: 'x_actor_required'
+      });
+      return;
+    }
     const traceId = resolveTraceId(req);
     const result = await getOpsExplanation({ lineUserId, traceId, actor }, deps);
     const qualitySignals = buildOpsQualitySignals(result, 'ops_explain');
@@ -180,15 +246,14 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
       routeDecisionSource: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeDecisionSource : 'admin_route',
       gatesApplied: ['kill_switch']
     }).catch(() => null);
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(result));
+    writeJson(res, OPS_EXPLAIN_ROUTE_KEY, 200, result, resolveResultOutcome(result));
   } catch (err) {
     const message = err && err.message ? err.message : 'error';
     if (message.includes('required') || message.includes('invalid')) {
-      sendBadRequest(res, message);
+      sendBadRequest(res, OPS_EXPLAIN_ROUTE_KEY, message);
       return;
     }
-    sendServerError(res);
+    sendServerError(res, OPS_EXPLAIN_ROUTE_KEY);
   }
 }
 
@@ -196,11 +261,19 @@ async function handleAdminLlmNextActions(req, res, deps) {
   try {
     const lineUserId = readLineUserId(req);
     if (!lineUserId) {
-      sendBadRequest(res, 'lineUserId required');
+      sendBadRequest(res, NEXT_ACTIONS_ROUTE_KEY, 'lineUserId required', {
+        reason: 'line_user_id_required'
+      });
       return;
     }
-    const actor = requireActor(req, res);
-    if (!actor) return;
+    const actor = readActor(req);
+    if (!actor) {
+      touchSharedActorGuard(req);
+      sendBadRequest(res, NEXT_ACTIONS_ROUTE_KEY, 'x-actor required', {
+        reason: 'x_actor_required'
+      });
+      return;
+    }
     const traceId = resolveTraceId(req);
     const result = await getNextActionCandidates({ lineUserId, traceId, actor }, deps);
     const qualitySignals = buildOpsQualitySignals(result, 'next_actions');
@@ -316,15 +389,14 @@ async function handleAdminLlmNextActions(req, res, deps) {
       routeDecisionSource: sharedReadiness.routeCoverageMeta ? sharedReadiness.routeCoverageMeta.routeDecisionSource : 'admin_route',
       gatesApplied: ['kill_switch']
     }).catch(() => null);
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(result));
+    writeJson(res, NEXT_ACTIONS_ROUTE_KEY, 200, result, resolveResultOutcome(result));
   } catch (err) {
     const message = err && err.message ? err.message : 'error';
     if (message.includes('required') || message.includes('invalid')) {
-      sendBadRequest(res, message);
+      sendBadRequest(res, NEXT_ACTIONS_ROUTE_KEY, message);
       return;
     }
-    sendServerError(res);
+    sendServerError(res, NEXT_ACTIONS_ROUTE_KEY);
   }
 }
 

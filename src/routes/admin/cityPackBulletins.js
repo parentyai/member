@@ -6,12 +6,45 @@ const { sendNotification } = require('../../usecases/notifications/sendNotificat
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
-const { resolveActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
+const { resolveActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { attachNotificationSendSummary } = require('../../domain/notificationSendSummary');
 
-function writeJson(res, status, payload) {
+const ROUTE_TYPE = 'admin_route';
+const LIST_ROUTE_KEY = 'admin.city_pack_bulletins_list';
+const DETAIL_ROUTE_KEY = 'admin.city_pack_bulletins_detail';
+const CREATE_ROUTE_KEY = 'admin.city_pack_bulletins_create';
+const APPROVE_ROUTE_KEY = 'admin.city_pack_bulletins_approve';
+const REJECT_ROUTE_KEY = 'admin.city_pack_bulletins_reject';
+const SEND_ROUTE_KEY = 'admin.city_pack_bulletins_send';
+const ROOT_ROUTE_KEY = 'admin.city_pack_bulletins';
+
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, routeKey, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
+}
+
+function parseJsonBody(bodyText, res, routeKey) {
+  try {
+    return JSON.parse(bodyText || '{}');
+  } catch (_err) {
+    writeJson(res, routeKey, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json'
+    });
+    return null;
+  }
 }
 
 function normalizeLimit(value) {
@@ -44,20 +77,29 @@ async function handleListBulletins(req, res, context) {
   const status = (url.searchParams.get('status') || '').trim() || null;
   const limit = normalizeLimit(url.searchParams.get('limit'));
   const items = await cityPackBulletinsRepo.listBulletins({ status, limit });
-  writeJson(res, 200, { ok: true, traceId: context.traceId, items });
+  writeJson(res, LIST_ROUTE_KEY, 200, { ok: true, traceId: context.traceId, items }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleGetBulletin(req, res, context, bulletinId) {
   const bulletin = await cityPackBulletinsRepo.getBulletin(bulletinId);
   if (!bulletin) {
-    writeJson(res, 404, { ok: false, error: 'bulletin not found' });
+    writeJson(res, DETAIL_ROUTE_KEY, 404, { ok: false, error: 'bulletin not found' }, {
+      state: 'error',
+      reason: 'bulletin_not_found'
+    });
     return;
   }
-  writeJson(res, 200, { ok: true, traceId: context.traceId, item: bulletin });
+  writeJson(res, DETAIL_ROUTE_KEY, 200, { ok: true, traceId: context.traceId, item: bulletin }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleCreateBulletin(req, res, bodyText, context) {
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res, CREATE_ROUTE_KEY);
   if (!payload) return;
   const guard = await enforceManagedFlowGuard({
     req,
@@ -75,12 +117,18 @@ async function handleCreateBulletin(req, res, bodyText, context) {
     ? payload.modulesUpdated.filter((item) => typeof item === 'string' && item.trim()).map((item) => item.trim().toLowerCase())
     : [];
   if (!cityPackId || !notificationId || !summary) {
-    writeJson(res, 400, { ok: false, error: 'cityPackId/notificationId/summary required' });
+    writeJson(res, CREATE_ROUTE_KEY, 400, { ok: false, error: 'cityPackId/notificationId/summary required' }, {
+      state: 'error',
+      reason: 'city_pack_id_notification_id_summary_required'
+    });
     return;
   }
   const notification = await notificationsRepo.getNotification(notificationId);
   if (!notification) {
-    writeJson(res, 404, { ok: false, error: 'notification not found' });
+    writeJson(res, CREATE_ROUTE_KEY, 404, { ok: false, error: 'notification not found' }, {
+      state: 'error',
+      reason: 'notification_not_found'
+    });
     return;
   }
   const created = await cityPackBulletinsRepo.createBulletin({
@@ -105,11 +153,14 @@ async function handleCreateBulletin(req, res, bodyText, context) {
       modulesUpdatedCount: modulesUpdated.length
     }
   });
-  writeJson(res, 201, { ok: true, traceId: context.traceId, bulletinId: created.id });
+  writeJson(res, CREATE_ROUTE_KEY, 201, { ok: true, traceId: context.traceId, bulletinId: created.id }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleApproveBulletin(req, res, bodyText, context, bulletinId) {
-  const payload = parseJson(bodyText || '{}', res);
+  const payload = parseJsonBody(bodyText || '{}', res, APPROVE_ROUTE_KEY);
   if (!payload && bodyText) return;
   const guard = await enforceManagedFlowGuard({
     req,
@@ -122,22 +173,34 @@ async function handleApproveBulletin(req, res, bodyText, context, bulletinId) {
   context.traceId = guard.traceId || context.traceId;
   const bulletin = await cityPackBulletinsRepo.getBulletin(bulletinId);
   if (!bulletin) {
-    writeJson(res, 404, { ok: false, error: 'bulletin not found' });
+    writeJson(res, APPROVE_ROUTE_KEY, 404, { ok: false, error: 'bulletin not found' }, {
+      state: 'error',
+      reason: 'bulletin_not_found'
+    });
     return;
   }
   if (bulletin.status !== 'draft') {
-    writeJson(res, 409, { ok: false, error: 'bulletin_not_draft' });
+    writeJson(res, APPROVE_ROUTE_KEY, 409, { ok: false, error: 'bulletin_not_draft' }, {
+      state: 'blocked',
+      reason: 'bulletin_not_draft'
+    });
     return;
   }
   const notificationId = payload && typeof payload.notificationId === 'string' ? payload.notificationId.trim() : '';
   const resolvedNotificationId = bulletin.notificationId || notificationId || null;
   if (!resolvedNotificationId) {
-    writeJson(res, 409, { ok: false, error: 'notificationId required' });
+    writeJson(res, APPROVE_ROUTE_KEY, 409, { ok: false, error: 'notificationId required' }, {
+      state: 'blocked',
+      reason: 'notification_id_required'
+    });
     return;
   }
   const notification = await notificationsRepo.getNotification(resolvedNotificationId);
   if (!notification) {
-    writeJson(res, 404, { ok: false, error: 'notification not found' });
+    writeJson(res, APPROVE_ROUTE_KEY, 404, { ok: false, error: 'notification not found' }, {
+      state: 'error',
+      reason: 'notification_not_found'
+    });
     return;
   }
   await cityPackBulletinsRepo.updateBulletin(bulletinId, {
@@ -156,11 +219,14 @@ async function handleApproveBulletin(req, res, bodyText, context, bulletinId) {
       cityPackId: bulletin.cityPackId || null
     }
   });
-  writeJson(res, 200, {
+  writeJson(res, APPROVE_ROUTE_KEY, 200, {
     ok: true,
     traceId: context.traceId,
     bulletinId,
     notificationId: resolvedNotificationId
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
@@ -176,11 +242,17 @@ async function handleRejectBulletin(req, res, context, bulletinId) {
   context.traceId = guard.traceId || context.traceId;
   const bulletin = await cityPackBulletinsRepo.getBulletin(bulletinId);
   if (!bulletin) {
-    writeJson(res, 404, { ok: false, error: 'bulletin not found' });
+    writeJson(res, REJECT_ROUTE_KEY, 404, { ok: false, error: 'bulletin not found' }, {
+      state: 'error',
+      reason: 'bulletin_not_found'
+    });
     return;
   }
   if (bulletin.status === 'sent') {
-    writeJson(res, 409, { ok: false, error: 'bulletin_already_sent' });
+    writeJson(res, REJECT_ROUTE_KEY, 409, { ok: false, error: 'bulletin_already_sent' }, {
+      state: 'blocked',
+      reason: 'bulletin_already_sent'
+    });
     return;
   }
   await cityPackBulletinsRepo.updateBulletin(bulletinId, {
@@ -197,7 +269,10 @@ async function handleRejectBulletin(req, res, context, bulletinId) {
       cityPackId: bulletin.cityPackId || null
     }
   });
-  writeJson(res, 200, { ok: true, traceId: context.traceId, bulletinId });
+  writeJson(res, REJECT_ROUTE_KEY, 200, { ok: true, traceId: context.traceId, bulletinId }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleSendBulletin(req, res, context, bulletinId) {
@@ -212,15 +287,24 @@ async function handleSendBulletin(req, res, context, bulletinId) {
   context.traceId = guard.traceId || context.traceId;
   const bulletin = await cityPackBulletinsRepo.getBulletin(bulletinId);
   if (!bulletin) {
-    writeJson(res, 404, { ok: false, error: 'bulletin not found' });
+    writeJson(res, SEND_ROUTE_KEY, 404, { ok: false, error: 'bulletin not found' }, {
+      state: 'error',
+      reason: 'bulletin_not_found'
+    });
     return;
   }
   if (bulletin.status !== 'approved') {
-    writeJson(res, 409, { ok: false, error: 'bulletin_not_approved' });
+    writeJson(res, SEND_ROUTE_KEY, 409, { ok: false, error: 'bulletin_not_approved' }, {
+      state: 'blocked',
+      reason: 'bulletin_not_approved'
+    });
     return;
   }
   if (!bulletin.notificationId) {
-    writeJson(res, 409, { ok: false, error: 'notificationId required' });
+    writeJson(res, SEND_ROUTE_KEY, 409, { ok: false, error: 'notificationId required' }, {
+      state: 'blocked',
+      reason: 'notification_id_required'
+    });
     return;
   }
   const killSwitch = await getKillSwitch();
@@ -276,7 +360,7 @@ async function handleSendBulletin(req, res, context, bulletinId) {
         modulesUpdatedCount: Array.isArray(bulletin.modulesUpdated) ? bulletin.modulesUpdated.length : 0
       }
     });
-    writeJson(res, partialFailure ? 207 : 200, {
+    writeJson(res, SEND_ROUTE_KEY, partialFailure ? 207 : 200, {
       ok: partialFailure ? false : true,
       partial: partialFailure,
       reason: partialFailure ? 'send_partial_failure' : null,
@@ -286,14 +370,23 @@ async function handleSendBulletin(req, res, context, bulletinId) {
       skippedCount: Number(result.skippedCount) || 0,
       failedCount: Number(result.failedCount) || 0,
       sendSummary: result.sendSummary || null
+    }, {
+      state: partialFailure ? 'degraded' : 'success',
+      reason: partialFailure ? 'send_partial_failure' : 'completed'
     });
   } catch (err) {
     if (isKillSwitchError(err)) {
-      writeJson(res, 403, { ok: false, error: 'kill switch on' });
+      writeJson(res, SEND_ROUTE_KEY, 403, { ok: false, error: 'kill switch on' }, {
+        state: 'blocked',
+        reason: 'kill_switch_on'
+      });
       return;
     }
     const message = err && err.message ? err.message : 'error';
-    writeJson(res, 500, { ok: false, error: message });
+    writeJson(res, SEND_ROUTE_KEY, 500, { ok: false, error: message }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
@@ -336,10 +429,16 @@ async function handleCityPackBulletins(req, res, bodyText) {
         return;
       }
     }
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, ROOT_ROUTE_KEY, 404, { ok: false, error: 'not found' }, {
+      state: 'error',
+      reason: 'not_found'
+    });
   } catch (err) {
     logRouteError('admin.city_pack_bulletins', err, context);
-    writeJson(res, 500, { ok: false, error: 'error' });
+    writeJson(res, ROOT_ROUTE_KEY, 500, { ok: false, error: 'error' }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 

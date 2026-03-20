@@ -10,7 +10,7 @@
 | `src/domain/validators.js` | 192 | `validateKillSwitch,` |
 | `src/infra/lineClient.js` | 21 | `const value = await systemFlagsRepo.getKillSwitch();` |
 | `src/routes/admin/cityPackBulletins.js` | 6 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/admin/cityPackBulletins.js` | 226 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/cityPackBulletins.js` | 310 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/cityPackFeedback.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/cityPackFeedback.js` | 156 | `const readKillSwitch = typeof resolvedDeps.getKillSwitch === 'function'` |
 | `src/routes/admin/cityPackFeedback.js` | 157 | `? resolvedDeps.getKillSwitch` |
