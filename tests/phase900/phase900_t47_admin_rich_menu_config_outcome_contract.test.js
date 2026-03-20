@@ -37,6 +37,7 @@ async function withRichMenuHandlers(overrides, run) {
   const originalPolicyRepo = require.cache[policyRepoPath];
   const originalAppendAudit = require.cache[appendAuditPath];
   const originalRoute = require.cache[routePath];
+  const originalConfirmSecret = process.env.OPS_CONFIRM_TOKEN_SECRET;
 
   require.cache[policyRepoPath] = {
     id: policyRepoPath,
@@ -65,11 +66,14 @@ async function withRichMenuHandlers(overrides, run) {
     }, overrides && overrides.appendAuditLog || {})
   };
   delete require.cache[routePath];
+  process.env.OPS_CONFIRM_TOKEN_SECRET = 'phase900_t47_confirm_secret';
 
   try {
     const route = require('../../src/routes/admin/richMenuConfig');
     await run(route);
   } finally {
+    if (originalConfirmSecret === undefined) delete process.env.OPS_CONFIRM_TOKEN_SECRET;
+    else process.env.OPS_CONFIRM_TOKEN_SECRET = originalConfirmSecret;
     if (originalPolicyRepo) require.cache[policyRepoPath] = originalPolicyRepo;
     else delete require.cache[policyRepoPath];
     if (originalAppendAudit) require.cache[appendAuditPath] = originalAppendAudit;
