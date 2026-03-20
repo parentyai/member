@@ -48,7 +48,7 @@ function createResCapture() {
 beforeEach(() => {
   setDbForTest(createDbStub());
   setServerTimestampForTest('SERVER_TIMESTAMP');
-  process.env.OPS_CONFIRM_TOKEN_SECRET = 'phase900-llm-policy-secret';
+  process.env.OPS_CONFIRM_TOKEN_SECRET = 'test_confirm_secret';
 });
 
 afterEach(() => {
