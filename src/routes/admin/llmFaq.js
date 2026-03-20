@@ -1,12 +1,32 @@
 'use strict';
 
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { answerFaqFromKb } = require('../../usecases/faq/answerFaqFromKb');
 const { appendLlmGateDecision } = require('../../usecases/llm/appendLlmGateDecision');
 const { parseJson, resolveActor, resolveRequestId, resolveTraceId } = require('./osContext');
 
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.llm_faq_answer';
+
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
+}
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
 }
 
 function buildFaqQualitySignals(result, blockedReason) {
@@ -35,12 +55,16 @@ function buildFaqQualitySignals(result, blockedReason) {
 function handleError(res, err, traceId) {
   const message = err && err.message ? err.message : 'error';
   if (message.includes('required') || message.includes('invalid')) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: message, traceId }));
+    writeJson(res, 400, { ok: false, error: message, traceId }, {
+      state: 'error',
+      reason: `${String(message).replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').toLowerCase() || 'invalid_request'}`
+    });
     return;
   }
-  res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: false, error: 'error', traceId }));
+  writeJson(res, 500, { ok: false, error: 'error', traceId }, {
+    state: 'error',
+    reason: 'error'
+  });
 }
 
 async function handleAdminLlmFaqAnswer(req, res, body, deps) {
@@ -151,8 +175,13 @@ async function handleAdminLlmFaqAnswer(req, res, body, deps) {
       gatesApplied: ['kill_switch', 'injection', 'url_guard']
     }).catch(() => null);
     const status = result && Number.isInteger(result.httpStatus) ? result.httpStatus : 200;
-    res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(result));
+    writeJson(res, status, result, blockedReason ? {
+      state: 'blocked',
+      reason: blockedReason
+    } : {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
     handleError(res, err, traceId);
   }

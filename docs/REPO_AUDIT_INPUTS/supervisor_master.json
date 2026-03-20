@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T20:22:36-04:00",
-  "gitCommit": "9b55f361d7e1614be087175f025e5d4fa2f170e1",
+  "generatedAt": "2026-03-19T20:38:51-04:00",
+  "gitCommit": "1f787231d6e5ce62ee17bdbd5815edaab5d93fca",
   "branch": "codex/admin-link-registry-outcome-T054",
-  "sourceDigest": "cf0a0384992fe06c697932abe4132d908f8671ba26660611357695e817fa02f6",
+  "sourceDigest": "91411938635abef583c6d148140e8d880391393332079b7ecf30ba975fa2314e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
