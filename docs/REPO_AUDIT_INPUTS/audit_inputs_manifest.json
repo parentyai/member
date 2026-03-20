@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T23:48:20.317Z",
-  "gitCommit": "33a223e49d667786e25e82d286931451d893c4e7",
+  "generatedAt": "2026-03-20T00:14:22.192Z",
+  "gitCommit": "876895d6a27cf1f0e5825f665d8a2812ac814a11",
   "branch": "codex/admin-city-pack-update-proposals-outcome-T049",
-  "sourceDigest": "77a5d2d056397818c2fa378e74a261dd6b025e7c6fb0f2861032371c86322311",
+  "sourceDigest": "655c95a73d428653ca5b3be49465109d580f070cb9f84b6aac91cfcde7016507",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -76,7 +76,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "951a8e525b5be9016dee41ed13cf7e5b7eb5c75072d094ebe56d348a9f98c18c",
+      "sha256": "d5207af403191f6609dbc127e39d3f9f8a73a5f25f42d4c8cb13869263276b3e",
       "bytes": 79296
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "b5dc465241496cdd678b633cd30b5b32f08621b8e6edb98163f211070f780461",
+      "sha256": "33ce40fea3cbdcd07270f08007ec7f2a58d81e458507f0bbbe535a65c1780aac",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "0c45d01d9c0547360c1a7aafdd8f3ccf9632609a0cd5a0459198d37dade5309f",
+      "sha256": "a43e3276949f96321d49ee66d4b022f7e006fa73c7078fb186e840f71ff8e95b",
       "bytes": 487
     },
     {
@@ -146,12 +146,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "d04f3ca0095585260dc9d419c83ea1504c87445f7087a830bf5e3238ddb397b7",
+      "sha256": "de74fc2f2fc44f61334325b98c45bfce9b2e4b3ff775fbbb1a53be5091c92c3c",
       "bytes": 453883
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "471fc77f7cfcd8c267a4fb96e9db40e43815d82827d6ae490cfaf36e9c3c278a",
+      "sha256": "3c136f3a9bd70c50e7c473aac797c0affe40a425452725e12eaf05a27adeaafb",
       "bytes": 740
     },
     {
@@ -166,12 +166,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "e7144b5a0736e4b3b75e80af6c2fe68f3b9c89078162725d9e275610570366da",
+      "sha256": "c67d20ab2a0297a77f5d189173a3428ef79d2a5f00d383ab229ccdfa3e68b7c7",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "66a377f1f2b82935cf095f9f1c9ca241a02e86ddb57a7ee10a8811a32d7e0ae3",
+      "sha256": "f401f7a2bd40c93a74760ef214303b7b83f4b69bc10986bfb5b462f7a05e7185",
       "bytes": 2437
     },
     {

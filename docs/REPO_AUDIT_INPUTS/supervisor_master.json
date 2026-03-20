@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T19:37:47-04:00",
-  "gitCommit": "33a223e49d667786e25e82d286931451d893c4e7",
+  "generatedAt": "2026-03-19T19:54:58-04:00",
+  "gitCommit": "876895d6a27cf1f0e5825f665d8a2812ac814a11",
   "branch": "codex/admin-city-pack-update-proposals-outcome-T049",
-  "sourceDigest": "001255a4afad1f3f8921493246ff89d1e2b17d328b3ef02c69cd601f143fe4ec",
+  "sourceDigest": "a7188fb470db50367bcb922e9cf29495bb08dc618088f23f4da6ea6c5ce9dcf3",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
