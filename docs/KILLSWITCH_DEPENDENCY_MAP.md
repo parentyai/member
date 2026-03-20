@@ -1,7 +1,7 @@
 # KILLSWITCH_DEPENDENCY_MAP
 
 - killSwitch依存経路を静的抽出した一覧。
-- 抽出件数: 102
+- 抽出件数: 108
 
 | file | line | reference |
 | --- | --- | --- |
@@ -20,8 +20,14 @@
 | `src/routes/admin/cityPackReviewInbox.js` | 8 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/cityPackReviewInbox.js` | 146 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/notifications.js` | 7 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/admin/notifications.js` | 128 | `const killSwitch = await getKillSwitch();` |
-| `src/routes/admin/notifications.js` | 180 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/notifications.js` | 198 | `const getKillSwitchSnapshot = typeof resolvedDeps.getKillSwitch === 'function'` |
+| `src/routes/admin/notifications.js` | 199 | `? resolvedDeps.getKillSwitch` |
+| `src/routes/admin/notifications.js` | 200 | `: getKillSwitch;` |
+| `src/routes/admin/notifications.js` | 218 | `const killSwitch = await getKillSwitchSnapshot();` |
+| `src/routes/admin/notifications.js` | 276 | `const getKillSwitchSnapshot = typeof resolvedDeps.getKillSwitch === 'function'` |
+| `src/routes/admin/notifications.js` | 277 | `? resolvedDeps.getKillSwitch` |
+| `src/routes/admin/notifications.js` | 278 | `: getKillSwitch;` |
+| `src/routes/admin/notifications.js` | 286 | `const killSwitch = await getKillSwitchSnapshot();` |
 | `src/routes/admin/osAlerts.js` | 121 | `systemFlagsRepo.getKillSwitch(),` |
 | `src/routes/admin/osDashboardKpi.js` | 254 | `systemFlagsRepo.getKillSwitch()` |
 | `src/routes/admin/osKillSwitch.js` | 6 | `const { getKillSwitch, setKillSwitch } = require('../../usecases/killSwitch/setKillSwitch');` |

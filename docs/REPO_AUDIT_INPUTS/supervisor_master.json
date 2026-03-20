@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T22:08:29-04:00",
-  "gitCommit": "9c9a447203d1d259154fa0021dc5e9126048a53d",
-  "branch": "codex/admin-llm-policy-outcome-T059",
-  "sourceDigest": "c175c75d3edb666baeee7afe8408aa23713b0902892327a31c9f5f27560d17a4",
+  "generatedAt": "2026-03-19T22:12:40-04:00",
+  "gitCommit": "e4b8627fe75989d438424b520a6412ef1d71174b",
+  "branch": "codex/admin-notifications-outcome-T061",
+  "sourceDigest": "fb4ff9fd7c49ee62a1dc5f1b6b9a8a6687783a12dbbdecf186033cb8dc5a8365",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
