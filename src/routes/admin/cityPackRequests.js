@@ -6,18 +6,59 @@ const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { runCityPackDraftJob } = require('../../usecases/cityPack/runCityPackDraftJob');
 const { activateCityPack } = require('../../usecases/cityPack/activateCityPack');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const {
   resolveActor,
   resolveRequestId,
   resolveTraceId,
-  parseJson,
   logRouteError
 } = require('./osContext');
 
-function writeJson(res, status, payload) {
+const ROUTE_TYPE = 'admin_route';
+const LIST_ROUTE_KEY = 'admin.city_pack_requests_list';
+const DETAIL_ROUTE_KEY = 'admin.city_pack_requests_detail';
+const ROOT_ROUTE_KEY = 'admin.city_pack_requests';
+
+function resolveActionRouteKey(action) {
+  const normalized = typeof action === 'string' ? action.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_') : '';
+  if (!normalized) return 'admin.city_pack_requests_action';
+  return `admin.city_pack_requests_${normalized}`;
+}
+
+function normalizeOutcomeReason(value, fallback) {
+  const normalized = typeof value === 'string'
+    ? value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+    : '';
+  return normalized || fallback;
+}
+
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, routeKey, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
+}
+
+function parseJsonBody(bodyText, res, routeKey) {
+  try {
+    return JSON.parse(bodyText || '{}');
+  } catch (_err) {
+    writeJson(res, routeKey, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json'
+    });
+    return null;
+  }
 }
 
 function normalizeLimit(value, fallback, max) {
@@ -69,7 +110,7 @@ function resolveAgingHours(item) {
   return Math.max(0, Math.round(((Date.now() - reference) / (60 * 60 * 1000)) * 10) / 10);
 }
 
-async function ensureCityPackWriteAllowed(res, context, entityType, entityId, extraSummary) {
+async function ensureCityPackWriteAllowed(res, context, routeKey, entityType, entityId, extraSummary) {
   const killSwitch = await getKillSwitch();
   if (!killSwitch) return true;
   await appendAuditLog({
@@ -83,7 +124,10 @@ async function ensureCityPackWriteAllowed(res, context, entityType, entityId, ex
       reason: 'kill_switch_on'
     }, extraSummary || {})
   });
-  writeJson(res, 409, { ok: false, error: 'kill switch on', traceId: context.traceId });
+  writeJson(res, routeKey, 409, { ok: false, error: 'kill switch on', traceId: context.traceId }, {
+    state: 'blocked',
+    reason: 'kill_switch_on'
+  });
   return false;
 }
 
@@ -112,7 +156,7 @@ async function handleList(req, res, context) {
     }
   });
 
-  writeJson(res, 200, {
+  writeJson(res, LIST_ROUTE_KEY, 200, {
     ok: true,
     traceId: context.traceId,
     items: items.map((item) => ({
@@ -136,13 +180,19 @@ async function handleList(req, res, context) {
       agingHours: resolveAgingHours(item),
       error: item.error || null
     }))
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
 async function handleDetail(req, res, context, requestId) {
   const request = await cityPackRequestsRepo.getRequest(requestId);
   if (!request) {
-    writeJson(res, 404, { ok: false, error: 'request not found' });
+    writeJson(res, DETAIL_ROUTE_KEY, 404, { ok: false, error: 'request not found' }, {
+      state: 'error',
+      reason: 'request_not_found'
+    });
     return;
   }
 
@@ -177,23 +227,33 @@ async function handleDetail(req, res, context, requestId) {
     }
   });
 
-  writeJson(res, 200, {
+  writeJson(res, DETAIL_ROUTE_KEY, 200, {
     ok: true,
     traceId: context.traceId,
     request: Object.assign({ requestId: request.id }, request),
     draftCityPacks
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
 async function handleAction(req, res, bodyText, context, requestId, action) {
+  const actionRouteKey = resolveActionRouteKey(action);
   const request = await cityPackRequestsRepo.getRequest(requestId);
   if (!request) {
-    writeJson(res, 404, { ok: false, error: 'request not found' });
+    writeJson(res, actionRouteKey, 404, { ok: false, error: 'request not found' }, {
+      state: 'error',
+      reason: 'request_not_found'
+    });
     return;
   }
   const actionKey = resolveCityPackRequestActionKey(action);
   if (!actionKey) {
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, actionRouteKey, 404, { ok: false, error: 'not found' }, {
+      state: 'error',
+      reason: 'not_found'
+    });
     return;
   }
   const guard = await enforceManagedFlowGuard({
@@ -205,7 +265,7 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
   if (!guard) return;
   context.actor = guard.actor || context.actor;
   context.traceId = guard.traceId || context.traceId;
-  const writeAllowed = await ensureCityPackWriteAllowed(res, context, 'city_pack_request', requestId, {
+  const writeAllowed = await ensureCityPackWriteAllowed(res, context, actionRouteKey, 'city_pack_request', requestId, {
     regionKey: request.regionKey || null,
     action
   });
@@ -214,7 +274,10 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
   if (action === 'approve') {
     const draftIds = Array.isArray(request.draftCityPackIds) ? request.draftCityPackIds : [];
     if (!draftIds.length) {
-      writeJson(res, 409, { ok: false, error: 'draft_city_pack_required' });
+      writeJson(res, actionRouteKey, 409, { ok: false, error: 'draft_city_pack_required' }, {
+        state: 'blocked',
+        reason: 'draft_city_pack_required'
+      });
       return;
     }
     await cityPackRequestsRepo.updateRequest(requestId, {
@@ -237,7 +300,10 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
         requestedLanguage: request.requestedLanguage || 'ja'
       }
     });
-    writeJson(res, 200, { ok: true, requestId, status: 'approved', traceId: context.traceId });
+    writeJson(res, actionRouteKey, 200, { ok: true, requestId, status: 'approved', traceId: context.traceId }, {
+      state: 'success',
+      reason: 'completed'
+    });
     return;
   }
 
@@ -261,12 +327,15 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
         requestedLanguage: request.requestedLanguage || 'ja'
       }
     });
-    writeJson(res, 200, { ok: true, requestId, status: 'rejected', traceId: context.traceId });
+    writeJson(res, actionRouteKey, 200, { ok: true, requestId, status: 'rejected', traceId: context.traceId }, {
+      state: 'success',
+      reason: 'completed'
+    });
     return;
   }
 
   if (action === 'request-changes') {
-    const payload = parseJson(bodyText, res);
+    const payload = parseJsonBody(bodyText, res, actionRouteKey);
     if (!payload) return;
     const note = typeof payload.note === 'string' && payload.note.trim() ? payload.note.trim() : 'needs_review';
     await cityPackRequestsRepo.updateRequest(requestId, {
@@ -289,12 +358,15 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
         requestedLanguage: request.requestedLanguage || 'ja'
       }
     });
-    writeJson(res, 200, { ok: true, requestId, status: 'needs_review', traceId: context.traceId });
+    writeJson(res, actionRouteKey, 200, { ok: true, requestId, status: 'needs_review', traceId: context.traceId }, {
+      state: 'success',
+      reason: 'completed'
+    });
     return;
   }
 
   if (action === 'retry-job') {
-    const payload = parseJson(bodyText, res);
+    const payload = parseJsonBody(bodyText, res, actionRouteKey);
     if (!payload) return;
     const result = await runCityPackDraftJob({
       requestId,
@@ -317,18 +389,29 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
         requestedLanguage: request.requestedLanguage || 'ja'
       }
     });
-    writeJson(res, 200, Object.assign({ traceId: context.traceId }, result));
+    writeJson(res, actionRouteKey, 200, Object.assign({ traceId: context.traceId }, result), {
+      state: result && result.ok === false ? 'degraded' : 'success',
+      reason: result && result.ok === false
+        ? normalizeOutcomeReason(result.reason, 'retry_failed')
+        : 'completed'
+    });
     return;
   }
 
   if (action === 'activate') {
     if (String(request.status) !== 'approved') {
-      writeJson(res, 409, { ok: false, error: 'request_not_approved' });
+      writeJson(res, actionRouteKey, 409, { ok: false, error: 'request_not_approved' }, {
+        state: 'blocked',
+        reason: 'request_not_approved'
+      });
       return;
     }
     const draftIds = Array.isArray(request.draftCityPackIds) ? request.draftCityPackIds : [];
     if (!draftIds.length) {
-      writeJson(res, 409, { ok: false, error: 'draft_city_pack_required' });
+      writeJson(res, actionRouteKey, 409, { ok: false, error: 'draft_city_pack_required' }, {
+        state: 'blocked',
+        reason: 'draft_city_pack_required'
+      });
       return;
     }
     const results = [];
@@ -343,7 +426,10 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
     }
     const failed = results.filter((item) => !item || item.ok === false);
     if (failed.length) {
-      writeJson(res, 409, { ok: false, error: 'activation_failed', results, traceId: context.traceId });
+      writeJson(res, actionRouteKey, 409, { ok: false, error: 'activation_failed', results, traceId: context.traceId }, {
+        state: 'blocked',
+        reason: 'activation_failed'
+      });
       return;
     }
     await cityPackRequestsRepo.updateRequest(requestId, {
@@ -365,11 +451,17 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
         requestedLanguage: request.requestedLanguage || 'ja'
       }
     });
-    writeJson(res, 200, { ok: true, requestId, status: 'active', results, traceId: context.traceId });
+    writeJson(res, actionRouteKey, 200, { ok: true, requestId, status: 'active', results, traceId: context.traceId }, {
+      state: 'success',
+      reason: 'completed'
+    });
     return;
   }
 
-  writeJson(res, 404, { ok: false, error: 'not found' });
+  writeJson(res, actionRouteKey, 404, { ok: false, error: 'not found' }, {
+    state: 'error',
+    reason: 'not_found'
+  });
 }
 
 async function handleCityPackRequests(req, res, bodyText) {
@@ -400,10 +492,16 @@ async function handleCityPackRequests(req, res, bodyText) {
       }
     }
 
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, ROOT_ROUTE_KEY, 404, { ok: false, error: 'not found' }, {
+      state: 'error',
+      reason: 'not_found'
+    });
   } catch (err) {
     logRouteError('admin.city_pack_requests', err, context);
-    writeJson(res, 500, { ok: false, error: err && err.message ? err.message : 'error' });
+    writeJson(res, ROOT_ROUTE_KEY, 500, { ok: false, error: err && err.message ? err.message : 'error' }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 

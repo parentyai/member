@@ -8,36 +8,104 @@ const { previewNotification } = require('../../usecases/adminOs/previewNotificat
 const { planNotificationSend } = require('../../usecases/adminOs/planNotificationSend');
 const { executeNotificationSend } = require('../../usecases/adminOs/executeNotificationSend');
 const { logReadPathLoadMetric } = require('../../ops/readPathLoadMetric');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
-const { requireActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
+const { resolveActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 const { resolveNotificationCtaAuditSummary } = require('../../domain/notificationCtaAudit');
 const SCENARIO_KEY_FIELD = String.fromCharCode(115,99,101,110,97,114,105,111,75,101,121);
 
-function handleError(res, err, context) {
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEYS = {
+  draft: 'admin.os_notifications_draft',
+  preview: 'admin.os_notifications_preview',
+  approve: 'admin.os_notifications_approve',
+  sendPlan: 'admin.os_notifications_send_plan',
+  status: 'admin.os_notifications_status',
+  list: 'admin.os_notifications_list',
+  archive: 'admin.os_notifications_archive',
+  sendExecute: 'admin.os_notifications_send_execute'
+};
+
+function normalizeOutcomeReason(value, fallback) {
+  const normalized = typeof value === 'string'
+    ? value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+    : '';
+  return normalized || fallback;
+}
+
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, routeKey, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function parseJsonBody(bodyText, res, routeKey) {
+  try {
+    return JSON.parse(bodyText || '{}');
+  } catch (_err) {
+    writeJson(res, routeKey, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json'
+    });
+    return null;
+  }
+}
+
+function requireKnownActor(req, res, routeKey) {
+  const actor = resolveActor(req);
+  if (actor === 'unknown') {
+    writeJson(res, routeKey, 400, { ok: false, error: 'x-actor required' }, {
+      state: 'error',
+      reason: 'x_actor_required'
+    });
+    return null;
+  }
+  return actor;
+}
+
+function handleError(res, err, context, routeKey) {
   const message = err && err.message ? err.message : 'error';
   const explicitStatusCode = err && Number.isInteger(err.statusCode) ? err.statusCode : null;
   const hasFailureCode = err && typeof err.failureCode === 'string' && err.failureCode.trim().length > 0;
   const traceId = context && context.traceId ? context.traceId : null;
   const requestId = context && context.requestId ? context.requestId : null;
   if (explicitStatusCode && explicitStatusCode >= 400 && explicitStatusCode < 500) {
-    res.writeHead(explicitStatusCode, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: message, traceId, requestId }));
+    writeJson(res, routeKey, explicitStatusCode, { ok: false, error: message, traceId, requestId }, {
+      state: explicitStatusCode === 409 ? 'blocked' : 'error',
+      reason: normalizeOutcomeReason(err && err.failureCode, normalizeOutcomeReason(message, 'invalid_request'))
+    });
     return;
   }
   if (hasFailureCode) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: message, traceId, requestId }));
+    writeJson(res, routeKey, 400, { ok: false, error: message, traceId, requestId }, {
+      state: 'error',
+      reason: normalizeOutcomeReason(err.failureCode, 'invalid_request')
+    });
     return;
   }
   if (message.includes('required') || message.includes('invalid') || message.includes('not editable')
     || message.includes('not active') || message.includes('not found') || message.includes('no recipients')) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: message }));
+    writeJson(res, routeKey, 400, { ok: false, error: message }, {
+      state: 'error',
+      reason: normalizeOutcomeReason(message, 'invalid_request')
+    });
     return;
   }
   logRouteError('admin.os_notifications', err, context);
-  res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+  writeJson(res, routeKey, 500, { ok: false, error: 'error', traceId, requestId }, {
+    state: 'error',
+    reason: 'error'
+  });
 }
 
 function addCheckedAt(summary) {
@@ -120,11 +188,11 @@ function summarizeComposerPayload(payload) {
 }
 
 async function handleDraft(req, res, body) {
-  const actor = requireActor(req, res);
+  const actor = requireKnownActor(req, res, ROUTE_KEYS.draft);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res, ROUTE_KEYS.draft);
   if (!payload) return;
   try {
     requireTargetLimit(payload);
@@ -139,19 +207,21 @@ async function handleDraft(req, res, body) {
       requestId,
       payloadSummary: addCheckedAt(summarizeComposerPayload(normalizedPayload))
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, traceId, requestId, notificationId: created.id }));
+    writeJson(res, ROUTE_KEYS.draft, 200, { ok: true, traceId, requestId, notificationId: created.id }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
-    handleError(res, err, { traceId, requestId, actor });
+    handleError(res, err, { traceId, requestId, actor }, ROUTE_KEYS.draft);
   }
 }
 
 async function handlePreview(req, res, body) {
-  const actor = requireActor(req, res);
+  const actor = requireKnownActor(req, res, ROUTE_KEYS.preview);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res, ROUTE_KEYS.preview);
   if (!payload) return;
   try {
     const result = await previewNotification(payload);
@@ -167,19 +237,21 @@ async function handlePreview(req, res, body) {
         lineMessageType: result.lineMessageType || null
       }))
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(Object.assign({ traceId, requestId }, result)));
+    writeJson(res, ROUTE_KEYS.preview, 200, Object.assign({ traceId, requestId }, result), {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
-    handleError(res, err, { traceId, requestId, actor });
+    handleError(res, err, { traceId, requestId, actor }, ROUTE_KEYS.preview);
   }
 }
 
 async function handleApprove(req, res, body) {
-  const actor = requireActor(req, res);
+  const actor = requireKnownActor(req, res, ROUTE_KEYS.approve);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res, ROUTE_KEYS.approve);
   if (!payload) return;
   const guard = await enforceManagedFlowGuard({
     req,
@@ -201,19 +273,21 @@ async function handleApprove(req, res, body) {
       requestId,
       payloadSummary: addCheckedAt({ status: 'active' })
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(Object.assign({ traceId: guardedTraceId, requestId }, result)));
+    writeJson(res, ROUTE_KEYS.approve, 200, Object.assign({ traceId: guardedTraceId, requestId }, result), {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
-    handleError(res, err, { traceId: guardedTraceId, requestId, actor: guardedActor });
+    handleError(res, err, { traceId: guardedTraceId, requestId, actor: guardedActor }, ROUTE_KEYS.approve);
   }
 }
 
 async function handleSendPlan(req, res, body) {
-  const actor = requireActor(req, res);
+  const actor = requireKnownActor(req, res, ROUTE_KEYS.sendPlan);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res, ROUTE_KEYS.sendPlan);
   if (!payload) return;
   const guard = await enforceManagedFlowGuard({
     req,
@@ -231,30 +305,38 @@ async function handleSendPlan(req, res, body) {
       traceId: guardedTraceId,
       requestId
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(result));
+    writeJson(res, ROUTE_KEYS.sendPlan, 200, result, {
+      state: result && result.ok === false ? 'degraded' : 'success',
+      reason: result && result.ok === false
+        ? normalizeOutcomeReason(result.reason, 'completed_with_issues')
+        : 'completed'
+    });
   } catch (err) {
-    handleError(res, err, { traceId: guardedTraceId, requestId, actor: guardedActor });
+    handleError(res, err, { traceId: guardedTraceId, requestId, actor: guardedActor }, ROUTE_KEYS.sendPlan);
   }
 }
 
 async function handleStatus(req, res) {
-  const actor = requireActor(req, res);
+  const actor = requireKnownActor(req, res, ROUTE_KEYS.status);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   const url = new URL(req.url, 'http://localhost');
   const notificationId = url.searchParams.get('notificationId');
   if (!notificationId) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'notificationId required' }));
+    writeJson(res, ROUTE_KEYS.status, 400, { ok: false, error: 'notificationId required' }, {
+      state: 'error',
+      reason: 'notification_id_required'
+    });
     return;
   }
   try {
     const notification = await notificationsRepo.getNotification(notificationId);
     if (!notification) {
-      res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: 'notification not found' }));
+      writeJson(res, ROUTE_KEYS.status, 404, { ok: false, error: 'notification not found' }, {
+        state: 'error',
+        reason: 'notification_not_found'
+      });
       return;
     }
     await appendAuditLog({
@@ -269,8 +351,7 @@ async function handleStatus(req, res) {
         notificationCategory: notification.notificationCategory || null
       })
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, ROUTE_KEYS.status, 200, {
       ok: true,
       traceId,
       requestId,
@@ -280,9 +361,12 @@ async function handleStatus(req, res) {
       [SCENARIO_KEY_FIELD]: notification[SCENARIO_KEY_FIELD] || null,
       stepKey: notification.stepKey || null,
       title: notification.title || null
-    }));
+    }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
-    handleError(res, err, { traceId, requestId, actor });
+    handleError(res, err, { traceId, requestId, actor }, ROUTE_KEYS.status);
   }
 }
 
@@ -312,7 +396,7 @@ function normalizeListStatus(value) {
 
 async function handleList(req, res) {
   const startedAt = Date.now();
-  const actor = requireActor(req, res);
+  const actor = requireKnownActor(req, res, ROUTE_KEYS.list);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
@@ -393,26 +477,30 @@ async function handleList(req, res) {
         stepKey: url.searchParams.get('stepKey') || null
       })
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, traceId, requestId, items }));
+    writeJson(res, ROUTE_KEYS.list, 200, { ok: true, traceId, requestId, items }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
-    handleError(res, err, { traceId, requestId, actor });
+    handleError(res, err, { traceId, requestId, actor }, ROUTE_KEYS.list);
   }
 }
 
 async function handleArchive(req, res, body) {
-  const actor = requireActor(req, res);
+  const actor = requireKnownActor(req, res, ROUTE_KEYS.archive);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res, ROUTE_KEYS.archive);
   if (!payload) return;
   const notificationIds = Array.isArray(payload.notificationIds)
     ? Array.from(new Set(payload.notificationIds.filter((id) => typeof id === 'string' && id.trim()).map((id) => id.trim())))
     : [];
   if (!notificationIds.length) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'notificationIds required', traceId, requestId }));
+    writeJson(res, ROUTE_KEYS.archive, 400, { ok: false, error: 'notificationIds required', traceId, requestId }, {
+      state: 'error',
+      reason: 'notification_ids_required'
+    });
     return;
   }
   const reason = typeof payload.reason === 'string' ? payload.reason.trim() : '';
@@ -438,24 +526,26 @@ async function handleArchive(req, res, body) {
         reason: reason || null
       })
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, ROUTE_KEYS.archive, 200, {
       ok: true,
       traceId,
       requestId,
       archivedCount: Number(result && result.updatedCount ? result.updatedCount : 0)
-    }));
+    }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
-    handleError(res, err, { traceId, requestId, actor });
+    handleError(res, err, { traceId, requestId, actor }, ROUTE_KEYS.archive);
   }
 }
 
 async function handleSendExecute(req, res, body, deps) {
-  const actor = requireActor(req, res);
+  const actor = requireKnownActor(req, res, ROUTE_KEYS.sendExecute);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res, ROUTE_KEYS.sendExecute);
   if (!payload) return;
   const guard = await enforceManagedFlowGuard({
     req,
@@ -476,10 +566,18 @@ async function handleSendExecute(req, res, body, deps) {
       requestId
     }, deps);
     const statusCode = result && result.partial === true ? 207 : 200;
-    res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(result));
+    writeJson(res, ROUTE_KEYS.sendExecute, statusCode, result, {
+      state: statusCode === 207
+        ? 'partial'
+        : (result && result.ok === false ? 'degraded' : 'success'),
+      reason: statusCode === 207
+        ? 'send_partial_failure'
+        : (result && result.ok === false
+          ? normalizeOutcomeReason(result.reason, 'completed_with_issues')
+          : 'completed')
+    });
   } catch (err) {
-    handleError(res, err, { traceId: guardedTraceId, requestId, actor: guardedActor });
+    handleError(res, err, { traceId: guardedTraceId, requestId, actor: guardedActor }, ROUTE_KEYS.sendExecute);
   }
 }
 
