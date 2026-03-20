@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T22:05:45-04:00",
-  "gitCommit": "95d35fa049c6a96b2ebd828f7b3e3f5a699d99ae",
+  "generatedAt": "2026-03-19T22:13:42-04:00",
+  "gitCommit": "f090949fabb2657e04d1ab0e9c25b6345719df1e",
   "branch": "codex/admin-vendors-outcome-T060",
-  "sourceDigest": "36646647d9fd9d4d979c972446237a815194beee5fdf1f871432da45b6675224",
+  "sourceDigest": "776292701bfd9ca0b33dc8b908b8d7f772003b9b81f6b6a3021f448c10af7d75",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
