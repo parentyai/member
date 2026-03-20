@@ -16,18 +16,62 @@ const { normalizeAndDiffProvider } = require('../../usecases/emergency/normalize
 const { summarizeDraftWithLLM } = require('../../usecases/emergency/summarizeDraftWithLLM');
 const { approveEmergencyBulletin } = require('../../usecases/emergency/approveEmergencyBulletin');
 const { previewEmergencyRule } = require('../../usecases/emergency/previewEmergencyRule');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const {
   resolveActor,
   resolveRequestId,
   resolveTraceId,
-  parseJson,
   logRouteError
 } = require('./osContext');
 
-function writeJson(res, status, payload) {
+const ROUTE_TYPE = 'admin_route';
+const ROOT_ROUTE_KEY = 'admin.emergency_layer';
+const PROVIDERS_ROUTE_KEY = 'admin.emergency_providers_list';
+const RULES_ROUTE_KEY = 'admin.emergency_rules_list';
+const RULE_UPSERT_ROUTE_KEY = 'admin.emergency_rule_upsert';
+const RULE_PREVIEW_ROUTE_KEY = 'admin.emergency_rule_preview';
+const PROVIDER_UPDATE_ROUTE_KEY = 'admin.emergency_provider_update';
+const PROVIDER_FORCE_REFRESH_ROUTE_KEY = 'admin.emergency_provider_force_refresh';
+const BULLETINS_ROUTE_KEY = 'admin.emergency_bulletins_list';
+const BULLETIN_DETAIL_ROUTE_KEY = 'admin.emergency_bulletin_detail';
+const BULLETIN_REJECT_ROUTE_KEY = 'admin.emergency_bulletin_reject';
+const BULLETIN_APPROVE_ROUTE_KEY = 'admin.emergency_bulletin_approve';
+const EVIDENCE_ROUTE_KEY = 'admin.emergency_evidence_detail';
+
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function normalizeOutcomeReason(value, fallback) {
+  const normalized = typeof value === 'string'
+    ? value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+    : '';
+  return normalized || fallback;
+}
+
+function writeJson(res, routeKey, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
+}
+
+function parseJsonBody(bodyText, res, routeKey) {
+  try {
+    return JSON.parse(bodyText || '{}');
+  } catch (_err) {
+    writeJson(res, routeKey, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json'
+    });
+    return null;
+  }
 }
 
 function parseProviderPath(pathname) {
@@ -83,7 +127,10 @@ async function handleListProviders(req, res, context) {
   const result = await listEmergencyProviders({
     traceId: context.traceId
   });
-  writeJson(res, 200, result);
+  writeJson(res, PROVIDERS_ROUTE_KEY, 200, result, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 function parseBooleanQuery(value) {
@@ -101,15 +148,18 @@ async function handleListRules(req, res, context) {
     enabled: parseBooleanQuery(url.searchParams.get('enabled')),
     limit: url.searchParams.get('limit')
   });
-  writeJson(res, 200, {
+  writeJson(res, RULES_ROUTE_KEY, 200, {
     ok: true,
     traceId: context.traceId,
     items: result
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
 async function handleUpsertRule(req, res, bodyText, context, ruleId) {
-  const payload = bodyText ? parseJson(bodyText, res) : {};
+  const payload = bodyText ? parseJsonBody(bodyText, res, RULE_UPSERT_ROUTE_KEY) : {};
   if (bodyText && !payload) return;
   const actionKey = ruleId ? 'emergency.rule.update' : 'emergency.rule.upsert';
   const guard = await enforceManagedFlowGuard({
@@ -138,15 +188,18 @@ async function handleUpsertRule(req, res, bodyText, context, ruleId) {
       autoSend: item && item.autoSend === true
     }
   });
-  writeJson(res, 200, {
+  writeJson(res, RULE_UPSERT_ROUTE_KEY, 200, {
     ok: true,
     traceId: context.traceId,
     item
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
 async function handlePreviewRule(req, res, bodyText, context, ruleId) {
-  const payload = bodyText ? parseJson(bodyText, res) : {};
+  const payload = bodyText ? parseJsonBody(bodyText, res, RULE_PREVIEW_ROUTE_KEY) : {};
   if (bodyText && !payload) return;
   const guard = await enforceManagedFlowGuard({
     req,
@@ -176,14 +229,26 @@ async function handlePreviewRule(req, res, bodyText, context, ruleId) {
     }
   });
   if (!result || result.ok !== true) {
-    writeJson(res, result && result.reason === 'rule_not_found' ? 404 : 400, Object.assign({ traceId: context.traceId }, result || { ok: false, error: 'preview_failed' }));
+    writeJson(
+      res,
+      RULE_PREVIEW_ROUTE_KEY,
+      result && result.reason === 'rule_not_found' ? 404 : 400,
+      Object.assign({ traceId: context.traceId }, result || { ok: false, error: 'preview_failed' }),
+      {
+        state: 'error',
+        reason: normalizeOutcomeReason(result && result.reason, result && result.reason === 'rule_not_found' ? 'rule_not_found' : 'preview_failed')
+      }
+    );
     return;
   }
-  writeJson(res, 200, Object.assign({ traceId: context.traceId }, result));
+  writeJson(res, RULE_PREVIEW_ROUTE_KEY, 200, Object.assign({ traceId: context.traceId }, result), {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleUpdateProvider(req, res, bodyText, context, providerKey) {
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res, PROVIDER_UPDATE_ROUTE_KEY);
   if (!payload) return;
   const guard = await enforceManagedFlowGuard({
     req,
@@ -203,11 +268,16 @@ async function handleUpdateProvider(req, res, bodyText, context, providerKey) {
     requestId: context.requestId,
     traceId: context.traceId
   });
-  writeJson(res, 200, result);
+  writeJson(res, PROVIDER_UPDATE_ROUTE_KEY, 200, result, {
+    state: result && result.ok === false ? 'degraded' : 'success',
+    reason: result && result.ok === false
+      ? normalizeOutcomeReason(result.reason, 'completed_with_issues')
+      : 'completed'
+  });
 }
 
 async function handleForceRefreshProvider(req, res, bodyText, context, providerKey) {
-  const payload = bodyText ? parseJson(bodyText, res) : {};
+  const payload = bodyText ? parseJsonBody(bodyText, res, PROVIDER_FORCE_REFRESH_ROUTE_KEY) : {};
   if (bodyText && !payload) return;
   const guard = await enforceManagedFlowGuard({
     req,
@@ -220,11 +290,17 @@ async function handleForceRefreshProvider(req, res, bodyText, context, providerK
   context.traceId = guard.traceId || context.traceId;
   const provider = await emergencyProvidersRepo.getProvider(providerKey);
   if (!provider) {
-    writeJson(res, 404, { ok: false, error: 'provider not found' });
+    writeJson(res, PROVIDER_FORCE_REFRESH_ROUTE_KEY, 404, { ok: false, error: 'provider not found' }, {
+      state: 'error',
+      reason: 'provider_not_found'
+    });
     return;
   }
   if (provider.status !== 'enabled') {
-    writeJson(res, 409, { ok: false, error: 'provider_disabled' });
+    writeJson(res, PROVIDER_FORCE_REFRESH_ROUTE_KEY, 409, { ok: false, error: 'provider_disabled' }, {
+      state: 'blocked',
+      reason: 'provider_disabled'
+    });
     return;
   }
   const runId = `emg_force_${providerKey}_${Date.now()}`;
@@ -271,13 +347,16 @@ async function handleForceRefreshProvider(req, res, bodyText, context, providerK
       snapshotId: fetchResult && fetchResult.snapshotId ? fetchResult.snapshotId : null
     }
   });
-  writeJson(res, 200, {
+  writeJson(res, PROVIDER_FORCE_REFRESH_ROUTE_KEY, 200, {
     ok: true,
     traceId: context.traceId,
     providerKey,
     fetchResult,
     normalizeResult,
     summarizeResults
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
@@ -289,7 +368,10 @@ async function handleListBulletins(req, res, context) {
     limit: url.searchParams.get('limit'),
     traceId: context.traceId
   });
-  writeJson(res, 200, result);
+  writeJson(res, BULLETINS_ROUTE_KEY, 200, result, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleGetBulletin(req, res, context, bulletinId) {
@@ -297,7 +379,10 @@ async function handleGetBulletin(req, res, context, bulletinId) {
     bulletinId,
     traceId: context.traceId
   });
-  writeJson(res, 200, result);
+  writeJson(res, BULLETIN_DETAIL_ROUTE_KEY, 200, result, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleRejectBulletin(req, res, context, bulletinId) {
@@ -316,7 +401,12 @@ async function handleRejectBulletin(req, res, context, bulletinId) {
     requestId: context.requestId,
     traceId: context.traceId
   });
-  writeJson(res, 200, result);
+  writeJson(res, BULLETIN_REJECT_ROUTE_KEY, 200, result, {
+    state: result && result.ok === false ? 'degraded' : 'success',
+    reason: result && result.ok === false
+      ? normalizeOutcomeReason(result.reason, 'completed_with_issues')
+      : 'completed'
+  });
 }
 
 function resolveStatusCodeFromApproveResult(result) {
@@ -330,7 +420,7 @@ function resolveStatusCodeFromApproveResult(result) {
 }
 
 async function handleApproveBulletin(req, res, bodyText, context, bulletinId) {
-  const payload = bodyText ? parseJson(bodyText, res) : {};
+  const payload = bodyText ? parseJsonBody(bodyText, res, BULLETIN_APPROVE_ROUTE_KEY) : {};
   if (bodyText && !payload) return;
   const guard = await enforceManagedFlowGuard({
     req,
@@ -348,7 +438,20 @@ async function handleApproveBulletin(req, res, bodyText, context, bulletinId) {
     traceId: context.traceId,
     requestId: context.requestId
   });
-  writeJson(res, resolveStatusCodeFromApproveResult(result), Object.assign({ traceId: context.traceId }, result));
+  const statusCode = resolveStatusCodeFromApproveResult(result);
+  writeJson(
+    res,
+    BULLETIN_APPROVE_ROUTE_KEY,
+    statusCode,
+    Object.assign({ traceId: context.traceId }, result),
+    {
+      state: statusCode === 207 ? 'partial' : (statusCode === 409 ? 'blocked' : (statusCode >= 400 ? 'error' : 'success')),
+      reason: normalizeOutcomeReason(
+        result && result.reason,
+        statusCode === 207 ? 'send_partial_failure' : (statusCode === 409 ? 'blocked' : (statusCode >= 400 ? 'error' : 'completed'))
+      )
+    }
+  );
 }
 
 async function handleGetEvidence(req, res, context, bulletinId) {
@@ -358,7 +461,10 @@ async function handleGetEvidence(req, res, context, bulletinId) {
     unmappedLimit: url.searchParams.get('unmappedLimit'),
     traceId: context.traceId
   });
-  writeJson(res, 200, result);
+  writeJson(res, EVIDENCE_ROUTE_KEY, 200, result, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleEmergencyLayer(req, res, bodyText) {
@@ -430,14 +536,23 @@ async function handleEmergencyLayer(req, res, bodyText) {
         return;
       }
     }
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, ROOT_ROUTE_KEY, 404, { ok: false, error: 'not found' }, {
+      state: 'error',
+      reason: 'not_found'
+    });
   } catch (err) {
     logRouteError('admin.emergency_layer', err, context);
     if (err && Number.isInteger(err.statusCode)) {
-      writeJson(res, err.statusCode, { ok: false, error: err.message || 'error' });
+      writeJson(res, ROOT_ROUTE_KEY, err.statusCode, { ok: false, error: err.message || 'error' }, {
+        state: err.statusCode === 409 ? 'blocked' : 'error',
+        reason: err.statusCode === 404 ? 'not_found' : 'error'
+      });
       return;
     }
-    writeJson(res, 500, { ok: false, error: 'error' });
+    writeJson(res, ROOT_ROUTE_KEY, 500, { ok: false, error: 'error' }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
