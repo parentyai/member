@@ -1,16 +1,53 @@
 'use strict';
 
-const { getUserOperationalSummary } = require('../../usecases/admin/getUserOperationalSummary');
-const { getNotificationOperationalSummary } = require('../../usecases/admin/getNotificationOperationalSummary');
-const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
-const { logReadPathLoadMetric } = require('../../ops/readPathLoadMetric');
+const { getUserOperationalSummary: getUserOperationalSummaryBase } = require('../../usecases/admin/getUserOperationalSummary');
+const { getNotificationOperationalSummary: getNotificationOperationalSummaryBase } = require('../../usecases/admin/getNotificationOperationalSummary');
+const { appendAuditLog: appendAuditLogBase } = require('../../usecases/audit/appendAuditLog');
+const { logReadPathLoadMetric: logReadPathLoadMetricBase } = require('../../ops/readPathLoadMetric');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const {
   normalizeFallbackMode,
   resolveFallbackModeDefault
 } = require('../../domain/readModel/fallbackPolicy');
 const SCENARIO_KEY_FIELD = String.fromCharCode(115,99,101,110,97,114,105,111,75,101,121);
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEYS = {
+  users: 'admin.ops_users_summary',
+  notifications: 'admin.ops_notifications_summary'
+};
 
-function handleError(res, err) {
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, routeKey, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function writeText(res, routeKey, statusCode, text, outcomeOptions) {
+  applyOutcomeHeaders(res, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  res.writeHead(statusCode, { 'content-type': 'text/plain; charset=utf-8' });
+  res.end(text);
+}
+
+function resolveValidationReason(message) {
+  if (message === 'invalid limit') return 'invalid_limit';
+  if (message === 'invalid snapshotMode') return 'invalid_snapshot_mode';
+  if (message === 'invalid fallbackMode') return 'invalid_fallback_mode';
+  if (message === 'invalid fallbackOnEmpty') return 'invalid_fallback_on_empty';
+  if (message.includes('required')) return 'invalid_request';
+  return 'error';
+}
+
+function handleError(res, routeKey, err) {
   const message = err && err.message ? err.message : 'error';
   if (
     message.includes('required') ||
@@ -19,12 +56,16 @@ function handleError(res, err) {
     message.includes('invalid fallbackMode') ||
     message.includes('invalid fallbackOnEmpty')
   ) {
-    res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end(message);
+    writeText(res, routeKey, 400, message, {
+      state: 'error',
+      reason: resolveValidationReason(message)
+    });
     return;
   }
-  res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-  res.end('error');
+  writeText(res, routeKey, 500, 'error', {
+    state: 'error',
+    reason: 'error'
+  });
 }
 
 function parsePositiveInt(value, min, max) {
@@ -66,18 +107,22 @@ function resolveAuditActor(req) {
   return resolveHeader(req, 'x-actor') || 'admin_api';
 }
 
-async function appendFallbackAudit(req, action, meta, extra) {
+async function appendFallbackAudit(req, action, meta, extra, deps) {
   if (!meta) return;
   const fallbackUsed = Boolean(meta.fallbackUsed);
   const fallbackBlocked = Boolean(meta.fallbackBlocked);
   if (!fallbackUsed && !fallbackBlocked) return;
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const appendAudit = typeof resolvedDeps.appendAuditLog === 'function'
+    ? resolvedDeps.appendAuditLog
+    : appendAuditLogBase;
   try {
     const payloadSummary = Object.assign({
       fallbackUsed,
       fallbackBlocked,
       fallbackSources: Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
     }, extra || {});
-    await appendAuditLog({
+    await appendAudit({
       actor: resolveAuditActor(req),
       action,
       entityType: 'read_path',
@@ -86,7 +131,7 @@ async function appendFallbackAudit(req, action, meta, extra) {
       requestId: resolveHeader(req, 'x-request-id') || undefined,
       payloadSummary
     });
-    await appendAuditLog({
+    await appendAudit({
       actor: resolveAuditActor(req),
       action: 'read_path_fallback',
       entityType: 'read_path',
@@ -100,8 +145,37 @@ async function appendFallbackAudit(req, action, meta, extra) {
   }
 }
 
-async function handleUsersSummary(req, res) {
+function resolveSummaryOutcome(meta) {
+  if (meta && meta.fallbackUsed === true) {
+    return {
+      state: 'degraded',
+      reason: 'completed_with_fallback'
+    };
+  }
+  if (meta && meta.fallbackBlocked === true && meta.dataSource === 'not_available') {
+    return {
+      state: 'degraded',
+      reason: 'not_available'
+    };
+  }
+  return {
+    state: 'success',
+    reason: 'completed'
+  };
+}
+
+async function handleUsersSummary(req, res, deps) {
   const startedAt = Date.now();
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const getUserOperationalSummary = typeof resolvedDeps.getUserOperationalSummary === 'function'
+    ? resolvedDeps.getUserOperationalSummary
+    : getUserOperationalSummaryBase;
+  const logMetric = typeof resolvedDeps.logReadPathLoadMetric === 'function'
+    ? resolvedDeps.logReadPathLoadMetric
+    : logReadPathLoadMetricBase;
+  const appendAudit = typeof resolvedDeps.appendAuditLog === 'function'
+    ? resolvedDeps.appendAuditLog
+    : appendAuditLogBase;
   try {
     const url = new URL(req.url, 'http://localhost');
     const limitRaw = url.searchParams.get('limit');
@@ -136,7 +210,7 @@ async function handleUsersSummary(req, res) {
     });
     const normalizedItems = Array.isArray(items) ? items : (Array.isArray(items.items) ? items.items : []);
     const meta = items && !Array.isArray(items) && items.meta ? items.meta : null;
-    logReadPathLoadMetric({
+    logMetric({
       cluster: 'analytics_read_model',
       operation: 'users_summary',
       scannedCount: meta && Number.isFinite(Number(meta.scannedCount)) ? Number(meta.scannedCount) : normalizedItems.length,
@@ -154,9 +228,8 @@ async function handleUsersSummary(req, res) {
       snapshotMode: snapshotMode || null,
       fallbackMode,
       fallbackOnEmpty
-    });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    }, { appendAuditLog: appendAudit });
+    writeJson(res, ROUTE_KEYS.users, 200, {
       ok: true,
       items: normalizedItems,
       dataSource: meta && meta.dataSource ? meta.dataSource : null,
@@ -165,14 +238,24 @@ async function handleUsersSummary(req, res) {
       fallbackUsed: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackUsed') ? meta.fallbackUsed : false,
       fallbackBlocked: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackBlocked') ? meta.fallbackBlocked : false,
       fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
-    }));
+    }, resolveSummaryOutcome(meta));
   } catch (err) {
-    handleError(res, err);
+    handleError(res, ROUTE_KEYS.users, err);
   }
 }
 
-async function handleNotificationsSummary(req, res) {
+async function handleNotificationsSummary(req, res, deps) {
   const startedAt = Date.now();
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const getSummary = typeof resolvedDeps.getNotificationOperationalSummary === 'function'
+    ? resolvedDeps.getNotificationOperationalSummary
+    : getNotificationOperationalSummaryBase;
+  const logMetric = typeof resolvedDeps.logReadPathLoadMetric === 'function'
+    ? resolvedDeps.logReadPathLoadMetric
+    : logReadPathLoadMetricBase;
+  const appendAudit = typeof resolvedDeps.appendAuditLog === 'function'
+    ? resolvedDeps.appendAuditLog
+    : appendAuditLogBase;
   const url = new URL(req.url, 'http://localhost');
   const limitRaw = url.searchParams.get('limit');
   const eventsLimitRaw = url.searchParams.get('eventsLimit');
@@ -200,7 +283,7 @@ async function handleNotificationsSummary(req, res) {
     if (fallbackOnEmptyRaw && fallbackOnEmpty === null) {
       throw new Error('invalid fallbackOnEmpty');
     }
-    const summary = await getNotificationOperationalSummary({
+    const summary = await getSummary({
       limit,
       eventsLimit,
       snapshotMode,
@@ -213,7 +296,7 @@ async function handleNotificationsSummary(req, res) {
     });
     const items = Array.isArray(summary) ? summary : (Array.isArray(summary.items) ? summary.items : []);
     const meta = summary && !Array.isArray(summary) && summary.meta ? summary.meta : null;
-    logReadPathLoadMetric({
+    logMetric({
       cluster: 'analytics_read_model',
       operation: 'notifications_summary',
       scannedCount: meta && Number.isFinite(Number(meta.scannedCount)) ? Number(meta.scannedCount) : items.length,
@@ -231,9 +314,8 @@ async function handleNotificationsSummary(req, res) {
       snapshotMode: snapshotMode || null,
       fallbackMode,
       fallbackOnEmpty
-    });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    }, { appendAuditLog: appendAudit });
+    writeJson(res, ROUTE_KEYS.notifications, 200, {
       ok: true,
       items,
       dataSource: meta && meta.dataSource ? meta.dataSource : null,
@@ -242,9 +324,9 @@ async function handleNotificationsSummary(req, res) {
       fallbackUsed: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackUsed') ? meta.fallbackUsed : false,
       fallbackBlocked: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackBlocked') ? meta.fallbackBlocked : false,
       fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
-    }));
+    }, resolveSummaryOutcome(meta));
   } catch (err) {
-    handleError(res, err);
+    handleError(res, ROUTE_KEYS.notifications, err);
   }
 }
 
