@@ -5,7 +5,14 @@ const taskNodesRepo = require('../../repos/firestore/taskNodesRepo');
 const journeyGraphCatalogRepo = require('../../repos/firestore/journeyGraphCatalogRepo');
 const eventsRepo = require('../../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEYS = Object.freeze({
+  runtime: 'admin.journey_graph_runtime',
+  history: 'admin.journey_graph_runtime_history'
+});
 
 function parseLimit(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -162,15 +169,41 @@ function applyRuntimeFilter(nodes, filters) {
   });
 }
 
-async function handleRuntime(req, res) {
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = typeof opts.routeKey === 'string' && opts.routeKey.trim()
+    ? opts.routeKey.trim()
+    : null;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+async function handleRuntime(req, res, deps) {
   const actor = requireActor(req, res);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
+  const services = deps && typeof deps === 'object' ? deps : {};
+  const journeyTodoItemsService = services.journeyTodoItemsRepo || journeyTodoItemsRepo;
+  const taskNodesService = services.taskNodesRepo || taskNodesRepo;
+  const journeyGraphCatalogService = services.journeyGraphCatalogRepo || journeyGraphCatalogRepo;
+  const append = typeof services.appendAuditLog === 'function' ? services.appendAuditLog : appendAuditLog;
   const lineUserId = parseLineUserId(req);
   if (!lineUserId) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'lineUserId required', traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: 'lineUserId required', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.runtime,
+      state: 'error',
+      reason: 'line_user_id_required'
+    });
     return;
   }
 
@@ -182,109 +215,137 @@ async function handleRuntime(req, res) {
     plan: parseFilter(req, 'plan')
   };
 
-  const [todos, taskNodes, journeyGraphCatalog] = await Promise.all([
-    journeyTodoItemsRepo.listJourneyTodoItemsByLineUserId({ lineUserId, limit }),
-    taskNodesRepo.listTaskNodesByLineUserId({ lineUserId, limit }).catch(() => []),
-    journeyGraphCatalogRepo.getJourneyGraphCatalog().catch(() => null)
-  ]);
-  const todoNodes = todos.map((item) => toRuntimeNode(item));
-  const filteredNodes = applyRuntimeFilter(todoNodes, filters);
-  const catalogEdges = journeyGraphCatalog && Array.isArray(journeyGraphCatalog.edges)
-    ? journeyGraphCatalog.edges
-    : [];
-  const edges = buildEdges(filteredNodes, catalogEdges);
+  try {
+    const [todos, taskNodes, journeyGraphCatalog] = await Promise.all([
+      journeyTodoItemsService.listJourneyTodoItemsByLineUserId({ lineUserId, limit }),
+      taskNodesService.listTaskNodesByLineUserId({ lineUserId, limit }).catch(() => []),
+      journeyGraphCatalogService.getJourneyGraphCatalog().catch(() => null)
+    ]);
+    const todoNodes = todos.map((item) => toRuntimeNode(item));
+    const filteredNodes = applyRuntimeFilter(todoNodes, filters);
+    const catalogEdges = journeyGraphCatalog && Array.isArray(journeyGraphCatalog.edges)
+      ? journeyGraphCatalog.edges
+      : [];
+    const edges = buildEdges(filteredNodes, catalogEdges);
 
-  await appendAuditLog({
-    actor,
-    action: 'journey_graph.runtime.view',
-    entityType: 'journey_graph',
-    entityId: lineUserId,
-    traceId,
-    requestId,
-    payloadSummary: {
+    await append({
+      actor,
+      action: 'journey_graph.runtime.view',
+      entityType: 'journey_graph',
+      entityId: lineUserId,
+      traceId,
+      requestId,
+      payloadSummary: {
+        lineUserId,
+        limit,
+        nodeCount: filteredNodes.length,
+        edgeCount: edges.length
+      }
+    });
+
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
       lineUserId,
-      limit,
-      nodeCount: filteredNodes.length,
-      edgeCount: edges.length
-    }
-  });
-
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
-    ok: true,
-    traceId,
-    requestId,
-    lineUserId,
-    filters,
-    nodes: filteredNodes,
-    edges,
-    taskNodes,
-    summary: {
-      totalNodes: filteredNodes.length,
-      totalEdges: edges.length,
-      requiredEdges: edges.filter((edge) => edge.required !== false).length,
-      optionalEdges: edges.filter((edge) => edge.required === false).length,
-      enabledEdges: edges.filter((edge) => edge.enabled !== false).length,
-      disabledEdges: edges.filter((edge) => edge.enabled === false).length,
-      done: filteredNodes.filter((node) => node.journeyState === 'done').length,
-      blocked: filteredNodes.filter((node) => node.journeyState === 'blocked').length,
-      snoozed: filteredNodes.filter((node) => node.journeyState === 'snoozed').length
-    },
-    catalog: {
-      enabled: journeyGraphCatalog && journeyGraphCatalog.enabled === true,
-      schemaVersion: journeyGraphCatalog && journeyGraphCatalog.schemaVersion ? journeyGraphCatalog.schemaVersion : null
-    }
-  }));
+      filters,
+      nodes: filteredNodes,
+      edges,
+      taskNodes,
+      summary: {
+        totalNodes: filteredNodes.length,
+        totalEdges: edges.length,
+        requiredEdges: edges.filter((edge) => edge.required !== false).length,
+        optionalEdges: edges.filter((edge) => edge.required === false).length,
+        enabledEdges: edges.filter((edge) => edge.enabled !== false).length,
+        disabledEdges: edges.filter((edge) => edge.enabled === false).length,
+        done: filteredNodes.filter((node) => node.journeyState === 'done').length,
+        blocked: filteredNodes.filter((node) => node.journeyState === 'blocked').length,
+        snoozed: filteredNodes.filter((node) => node.journeyState === 'snoozed').length
+      },
+      catalog: {
+        enabled: journeyGraphCatalog && journeyGraphCatalog.enabled === true,
+        schemaVersion: journeyGraphCatalog && journeyGraphCatalog.schemaVersion ? journeyGraphCatalog.schemaVersion : null
+      }
+    }, {
+      routeKey: ROUTE_KEYS.runtime,
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (_err) {
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.runtime,
+      state: 'error',
+      reason: 'error'
+    });
+  }
 }
 
-async function handleRuntimeHistory(req, res) {
+async function handleRuntimeHistory(req, res, deps) {
   const actor = requireActor(req, res);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
+  const services = deps && typeof deps === 'object' ? deps : {};
+  const events = services.eventsRepo || eventsRepo;
+  const append = typeof services.appendAuditLog === 'function' ? services.appendAuditLog : appendAuditLog;
   const lineUserId = parseLineUserId(req);
   if (!lineUserId) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'lineUserId required', traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: 'lineUserId required', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.history,
+      state: 'error',
+      reason: 'line_user_id_required'
+    });
     return;
   }
 
   const limit = parseLimit(req);
-  const events = await eventsRepo.listEventsByUser(lineUserId, limit).catch(() => []);
-  const items = events
-    .filter((event) => {
-      const type = String(event && event.type ? event.type : '').toLowerCase();
-      return type === 'journey_reaction'
-        || type === 'journey_state_change'
-        || type === 'next_action_shown'
-        || type === 'next_action_completed'
-        || type === 'pro_prompted';
-    })
-    .slice(0, limit);
+  try {
+    const rows = await events.listEventsByUser(lineUserId, limit).catch(() => []);
+    const items = rows
+      .filter((event) => {
+        const type = String(event && event.type ? event.type : '').toLowerCase();
+        return type === 'journey_reaction'
+          || type === 'journey_state_change'
+          || type === 'next_action_shown'
+          || type === 'next_action_completed'
+          || type === 'pro_prompted';
+      })
+      .slice(0, limit);
 
-  await appendAuditLog({
-    actor,
-    action: 'journey_graph.runtime.history.view',
-    entityType: 'journey_graph',
-    entityId: lineUserId,
-    traceId,
-    requestId,
-    payloadSummary: {
+    await append({
+      actor,
+      action: 'journey_graph.runtime.history.view',
+      entityType: 'journey_graph',
+      entityId: lineUserId,
+      traceId,
+      requestId,
+      payloadSummary: {
+        lineUserId,
+        limit,
+        count: items.length
+      }
+    });
+
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
       lineUserId,
       limit,
-      count: items.length
-    }
-  });
-
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
-    ok: true,
-    traceId,
-    requestId,
-    lineUserId,
-    limit,
-    items
-  }));
+      items
+    }, {
+      routeKey: ROUTE_KEYS.history,
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (_err) {
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.history,
+      state: 'error',
+      reason: 'error'
+    });
+  }
 }
 
 module.exports = {

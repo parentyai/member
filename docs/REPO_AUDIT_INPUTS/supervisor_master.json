@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T21:26:55-04:00",
-  "gitCommit": "df1cf4da86bd1f830eea7cc3adddce75a44ca53a",
-  "branch": "codex/admin-journey-policy-outcome-T055",
-  "sourceDigest": "d5e4cb8291a953552c8c924f9a900dfd2aaf40082ff6798e96cc1d6ce3183d28",
+  "generatedAt": "2026-03-19T21:34:15-04:00",
+  "gitCommit": "85e0fe4c851a097444fc15d9b58580cc1ad30e87",
+  "branch": "codex/admin-journey-graph-runtime-outcome-T058",
+  "sourceDigest": "c7702d0ce7df0059de8fa2cc8045ef7a3b2d88bcaed84331e9ab7bed8e0598b3",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
