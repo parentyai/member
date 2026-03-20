@@ -9,6 +9,7 @@ const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { resolveSnapshotFreshnessMinutes } = require('../../domain/readModel/snapshotReadPolicy');
 const { READ_PATH_FALLBACK_ACTIONS } = require('./readPathFallbackSummary');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const {
   requireActor,
   resolveRequestId,
@@ -25,6 +26,42 @@ const RETENTION_BUDGETS_PATH = path.join(ROOT_DIR, 'docs', 'RETENTION_BUDGETS.md
 const STRUCTURE_RISK_PATH = path.join(ROOT_DIR, 'docs', 'REPO_AUDIT_INPUTS', 'structure_risk.json');
 const STRUCTURE_BUDGETS_PATH = path.join(ROOT_DIR, 'docs', 'STRUCTURE_BUDGETS.md');
 const DEPENDENCY_GRAPH_PATH = path.join(ROOT_DIR, 'docs', 'REPO_AUDIT_INPUTS', 'dependency_graph.json');
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.product_readiness';
+
+function normalizeOutcomeReason(value, fallback) {
+  const normalized = typeof value === 'string'
+    ? value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+    : '';
+  return normalized || fallback;
+}
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function resolveDefaultOutcomeReason(status, payload) {
+  if (Number(status) >= 500) return 'error';
+  if (Number(status) === 404) return 'not_found';
+  if (Number(status) >= 400) {
+    return normalizeOutcomeReason(payload && payload.error, 'error');
+  }
+  return 'completed';
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const options = normalizeOutcomeOptions(outcomeOptions);
+  if (!options.reason) options.reason = resolveDefaultOutcomeReason(status, payload);
+  const body = attachOutcome(payload || {}, options);
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
 
 function parseWindowHours(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -690,8 +727,7 @@ async function handleProductReadiness(req, res) {
       logRouteError('admin.product_readiness.audit', auditErr, { actor, traceId, requestId });
     }
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       traceId,
       requestId,
@@ -756,11 +792,10 @@ async function handleProductReadiness(req, res) {
           budget: structureBudgets
         }
       }
-    }));
+    });
   } catch (err) {
     logRouteError('admin.product_readiness.view', err, { actor, traceId, requestId });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId });
   }
 }
 

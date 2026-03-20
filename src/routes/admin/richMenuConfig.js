@@ -17,7 +17,11 @@ const richMenuBindingsRepo = require('../../repos/firestore/richMenuBindingsRepo
 const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySchedulesRepo');
 const userJourneyProfilesRepo = require('../../repos/firestore/userJourneyProfilesRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
-const { parseJson, requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
+const { requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.rich_menu_config';
 
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -112,6 +116,52 @@ function parseLimit(req) {
     return Math.min(Math.floor(raw), 200);
   } catch (_err) {
     return 20;
+  }
+}
+
+function normalizeOutcomeReason(value, fallback) {
+  const normalized = typeof value === 'string'
+    ? value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+    : '';
+  return normalized || fallback;
+}
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function resolveDefaultOutcomeReason(status, payload) {
+  if (Number(status) >= 500) return 'error';
+  if (Number(status) === 404) return 'not_found';
+  if (Number(status) >= 400) {
+    return normalizeOutcomeReason((payload && payload.error) || (payload && payload.reason), 'error');
+  }
+  return 'completed';
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const options = normalizeOutcomeOptions(outcomeOptions);
+  if (!options.reason) options.reason = resolveDefaultOutcomeReason(status, payload);
+  const body = attachOutcome(payload || {}, options);
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function parseJsonBody(bodyText, res) {
+  try {
+    return JSON.parse(bodyText || '{}');
+  } catch (_err) {
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json'
+    });
+    return null;
   }
 }
 
@@ -464,8 +514,7 @@ async function handleStatus(req, res) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, 200, {
     ok: true,
     traceId,
     requestId,
@@ -476,7 +525,7 @@ async function handleStatus(req, res) {
     runs,
     globalKillSwitch: Boolean(globalKillSwitch),
     serverTime: new Date().toISOString()
-  }));
+  });
 }
 
 async function handleHistory(req, res) {
@@ -501,14 +550,13 @@ async function handleHistory(req, res) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, 200, {
     ok: true,
     traceId,
     requestId,
     runs,
     serverTime: new Date().toISOString()
-  }));
+  });
 }
 
 async function handleResolvePreview(req, res, body) {
@@ -517,20 +565,18 @@ async function handleResolvePreview(req, res, body) {
 
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res);
   if (!payload) return;
 
   const lineUserId = normalizeText(payload.lineUserId, '');
   if (!lineUserId) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'lineUserId required', traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: 'lineUserId required', traceId, requestId });
     return;
   }
 
   const planTierInput = payload.planTier === undefined ? null : normalizePlanTier(payload.planTier, null);
   if (planTierInput === null && payload.planTier !== undefined) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid planTier', traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: 'invalid planTier', traceId, requestId });
     return;
   }
 
@@ -571,15 +617,14 @@ async function handleResolvePreview(req, res, body) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, 200, {
     ok: true,
     traceId,
     requestId,
     context,
     resolution,
     serverTime: new Date().toISOString()
-  }));
+  });
 }
 
 async function handlePlan(req, res, body) {
@@ -588,13 +633,12 @@ async function handlePlan(req, res, body) {
 
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res);
   if (!payload) return;
 
   const action = normalizeAction(payload.action);
   if (!action) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'action required', traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: 'action required', traceId, requestId });
     return;
   }
 
@@ -602,13 +646,12 @@ async function handlePlan(req, res, body) {
   try {
     normalizedPayload = await normalizeActionPayload(action, payload.payload, {});
   } catch (err) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 400, {
       ok: false,
       error: err && err.message ? String(err.message) : 'invalid payload',
       traceId,
       requestId
-    }));
+    });
     return;
   }
 
@@ -629,8 +672,7 @@ async function handlePlan(req, res, body) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, 200, {
     ok: true,
     traceId,
     requestId,
@@ -639,7 +681,7 @@ async function handlePlan(req, res, body) {
     planHash,
     confirmToken,
     serverTime: new Date().toISOString()
-  }));
+  });
 }
 
 async function handleSet(req, res, body) {
@@ -648,15 +690,14 @@ async function handleSet(req, res, body) {
 
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res);
   if (!payload) return;
 
   const action = normalizeAction(payload.action);
   const planHash = normalizeText(payload.planHash, '');
   const confirmToken = normalizeText(payload.confirmToken, '');
   if (!action || !planHash || !confirmToken) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'action/planHash/confirmToken required', traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: 'action/planHash/confirmToken required', traceId, requestId });
     return;
   }
 
@@ -664,8 +705,7 @@ async function handleSet(req, res, body) {
   try {
     normalizedPayload = await normalizeActionPayload(action, payload.payload, {});
   } catch (err) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: err && err.message ? String(err.message) : 'invalid payload', traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: err && err.message ? String(err.message) : 'invalid payload', traceId, requestId });
     return;
   }
 
@@ -686,8 +726,7 @@ async function handleSet(req, res, body) {
         expectedPlanHash
       }
     });
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId }));
+    writeJson(res, 409, { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId });
     return;
   }
 
@@ -706,8 +745,7 @@ async function handleSet(req, res, body) {
         action
       }
     });
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'confirm_token_mismatch', traceId, requestId }));
+    writeJson(res, 409, { ok: false, reason: 'confirm_token_mismatch', traceId, requestId });
     return;
   }
 
@@ -732,14 +770,13 @@ async function handleSet(req, res, body) {
       }
     });
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(Object.assign({
+    writeJson(res, 200, Object.assign({
       ok: true,
       traceId,
       requestId,
       action,
       serverTime: new Date().toISOString()
-    }, result)));
+    }, result));
   } catch (err) {
     await appendAuditLog({
       actor,
@@ -754,13 +791,12 @@ async function handleSet(req, res, body) {
         reason: err && err.message ? String(err.message) : 'set_failed'
       }
     });
-    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 500, {
       ok: false,
       error: err && err.message ? String(err.message) : 'set_failed',
       traceId,
       requestId
-    }));
+    });
   }
 }
 
