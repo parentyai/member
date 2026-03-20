@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T20:22:36-04:00",
-  "gitCommit": "9b55f361d7e1614be087175f025e5d4fa2f170e1",
+  "generatedAt": "2026-03-19T20:38:51-04:00",
+  "gitCommit": "cb270d0f2bd99c36f178140f2c6a1f4355894f78",
   "branch": "codex/admin-llm-faq-outcome-T052",
-  "sourceDigest": "c4980c63c46d3d78f23dfdc79ff06531231b6dcdb7d5d9ae479a8bfeb2479728",
+  "sourceDigest": "c5f4354f449ede86e3daccf6578601c6a2d5f47b3e33e6cd877e1dc3797afac0",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
