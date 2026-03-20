@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T19:37:47-04:00",
-  "gitCommit": "33a223e49d667786e25e82d286931451d893c4e7",
-  "branch": "codex/admin-city-pack-template-library-outcome-T048",
-  "sourceDigest": "b0f98541f678ea0f6f6b55ea3e4592d26d33dd3cedaa7e0276e47f2e490d0ab9",
+  "generatedAt": "2026-03-19T19:54:58-04:00",
+  "gitCommit": "876895d6a27cf1f0e5825f665d8a2812ac814a11",
+  "branch": "codex/admin-city-pack-update-proposals-outcome-T049",
+  "sourceDigest": "a7188fb470db50367bcb922e9cf29495bb08dc618088f23f4da6ea6c5ce9dcf3",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
