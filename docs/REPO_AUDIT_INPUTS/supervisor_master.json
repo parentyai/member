@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-20T07:59:54-04:00",
-  "gitCommit": "a3aef732e382310bf5ce1420138101c373c95cf6",
-  "branch": "codex/admin-ops-overview-outcome-T062",
-  "sourceDigest": "379e3c9c17442fefc702fb69201babfadb36632fc82db0d43788a2683be90022",
+  "generatedAt": "2026-03-20T08:38:27-04:00",
+  "gitCommit": "0402cabe3ce63adf0aab27f4431aa16ae029c322",
+  "branch": "codex/admin-os-llm-usage-export-outcome-T063",
+  "sourceDigest": "78292b9d024bb21257a2fcb5916559c7d060e3771f91958733d24e62c3023e8e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
