@@ -4,9 +4,18 @@ const crypto = require('crypto');
 
 const { createConfirmToken, verifyConfirmToken } = require('../../domain/confirmToken');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const journeyGraphCatalogRepo = require('../../repos/firestore/journeyGraphCatalogRepo');
 const journeyGraphChangeLogsRepo = require('../../repos/firestore/journeyGraphChangeLogsRepo');
 const { parseJson, requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEYS = Object.freeze({
+  status: 'admin.journey_graph_status',
+  plan: 'admin.journey_graph_plan',
+  set: 'admin.journey_graph_set',
+  history: 'admin.journey_graph_history'
+});
 
 function serializeCatalog(catalog) {
   const payload = catalog && typeof catalog === 'object' ? catalog : {};
@@ -84,43 +93,72 @@ function buildCatalogSummary(catalog) {
   };
 }
 
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = typeof opts.routeKey === 'string' && opts.routeKey.trim()
+    ? opts.routeKey.trim()
+    : null;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
 async function handleStatus(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const journeyGraphCatalog = await journeyGraphCatalogRepo.getJourneyGraphCatalog();
-  const flags = resolveFeatureFlags();
-  const effectiveEnabled = Boolean(
-    journeyGraphCatalog.enabled
-    && flags.dagCatalogEnabled
-    && flags.dagUiEnabled
-    && flags.ruleEngineEnabled
-  );
+  try {
+    const journeyGraphCatalog = await journeyGraphCatalogRepo.getJourneyGraphCatalog();
+    const flags = resolveFeatureFlags();
+    const effectiveEnabled = Boolean(
+      journeyGraphCatalog.enabled
+      && flags.dagCatalogEnabled
+      && flags.dagUiEnabled
+      && flags.ruleEngineEnabled
+    );
 
-  await appendAuditLog({
-    actor,
-    action: 'journey_graph.status.view',
-    entityType: 'opsConfig',
-    entityId: 'journeyGraphCatalog',
-    traceId,
-    requestId,
-    payloadSummary: Object.assign({
+    await appendAuditLog({
+      actor,
+      action: 'journey_graph.status.view',
+      entityType: 'opsConfig',
+      entityId: 'journeyGraphCatalog',
+      traceId,
+      requestId,
+      payloadSummary: Object.assign({
+        effectiveEnabled,
+        flags
+      }, buildCatalogSummary(journeyGraphCatalog))
+    });
+
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
+      journeyGraphCatalog,
+      flags,
       effectiveEnabled,
-      flags
-    }, buildCatalogSummary(journeyGraphCatalog))
-  });
-
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
-    ok: true,
-    traceId,
-    requestId,
-    journeyGraphCatalog,
-    flags,
-    effectiveEnabled,
-    serverTime: new Date().toISOString()
-  }));
+      serverTime: new Date().toISOString()
+    }, {
+      routeKey: ROUTE_KEYS.status,
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (_err) {
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.status,
+      state: 'error',
+      reason: 'error'
+    });
+  }
 }
 
 async function handlePlan(req, res, body) {
@@ -130,41 +168,54 @@ async function handlePlan(req, res, body) {
   const requestId = resolveRequestId(req);
   const payload = parseJson(body, res);
   if (!payload) return;
+  try {
+    const base = await journeyGraphCatalogRepo.getJourneyGraphCatalog();
+    const candidate = payload.catalog === undefined ? base : mergeCatalog(base, payload.catalog);
+    const normalized = journeyGraphCatalogRepo.normalizeJourneyGraphCatalog(candidate);
+    if (!normalized) {
+      writeJson(res, 400, { ok: false, error: 'invalid journeyGraphCatalog', traceId, requestId }, {
+        routeKey: ROUTE_KEYS.plan,
+        state: 'error',
+        reason: 'invalid_journey_graph_catalog'
+      });
+      return;
+    }
 
-  const base = await journeyGraphCatalogRepo.getJourneyGraphCatalog();
-  const candidate = payload.catalog === undefined ? base : mergeCatalog(base, payload.catalog);
-  const normalized = journeyGraphCatalogRepo.normalizeJourneyGraphCatalog(candidate);
-  if (!normalized) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid journeyGraphCatalog', traceId, requestId }));
-    return;
+    const planHash = computePlanHash(normalized);
+    const confirmToken = createConfirmToken(confirmTokenData(planHash), { now: new Date() });
+
+    await appendAuditLog({
+      actor,
+      action: 'journey_graph.plan',
+      entityType: 'opsConfig',
+      entityId: 'journeyGraphCatalog',
+      traceId,
+      requestId,
+      payloadSummary: Object.assign({
+        planHash
+      }, buildCatalogSummary(normalized))
+    });
+
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
+      journeyGraphCatalog: normalized,
+      planHash,
+      confirmToken,
+      serverTime: new Date().toISOString()
+    }, {
+      routeKey: ROUTE_KEYS.plan,
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (_err) {
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.plan,
+      state: 'error',
+      reason: 'error'
+    });
   }
-
-  const planHash = computePlanHash(normalized);
-  const confirmToken = createConfirmToken(confirmTokenData(planHash), { now: new Date() });
-
-  await appendAuditLog({
-    actor,
-    action: 'journey_graph.plan',
-    entityType: 'opsConfig',
-    entityId: 'journeyGraphCatalog',
-    traceId,
-    requestId,
-    payloadSummary: Object.assign({
-      planHash
-    }, buildCatalogSummary(normalized))
-  });
-
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
-    ok: true,
-    traceId,
-    requestId,
-    journeyGraphCatalog: normalized,
-    planHash,
-    confirmToken,
-    serverTime: new Date().toISOString()
-  }));
 }
 
 async function handleSet(req, res, body) {
@@ -174,94 +225,116 @@ async function handleSet(req, res, body) {
   const requestId = resolveRequestId(req);
   const payload = parseJson(body, res);
   if (!payload) return;
+  try {
+    const base = await journeyGraphCatalogRepo.getJourneyGraphCatalog();
+    const candidate = payload.catalog === undefined ? base : mergeCatalog(base, payload.catalog);
+    const normalized = journeyGraphCatalogRepo.normalizeJourneyGraphCatalog(candidate);
+    if (!normalized) {
+      writeJson(res, 400, { ok: false, error: 'invalid journeyGraphCatalog', traceId, requestId }, {
+        routeKey: ROUTE_KEYS.set,
+        state: 'error',
+        reason: 'invalid_journey_graph_catalog'
+      });
+      return;
+    }
 
-  const base = await journeyGraphCatalogRepo.getJourneyGraphCatalog();
-  const candidate = payload.catalog === undefined ? base : mergeCatalog(base, payload.catalog);
-  const normalized = journeyGraphCatalogRepo.normalizeJourneyGraphCatalog(candidate);
-  if (!normalized) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid journeyGraphCatalog', traceId, requestId }));
-    return;
-  }
+    const planHash = typeof payload.planHash === 'string' ? payload.planHash.trim() : '';
+    const confirmToken = typeof payload.confirmToken === 'string' ? payload.confirmToken.trim() : '';
+    if (!planHash || !confirmToken) {
+      writeJson(res, 400, { ok: false, error: 'planHash/confirmToken required', traceId, requestId }, {
+        routeKey: ROUTE_KEYS.set,
+        state: 'error',
+        reason: 'planhash_confirmtoken_required'
+      });
+      return;
+    }
 
-  const planHash = typeof payload.planHash === 'string' ? payload.planHash.trim() : '';
-  const confirmToken = typeof payload.confirmToken === 'string' ? payload.confirmToken.trim() : '';
-  if (!planHash || !confirmToken) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'planHash/confirmToken required', traceId, requestId }));
-    return;
-  }
+    const expectedPlanHash = computePlanHash(normalized);
+    if (expectedPlanHash !== planHash) {
+      await appendAuditLog({
+        actor,
+        action: 'journey_graph.set',
+        entityType: 'opsConfig',
+        entityId: 'journeyGraphCatalog',
+        traceId,
+        requestId,
+        payloadSummary: {
+          ok: false,
+          reason: 'plan_hash_mismatch',
+          expectedPlanHash,
+          planHash
+        }
+      });
+      writeJson(res, 409, { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId }, {
+        routeKey: ROUTE_KEYS.set,
+        state: 'blocked',
+        reason: 'plan_hash_mismatch'
+      });
+      return;
+    }
 
-  const expectedPlanHash = computePlanHash(normalized);
-  if (expectedPlanHash !== planHash) {
-    await appendAuditLog({
-      actor,
-      action: 'journey_graph.set',
-      entityType: 'opsConfig',
-      entityId: 'journeyGraphCatalog',
-      traceId,
-      requestId,
-      payloadSummary: {
-        ok: false,
-        reason: 'plan_hash_mismatch',
-        expectedPlanHash,
-        planHash
-      }
-    });
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId }));
-    return;
-  }
-
-  const tokenValid = verifyConfirmToken(confirmToken, confirmTokenData(planHash), { now: new Date() });
-  if (!tokenValid) {
-    await appendAuditLog({
-      actor,
-      action: 'journey_graph.set',
-      entityType: 'opsConfig',
-      entityId: 'journeyGraphCatalog',
-      traceId,
-      requestId,
-      payloadSummary: {
-        ok: false,
+    const tokenValid = verifyConfirmToken(confirmToken, confirmTokenData(planHash), { now: new Date() });
+    if (!tokenValid) {
+      await appendAuditLog({
+        actor,
+        action: 'journey_graph.set',
+        entityType: 'opsConfig',
+        entityId: 'journeyGraphCatalog',
+        traceId,
+        requestId,
+        payloadSummary: {
+          ok: false,
+          reason: 'confirm_token_mismatch'
+        }
+      });
+      writeJson(res, 409, { ok: false, reason: 'confirm_token_mismatch', traceId, requestId }, {
+        routeKey: ROUTE_KEYS.set,
+        state: 'blocked',
         reason: 'confirm_token_mismatch'
-      }
+      });
+      return;
+    }
+
+    const saved = await journeyGraphCatalogRepo.setJourneyGraphCatalog(normalized, actor);
+    await journeyGraphChangeLogsRepo.appendJourneyGraphChangeLog({
+      actor,
+      traceId,
+      requestId,
+      planHash,
+      catalog: saved,
+      summary: buildCatalogSummary(saved),
+      createdAt: new Date().toISOString()
+    }).catch(() => null);
+    await appendAuditLog({
+      actor,
+      action: 'journey_graph.set',
+      entityType: 'opsConfig',
+      entityId: 'journeyGraphCatalog',
+      traceId,
+      requestId,
+      payloadSummary: Object.assign({
+        ok: true
+      }, buildCatalogSummary(saved))
     });
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'confirm_token_mismatch', traceId, requestId }));
-    return;
+
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
+      journeyGraphCatalog: saved,
+      serverTime: new Date().toISOString()
+    }, {
+      routeKey: ROUTE_KEYS.set,
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (_err) {
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.set,
+      state: 'error',
+      reason: 'error'
+    });
   }
-
-  const saved = await journeyGraphCatalogRepo.setJourneyGraphCatalog(normalized, actor);
-  await journeyGraphChangeLogsRepo.appendJourneyGraphChangeLog({
-    actor,
-    traceId,
-    requestId,
-    planHash,
-    catalog: saved,
-    summary: buildCatalogSummary(saved),
-    createdAt: new Date().toISOString()
-  }).catch(() => null);
-  await appendAuditLog({
-    actor,
-    action: 'journey_graph.set',
-    entityType: 'opsConfig',
-    entityId: 'journeyGraphCatalog',
-    traceId,
-    requestId,
-    payloadSummary: Object.assign({
-      ok: true
-    }, buildCatalogSummary(saved))
-  });
-
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
-    ok: true,
-    traceId,
-    requestId,
-    journeyGraphCatalog: saved,
-    serverTime: new Date().toISOString()
-  }));
 }
 
 async function handleHistory(req, res) {
@@ -271,28 +344,39 @@ async function handleHistory(req, res) {
   const requestId = resolveRequestId(req);
   const limit = parseLimit(req);
 
-  const items = await journeyGraphChangeLogsRepo.listJourneyGraphChangeLogs(limit).catch(() => []);
-  await appendAuditLog({
-    actor,
-    action: 'journey_graph.history.view',
-    entityType: 'opsConfig',
-    entityId: 'journeyGraphCatalog',
-    traceId,
-    requestId,
-    payloadSummary: {
-      limit,
-      count: items.length
-    }
-  });
+  try {
+    const items = await journeyGraphChangeLogsRepo.listJourneyGraphChangeLogs(limit).catch(() => []);
+    await appendAuditLog({
+      actor,
+      action: 'journey_graph.history.view',
+      entityType: 'opsConfig',
+      entityId: 'journeyGraphCatalog',
+      traceId,
+      requestId,
+      payloadSummary: {
+        limit,
+        count: items.length
+      }
+    });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
-    ok: true,
-    traceId,
-    requestId,
-    limit,
-    items
-  }));
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
+      limit,
+      items
+    }, {
+      routeKey: ROUTE_KEYS.history,
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (_err) {
+    writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, {
+      routeKey: ROUTE_KEYS.history,
+      state: 'error',
+      reason: 'error'
+    });
+  }
 }
 
 module.exports = {
