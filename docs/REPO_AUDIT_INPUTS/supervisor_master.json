@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T19:37:47-04:00",
-  "gitCommit": "33a223e49d667786e25e82d286931451d893c4e7",
+  "generatedAt": "2026-03-19T19:55:07-04:00",
+  "gitCommit": "b5d925dba2d6aa514478f833fab8c85e664cab33",
   "branch": "codex/admin-city-pack-education-links-outcome-T050",
-  "sourceDigest": "c57a8c51bf627b5f083a41864d2f47cc1fca6a2622a50cd249305b91d71d1830",
+  "sourceDigest": "2bcdae0ff5d798fff08c24f92cb74de44bb2c7359c2aa3b23193c0381c08cc26",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

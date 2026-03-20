@@ -2,11 +2,29 @@
 
 const cityPackTemplateLibraryRepo = require('../../repos/firestore/cityPackTemplateLibraryRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { resolveActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
 
-function writeJson(res, status, payload) {
+const ROUTE_TYPE = 'admin_route';
+const LIST_ROUTE_KEY = 'admin.city_pack_template_library_list';
+const DETAIL_ROUTE_KEY = 'admin.city_pack_template_library_detail';
+const CREATE_ROUTE_KEY = 'admin.city_pack_template_library_create';
+const ACTION_ROUTE_KEY = 'admin.city_pack_template_library_action';
+
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, routeKey, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
 }
 
 function normalizeLimit(value) {
@@ -30,12 +48,19 @@ function parseDetail(pathname) {
   return decodeURIComponent(match[1]);
 }
 
-async function handleList(req, res, context) {
+async function handleList(req, res, context, deps) {
   const url = new URL(req.url, 'http://localhost');
   const status = (url.searchParams.get('status') || '').trim() || null;
   const limit = normalizeLimit(url.searchParams.get('limit'));
-  const items = await cityPackTemplateLibraryRepo.listTemplates({ status, limit });
-  await appendAuditLog({
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const listTemplates = typeof resolvedDeps.listTemplates === 'function'
+    ? resolvedDeps.listTemplates
+    : cityPackTemplateLibraryRepo.listTemplates;
+  const appendAudit = typeof resolvedDeps.appendAuditLog === 'function'
+    ? resolvedDeps.appendAuditLog
+    : appendAuditLog;
+  const items = await listTemplates({ status, limit });
+  await appendAudit({
     actor: context.actor,
     action: 'city_pack.template_library.view',
     entityType: 'city_pack_template_library',
@@ -47,30 +72,50 @@ async function handleList(req, res, context) {
       count: items.length
     }
   });
-  writeJson(res, 200, {
+  writeJson(res, LIST_ROUTE_KEY, 200, {
     ok: true,
     traceId: context.traceId,
     items
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
-async function handleDetail(req, res, context, templateId) {
-  const item = await cityPackTemplateLibraryRepo.getTemplate(templateId);
+async function handleDetail(req, res, context, templateId, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const getTemplate = typeof resolvedDeps.getTemplate === 'function'
+    ? resolvedDeps.getTemplate
+    : cityPackTemplateLibraryRepo.getTemplate;
+  const item = await getTemplate(templateId);
   if (!item) {
-    writeJson(res, 404, { ok: false, error: 'template not found' });
+    writeJson(res, DETAIL_ROUTE_KEY, 404, { ok: false, error: 'template not found' }, {
+      state: 'error',
+      reason: 'template_not_found'
+    });
     return;
   }
-  writeJson(res, 200, {
+  writeJson(res, DETAIL_ROUTE_KEY, 200, {
     ok: true,
     traceId: context.traceId,
     item
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
-async function handleCreate(req, res, bodyText, context) {
+async function handleCreate(req, res, bodyText, context, deps) {
   const payload = parseJson(bodyText, res);
   if (!payload) return;
-  const created = await cityPackTemplateLibraryRepo.createTemplate({
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const createTemplate = typeof resolvedDeps.createTemplate === 'function'
+    ? resolvedDeps.createTemplate
+    : cityPackTemplateLibraryRepo.createTemplate;
+  const appendAudit = typeof resolvedDeps.appendAuditLog === 'function'
+    ? resolvedDeps.appendAuditLog
+    : appendAuditLog;
+  const created = await createTemplate({
     name: payload.name,
     template: payload.template,
     status: payload.status,
@@ -78,7 +123,7 @@ async function handleCreate(req, res, bodyText, context) {
     traceId: context.traceId,
     requestId: payload.requestId
   });
-  await appendAuditLog({
+  await appendAudit({
     actor: context.actor,
     action: 'city_pack.template_library.create',
     entityType: 'city_pack_template_library',
@@ -89,24 +134,40 @@ async function handleCreate(req, res, bodyText, context) {
       name: payload.name || null
     }
   });
-  writeJson(res, 201, {
+  writeJson(res, CREATE_ROUTE_KEY, 201, {
     ok: true,
     templateId: created.id,
     traceId: context.traceId
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
-async function handleAction(req, res, context, templateId, action) {
-  const current = await cityPackTemplateLibraryRepo.getTemplate(templateId);
+async function handleAction(req, res, context, templateId, action, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const getTemplate = typeof resolvedDeps.getTemplate === 'function'
+    ? resolvedDeps.getTemplate
+    : cityPackTemplateLibraryRepo.getTemplate;
+  const updateTemplate = typeof resolvedDeps.updateTemplate === 'function'
+    ? resolvedDeps.updateTemplate
+    : cityPackTemplateLibraryRepo.updateTemplate;
+  const appendAudit = typeof resolvedDeps.appendAuditLog === 'function'
+    ? resolvedDeps.appendAuditLog
+    : appendAuditLog;
+  const current = await getTemplate(templateId);
   if (!current) {
-    writeJson(res, 404, { ok: false, error: 'template not found' });
+    writeJson(res, ACTION_ROUTE_KEY, 404, { ok: false, error: 'template not found' }, {
+      state: 'error',
+      reason: 'template_not_found'
+    });
     return;
   }
   const patch = action === 'activate'
     ? { status: 'active', activatedAt: new Date().toISOString() }
     : { status: 'retired', retiredAt: new Date().toISOString() };
-  await cityPackTemplateLibraryRepo.updateTemplate(templateId, patch);
-  await appendAuditLog({
+  await updateTemplate(templateId, patch);
+  await appendAudit({
     actor: context.actor,
     action: `city_pack.template_library.${action}`,
     entityType: 'city_pack_template_library',
@@ -117,49 +178,63 @@ async function handleAction(req, res, context, templateId, action) {
       status: patch.status
     }
   });
-  writeJson(res, 200, {
+  writeJson(res, ACTION_ROUTE_KEY, 200, {
     ok: true,
     templateId,
     status: patch.status,
     traceId: context.traceId
+  }, {
+    state: 'success',
+    reason: 'completed'
   });
 }
 
-async function handleCityPackTemplateLibrary(req, res, bodyText) {
+async function handleCityPackTemplateLibrary(req, res, bodyText, deps) {
   const pathname = new URL(req.url, 'http://localhost').pathname;
   const context = {
     actor: resolveActor(req),
     requestId: resolveRequestId(req),
     traceId: resolveTraceId(req)
   };
+  let routeKey = LIST_ROUTE_KEY;
 
   try {
     if (req.method === 'GET' && pathname === '/api/admin/city-pack-template-library') {
-      await handleList(req, res, context);
+      routeKey = LIST_ROUTE_KEY;
+      await handleList(req, res, context, deps);
       return;
     }
     if (req.method === 'GET') {
       const templateId = parseDetail(pathname);
       if (templateId) {
-        await handleDetail(req, res, context, templateId);
+        routeKey = DETAIL_ROUTE_KEY;
+        await handleDetail(req, res, context, templateId, deps);
         return;
       }
     }
     if (req.method === 'POST' && pathname === '/api/admin/city-pack-template-library') {
-      await handleCreate(req, res, bodyText, context);
+      routeKey = CREATE_ROUTE_KEY;
+      await handleCreate(req, res, bodyText, context, deps);
       return;
     }
     if (req.method === 'POST') {
       const parsed = parseAction(pathname);
       if (parsed) {
-        await handleAction(req, res, context, parsed.templateId, parsed.action);
+        routeKey = ACTION_ROUTE_KEY;
+        await handleAction(req, res, context, parsed.templateId, parsed.action, deps);
         return;
       }
     }
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, routeKey, 404, { ok: false, error: 'not found' }, {
+      state: 'error',
+      reason: 'not_found'
+    });
   } catch (err) {
     logRouteError('admin.city_pack_template_library', err, context);
-    writeJson(res, 500, { ok: false, error: err && err.message ? err.message : 'error' });
+    writeJson(res, routeKey, 500, { ok: false, error: err && err.message ? err.message : 'error' }, {
+      state: 'error',
+      reason: 'error'
+    });
   }
 }
 
