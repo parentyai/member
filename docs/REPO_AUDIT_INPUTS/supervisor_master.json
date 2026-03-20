@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T21:34:15-04:00",
-  "gitCommit": "85e0fe4c851a097444fc15d9b58580cc1ad30e87",
+  "generatedAt": "2026-03-19T21:56:25-04:00",
+  "gitCommit": "68d8aa36d72d7fa4232817c5152f2c8795d69678",
   "branch": "codex/admin-journey-graph-catalog-outcome-T057",
-  "sourceDigest": "a2d398bca9dad9a6753d48cd1ba892c5cdc94a8ded15e3fbbc2caee9693ac113",
+  "sourceDigest": "9e1cf7f24a33937fbeac07672b232957a8c7d7f47a9eb05484c57b2d87b7c48a",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
