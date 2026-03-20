@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T19:54:58-04:00",
-  "gitCommit": "876895d6a27cf1f0e5825f665d8a2812ac814a11",
-  "branch": "codex/admin-city-pack-update-proposals-outcome-T049",
-  "sourceDigest": "a7188fb470db50367bcb922e9cf29495bb08dc618088f23f4da6ea6c5ce9dcf3",
+  "generatedAt": "2026-03-19T19:55:07-04:00",
+  "gitCommit": "b5d925dba2d6aa514478f833fab8c85e664cab33",
+  "branch": "codex/admin-city-pack-education-links-outcome-T050",
+  "sourceDigest": "2bcdae0ff5d798fff08c24f92cb74de44bb2c7359c2aa3b23193c0381c08cc26",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
