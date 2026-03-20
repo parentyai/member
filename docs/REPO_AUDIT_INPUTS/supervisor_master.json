@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-20T10:52:03-04:00",
-  "gitCommit": "03423a56e9eccce7fabfdc90b1d4379062ecff65",
-  "branch": "codex/admin-os-view-outcome-T066",
-  "sourceDigest": "f99958eb811c78bc17bd4428c895578c6fbd9af1cf8d7381891695bd5f87baa2",
+  "generatedAt": "2026-03-20T11:29:53-04:00",
+  "gitCommit": "0d9a1f7da65cadb016ad05b2795425a66cd47cf6",
+  "branch": "codex/admin-next-outcome-T067",
+  "sourceDigest": "fe097fd770521f8f02c5922f2d5795b565c687317bf4dd600c1c59d96ed6c2a2",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
