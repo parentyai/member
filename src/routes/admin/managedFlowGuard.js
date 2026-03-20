@@ -2,11 +2,34 @@
 
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { getManagedFlowRegistry } = require('../../domain/managedFlowRegistry');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { resolveActionByMethodAndPath } = require('./managedFlowBindings');
 
-function writeJson(res, status, payload) {
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.managed_flow_guard';
+
+function normalizeRouteKey(actionKey) {
+  if (typeof actionKey !== 'string') return ROUTE_KEY;
+  const normalized = actionKey.trim().replace(/[^a-z0-9_.-]+/gi, '_');
+  if (!normalized) return ROUTE_KEY;
+  return `admin.${normalized}`;
+}
+
+function normalizeOutcomeOptions(actionKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  if (!guard.routeKey) guard.routeKey = normalizeRouteKey(actionKey);
+  if (!guard.decision) guard.decision = 'block';
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, status, payload, actionKey, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(actionKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
 }
 
 function readHeader(req, key) {
@@ -66,7 +89,10 @@ async function enforceManagedFlowGuard(params, deps) {
   const res = input.res;
   const actionKey = typeof input.actionKey === 'string' ? input.actionKey.trim() : '';
   if (!actionKey) {
-    writeJson(res, 500, { ok: false, error: 'managed_flow_action_key_required' });
+    writeJson(res, 500, { ok: false, error: 'managed_flow_action_key_required' }, null, {
+      state: 'error',
+      reason: 'managed_flow_action_key_required'
+    });
     return null;
   }
 
@@ -75,13 +101,19 @@ async function enforceManagedFlowGuard(params, deps) {
     registry = getManagedFlowRegistry();
   } catch (err) {
     const message = err && err.message ? err.message : 'registry_invalid';
-    writeJson(res, 503, { ok: false, error: 'managed_flow_registry_invalid', detail: message });
+    writeJson(res, 503, { ok: false, error: 'managed_flow_registry_invalid', detail: message }, actionKey, {
+      state: 'error',
+      reason: 'managed_flow_registry_invalid'
+    });
     return null;
   }
 
   const actionDef = registry.actionByKey[actionKey];
   if (!actionDef) {
-    writeJson(res, 500, { ok: false, error: 'managed_flow_action_not_defined', actionKey });
+    writeJson(res, 500, { ok: false, error: 'managed_flow_action_not_defined', actionKey }, actionKey, {
+      state: 'error',
+      reason: 'managed_flow_action_not_defined'
+    });
     return null;
   }
   const resolvedBinding = resolveActionByMethodAndPath(req && req.method, resolvePathname(req));
@@ -91,12 +123,18 @@ async function enforceManagedFlowGuard(params, deps) {
       error: 'managed_flow_action_mismatch',
       actionKey,
       resolvedActionKey: resolvedBinding.actionKey
+    }, actionKey, {
+      state: 'error',
+      reason: 'managed_flow_action_mismatch'
     });
     return null;
   }
   const flow = registry.flowById[actionDef.flowId];
   if (!flow) {
-    writeJson(res, 500, { ok: false, error: 'managed_flow_not_defined', flowId: actionDef.flowId });
+    writeJson(res, 500, { ok: false, error: 'managed_flow_not_defined', flowId: actionDef.flowId }, actionKey, {
+      state: 'error',
+      reason: 'managed_flow_not_defined'
+    });
     return null;
   }
 
@@ -123,7 +161,10 @@ async function enforceManagedFlowGuard(params, deps) {
           reason: 'trace_required'
         }
       }, deps);
-      writeJson(res, 400, { ok: false, error: 'x-trace-id required' });
+      writeJson(res, 400, { ok: false, error: 'x-trace-id required' }, actionKey, {
+        state: 'error',
+        reason: 'x_trace_id_required'
+      });
       return null;
     }
   }
@@ -137,7 +178,10 @@ async function enforceManagedFlowGuard(params, deps) {
         reason: 'actor_required'
       }
     }, deps);
-    writeJson(res, 400, { ok: false, error: 'x-actor required', traceId: traceId || null });
+    writeJson(res, 400, { ok: false, error: 'x-actor required', traceId: traceId || null }, actionKey, {
+      state: 'error',
+      reason: 'x_actor_required'
+    });
     return null;
   }
 
@@ -168,7 +212,10 @@ async function enforceManagedFlowGuard(params, deps) {
           reason: 'confirm_required'
         }
       }, deps);
-      writeJson(res, 400, { ok: false, error: 'planHash/confirmToken required', traceId: traceId || null });
+      writeJson(res, 400, { ok: false, error: 'planHash/confirmToken required', traceId: traceId || null }, actionKey, {
+        state: 'error',
+        reason: 'plan_hash_confirm_token_required'
+      });
       return null;
     }
     if (confirmMode === 'warn_only') {
@@ -192,7 +239,10 @@ async function enforceManagedFlowGuard(params, deps) {
         reason: 'kill_switch_check_required'
       }
     }, deps);
-    writeJson(res, 409, { ok: false, error: 'kill_switch_check_required', traceId: traceId || null });
+    writeJson(res, 409, { ok: false, error: 'kill_switch_check_required', traceId: traceId || null }, actionKey, {
+      state: 'blocked',
+      reason: 'kill_switch_check_required'
+    });
     return null;
   }
 
