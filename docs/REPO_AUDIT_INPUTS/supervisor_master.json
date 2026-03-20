@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T20:38:51-04:00",
-  "gitCommit": "1f787231d6e5ce62ee17bdbd5815edaab5d93fca",
-  "branch": "codex/admin-link-registry-outcome-T054",
-  "sourceDigest": "91411938635abef583c6d148140e8d880391393332079b7ecf30ba975fa2314e",
+  "generatedAt": "2026-03-19T21:26:55-04:00",
+  "gitCommit": "df1cf4da86bd1f830eea7cc3adddce75a44ca53a",
+  "branch": "codex/admin-journey-policy-outcome-T055",
+  "sourceDigest": "d5e4cb8291a953552c8c924f9a900dfd2aaf40082ff6798e96cc1d6ce3183d28",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

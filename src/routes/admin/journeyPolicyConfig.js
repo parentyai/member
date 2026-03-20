@@ -2,10 +2,16 @@
 
 const crypto = require('crypto');
 
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { createConfirmToken, verifyConfirmToken } = require('../../domain/confirmToken');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const journeyPolicyRepo = require('../../repos/firestore/journeyPolicyRepo');
 const { parseJson, requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const STATUS_ROUTE_KEY = 'admin.journey_policy_status';
+const PLAN_ROUTE_KEY = 'admin.journey_policy_plan';
+const SET_ROUTE_KEY = 'admin.journey_policy_set';
 
 function serializeNotificationCaps(value) {
   const payload = value && typeof value === 'object' ? value : {};
@@ -69,6 +75,22 @@ function resolveFeatureFlags() {
   };
 }
 
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, routeKey, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
 async function handleStatus(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -93,8 +115,7 @@ async function handleStatus(req, res) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, STATUS_ROUTE_KEY, 200, {
     ok: true,
     traceId,
     requestId,
@@ -102,7 +123,10 @@ async function handleStatus(req, res) {
     flags,
     effectiveEnabled,
     serverTime: new Date().toISOString()
-  }));
+  }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handlePlan(req, res, body) {
@@ -119,8 +143,10 @@ async function handlePlan(req, res, body) {
     : Object.assign({}, base, payload.policy && typeof payload.policy === 'object' ? payload.policy : {});
   const normalized = journeyPolicyRepo.normalizeJourneyPolicy(candidate);
   if (!normalized) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid journeyPolicy', traceId, requestId }));
+    writeJson(res, PLAN_ROUTE_KEY, 400, { ok: false, error: 'invalid journeyPolicy', traceId, requestId }, {
+      state: 'error',
+      reason: 'invalid_journey_policy'
+    });
     return;
   }
 
@@ -140,8 +166,7 @@ async function handlePlan(req, res, body) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, PLAN_ROUTE_KEY, 200, {
     ok: true,
     traceId,
     requestId,
@@ -149,7 +174,10 @@ async function handlePlan(req, res, body) {
     planHash,
     confirmToken,
     serverTime: new Date().toISOString()
-  }));
+  }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleSet(req, res, body) {
@@ -166,16 +194,20 @@ async function handleSet(req, res, body) {
     : Object.assign({}, base, payload.policy && typeof payload.policy === 'object' ? payload.policy : {});
   const normalized = journeyPolicyRepo.normalizeJourneyPolicy(candidate);
   if (!normalized) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid journeyPolicy', traceId, requestId }));
+    writeJson(res, SET_ROUTE_KEY, 400, { ok: false, error: 'invalid journeyPolicy', traceId, requestId }, {
+      state: 'error',
+      reason: 'invalid_journey_policy'
+    });
     return;
   }
 
   const planHash = typeof payload.planHash === 'string' ? payload.planHash.trim() : '';
   const confirmToken = typeof payload.confirmToken === 'string' ? payload.confirmToken.trim() : '';
   if (!planHash || !confirmToken) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'planHash/confirmToken required', traceId, requestId }));
+    writeJson(res, SET_ROUTE_KEY, 400, { ok: false, error: 'planHash/confirmToken required', traceId, requestId }, {
+      state: 'error',
+      reason: 'planhash_confirmtoken_required'
+    });
     return;
   }
 
@@ -195,8 +227,16 @@ async function handleSet(req, res, body) {
         planHash
       }
     });
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId }));
+    writeJson(res, SET_ROUTE_KEY, 409, {
+      ok: false,
+      reason: 'plan_hash_mismatch',
+      expectedPlanHash,
+      traceId,
+      requestId
+    }, {
+      state: 'blocked',
+      reason: 'plan_hash_mismatch'
+    });
     return;
   }
 
@@ -214,8 +254,10 @@ async function handleSet(req, res, body) {
         reason: 'confirm_token_mismatch'
       }
     });
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'confirm_token_mismatch', traceId, requestId }));
+    writeJson(res, SET_ROUTE_KEY, 409, { ok: false, reason: 'confirm_token_mismatch', traceId, requestId }, {
+      state: 'blocked',
+      reason: 'confirm_token_mismatch'
+    });
     return;
   }
 
@@ -233,14 +275,16 @@ async function handleSet(req, res, body) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, SET_ROUTE_KEY, 200, {
     ok: true,
     traceId,
     requestId,
     journeyPolicy: saved,
     serverTime: new Date().toISOString()
-  }));
+  }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 module.exports = {
