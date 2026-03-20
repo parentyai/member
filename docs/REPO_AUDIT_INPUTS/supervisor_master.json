@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T20:22:36-04:00",
-  "gitCommit": "9b55f361d7e1614be087175f025e5d4fa2f170e1",
+  "generatedAt": "2026-03-19T20:38:51-04:00",
+  "gitCommit": "54dda6100f5066107c8bc66140d3a3372bd27936",
   "branch": "codex/admin-llm-consent-outcome-T051",
-  "sourceDigest": "ea29bb1aa80fa1e8f3fd5c7bb8c1823d1492ddbd15dfa2460ae9a49a6a72fb2c",
+  "sourceDigest": "809e44020263202dbe6627f6f5a89db988872d9d98b1f52e013f1848c268a52c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
