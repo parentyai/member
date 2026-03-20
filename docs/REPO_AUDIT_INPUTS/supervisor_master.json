@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-19T19:55:07-04:00",
-  "gitCommit": "b5d925dba2d6aa514478f833fab8c85e664cab33",
-  "branch": "codex/admin-city-pack-education-links-outcome-T050",
-  "sourceDigest": "2bcdae0ff5d798fff08c24f92cb74de44bb2c7359c2aa3b23193c0381c08cc26",
+  "generatedAt": "2026-03-19T20:22:36-04:00",
+  "gitCommit": "9b55f361d7e1614be087175f025e5d4fa2f170e1",
+  "branch": "codex/admin-llm-consent-outcome-T051",
+  "sourceDigest": "ea29bb1aa80fa1e8f3fd5c7bb8c1823d1492ddbd15dfa2460ae9a49a6a72fb2c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
