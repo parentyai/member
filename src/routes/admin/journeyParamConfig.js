@@ -13,7 +13,11 @@ const {
   applyJourneyParamVersion,
   rollbackJourneyParamVersion
 } = require('../../usecases/journey/applyJourneyParamVersion');
-const { parseJson, requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
+const { requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.journey_param_config';
 
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -37,6 +41,52 @@ function parseLimit(req) {
   const raw = Number(url.searchParams.get('limit') || 20);
   if (!Number.isFinite(raw) || raw < 1) return 20;
   return Math.min(Math.floor(raw), 100);
+}
+
+function normalizeOutcomeReason(value, fallback) {
+  const normalized = typeof value === 'string'
+    ? value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+    : '';
+  return normalized || fallback;
+}
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function resolveDefaultOutcomeReason(status, payload) {
+  if (Number(status) >= 500) return 'error';
+  if (Number(status) === 404) return 'not_found';
+  if (Number(status) >= 400) {
+    return normalizeOutcomeReason((payload && payload.error) || (payload && payload.reason), 'error');
+  }
+  return 'completed';
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const options = normalizeOutcomeOptions(outcomeOptions);
+  if (!options.reason) options.reason = resolveDefaultOutcomeReason(status, payload);
+  const body = attachOutcome(payload || {}, options);
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function parseJsonBody(bodyText, res) {
+  try {
+    return JSON.parse(bodyText || '{}');
+  } catch (_err) {
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json'
+    });
+    return null;
+  }
 }
 
 function clone(value, fallback) {
@@ -178,8 +228,7 @@ async function handleStatus(req, res) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, 200, {
     ok: true,
     traceId,
     requestId,
@@ -189,7 +238,7 @@ async function handleStatus(req, res) {
     versions: recentVersions,
     flags,
     serverTime: new Date().toISOString()
-  }));
+  });
 }
 
 async function handlePlan(req, res, body) {
@@ -197,7 +246,7 @@ async function handlePlan(req, res, body) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res);
   if (!payload) return;
 
   const action = normalizeText(payload.action, 'draft_plan');
@@ -209,13 +258,12 @@ async function handlePlan(req, res, body) {
       runtime && runtime.previousAppliedVersionId ? runtime.previousAppliedVersionId : ''
     );
     if (!currentVersionId || !rollbackToVersionId) {
-      res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({
+      writeJson(res, 400, {
         ok: false,
         error: 'versionId/rollbackToVersionId required',
         traceId,
         requestId
-      }));
+      });
       return;
     }
 
@@ -236,8 +284,7 @@ async function handlePlan(req, res, body) {
       }
     });
 
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    writeJson(res, 200, {
       ok: true,
       action,
       traceId,
@@ -247,20 +294,18 @@ async function handlePlan(req, res, body) {
       planHash,
       confirmToken,
       serverTime: new Date().toISOString()
-    }));
+    });
     return;
   }
 
   const versionId = normalizeText(payload.versionId, '');
   const existing = versionId ? await journeyParamVersionsRepo.getJourneyParamVersion(versionId).catch(() => null) : null;
   if (versionId && !existing) {
-    res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'journey_param_version_not_found', traceId, requestId }));
+    writeJson(res, 404, { ok: false, error: 'journey_param_version_not_found', traceId, requestId });
     return;
   }
   if (existing && existing.state !== 'draft') {
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'version_not_draft', traceId, requestId }));
+    writeJson(res, 409, { ok: false, reason: 'version_not_draft', traceId, requestId });
     return;
   }
 
@@ -272,8 +317,7 @@ async function handlePlan(req, res, body) {
       existing.versionId
     );
     if (!normalizedCandidate) {
-      res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: 'invalid journeyParamVersion', traceId, requestId }));
+      writeJson(res, 400, { ok: false, error: 'invalid journeyParamVersion', traceId, requestId });
       return;
     }
     saved = await journeyParamVersionsRepo.setJourneyParamVersion(existing.versionId, normalizedCandidate, actor);
@@ -306,8 +350,7 @@ async function handlePlan(req, res, body) {
     payloadSummary: Object.assign({ planHash }, buildSummary(saved))
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, 200, {
     ok: true,
     action,
     traceId,
@@ -316,7 +359,7 @@ async function handlePlan(req, res, body) {
     planHash,
     confirmToken,
     serverTime: new Date().toISOString()
-  }));
+  });
 }
 
 async function handleValidate(req, res, body) {
@@ -324,20 +367,18 @@ async function handleValidate(req, res, body) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res);
   if (!payload) return;
 
   const versionId = normalizeText(payload.versionId, '');
   if (!versionId) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'versionId required', traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: 'versionId required', traceId, requestId });
     return;
   }
 
   const before = await journeyParamVersionsRepo.getJourneyParamVersion(versionId).catch(() => null);
   if (!before) {
-    res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'journey_param_version_not_found', traceId, requestId }));
+    writeJson(res, 404, { ok: false, error: 'journey_param_version_not_found', traceId, requestId });
     return;
   }
 
@@ -382,8 +423,7 @@ async function handleValidate(req, res, body) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, 200, {
     ok: true,
     traceId,
     requestId,
@@ -391,7 +431,7 @@ async function handleValidate(req, res, body) {
     validation,
     version: after,
     serverTime: new Date().toISOString()
-  }));
+  });
 }
 
 async function handleDryRun(req, res, body) {
@@ -399,25 +439,22 @@ async function handleDryRun(req, res, body) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res);
   if (!payload) return;
 
   const versionId = normalizeText(payload.versionId, '');
   if (!versionId) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'versionId required', traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: 'versionId required', traceId, requestId });
     return;
   }
 
   const before = await journeyParamVersionsRepo.getJourneyParamVersion(versionId).catch(() => null);
   if (!before) {
-    res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'journey_param_version_not_found', traceId, requestId }));
+    writeJson(res, 404, { ok: false, error: 'journey_param_version_not_found', traceId, requestId });
     return;
   }
   if (!['validated', 'dry_run_passed', 'applied'].includes(before.state)) {
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'version_not_validated', traceId, requestId }));
+    writeJson(res, 409, { ok: false, reason: 'version_not_validated', traceId, requestId });
     return;
   }
 
@@ -463,8 +500,7 @@ async function handleDryRun(req, res, body) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, 200, {
     ok: true,
     traceId,
     requestId,
@@ -472,7 +508,7 @@ async function handleDryRun(req, res, body) {
     dryRun,
     version: after,
     serverTime: new Date().toISOString()
-  }));
+  });
 }
 
 async function handleApply(req, res, body) {
@@ -480,7 +516,7 @@ async function handleApply(req, res, body) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res);
   if (!payload) return;
 
   const versionId = normalizeText(payload.versionId, '');
@@ -488,38 +524,32 @@ async function handleApply(req, res, body) {
   const confirmToken = normalizeText(payload.confirmToken, '');
   const latestDryRunHash = normalizeText(payload.latestDryRunHash, '');
   if (!versionId || !planHash || !confirmToken || !latestDryRunHash) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'versionId/planHash/confirmToken/latestDryRunHash required', traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: 'versionId/planHash/confirmToken/latestDryRunHash required', traceId, requestId });
     return;
   }
 
   const version = await journeyParamVersionsRepo.getJourneyParamVersion(versionId).catch(() => null);
   if (!version) {
-    res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'journey_param_version_not_found', traceId, requestId }));
+    writeJson(res, 404, { ok: false, error: 'journey_param_version_not_found', traceId, requestId });
     return;
   }
   if (version.state !== 'dry_run_passed') {
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'dry_run_required', state: version.state, traceId, requestId }));
+    writeJson(res, 409, { ok: false, reason: 'dry_run_required', state: version.state, traceId, requestId });
     return;
   }
 
   const expectedPlanHash = computePlanHash(version);
   if (planHash !== expectedPlanHash) {
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId }));
+    writeJson(res, 409, { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId });
     return;
   }
   if ((version.dryRun && version.dryRun.hash) !== latestDryRunHash) {
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'dry_run_hash_mismatch', expectedDryRunHash: version.dryRun && version.dryRun.hash ? version.dryRun.hash : null, traceId, requestId }));
+    writeJson(res, 409, { ok: false, reason: 'dry_run_hash_mismatch', expectedDryRunHash: version.dryRun && version.dryRun.hash ? version.dryRun.hash : null, traceId, requestId });
     return;
   }
   const tokenValid = verifyConfirmToken(confirmToken, confirmTokenData(planHash), { now: new Date() });
   if (!tokenValid) {
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'confirm_token_mismatch', traceId, requestId }));
+    writeJson(res, 409, { ok: false, reason: 'confirm_token_mismatch', traceId, requestId });
     return;
   }
 
@@ -545,13 +575,12 @@ async function handleApply(req, res, body) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(Object.assign({
+  writeJson(res, 200, Object.assign({
     ok: true,
     traceId,
     requestId,
     serverTime: new Date().toISOString()
-  }, result)));
+  }, result));
 }
 
 async function handleRollback(req, res, body) {
@@ -559,7 +588,7 @@ async function handleRollback(req, res, body) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(body, res);
+  const payload = parseJsonBody(body, res);
   if (!payload) return;
 
   const runtime = await journeyParamRuntimeRepo.getJourneyParamRuntime().catch(() => null);
@@ -572,21 +601,18 @@ async function handleRollback(req, res, body) {
   const confirmToken = normalizeText(payload.confirmToken, '');
 
   if (!versionId || !rollbackToVersionId || !planHash || !confirmToken) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'versionId/rollbackToVersionId/planHash/confirmToken required', traceId, requestId }));
+    writeJson(res, 400, { ok: false, error: 'versionId/rollbackToVersionId/planHash/confirmToken required', traceId, requestId });
     return;
   }
 
   const expectedPlanHash = computeRollbackPlanHash(versionId, rollbackToVersionId);
   if (expectedPlanHash !== planHash) {
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId }));
+    writeJson(res, 409, { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId });
     return;
   }
   const tokenValid = verifyConfirmToken(confirmToken, confirmTokenData(planHash), { now: new Date() });
   if (!tokenValid) {
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'confirm_token_mismatch', traceId, requestId }));
+    writeJson(res, 409, { ok: false, reason: 'confirm_token_mismatch', traceId, requestId });
     return;
   }
 
@@ -612,13 +638,12 @@ async function handleRollback(req, res, body) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(Object.assign({
+  writeJson(res, 200, Object.assign({
     ok: true,
     traceId,
     requestId,
     serverTime: new Date().toISOString()
-  }, result)));
+  }, result));
 }
 
 async function handleHistory(req, res) {
@@ -647,15 +672,14 @@ async function handleHistory(req, res) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, 200, {
     ok: true,
     traceId,
     requestId,
     limit,
     changes,
     versions
-  }));
+  });
 }
 
 module.exports = {
