@@ -1,5 +1,6 @@
 'use strict';
 
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { createLink } = require('../../usecases/linkRegistry/createLink');
 const { listLinks } = require('../../usecases/linkRegistry/listLinks');
 const { updateLink } = require('../../usecases/linkRegistry/updateLink');
@@ -8,32 +9,65 @@ const { checkLinkHealth } = require('../../usecases/linkRegistry/checkLinkHealth
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { resolveRequestId, resolveTraceId } = require('./osContext');
 
+const ROUTE_TYPE = 'admin_route';
+const CREATE_ROUTE_KEY = 'admin.link_registry_create';
+const LIST_ROUTE_KEY = 'admin.link_registry_list';
+const UPDATE_ROUTE_KEY = 'admin.link_registry_update';
+const DELETE_ROUTE_KEY = 'admin.link_registry_delete';
+const HEALTH_ROUTE_KEY = 'admin.link_registry_health';
+
 function resolveActor(req) {
   const actor = req && req.headers && req.headers['x-actor'];
   if (typeof actor === 'string' && actor.trim().length > 0) return actor.trim();
   return 'unknown';
 }
 
-function parseJson(body, res) {
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, routeKey, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function normalizeReason(message, fallback) {
+  const text = typeof message === 'string' ? message : '';
+  const normalized = text.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').toLowerCase();
+  return normalized || fallback;
+}
+
+function parseJson(body, res, routeKey) {
   try {
     return JSON.parse(body || '{}');
   } catch (err) {
-    res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end('invalid json');
+    writeJson(res, routeKey, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json'
+    });
     return null;
   }
 }
 
-function writeError(res, err) {
+function writeError(res, routeKey, err) {
   const status = err && Number.isInteger(err.statusCode) ? err.statusCode : 500;
   const payload = { ok: false, error: err && err.code ? String(err.code) : 'error' };
   if (err && err.details && typeof err.details === 'object') payload.details = err.details;
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  writeJson(res, routeKey, status, payload, {
+    state: status >= 500 ? 'error' : 'error',
+    reason: normalizeReason(payload.error, 'error')
+  });
 }
 
 async function handleCreate(req, res, body) {
-  const payload = parseJson(body, res);
+  const payload = parseJson(body, res, CREATE_ROUTE_KEY);
   if (!payload) return;
   try {
     const result = await createLink(payload);
@@ -49,10 +83,12 @@ async function handleCreate(req, res, body) {
       requestId,
       payloadSummary: { title: payload.title || null }
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, id: result.id }));
+    writeJson(res, CREATE_ROUTE_KEY, 200, { ok: true, id: result.id }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
-    writeError(res, err);
+    writeError(res, CREATE_ROUTE_KEY, err);
   }
 }
 
@@ -86,15 +122,17 @@ async function handleList(req, res) {
       riskLevel: riskLevel || undefined,
       tags
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, items: result }));
+    writeJson(res, LIST_ROUTE_KEY, 200, { ok: true, items: result }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
-    writeError(res, err);
+    writeError(res, LIST_ROUTE_KEY, err);
   }
 }
 
 async function handleUpdate(req, res, body, id) {
-  const payload = parseJson(body, res);
+  const payload = parseJson(body, res, UPDATE_ROUTE_KEY);
   if (!payload) return;
   try {
     const result = await updateLink(id, payload);
@@ -110,10 +148,12 @@ async function handleUpdate(req, res, body, id) {
       requestId,
       payloadSummary: { fields: Object.keys(payload || {}) }
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, id: result.id }));
+    writeJson(res, UPDATE_ROUTE_KEY, 200, { ok: true, id: result.id }, {
+      state: 'success',
+      reason: 'completed'
+    });
   } catch (err) {
-    writeError(res, err);
+    writeError(res, UPDATE_ROUTE_KEY, err);
   }
 }
 
@@ -131,12 +171,14 @@ async function handleDelete(req, res, id) {
     requestId,
     payloadSummary: {}
   });
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, id: result.id }));
+  writeJson(res, DELETE_ROUTE_KEY, 200, { ok: true, id: result.id }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleHealth(req, res, body, id) {
-  const payload = parseJson(body, res);
+  const payload = parseJson(body, res, HEALTH_ROUTE_KEY);
   if (!payload) return;
   const result = await checkLinkHealth(id, payload);
   const actor = resolveActor(req);
@@ -151,8 +193,10 @@ async function handleHealth(req, res, body, id) {
     requestId,
     payloadSummary: { state: payload.state || null, statusCode: payload.statusCode || null }
   });
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, id: result.id }));
+  writeJson(res, HEALTH_ROUTE_KEY, 200, { ok: true, id: result.id }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 module.exports = {
