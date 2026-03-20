@@ -17,7 +17,8 @@ const {
   resolveTaskContentLinks,
   resolveTaskKeyWarnings
 } = require('../../usecases/tasks/validateTaskContent');
-const { parseJson, requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
+const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 const {
   isTaskEngineEnabled,
   isTaskNudgeEnabled,
@@ -37,6 +38,8 @@ const TASK_RULES_TEMPLATE_SET_ACTION = 'task_rules.template_set';
 const TASK_RULES_TEMPLATE_SET_PATH = '/api/admin/os/task-rules/template/set';
 const TASK_RULES_APPLY_ACTION = 'task_rules.apply';
 const TASK_RULES_APPLY_PATH = '/api/admin/os/task-rules/apply';
+const ROUTE_TYPE = 'admin_route';
+const ROUTE_KEY = 'admin.task_rules';
 
 const SCENARIO_KEY_FIELD = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
@@ -47,9 +50,50 @@ function normalizeText(value, fallback) {
   return normalized || fallback;
 }
 
-function writeJson(res, status, payload) {
+function normalizeOutcomeReason(value, fallback) {
+  const normalized = typeof value === 'string'
+    ? value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+    : '';
+  return normalized || fallback;
+}
+
+function normalizeOutcomeOptions(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = ROUTE_KEY;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function resolveDefaultOutcomeReason(status, payload) {
+  if (Number(status) >= 500) return 'error';
+  if (Number(status) === 404) return 'not_found';
+  if (Number(status) >= 400) {
+    return normalizeOutcomeReason((payload && payload.error) || (payload && payload.reason), 'error');
+  }
+  return 'completed';
+}
+
+function writeJson(res, status, payload, outcomeOptions) {
+  const options = normalizeOutcomeOptions(outcomeOptions);
+  if (!options.reason) options.reason = resolveDefaultOutcomeReason(status, payload);
+  const body = attachOutcome(payload || {}, options);
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
+}
+
+function parseJsonBody(bodyText, res) {
+  try {
+    return JSON.parse(bodyText || '{}');
+  } catch (_err) {
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json'
+    });
+    return null;
+  }
 }
 
 function resolveLimit(req) {
@@ -252,7 +296,7 @@ async function handlePlan(req, res, bodyText) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
 
   const action = normalizeText(payload.action, 'upsert_rule');
@@ -363,7 +407,7 @@ async function handlePlan(req, res, bodyText) {
 }
 
 async function handleSet(req, res, bodyText) {
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
   const guard = await enforceManagedFlowGuard({
     req,
@@ -578,7 +622,7 @@ async function handleTemplatePlan(req, res, bodyText) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
 
   if (!isJourneyTemplateEnabled()) {
@@ -640,7 +684,7 @@ async function handleTemplatePlan(req, res, bodyText) {
 }
 
 async function handleTemplateSet(req, res, bodyText) {
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
   const guard = await enforceManagedFlowGuard({
     req,
@@ -781,7 +825,7 @@ async function handleApplyPlan(req, res, bodyText) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
 
   if (!isTaskEngineEnabled()) {
@@ -849,7 +893,7 @@ async function handleApplyPlan(req, res, bodyText) {
 }
 
 async function handleApply(req, res, bodyText) {
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
   const guard = await enforceManagedFlowGuard({
     req,
@@ -1031,7 +1075,7 @@ async function handleDryRun(req, res, bodyText) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const payload = parseJson(bodyText, res);
+  const payload = parseJsonBody(bodyText, res);
   if (!payload) return;
 
   const userId = normalizeText(payload.userId || payload.lineUserId, '');
