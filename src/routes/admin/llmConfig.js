@@ -2,12 +2,18 @@
 
 const crypto = require('crypto');
 
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 const { createConfirmToken, verifyConfirmToken } = require('../../domain/confirmToken');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
 const { getLlmRuntimeState } = require('../../infra/llm/runtimeState');
 const { parseJson, requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
+
+const ROUTE_TYPE = 'admin_route';
+const STATUS_ROUTE_KEY = 'admin.llm_config_status';
+const PLAN_ROUTE_KEY = 'admin.llm_config_plan';
+const SET_ROUTE_KEY = 'admin.llm_config_set';
 
 function normalizeLlmEnabled(value) {
   if (typeof value === 'boolean') return value;
@@ -92,6 +98,28 @@ function confirmTokenData(planHash) {
   };
 }
 
+function normalizeOutcomeOptions(routeKey, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const guard = Object.assign({}, opts.guard || {});
+  guard.routeKey = routeKey;
+  const normalized = Object.assign({}, opts, { guard });
+  if (!normalized.routeType) normalized.routeType = ROUTE_TYPE;
+  return normalized;
+}
+
+function writeJson(res, routeKey, statusCode, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, normalizeOutcomeOptions(routeKey, outcomeOptions));
+  applyOutcomeHeaders(res, body.outcome);
+  res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+function normalizeReason(message, fallback) {
+  const text = typeof message === 'string' ? message : '';
+  const normalized = text.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').toLowerCase();
+  return normalized || fallback;
+}
+
 async function handleStatus(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -157,8 +185,7 @@ async function handleStatus(req, res) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, STATUS_ROUTE_KEY, 200, {
     ok: true,
     traceId,
     requestId,
@@ -182,7 +209,10 @@ async function handleStatus(req, res) {
     effectiveWebSearchEnabled,
     effectiveStyleEngineEnabled,
     effectiveBanditEnabled
-  }));
+  }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handlePlan(req, res, body) {
@@ -214,8 +244,10 @@ async function handlePlan(req, res, body) {
     llmBanditEnabled = normalizeLlmBanditEnabled(payload.llmBanditEnabled, currentLlmBanditEnabled);
     llmPolicy = normalizeLlmPolicy(payload.llmPolicy, currentLlmPolicy);
   } catch (err) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: err.message || 'invalid', traceId }));
+    writeJson(res, PLAN_ROUTE_KEY, 400, { ok: false, error: err.message || 'invalid', traceId }, {
+      state: 'error',
+      reason: normalizeReason(err && err.message, 'invalid_request')
+    });
     return;
   }
 
@@ -250,8 +282,7 @@ async function handlePlan(req, res, body) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, PLAN_ROUTE_KEY, 200, {
     ok: true,
     traceId,
     requestId,
@@ -264,7 +295,10 @@ async function handlePlan(req, res, body) {
     llmPolicy,
     planHash,
     confirmToken
-  }));
+  }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 async function handleSet(req, res, body) {
@@ -296,16 +330,20 @@ async function handleSet(req, res, body) {
     llmBanditEnabled = normalizeLlmBanditEnabled(payload.llmBanditEnabled, currentLlmBanditEnabled);
     llmPolicy = normalizeLlmPolicy(payload.llmPolicy, currentLlmPolicy);
   } catch (err) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: err.message || 'invalid', traceId }));
+    writeJson(res, SET_ROUTE_KEY, 400, { ok: false, error: err.message || 'invalid', traceId }, {
+      state: 'error',
+      reason: normalizeReason(err && err.message, 'invalid_request')
+    });
     return;
   }
 
   const planHash = typeof payload.planHash === 'string' ? payload.planHash : null;
   const confirmToken = typeof payload.confirmToken === 'string' ? payload.confirmToken : null;
   if (!planHash || !confirmToken) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'planHash/confirmToken required', traceId }));
+    writeJson(res, SET_ROUTE_KEY, 400, { ok: false, error: 'planHash/confirmToken required', traceId }, {
+      state: 'error',
+      reason: 'planhash_confirmtoken_required'
+    });
     return;
   }
 
@@ -340,8 +378,10 @@ async function handleSet(req, res, body) {
         crossBorder: llmPolicy.crossBorder
       }
     });
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId }));
+    writeJson(res, SET_ROUTE_KEY, 409, { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId }, {
+      state: 'blocked',
+      reason: 'plan_hash_mismatch'
+    });
     return;
   }
 
@@ -356,8 +396,10 @@ async function handleSet(req, res, body) {
       requestId,
       payloadSummary: { ok: false, reason: 'confirm_token_mismatch' }
     });
-    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, reason: 'confirm_token_mismatch', traceId }));
+    writeJson(res, SET_ROUTE_KEY, 409, { ok: false, reason: 'confirm_token_mismatch', traceId }, {
+      state: 'blocked',
+      reason: 'confirm_token_mismatch'
+    });
     return;
   }
 
@@ -389,8 +431,7 @@ async function handleSet(req, res, body) {
     }
   });
 
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({
+  writeJson(res, SET_ROUTE_KEY, 200, {
     ok: true,
     traceId,
     requestId,
@@ -401,7 +442,10 @@ async function handleSet(req, res, body) {
     llmStyleEngineEnabled,
     llmBanditEnabled,
     llmPolicy
-  }));
+  }, {
+    state: 'success',
+    reason: 'completed'
+  });
 }
 
 module.exports = {
