@@ -1,5 +1,7 @@
 'use strict';
 
+const { buildEchoContinuationFromSource } = require('../../../usecases/assistant/generatePaidDomainConciergeReply');
+
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
@@ -94,6 +96,12 @@ function buildConstrainedFallbackReply(packet) {
   const outputForm = normalizeText(payload.outputForm).toLowerCase();
   const primaryDomainIntent = normalizeText(payload.primaryDomainIntent || payload.normalizedConversationIntent).toLowerCase() || 'general';
   const sourceReplyText = normalizeText(payload.sourceReplyText || (payload.requestContract && payload.requestContract.sourceReplyText));
+  if (requestShape === 'followup_continue' && payload.echoOfPriorAssistant === true) {
+    const sourceAwareContinuation = buildEchoContinuationFromSource(sourceReplyText);
+    if (Array.isArray(sourceAwareContinuation) && sourceAwareContinuation.length > 0) {
+      return ensureSentence(sourceAwareContinuation[0]);
+    }
+  }
   if (requestShape === 'message_template' || outputForm === 'message_only' || outputForm === 'polite_template') {
     return buildMessageTemplateFallback(sourceReplyText, primaryDomainIntent);
   }

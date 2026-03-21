@@ -252,6 +252,12 @@ function buildMessageTemplateFromSource(sourceReplyText, domainIntent) {
   if (/事前予約が必要かどうか/.test(sourceLine)) {
     return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります';
   }
+  if (/今日は最優先の1件の期限だけ確認して/.test(sourceLine)) {
+    return '今日は最優先の1件の期限だけ確認して、必要書類か予約要否のどちらを先に見るか決めてみます';
+  }
+  if (/今進める順番を整理したいので/.test(sourceLine)) {
+    return '今進める順番を整理したいので、最初に何を優先すべきか教えてもらえると助かります';
+  }
   if (/今日は/.test(sourceLine)) {
     return sourceLine.replace(/しましょう|決めましょう/g, 'してみます').replace(/ください/g, 'もらえると助かります');
   }
@@ -274,6 +280,9 @@ function buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent) {
   const sourceLine = extractFirstSourceLine(sourceReplyText);
   if (/事前予約が必要かどうか/.test(sourceLine)) {
     return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります';
+  }
+  if (/今進める順番を整理したいので/.test(sourceLine)) {
+    return 'もしよければ、今進める順番を整理したいので、最初に何を優先すべきか教えていただけると助かります';
   }
   if (/制度・期限・必要書類・費用/.test(sourceLine)) {
     return '制度や期限が変わりそうな話なら、まず公式情報を見ておくと安心かもしれません';
@@ -318,6 +327,9 @@ function buildLessBureaucraticRewriteFromSource(sourceReplyText, domainIntent) {
   if (/事前予約が必要かどうか/.test(sourceLine)) {
     return 'よければ、事前予約が必要かどうかだけ教えていただけると助かります';
   }
+  if (/今進める順番を整理したいので/.test(sourceLine)) {
+    return 'よければ、今進める順番を整理したいので、最初に何を優先するとよさそうか教えてもらえると助かります';
+  }
   if (/制度・期限・必要書類・費用/.test(sourceLine)) {
     return '制度や期限が変わりそうなところだけ、先に公式情報で見ておけると安心です';
   }
@@ -325,6 +337,37 @@ function buildLessBureaucraticRewriteFromSource(sourceReplyText, domainIntent) {
     return `よければ、${buildMessageTemplateFromSource(sourceReplyText, domainIntent).replace(/[。！？!?]+$/g, '')}。`;
   }
   return 'よければ、まずは優先するものを1つだけ決めて、順番を一緒に整理していきましょう';
+}
+
+function buildEchoContinuationFromSource(sourceReplyText) {
+  const source = normalizeText(sourceReplyText);
+  if (!source) return [];
+  if (/住まい・学校・SSN|生活基盤|後回しできる手続き/.test(source)) {
+    return [
+      'その続きなら、まず住むエリアと学区の条件が両立する候補を1つに絞り、SSNは必要書類だけ先にまとめると進めやすいです'
+    ];
+  }
+  if (/優先順位の固定と期限の見える化/.test(source)) {
+    return [
+      'その続きなら、最優先の1件に期限を書き込むところから始めると進めやすいです'
+    ];
+  }
+  if (/先にSSNを進めるのが無難です|本人確認や就労まわり/.test(source)) {
+    return [
+      'その続きなら、まずSSNの必要書類と窓口要件だけ先に確認すると判断しやすいです'
+    ];
+  }
+  if (/対象地域の窓口、必要書類、受付期限|制度・期限・必要書類・費用|公式窓口/.test(source)) {
+    return [
+      'その続きなら、まず対象地域の公式窓口ページで必要書類と受付期限だけ確認すると進めやすいです'
+    ];
+  }
+  if (/今日は最優先の1件の期限だけ確認/.test(source)) {
+    return [
+      'その続きなら、今日はその1件の期限を書き込むところまで進めれば十分です'
+    ];
+  }
+  return [];
 }
 
 function buildContractReply(params) {
@@ -341,6 +384,7 @@ function buildContractReply(params) {
   const lines = [];
 
   if (requestContract.echoOfPriorAssistant === true && requestShape === 'followup_continue') {
+    const echoContinuationLines = buildEchoContinuationFromSource(sourceReplyText);
     const followupLine = payload.followupIntent
       ? resolveFollowupDirectAnswer({
         followupIntent: payload.followupIntent,
@@ -349,7 +393,9 @@ function buildContractReply(params) {
         directAnswers: (DOMAIN_SPECS[domainIntent] || DOMAIN_SPECS.general).directAnswers || {}
       })
       : '';
-    lines.push(followupLine || withDomainAnchor('その続きなら、次の一手を1つだけ決めると進めやすいです', domainIntent));
+    lines.push(...(echoContinuationLines.length
+      ? echoContinuationLines
+      : [followupLine || withDomainAnchor('その続きなら、次の一手を1つだけ決めると進めやすいです', domainIntent)]));
   } else if (requestShape === 'compare') {
     if (/(無料プラン|有料プラン|プランの違い|プラン比較)/i.test(messageText)) {
       lines.push('短く言うと、無料はFAQ検索中心で、有料は状況整理や次の一手の提案まで対応します');
@@ -746,7 +792,7 @@ function resolvePresetReply(params) {
     });
   }
 
-  if (/((住まい|住居|住宅|引っ越し|家探し|部屋探し).*(学校|学区|入学|転校))|(学校優先で考え直して|学校優先)/i.test(messageText)) {
+  if (/(((住まい|住居|住宅|引っ越し|家探し|部屋探し).*(じゃなくて|ではなく|より).*(学校|学区|入学|転校))|(学校優先で考え直して|学校優先))/i.test(messageText)) {
     return buildPresetReply({
       primaryLine: '了解です。学校優先で見るなら、学区と対象校の条件を先に確認しましょう',
       secondaryLine: '次に、住所証明や予防接種記録など必要書類をまとめると進めやすいです'
@@ -978,5 +1024,6 @@ function generatePaidDomainConciergeReply(params) {
 
 module.exports = {
   generatePaidDomainConciergeReply,
-  FORBIDDEN_REPLY_PATTERN
+  FORBIDDEN_REPLY_PATTERN,
+  buildEchoContinuationFromSource
 };

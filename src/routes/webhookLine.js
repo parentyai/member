@@ -2843,7 +2843,7 @@ async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
       limit
     });
     const deduped = [];
-    const seenKeys = new Set();
+    const seenRows = new Map();
     const toKey = (row) => {
       const requestId = normalizeReplyText(row && row.requestId);
       if (requestId) return `req:${requestId}`;
@@ -2852,15 +2852,51 @@ async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
       const replyText = normalizeReplyText(row && row.replyText);
       return `row:${createdAt}:${domainIntent}:${replyText}`;
     };
+    const mergeRows = (existing, incoming) => {
+      const left = existing && typeof existing === 'object' ? existing : {};
+      const right = incoming && typeof incoming === 'object' ? incoming : {};
+      return Object.assign({}, left, right, {
+        replyText: normalizeReplyText(right.replyText) || normalizeReplyText(left.replyText),
+        committedNextActions: (
+          Array.isArray(right.committedNextActions) && right.committedNextActions.length > 0
+            ? right.committedNextActions
+            : (Array.isArray(left.committedNextActions) ? left.committedNextActions : [])
+        ),
+        committedFollowupQuestion: normalizeReplyText(right.committedFollowupQuestion)
+          || normalizeReplyText(left.committedFollowupQuestion)
+          || null,
+        recentUserGoal: normalizeReplyText(right.recentUserGoal)
+          || normalizeReplyText(left.recentUserGoal)
+          || null,
+        followupIntent: normalizeReplyText(right.followupIntent)
+          || normalizeReplyText(left.followupIntent)
+          || null,
+        requestShape: normalizeReplyText(right.requestShape)
+          || normalizeReplyText(left.requestShape)
+          || null,
+        outputForm: normalizeReplyText(right.outputForm)
+          || normalizeReplyText(left.outputForm)
+          || null,
+        detailObligations: (
+          Array.isArray(right.detailObligations) && right.detailObligations.length > 0
+            ? right.detailObligations
+            : (Array.isArray(left.detailObligations) ? left.detailObligations : [])
+        )
+      });
+    };
     const pushRow = (row) => {
       if (!row || typeof row !== 'object') return;
       const key = toKey(row);
-      if (!key || seenKeys.has(key)) return;
-      seenKeys.add(key);
-      deduped.push(row);
+      if (!key) return;
+      if (!seenRows.has(key)) {
+        seenRows.set(key, row);
+        return;
+      }
+      seenRows.set(key, mergeRows(seenRows.get(key), row));
     };
     (Array.isArray(storedRows) ? storedRows : []).forEach(pushRow);
     (Array.isArray(cachedRows) ? cachedRows : []).forEach(pushRow);
+    seenRows.forEach((row) => deduped.push(row));
     deduped.sort((left, right) => toMillis(right && right.createdAt) - toMillis(left && left.createdAt));
     return deduped.slice(0, limit);
   } catch (_err) {
