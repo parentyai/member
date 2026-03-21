@@ -2,6 +2,8 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { buildScorecard } = require('./lib');
+const { toCandidateMetricsFromQualitySummary } = require('./run_quality_gate');
 
 function parseArgs(argv) {
   const args = Array.isArray(argv) ? argv.slice(2) : [];
@@ -107,6 +109,14 @@ function readSummaryData(summaryPath) {
   } catch (_err) {
     return null;
   }
+}
+
+function buildCandidateScorecardFromSummary(summary, sourcePath) {
+  const metrics = toCandidateMetricsFromQualitySummary(summary);
+  if (!metrics) return null;
+  return buildScorecard(metrics, {
+    source: sourcePath ? `runtime_summary:${sourcePath}` : 'runtime_summary'
+  });
 }
 
 function readFiniteNumber(obj, key) {
@@ -242,9 +252,12 @@ function main(argv) {
       : 0.8;
 
   const baseline = readJson(baselinePath);
-  const candidate = readJson(candidatePath);
+  const precomputedCandidate = readJson(candidatePath);
   const mustPass = readJson(mustPassPath);
   const summary = readSummaryData(summaryPath);
+  const runtimeSummaryCandidate = buildCandidateScorecardFromSummary(summary, summaryPath);
+  const candidate = runtimeSummaryCandidate || precomputedCandidate;
+  const candidateSourceType = runtimeSummaryCandidate ? 'runtime_summary' : 'precomputed_scorecard';
   const qualityLoopV2 = extractQualityLoopV2(summary);
   const improvementLoop = extractImprovementLoop(summary);
   const compatShareWindow = resolveCompatShareWindow(summary);
@@ -471,6 +484,7 @@ function main(argv) {
     candidatePath,
     mustPassPath,
     releaseGatePolicy,
+    candidateSourceType,
     noRegressionPolicy,
     baselineOverallScore: Number(baseline.overallScore || 0),
     candidateOverallScore: Number(candidate.overallScore || 0),

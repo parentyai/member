@@ -55,6 +55,7 @@ test('phase777: release policy emits soft-floor warnings when soft-floor is not 
     '--baseline', paths.baselinePath,
     '--candidate', paths.candidatePath,
     '--mustPass', paths.mustPassPath,
+    '--summary', 'tmp/phase777_summary_absent.json',
     '--output', path.relative(ROOT, outPath)
   ]);
   assert.equal(run.status, 0, run.stderr || run.stdout);
@@ -78,6 +79,7 @@ test('phase777: release policy blocks below-floor dimensions when soft-floor is 
     '--baseline', paths.baselinePath,
     '--candidate', paths.candidatePath,
     '--mustPass', paths.mustPassPath,
+    '--summary', 'tmp/phase777_summary_absent.json',
     '--requireSoftFloor', 'true',
     '--output', path.relative(ROOT, outPath)
   ]);
@@ -99,6 +101,7 @@ test('phase777: release policy accepts candidate when required soft-floor is low
     '--baseline', paths.baselinePath,
     '--candidate', paths.candidatePath,
     '--mustPass', paths.mustPassPath,
+    '--summary', 'tmp/phase777_summary_absent.json',
     '--requireSoftFloor', 'true',
     '--softFloor', '0.7',
     '--output', path.relative(ROOT, outPath)

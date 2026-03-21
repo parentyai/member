@@ -164,6 +164,7 @@
   - release-policy fail
 - strict runtime signals で `legacyTemplateHitRate/defaultCasualRate/followupQuestionIncludedRate/conciseModeAppliedRate/retrieveNeededRate/avgActionCount/directAnswerAppliedRate/avgRepeatRiskScore` 欠損（`runtime_signal_missing:*`）
 - runtime summary に `conversationQuality` が存在する場合、`conversation_continuity/clarification_quality/empathy/misunderstanding_recovery/latency_surface_efficiency` は signal 補正値で再評価し、precomputed dimension を過小評価として上書き可能（max merge）
+- strict gate / release policy が runtime summary の `qualityFramework` を candidate として使う場合、`procedural_utility/next_step_clarity/direct_answer_first/japanese_naturalness/keigo_distance` も同じ `conversationQuality` 補正値で max merge し、soft floor は補正後 score で判定する
 
 ## Required Audit Outputs
 - `current_quality_risk_map`

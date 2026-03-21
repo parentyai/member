@@ -539,5 +539,8 @@ if (require.main === module) {
 }
 
 module.exports = {
-  main
+  main,
+  buildConversationDimensionOverrides,
+  toCandidateMetricsFromQualitySummary,
+  resolveCandidateMetrics
 };
