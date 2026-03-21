@@ -946,6 +946,7 @@ test('phase719: source-aware live sequence keeps echo and rewrite transforms anc
     '違う、やさしくしたいんじゃなくて、事務的すぎない文面にしたい。'
   ];
   const replies = [];
+  const lineMessages = [];
   const sequenceUserId = 'U_PHASE719_SOURCE_ANCHORED';
 
   for (const [index, text] of inputs.entries()) {
@@ -964,6 +965,7 @@ test('phase719: source-aware live sequence keeps echo and rewrite transforms anc
 
     assert.equal(result.status, 200, `turn_${index + 1}`);
     assert.equal(turnReplies.length, 1, `turn_${index + 1}`);
+    lineMessages.push(turnReplies[0]);
     replies.push(String(turnReplies[0].text || ''));
   }
 
@@ -984,6 +986,9 @@ test('phase719: source-aware live sequence keeps echo and rewrite transforms anc
     assert.equal(reply.includes('いまの状況を整理します。'), false, `turn_${index + 1}_generic_reset`);
     assert.equal(reply.includes('いま一番困っている手続きを1つだけ教えてください'), false, `turn_${index + 1}_generic_followup`);
     assertNoInternalConciergeLabels(reply);
+  });
+  lineMessages.forEach((message, index) => {
+    assert.equal(Boolean(message && message.quickReply), false, `turn_${index + 1}_no_auto_quick_reply`);
   });
 });
 

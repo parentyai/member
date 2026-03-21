@@ -1323,6 +1323,10 @@ function resolveTranscriptSnapshotAssistantReplyText(params) {
 function buildSemanticQuickReplies(params) {
   const payload = params && typeof params === 'object' ? params : {};
   if (Array.isArray(payload.quickReplies)) return payload.quickReplies;
+  const conversationMode = normalizeReplyText(payload.conversationMode).toLowerCase();
+  if (payload.disableAutoQuickReplies === true || conversationMode === 'concierge') {
+    return [];
+  }
   const nextSteps = Array.isArray(payload.nextSteps) ? payload.nextSteps : [];
   const out = [];
   nextSteps.slice(0, 3).forEach((step) => {
@@ -1472,7 +1476,9 @@ function buildSemanticReplyEnvelope(params) {
   const quickReplies = buildSemanticQuickReplies({
     quickReplies: payload.quickReplies,
     nextSteps,
-    followupQuestion
+    followupQuestion,
+    conversationMode: payload.conversationMode,
+    disableAutoQuickReplies: payload.disableAutoQuickReplies === true
   });
   const citationSummary = resolveSemanticCitationSummary({
     readinessDecision: payload.readinessDecision,
