@@ -41,6 +41,11 @@ function normalizeStringList(value, limit) {
   return out;
 }
 
+function isEchoCandidateLine(value) {
+  const text = normalizeText(value);
+  return text.length >= 16;
+}
+
 function appendHintValue(target, value, limit) {
   const out = Array.isArray(target) ? target : [];
   const max = Number.isFinite(Number(limit)) ? Math.max(1, Math.floor(Number(limit))) : 8;
@@ -51,7 +56,7 @@ function appendHintValue(target, value, limit) {
   normalizeText(value)
     .split('\n')
     .map((line) => normalizeText(line))
-    .filter(Boolean)
+    .filter((line) => isEchoCandidateLine(line))
     .forEach((line) => {
       if (out.length >= max || out.includes(line)) return;
       out.push(line);
