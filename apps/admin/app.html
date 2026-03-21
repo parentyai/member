@@ -2544,105 +2544,8 @@
               </div>
             </div>
           </div>
-          <details id="city-pack-pane-details" class="decision-details section" data-workbench-zone="true" data-surface-tier="primary">
-            <summary data-dict-key="ui.label.decision.details">詳細</summary>
-            <div class="panel city-pack-manage-panel">
-              <div class="panel-title" data-dict-key="ui.label.cityPack.contentManager">City Pack作成・編集</div>
-              <div class="panel-body city-pack-manage-body">
-                <div id="city-pack-manage-summary" class="note" data-dict-key="ui.desc.cityPack.contentManager">都市を選択して既存City Packを読み込み、内容を編集できます。</div>
-                <div class="row">
-                  <label for="city-pack-manage-city" data-dict-key="ui.label.cityPack.contentManager.city">都市
-                    <select id="city-pack-manage-city" class="select-inline">
-                      <option value="">都市を選択</option>
-                    </select>
-                  </label>
-                  <button id="city-pack-manage-refresh" type="button" data-dict-key="ui.label.cityPack.contentManager.refresh">都市候補を更新</button>
-                  <span id="city-pack-manage-selected-id" class="note">cityPackId: -</span>
-                </div>
-                <div class="city-pack-manage-grid">
-                  <div class="city-pack-manage-list">
-                    <label for="city-pack-manage-pack-list" data-dict-key="ui.label.cityPack.contentManager.savedList">保存済みCity Pack</label>
-                    <select id="city-pack-manage-pack-list" size="8"></select>
-                    <div id="city-pack-manage-pack-meta" class="note">-</div>
-                  </div>
-                  <div class="city-pack-manage-editor">
-                    <div class="input-grid">
-                      <div class="row">
-                        <div class="flex-1">
-                          <label for="city-pack-manage-name" data-dict-key="ui.label.cityPack.contentManager.name">name</label>
-                          <input id="city-pack-manage-name" type="text" />
-                        </div>
-                        <div class="flex-1">
-                          <label for="city-pack-manage-region-key" data-dict-key="ui.label.cityPack.contentManager.regionKey">regionKey</label>
-                          <input id="city-pack-manage-region-key" type="text" placeholder="TX::austin" />
-                        </div>
-                        <div class="flex-1">
-                          <label for="city-pack-manage-pack-class" data-dict-key="ui.label.cityPack.contentManager.packClass">packClass</label>
-                          <select id="city-pack-manage-pack-class">
-                            <option value="regional">regional</option>
-                            <option value="nationwide">nationwide</option>
-                          </select>
-                        </div>
-                        <div class="flex-1">
-                          <label for="city-pack-manage-language" data-dict-key="ui.label.cityPack.contentManager.language">language</label>
-                          <input id="city-pack-manage-language" type="text" value="ja" />
-                        </div>
-                      </div>
-                      <div class="row">
-                        <div class="flex-1">
-                          <label for="city-pack-manage-valid-until" data-dict-key="ui.label.cityPack.contentManager.validUntil">validUntil</label>
-                          <input id="city-pack-manage-valid-until" type="date" />
-                        </div>
-                        <div class="flex-1">
-                          <label for="city-pack-manage-slot-schema-version" data-dict-key="ui.label.cityPack.contentManager.slotSchemaVersion">slotSchemaVersion</label>
-                          <input id="city-pack-manage-slot-schema-version" type="text" />
-                        </div>
-                      </div>
-                      <div class="row">
-                        <div class="flex-1">
-                          <label for="city-pack-manage-description" data-dict-key="ui.label.cityPack.contentManager.description">description</label>
-                          <textarea id="city-pack-manage-description" rows="3"></textarea>
-                        </div>
-                        <div class="flex-1">
-                          <label for="city-pack-manage-source-refs" data-dict-key="ui.label.cityPack.contentManager.sourceRefs">sourceRefs（改行 or カンマ）</label>
-                          <textarea id="city-pack-manage-source-refs" rows="3"></textarea>
-                        </div>
-                      </div>
-                      <div class="row">
-                        <div class="flex-1">
-                          <label for="city-pack-manage-metadata" data-dict-key="ui.label.cityPack.contentManager.metadata">metadata(JSON)</label>
-                          <textarea id="city-pack-manage-metadata" rows="4">{}</textarea>
-                        </div>
-                        <div class="flex-1">
-                          <label for="city-pack-manage-modules">modules（改行 or カンマ: schools/healthcare/driving/housing/utilities）</label>
-                          <textarea id="city-pack-manage-modules" rows="4"></textarea>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="table-scroll">
-                      <table class="table-compact city-pack-manage-slot-table">
-                        <thead>
-                          <tr>
-                            <th data-dict-key="ui.label.cityPack.contentManager.slot">slot</th>
-                            <th data-dict-key="ui.label.cityPack.contentManager.slotDescription">description</th>
-                            <th data-dict-key="ui.label.cityPack.contentManager.slotCta">ctaText</th>
-                            <th data-dict-key="ui.label.cityPack.contentManager.slotLink">linkRegistryId</th>
-                            <th data-dict-key="ui.label.cityPack.contentManager.slotSources">sourceRefs</th>
-                          </tr>
-                        </thead>
-                        <tbody id="city-pack-manage-slot-rows"></tbody>
-                      </table>
-                    </div>
-                    <div class="row row-top city-pack-manage-actions">
-                      <button id="city-pack-manage-create-manual" type="button" data-dict-key="ui.label.cityPack.contentManager.createManual">手動で新規</button>
-                      <button id="city-pack-manage-create-auto" type="button" data-dict-key="ui.label.cityPack.contentManager.createAuto">自動で新規</button>
-                      <button id="city-pack-manage-save" type="button" data-dict-key="ui.label.cityPack.contentManager.save">保存</button>
-                      <button id="city-pack-manage-retire" type="button" data-dict-key="ui.label.cityPack.contentManager.retire">削除（retire）</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div class="data-workspace-grid city-pack-workspace-grid" data-ui="city-pack-workspace-grid" data-surface-tier="primary">
+            <div class="data-workspace-main">
             <div class="panel unified-admin-panel city-pack-unified-panel" data-city-pack-workspace-surface="workbench">
               <div class="panel-title">City Pack一覧</div>
               <div class="panel-body">
@@ -2760,6 +2663,8 @@
                 </div>
               </div>
             </div>
+            </div>
+            <div class="data-workspace-rail">
             <div id="city-pack-v2-detail-panel" class="panel city-pack-v2-detail-panel city-pack-v2-only is-hidden-by-flag" data-city-pack-workspace-surface="detail" data-detail-rail="relation">
               <div class="panel-title">Selection Detail</div>
               <div class="panel-body city-pack-v2-detail-body">
@@ -2782,6 +2687,107 @@
                   <summary>RAW</summary>
                   <pre id="city-pack-v2-detail-json">-</pre>
                 </details>
+              </div>
+            </div>
+            </div>
+          </div>
+          <details id="city-pack-pane-details" class="decision-details section data-workspace-secondary" data-workbench-zone="true" data-workbench-collapsible="true" data-surface-tier="secondary">
+            <summary data-dict-key="ui.label.cityPack.secondaryWorkspace">編集と補助情報</summary>
+            <div class="panel city-pack-manage-panel">
+              <div class="panel-title" data-dict-key="ui.label.cityPack.contentManager">City Pack作成・編集</div>
+              <div class="panel-body city-pack-manage-body">
+                <div id="city-pack-manage-summary" class="note" data-dict-key="ui.desc.cityPack.contentManager">都市を選択して既存City Packを読み込み、内容を編集できます。</div>
+                <div class="row">
+                  <label for="city-pack-manage-city" data-dict-key="ui.label.cityPack.contentManager.city">都市
+                    <select id="city-pack-manage-city" class="select-inline">
+                      <option value="">都市を選択</option>
+                    </select>
+                  </label>
+                  <button id="city-pack-manage-refresh" type="button" data-dict-key="ui.label.cityPack.contentManager.refresh">都市候補を更新</button>
+                  <span id="city-pack-manage-selected-id" class="note">cityPackId: -</span>
+                </div>
+                <div class="city-pack-manage-grid">
+                  <div class="city-pack-manage-list">
+                    <label for="city-pack-manage-pack-list" data-dict-key="ui.label.cityPack.contentManager.savedList">保存済みCity Pack</label>
+                    <select id="city-pack-manage-pack-list" size="8"></select>
+                    <div id="city-pack-manage-pack-meta" class="note">-</div>
+                  </div>
+                  <div class="city-pack-manage-editor">
+                    <div class="input-grid">
+                      <div class="row">
+                        <div class="flex-1">
+                          <label for="city-pack-manage-name" data-dict-key="ui.label.cityPack.contentManager.name">name</label>
+                          <input id="city-pack-manage-name" type="text" />
+                        </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-region-key" data-dict-key="ui.label.cityPack.contentManager.regionKey">regionKey</label>
+                          <input id="city-pack-manage-region-key" type="text" placeholder="TX::austin" />
+                        </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-pack-class" data-dict-key="ui.label.cityPack.contentManager.packClass">packClass</label>
+                          <select id="city-pack-manage-pack-class">
+                            <option value="regional">regional</option>
+                            <option value="nationwide">nationwide</option>
+                          </select>
+                        </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-language" data-dict-key="ui.label.cityPack.contentManager.language">language</label>
+                          <input id="city-pack-manage-language" type="text" value="ja" />
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="flex-1">
+                          <label for="city-pack-manage-valid-until" data-dict-key="ui.label.cityPack.contentManager.validUntil">validUntil</label>
+                          <input id="city-pack-manage-valid-until" type="date" />
+                        </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-slot-schema-version" data-dict-key="ui.label.cityPack.contentManager.slotSchemaVersion">slotSchemaVersion</label>
+                          <input id="city-pack-manage-slot-schema-version" type="text" />
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="flex-1">
+                          <label for="city-pack-manage-description" data-dict-key="ui.label.cityPack.contentManager.description">description</label>
+                          <textarea id="city-pack-manage-description" rows="3"></textarea>
+                        </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-source-refs" data-dict-key="ui.label.cityPack.contentManager.sourceRefs">sourceRefs（改行 or カンマ）</label>
+                          <textarea id="city-pack-manage-source-refs" rows="3"></textarea>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="flex-1">
+                          <label for="city-pack-manage-metadata" data-dict-key="ui.label.cityPack.contentManager.metadata">metadata(JSON)</label>
+                          <textarea id="city-pack-manage-metadata" rows="4">{}</textarea>
+                        </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-modules">modules（改行 or カンマ: schools/healthcare/driving/housing/utilities）</label>
+                          <textarea id="city-pack-manage-modules" rows="4"></textarea>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="table-scroll">
+                      <table class="table-compact city-pack-manage-slot-table">
+                        <thead>
+                          <tr>
+                            <th data-dict-key="ui.label.cityPack.contentManager.slot">slot</th>
+                            <th data-dict-key="ui.label.cityPack.contentManager.slotDescription">description</th>
+                            <th data-dict-key="ui.label.cityPack.contentManager.slotCta">ctaText</th>
+                            <th data-dict-key="ui.label.cityPack.contentManager.slotLink">linkRegistryId</th>
+                            <th data-dict-key="ui.label.cityPack.contentManager.slotSources">sourceRefs</th>
+                          </tr>
+                        </thead>
+                        <tbody id="city-pack-manage-slot-rows"></tbody>
+                      </table>
+                    </div>
+                    <div class="row row-top city-pack-manage-actions">
+                      <button id="city-pack-manage-create-manual" type="button" data-dict-key="ui.label.cityPack.contentManager.createManual">手動で新規</button>
+                      <button id="city-pack-manage-create-auto" type="button" data-dict-key="ui.label.cityPack.contentManager.createAuto">自動で新規</button>
+                      <button id="city-pack-manage-save" type="button" data-dict-key="ui.label.cityPack.contentManager.save">保存</button>
+                      <button id="city-pack-manage-retire" type="button" data-dict-key="ui.label.cityPack.contentManager.retire">削除（retire）</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="pane-grid city-pack-legacy-block" data-city-pack-workspace-surface="detail">
@@ -3613,10 +3619,8 @@
               </div>
             </div>
           </div>
-          <details id="read-model-pane-details" class="decision-details section">
-            <summary data-dict-key="ui.label.decision.details">詳細</summary>
-            <div class="pane-grid">
-            <div class="pane-main">
+          <div class="data-workspace-grid read-model-workspace-grid" data-ui="read-model-workspace-grid" data-surface-tier="primary">
+            <div class="data-workspace-main pane-main">
               <div class="panel">
                 <div class="panel-title">ユーザー一覧</div>
                 <div class="panel-body">
@@ -3771,33 +3775,8 @@
                   </table>
                 </div>
               </div>
-              <div class="panel read-model-legacy">
-                <div class="panel-title" data-dict-key="ui.label.readModel.definition">この集計が示すもの</div>
-                <div class="panel-body">
-                  <div class="note" data-dict-key="ui.desc.readModel.definition">直近の通知一覧について、送信結果と反応率をまとめた集計です。</div>
-                </div>
-              </div>
-	              <details class="table-section section read-model-legacy" open>
-	                <summary data-dict-key="ui.label.readModel.table">通知集計（参照）</summary>
-	                <div class="table-scroll">
-	                  <table class="table-compact">
-	                    <thead>
-	                      <tr>
-	                        <th data-dict-key="ui.label.readModel.col.title" data-dict-tip="ui.help.readModel.title">タイトル</th>
-	                        <th data-dict-key="ui.label.readModel.col.scenario" data-dict-tip="ui.help.readModel.scenario">シナリオ</th>
-	                        <th data-dict-key="ui.label.readModel.col.step" data-dict-tip="ui.help.readModel.step">ステップ</th>
-	                        <th data-dict-key="ui.label.readModel.col.target" data-dict-tip="ui.help.readModel.target">対象数</th>
-	                        <th data-dict-key="ui.label.readModel.col.last" data-dict-tip="ui.help.readModel.last">最終結果</th>
-	                        <th data-dict-key="ui.label.readModel.col.ctr" data-dict-tip="ui.help.readModel.ctr">反応率</th>
-	                        <th data-dict-key="ui.label.readModel.col.health" data-dict-tip="ui.help.readModel.health">健康度</th>
-	                      </tr>
-	                    </thead>
-	                    <tbody id="read-model-rows"></tbody>
-	                  </table>
-	                </div>
-	              </details>
             </div>
-            <div class="pane-detail read-model-legacy">
+            <div class="data-workspace-rail pane-detail" data-detail-rail="detail">
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.readModel.summaryTip">先に見る3項目</div>
                 <div class="panel-body">
@@ -3832,6 +3811,35 @@
                 </div>
               </div>
             </div>
+          </div>
+          <details id="read-model-pane-details" class="decision-details section data-workspace-secondary" data-workbench-collapsible="true" data-surface-tier="secondary">
+            <summary data-dict-key="ui.label.readModel.secondaryWorkspace">補助集計と証跡</summary>
+            <div class="data-workspace-secondary-grid">
+              <div class="panel read-model-legacy">
+                <div class="panel-title" data-dict-key="ui.label.readModel.definition">この集計が示すもの</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.readModel.definition">直近の通知一覧について、送信結果と反応率をまとめた集計です。</div>
+                </div>
+              </div>
+		              <details class="table-section section read-model-legacy" open>
+		                <summary data-dict-key="ui.label.readModel.table">通知集計（参照）</summary>
+		                <div class="table-scroll">
+		                  <table class="table-compact">
+	                    <thead>
+	                      <tr>
+	                        <th data-dict-key="ui.label.readModel.col.title" data-dict-tip="ui.help.readModel.title">タイトル</th>
+	                        <th data-dict-key="ui.label.readModel.col.scenario" data-dict-tip="ui.help.readModel.scenario">シナリオ</th>
+	                        <th data-dict-key="ui.label.readModel.col.step" data-dict-tip="ui.help.readModel.step">ステップ</th>
+	                        <th data-dict-key="ui.label.readModel.col.target" data-dict-tip="ui.help.readModel.target">対象数</th>
+	                        <th data-dict-key="ui.label.readModel.col.last" data-dict-tip="ui.help.readModel.last">最終結果</th>
+	                        <th data-dict-key="ui.label.readModel.col.ctr" data-dict-tip="ui.help.readModel.ctr">反応率</th>
+	                        <th data-dict-key="ui.label.readModel.col.health" data-dict-tip="ui.help.readModel.health">健康度</th>
+	                      </tr>
+	                    </thead>
+	                    <tbody id="read-model-rows"></tbody>
+		                  </table>
+		                </div>
+		              </details>
             <aside class="pane-actions read-model-legacy">
               <div class="action-panel">
                 <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
@@ -3890,8 +3898,8 @@
               </div>
             </div>
           </div>
-          <details id="vendors-pane-details" class="decision-details section" data-workbench-zone="true" data-surface-tier="primary">
-            <summary data-dict-key="ui.label.decision.details">詳細</summary>
+          <div class="data-workspace-grid vendors-workspace-grid" data-ui="vendors-workspace-grid" data-surface-tier="primary">
+            <div class="data-workspace-main">
             <div class="panel unified-admin-panel vendors-unified-panel">
               <div class="panel-title">Vendor一覧</div>
               <div class="panel-body">
@@ -3962,14 +3970,20 @@
                     <tbody id="vendor-unified-rows"></tbody>
                   </table>
                 </div>
-                <div id="vendor-unified-relation-panel" class="panel section vendor-unified-relation-panel" data-ui="vendor-relation-view" data-detail-rail="relation">
-                  <div class="panel-title">Vendor関係ビュー</div>
-                  <div id="vendor-unified-relation-summary" class="note">Vendor行を選択すると、City Packとの関係を表示します。</div>
-                  <div id="vendor-unified-relation-links" class="city-pack-v2-relation-links"></div>
-                  <div id="vendor-unified-relation-actions" class="city-pack-v2-detail-actions"></div>
-                </div>
               </div>
             </div>
+            </div>
+            <div class="data-workspace-rail" data-detail-rail="relation">
+              <div id="vendor-unified-relation-panel" class="panel section vendor-unified-relation-panel" data-ui="vendor-relation-view" data-detail-rail="relation">
+                <div class="panel-title">Vendor関係ビュー</div>
+                <div id="vendor-unified-relation-summary" class="note">Vendor行を選択すると、City Packとの関係を表示します。</div>
+                <div id="vendor-unified-relation-links" class="city-pack-v2-relation-links"></div>
+                <div id="vendor-unified-relation-actions" class="city-pack-v2-detail-actions"></div>
+              </div>
+            </div>
+          </div>
+          <details id="vendors-pane-details" class="decision-details section data-workspace-secondary" data-workbench-zone="true" data-workbench-collapsible="true" data-surface-tier="secondary">
+            <summary data-dict-key="ui.label.vendors.secondaryWorkspace">補助比較と旧ビュー</summary>
             <div class="panel section">
               <div class="panel-title">Vendor Shadow Relevance (Current order vs Shadow score)</div>
               <div class="panel-body">
@@ -4016,7 +4030,7 @@
             </div>
             <div class="pane-grid vendors-legacy-block">
               <div class="pane-main">
-		                <details class="table-section section" open>
+			                <details class="table-section section" open>
 	                  <summary data-dict-key="ui.label.vendors.table">Vendor一覧</summary>
 	                  <div class="table-scroll">
 	                    <table class="table-compact">
