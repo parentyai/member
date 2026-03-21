@@ -259,6 +259,9 @@ function isRegionSpecificSourceReply(sourceReplyText) {
 
 function buildMessageTemplateFromSource(sourceReplyText, domainIntent) {
   const sourceLine = extractFirstSourceLine(sourceReplyText);
+  if (/優先順位の固定と期限の見える化/.test(sourceLine)) {
+    return '今は優先順位と期限を先に整理すると、進めやすそうだよ';
+  }
   if (/事前予約が必要かどうか/.test(sourceLine)) {
     return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります';
   }
@@ -289,11 +292,25 @@ function buildMessageTemplateFromSource(sourceReplyText, domainIntent) {
   if (/制度・期限・必要書類・費用/.test(sourceLine)) {
     return '制度や期限が変わりうる部分は、公式窓口で確認してみます';
   }
-  return '今進める順番を整理したいので、最初に何を優先すべきか教えてもらえると助かります';
+  if (sourceLine) {
+    return sourceLine
+      .replace(/^もしよければ、?/u, '')
+      .replace(/^よければ、?/u, '')
+      .replace(/教えてもらえると助かります。?$/u, '確認してみます')
+      .replace(/教えていただけると助かります。?$/u, '確認してみます')
+      .replace(/一緒に整理していきましょう。?$/u, '整理してみます')
+      .replace(/決めましょう。?$/u, '決めてみます')
+      .replace(/進めましょう。?$/u, '進めてみます')
+      .replace(/してください。?$/u, 'してみます');
+  }
+  return '今は優先する1件を先に決めると、進めやすそうです';
 }
 
 function buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent) {
   const sourceLine = extractFirstSourceLine(sourceReplyText);
+  if (/優先順位の固定と期限の見える化/.test(sourceLine)) {
+    return '今は優先順位と期限を先に整理すると、進めやすそうです';
+  }
   if (/事前予約が必要かどうか/.test(sourceLine)) {
     return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります';
   }
@@ -309,17 +326,34 @@ function buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent) {
   if (/制度や期限|公式情報/.test(normalizeText(sourceReplyText))) {
     return '制度や期限が変わりそうな話なら、まず公式情報を見ておくと安心かもしれません';
   }
+  if (/その続きなら、?今日はその1件の期限を書き込むところまで進めれば十分です/.test(sourceLine)) {
+    return 'もしよければ、今日はその1件の期限を書き込むところまでで十分かもしれません';
+  }
   if (/今日は/.test(sourceLine)) {
     return '今日はひとまず、最優先の1件の期限だけ確認してみる形でもよさそうです';
   }
   if (/住まい|学校|SSN|銀行/.test(sourceLine)) {
     return softenLine(sourceLine);
   }
+  if (sourceLine) {
+    return ensureSentence(
+      sourceLine
+        .replace(/だよ[。！？!?]*$/u, 'です')
+        .replace(/だね[。！？!?]*$/u, 'ですね')
+        .replace(/しましょう[。！？!?]*$/u, 'してみてもよさそうです')
+    );
+  }
   return 'もしよければ、まずは優先するものを1つだけ決める形で進めると無理が少なそうです';
 }
 
 function buildConversationalRewriteFromSource(sourceReplyText) {
   const sourceLine = extractFirstSourceLine(sourceReplyText);
+  if (/優先順位の固定と期限の見える化/.test(sourceLine)) {
+    return [
+      '今は、優先順位と期限を先に整理するところからで大丈夫です',
+      'そこが見えるだけでも、かなり進めやすくなります'
+    ];
+  }
   if (isRegionSpecificSourceReply(sourceReplyText)) {
     return [
       '地域で差が出る話は、まず窓口と必要書類、受付期限だけ見れば大丈夫です',
@@ -338,10 +372,25 @@ function buildConversationalRewriteFromSource(sourceReplyText) {
       'そこが決まれば、次に見ることを一緒に整理できます'
     ];
   }
+  if (/その続きなら、?今日はその1件の期限を書き込むところまで進めれば十分です/.test(sourceLine)) {
+    return [
+      '今日は、その1件の期限を書き込むところまでで十分だと思います',
+      'そこで止めても、次に再開しやすい形はちゃんと残ります'
+    ];
+  }
   if (/今日は/.test(sourceLine)) {
     return [
       '今日は、最優先の1件だけ見れば十分だと思います',
       '残りは今週に回す前提で大丈夫です'
+    ];
+  }
+  if (sourceLine) {
+    return [
+      sourceLine
+        .replace(/だよ[。！？!?]*$/u, 'です')
+        .replace(/だね[。！？!?]*$/u, 'ですね')
+        .replace(/[。！？!?]+$/u, ''),
+      'この言い方なら、少しやわらかく伝えやすいです'
     ];
   }
   return [
@@ -352,6 +401,9 @@ function buildConversationalRewriteFromSource(sourceReplyText) {
 
 function buildLessBureaucraticRewriteFromSource(sourceReplyText, domainIntent) {
   const sourceLine = extractFirstSourceLine(sourceReplyText);
+  if (/優先順位の固定と期限の見える化/.test(sourceLine)) {
+    return '今は優先順位と期限を先に整理するところから始めると、進めやすいと思います';
+  }
   if (/事前予約が必要かどうか/.test(sourceLine)) {
     return 'よければ、事前予約が必要かどうかだけ教えていただけると助かります';
   }
@@ -367,8 +419,19 @@ function buildLessBureaucraticRewriteFromSource(sourceReplyText, domainIntent) {
   if (/制度・期限・必要書類・費用/.test(sourceLine)) {
     return '制度や期限が変わりそうなところだけ、先に公式情報で見ておけると安心です';
   }
+  if (/その続きなら、?今日はその1件の期限を書き込むところまで進めれば十分です/.test(sourceLine)) {
+    return 'よければ、今日はその1件の期限を書き込むところまでで十分だと思います';
+  }
   if (/住まい|学校|SSN|銀行/.test(sourceLine) || domainIntent !== 'general') {
     return `よければ、${buildMessageTemplateFromSource(sourceReplyText, domainIntent).replace(/[。！？!?]+$/g, '')}。`;
+  }
+  if (sourceLine) {
+    return ensureSentence(
+      sourceLine
+        .replace(/だよ[。！？!?]*$/u, 'です')
+        .replace(/だね[。！？!?]*$/u, 'ですね')
+        .replace(/教えてもらえると助かります[。！？!?]*$/u, '確認してみます')
+    );
   }
   return 'よければ、まずは優先するものを1つだけ決めて、順番を一緒に整理していきましょう';
 }
@@ -522,8 +585,14 @@ function buildContractReply(params) {
     } else if (outputForm === 'softer' || /(事務的すぎない|事務的じゃない)/i.test(messageText)) {
       lines.push(buildLessBureaucraticRewriteFromSource(sourceReplyText, domainIntent));
     } else {
-      lines.push('疲れている前提なら、今日は1件だけ決めて期限だけ確認すれば十分です');
-      lines.push('残りは今週に回す前提で、いまは最優先の1件だけ進めましょう');
+      if (/(疲れて|かなり疲れ).*(言い換える|言い方|どう言い換える)/i.test(messageText)
+        && /今日はその1件の期限を書き込むところまで/.test(sourceReplyText)) {
+        lines.push('疲れている前提なら、今日はその1件の期限を書き込むところまでで十分です');
+        lines.push('残りは今週に回す前提で、そこで止めて大丈夫です');
+      } else {
+        lines.push('疲れている前提なら、今日は1件だけ決めて期限だけ確認すれば十分です');
+        lines.push('残りは今週に回す前提で、いまは最優先の1件だけ進めましょう');
+      }
     }
   } else if (requestShape === 'criteria') {
     if (/(地域によって違う|地域差がある|何を確認すべきかだけ)/i.test(messageText)) {
@@ -1108,6 +1177,10 @@ function generatePaidDomainConciergeReply(params) {
 module.exports = {
   generatePaidDomainConciergeReply,
   FORBIDDEN_REPLY_PATTERN,
+  buildMessageTemplateFromSource,
+  buildNonDogmaticRewriteFromSource,
+  buildConversationalRewriteFromSource,
+  buildLessBureaucraticRewriteFromSource,
   buildEchoContinuationFromSource,
   buildDeepenReplyFromSource
 };

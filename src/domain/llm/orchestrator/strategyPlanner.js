@@ -75,13 +75,15 @@ function buildStrategyPlan(params) {
   const directAnswerHint = hasFollowupIntent || payload.contextResume === true || payload.lowInformationMessage === true || followupCarryFromHistory;
   const recoverySignal = payload.recoverySignal === true;
   const requestShape = normalizeText(payload.requestShape || (payload.requestContract && payload.requestContract.requestShape) || '').toLowerCase() || 'answer';
+  const depthIntent = normalizeText(payload.depthIntent || (payload.requestContract && payload.requestContract.depthIntent) || '').toLowerCase() || 'answer';
   const outputForm = normalizeText(payload.outputForm || (payload.requestContract && payload.requestContract.outputForm) || '').toLowerCase() || 'default';
   const answerability = normalizeText(payload.answerability || (payload.requestContract && payload.requestContract.answerability) || '').toLowerCase() || 'answer_now';
-  const requestShapeDirectAnswer = ['compare', 'correction', 'rewrite', 'summarize', 'message_template', 'criteria', 'followup_continue'].includes(requestShape);
+  const requestShapeDirectAnswer = depthIntent === 'deepen'
+    || ['compare', 'correction', 'rewrite', 'summarize', 'message_template', 'criteria', 'followup_continue'].includes(requestShape);
   const clarifyCandidateAllowed = (
     answerability === 'needs_clarify'
     || answerability === 'high_risk_clarify'
-  ) && !['rewrite', 'message_template', 'compare', 'correction'].includes(requestShape);
+  ) && depthIntent !== 'deepen' && !['rewrite', 'message_template', 'compare', 'correction'].includes(requestShape);
   const intentReason = payload.intentDecision && typeof payload.intentDecision === 'object'
     ? normalizeText(payload.intentDecision.reason).toLowerCase()
     : '';
@@ -174,6 +176,7 @@ function buildStrategyPlan(params) {
 
   if (requestShapeDirectAnswer) {
     const prefersContinuation = requestShape === 'followup_continue'
+      || depthIntent === 'deepen'
       || payload.priorContextUsed === true
       || payload.echoOfPriorAssistant === true;
     const candidateSet = prefersContinuation ? directAnswerCandidateSet : domainAnswerCandidateSet;

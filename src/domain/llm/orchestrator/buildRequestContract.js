@@ -139,11 +139,21 @@ function referencesPriorAssistantText(messageText, options) {
   return false;
 }
 
+function isStandaloneTemplatePrompt(messageText) {
+  const text = normalizeText(messageText);
+  if (!text) return false;
+  return /(予約が必要かどうか).*(失礼なく|短文)|失礼なく聞く短文|短文を1つ作って/i.test(text);
+}
+
+function isDeepenCue(messageText) {
+  return /(どうやって|具体的には|何を見ればいい|どう進める|どこを見ればいい|何を見ればよい|何を確認すればいい)/i.test(normalizeText(messageText));
+}
+
 function detectRequestShape(messageText, options) {
   const payload = options && typeof options === 'object' ? options : {};
   const text = normalizeText(messageText);
   if (!text) return 'answer';
-  if (/(相手に送る文面だけ|文面だけ|返信文だけ|家族に送れる|一文にして|短文を1つ作って|短文だけ|文章だけ|文面を作って)/i.test(text)) {
+  if (/(相手に送る文面だけ|文面だけ|返信文だけ|家族に送れる|家族に送る用|一文にして|短文を1つ作って|短文だけ|文章だけ|文面を作って)/i.test(text)) {
     return 'message_template';
   }
   if (/(言い換える|言い方に直して|断定しすぎない|断定せずに|人に話す感じ|2文にして|二文にして|事務的すぎない|やさしく|やわらかく|少し硬い)/i.test(text)) {
@@ -155,7 +165,7 @@ function detectRequestShape(messageText, options) {
   if (/(無料プラン.*有料プラン|有料プラン.*無料プラン|どっち|どちら|比較|違い|理由つき|理由付き)/i.test(text)) {
     return 'compare';
   }
-  if (/(判断基準だけ|何を確認すべきかだけ|確認すべき場面|基準だけ|criteria)/i.test(text)) {
+  if (/(判断基準だけ|何を確認すべきかだけ|確認する項目名だけ|項目名だけ並べて|確認すべき場面|基準だけ|criteria)/i.test(text)) {
     return 'criteria';
   }
   if (/(今日・今週・今月|今日.*今週.*今月|今週.*今月|1行にして|一行にして|3つだけ|三つだけ|2つだけ|二つだけ|2点|二点|短く並べて|要点だけ|短くして|不安が強い.*(1つだけ|一つだけ|絞って))/i.test(text)) {
@@ -257,8 +267,11 @@ function shouldUseLatestAssistantSource(requestShape, options) {
   if (requestShape === 'correction' || requestShape === 'followup_continue') return true;
   if (requestShape === 'summarize') return true;
   if (requestShape === 'rewrite' || requestShape === 'message_template') {
-    return referencesPriorAssistantText(payload.messageText, payload);
+    if (referencesPriorAssistantText(payload.messageText, payload)) return true;
+    if (requestShape === 'message_template' && isStandaloneTemplatePrompt(payload.messageText)) return false;
+    return payload.currentTurnHasExplicitDomain !== true;
   }
+  if (isDeepenCue(payload.messageText)) return true;
   return false;
 }
 
@@ -280,9 +293,7 @@ function detectDepthIntent(messageText, options) {
   if (requestShape === 'compare') return 'compare';
   if (requestShape === 'criteria') return 'criteria';
   if (requestShape === 'correction') return 'correction';
-  if (
-    /(どうやって|具体的には|何を見ればいい|どう進める|どこを見ればいい|何を見ればよい|何を確認すればいい)/i.test(text)
-  ) {
+  if (isDeepenCue(text)) {
     return payload.sourceReplyText ? 'deepen' : 'followup_continue';
   }
   if (requestShape === 'followup_continue') return 'followup_continue';
@@ -337,7 +348,9 @@ function buildRequestContract(params) {
     messageText,
     contextResumeCue: payload.contextResumeCue === true,
     recoverySignal: payload.recoverySignal === true,
-    echoOfPriorAssistant
+    echoOfPriorAssistant,
+    currentTurnHasExplicitDomain,
+    outputForm
   });
   const depthIntent = detectDepthIntent(messageText, {
     requestShape,

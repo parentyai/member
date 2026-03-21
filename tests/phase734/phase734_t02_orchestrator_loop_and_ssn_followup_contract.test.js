@@ -476,3 +476,42 @@ test('phase734: deepen and message-only transforms stay source-aware without gen
   assert.equal(/[?？]$/.test(messageOnly.replyText), false);
   assert.equal(String(messageOnly.replyText).split('\n').filter(Boolean).length, 1);
 });
+
+test('phase734: source-aware transforms keep priority and deadline facts instead of generic ask-back', () => {
+  const familyLine = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: '家族に送る用に、一文だけで要点をまとめて。',
+    requestContract: {
+      requestShape: 'message_template',
+      depthIntent: 'transform',
+      outputForm: 'one_line',
+      primaryDomainIntent: 'general',
+      sourceReplyText: '足りていないのは、優先順位の固定と期限の見える化です。\nこの2つが決まると、進め方がかなり安定します。'
+    }
+  });
+  assert.match(familyLine.replyText, /優先順位|期限/);
+  assert.equal(familyLine.replyText.includes('教えてもらえると助かります'), false);
+
+  const deepen = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: 'どうやって？',
+    requestContract: {
+      requestShape: 'answer',
+      depthIntent: 'deepen',
+      transformSource: 'prior_assistant',
+      outputForm: 'default',
+      primaryDomainIntent: 'general',
+      sourceReplyText: 'まずは、いちばん気になっている手続きを1つに絞るところからで大丈夫です。\nそこが決まれば、次に見ることを一緒に整理できます。',
+      detailObligations: ['preserve_source_facts', 'expand_source_facts']
+    }
+  });
+  assert.match(deepen.replyText, /具体的には|確認する順番/);
+  assert.equal(deepen.replyText.includes('いま一番困っている手続きを1つだけ教えてください'), false);
+
+  const citySchool = generatePaidDomainConciergeReply({
+    domainIntent: 'school',
+    messageText: 'ニューヨークで学校手続き'
+  });
+  assert.match(citySchool.replyText, /学校|学区|対象校/);
+  assert.equal(citySchool.replyText.includes('住むエリアと学区の関係'), false);
+});
