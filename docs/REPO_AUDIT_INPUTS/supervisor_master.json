@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-21T15:36:54-04:00",
-  "gitCommit": "558852b55f7be9394b662a874ec13cc1ee88823a",
-  "branch": "codex/admin-ui-v2-pr6-llm-visual",
-  "sourceDigest": "288b453db55a742ed90cce25b93e1b73ea63849fac99ea54a36299e6cd62d994",
+  "generatedAt": "2026-03-21T16:20:37-04:00",
+  "gitCommit": "e31b6ae7a90c719ed5e72994acce0aa2cb7185f7",
+  "branch": "codex/admin-ui-v2-pr7-launch-fix",
+  "sourceDigest": "439b3a52693329346e46a50df5f13117f49e4ac67f26472e3bd97a0cf7183ae4",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
