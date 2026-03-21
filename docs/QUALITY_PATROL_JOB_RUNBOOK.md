@@ -24,6 +24,7 @@
 - PR-10 remains CLI first, and PR-11 adds an hourly GitHub Actions caller that reuses the same CLI/read-side foundations.
 - default mode is read-only.
 - default audience is `operator`.
+- default `traceLimit` follows `limit` up to 200 so the standard patrol window does not create artificial trace-hydration backlog.
 - jobs reuse the existing read-side foundations:
   - review units
   - evaluator
@@ -91,6 +92,7 @@ Output path is controlled by `--output`. If omitted, the job writes to `/tmp`.
   - the workflow keeps `GOOGLE_APPLICATION_CREDENTIALS` on the OIDC/WIF credential file and preloads a `NODE_OPTIONS=--require=...` bridge that teaches Firebase Admin to exchange `external_account` tokens through `google-auth-library`
   - if this bridge step fails, treat it as a CI auth/materialization fault before inspecting patrol logic
 - automation stays read-only apart from replay writes that already travel through the normal webhook -> action-log -> snapshot path.
+- review-unit extraction treats FAQ logs as trace-supplemental evidence only, so unrelated latest FAQ rows are not mixed into the default patrol backlog window.
 
 ## Canonical audit read paths
 - for cycle pass/fail confirmation, read `/tmp/quality_patrol_cycle_verify.json` first:
@@ -105,6 +107,7 @@ Output path is controlled by `--output`. If omitted, the job writes to `/tmp`.
   - `backlogSeparation.historicalDebt.status` => historical backlog truth
   - `backlogSeparation.backlogSeparationGate.decision` / `prDStatus` => final separated gate for audits
   - `decayAwareOpsGate.decision` / `historicalBacklogStatus` / `overallReadinessStatus` / `prDStatus` => supporting operator explanation for why the gate resolved that way
+- when transcript/join debt is cleared but only observation-only blocker residue remains, expect `backlogSeparationGate.decision=OBSERVATION_CONTINUE` rather than `NO_GO`.
 - do not require top-level `currentRuntimeHealth.status`, `historicalBacklogStatus`, or `overallReadinessStatus` in cycle artifacts.
   - if they are absent, that is not a contract break.
   - read the nested `backlogSeparation.*` and `decayAwareOpsGate.*` paths above instead.

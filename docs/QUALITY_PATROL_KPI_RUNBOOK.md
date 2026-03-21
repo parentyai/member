@@ -81,6 +81,7 @@
   - recent healthy + full unhealthy => `historical_backlog_dominant`
   - recent unhealthy => `current_runtime_or_current_join_problem`
   - recent healthy + full improving => `observation_continue_backlog_decay`
+  - recent healthy + transcript/join debt cleared but observation-only blocker residue remains => `observation_continue_backlog_decay`
   - recent healthy + full healthy => `readiness_candidate`
 - decay-aware ops gate maps those statuses into operator actions:
   - `current_runtime_or_current_join_problem` => `NO_GO`, repair current runtime or current join path first

@@ -126,6 +126,46 @@ test('phase856: current runtime unhealthy keeps runtime priority over debt state
   assert.equal(result.backlogSeparationGate.prDReasonCode, 'current_runtime_not_healthy');
 });
 
+test('phase856: observation-only blocker residue resolves observation continue instead of no-go', () => {
+  const result = buildSeparation({
+    recentWindow: buildWindow({
+      blockerCount: 2,
+      blockerCodes: ['missing_user_message', 'transcript_not_reviewable']
+    }),
+    fullWindow: buildWindow({
+      observedCount: 97,
+      written: 97,
+      reviewUnitCount: 100,
+      blockerCount: 5,
+      blockerCodes: [
+        'insufficient_knowledge_signals',
+        'missing_assistant_reply',
+        'missing_faq_evidence',
+        'missing_user_message',
+        'transcript_not_reviewable'
+      ]
+    }),
+    previousFullWindow: buildWindow({
+      sourceWindow: {
+        fromAt: '2026-03-14T11:00:00.000Z',
+        toAt: '2026-03-15T12:00:00.000Z'
+      },
+      observedCount: 1,
+      written: 1,
+      reviewUnitCount: 1,
+      blockerCount: 0,
+      blockerCodes: []
+    })
+  });
+
+  assert.equal(result.currentRuntime.status, 'healthy');
+  assert.equal(result.historicalDebt.status, 'decaying');
+  assert.equal(result.historicalDebt.debtCounts.blocker_count, 3);
+  assert.equal(result.backlogSeparationGate.decision, 'OBSERVATION_CONTINUE');
+  assert.equal(result.backlogSeparationGate.reasonCode, 'observation_continue_backlog_decay');
+  assert.equal(result.backlogSeparationGate.prDStatus, 'deferred');
+});
+
 test('phase856: sparse previous full window does not incorrectly resolve go', () => {
   const result = buildSeparation({
     fullWindow: buildWindow({

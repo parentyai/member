@@ -10,6 +10,8 @@
 - domain builder: `src/domain/qualityPatrol/transcript/buildConversationReviewUnits.js`
 - review units normalize masked transcript fields, telemetry signals, slice classification, and observation blockers.
 - review unit anchors are created from `conversation_review_snapshots` or `llm_action_logs`; `faq_answer_logs` are supplemental evidence only.
+- extractor backfills missing snapshot rows per selected trace so duplicate snapshot writes do not crowd later traces out of the default patrol window.
+- extractor hydrates `faq_answer_logs` from trace-joined evidence for the selected anchors, so unrelated latest FAQ rows do not inflate current patrol debt.
 - extractor surfaces add-only join diagnostics: `faqOnlyRowsSkipped`, `traceHydrationLimitedCount`, `reviewUnitAnchorKindCounts`.
 - PR-3 evaluator reads review units via `src/usecases/qualityPatrol/evaluateConversationReviewUnits.js` and does not persist a second transcript artifact.
 
@@ -26,6 +28,7 @@
 ## Observation blockers
 - extractor does not fail the whole batch when evidence is missing.
 - `missing_trace_evidence` is reserved for real source/join absence; trace fetch limits are surfaced via join diagnostics instead of inflating blockers.
+- default patrol callers now let `traceLimit` follow `limit` up to 200, which prevents the default read-only window from manufacturing trace-hydration debt when the window itself fits inside the fetch budget.
 - blocker codes:
   - `missing_user_message`
   - `missing_assistant_reply`

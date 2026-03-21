@@ -1,6 +1,14 @@
 'use strict';
 
+const { EVALUATOR_BLOCKER_CATALOG } = require('./constants');
+const { BLOCKER_CATALOG } = require('./transcript/constants');
+
 const RECENT_WINDOW_REVIEW_UNIT_COUNT = 5;
+const OBSERVATION_ONLY_BLOCKER_CODES = new Set(
+  Object.keys(BLOCKER_CATALOG)
+    .filter((code) => code !== 'missing_trace_evidence' && code !== 'missing_action_log_evidence')
+    .concat(Object.keys(EVALUATOR_BLOCKER_CATALOG))
+);
 
 function toIso(value) {
   if (!value) return null;
@@ -37,6 +45,11 @@ function emptyWindow(sourceWindow) {
 function uniqueStrings(values) {
   return Array.from(new Set((Array.isArray(values) ? values : []).filter(Boolean)))
     .sort((left, right) => left.localeCompare(right, 'ja'));
+}
+
+function hasOnlyObservationOnlyBlockers(snapshot) {
+  const blockerCodes = uniqueStrings(snapshot && snapshot.blockerCodes);
+  return blockerCodes.length > 0 && blockerCodes.every((code) => OBSERVATION_ONLY_BLOCKER_CODES.has(code));
 }
 
 function extractWindowTimes(reviewUnits) {
@@ -213,13 +226,15 @@ function resolveRecentWindowStatus(snapshot) {
 function resolveHistoricalBacklogStatus(fullWindow, recentWindow, deltaFromPreviousFullWindow) {
   const recentStatus = resolveRecentWindowStatus(recentWindow);
   const full = fullWindow && typeof fullWindow === 'object' ? fullWindow : emptyWindow();
-  const hasHistoricalDebt = full.skipped_unreviewable_transcript > 0
+  const hasTranscriptOrJoinDebt = full.skipped_unreviewable_transcript > 0
     || full.assistant_reply_missing > 0
     || full.faqOnlyRowsSkipped > 0
-    || full.traceHydrationLimitedCount > 0
-    || full.blockerCount > 0;
+    || full.traceHydrationLimitedCount > 0;
+  const hasAnyBlockers = Number(full.blockerCount || 0) > 0 || uniqueStrings(full.blockerCodes).length > 0;
+  const hasHistoricalDebt = hasTranscriptOrJoinDebt || hasAnyBlockers;
   if (!hasHistoricalDebt) return 'cleared';
   if (recentStatus !== 'healthy') return 'current_runtime_overlap';
+  if (!hasTranscriptOrJoinDebt && hasOnlyObservationOnlyBlockers(full)) return 'decaying';
   if (deltaFromPreviousFullWindow && deltaFromPreviousFullWindow.status === 'improving') return 'decaying';
   return 'stagnating';
 }
