@@ -617,6 +617,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 8. `npm run llm:quality:must-pass`
 9. `npm run llm:quality:release-policy`（all slices pass を既定で必須）
 10. `npm run llm:quality:release-policy:strict`（strict runtime signals + soft floor 0.80 + compat governance + `nogo_gate_mandatory` を必須化）
+    - runtime summary に `qualityFramework` と `conversationQuality` がある場合、release policy も strict gate と同じ runtime-summary-enriched candidate scorecard を優先し、soft floor は max-merge 後の dimension で判定する
 11. `npm run llm:quality:report`（`tmp/llm_usage_summary.json` がある場合。`tmp/llm_quality_failure_register.json` と `tmp/llm_quality_counterexample_queue.json` を同時生成）
     - failure register は signal別 materiality filter を適用（例: `defaultCasualRate > 0.02`, `retrieveNeededRate > 0.25`, `legacyTemplateHitRate > 0.005`）
     - `conversationQuality` 欠損シグナルは failure に含めず `signal_coverage.missingSignals` で運用監視する

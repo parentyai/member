@@ -181,3 +181,58 @@ test('phase756: strict release policy enforces compat governance threshold', () 
   assert.equal(result.compatGovernance.compatShareWindow, 0.21);
   assert.equal(result.failures.includes('compat_share_window_exceeded'), true);
 });
+
+test('phase756: strict release policy uses runtime-summary-enriched candidate before soft-floor evaluation', () => {
+  const baseline = runNode([
+    'tools/llm_quality/compute_scorecard.js',
+    '--input', 'tools/llm_quality/fixtures/baseline_metrics.v1.json',
+    '--output', 'tmp/phase756_baseline_scorecard_soft_floor_uplift.json'
+  ]);
+  assert.equal(baseline.status, 0, baseline.stderr || baseline.stdout);
+
+  const candidate = runNode([
+    'tools/llm_quality/compute_scorecard.js',
+    '--input', 'tools/llm_quality/fixtures/candidate_metrics.v1.json',
+    '--output', 'tmp/phase756_candidate_scorecard_soft_floor_uplift.json'
+  ]);
+  assert.equal(candidate.status, 0, candidate.stderr || candidate.stdout);
+
+  const mustPass = runNode([
+    'tools/llm_quality/run_must_pass_fixtures.js',
+    '--baseline', 'tools/llm_quality/fixtures/baseline_metrics.v1.json',
+    '--candidate', 'tools/llm_quality/fixtures/candidate_metrics.v1.json',
+    '--output', 'tmp/phase756_must_pass_soft_floor_uplift.json'
+  ]);
+  assert.equal(mustPass.status, 0, mustPass.stderr || mustPass.stdout);
+
+  const summarySeed = JSON.parse(fs.readFileSync(path.join(ROOT, 'benchmarks/frozen/v1/runtime_summary_snapshot.v1.json'), 'utf8'));
+  summarySeed.runtimeSummarySource = 'seeded_from_frozen_runtime_snapshot';
+  fs.writeFileSync(
+    path.join(ROOT, 'tmp', 'phase756_summary_soft_floor_uplift.json'),
+    `${JSON.stringify(summarySeed, null, 2)}\n`
+  );
+
+  const strict = runNode([
+    'tools/llm_quality/enforce_release_policy.js',
+    '--baseline', 'tmp/phase756_baseline_scorecard_soft_floor_uplift.json',
+    '--candidate', 'tmp/phase756_candidate_scorecard_soft_floor_uplift.json',
+    '--mustPass', 'tmp/phase756_must_pass_soft_floor_uplift.json',
+    '--summary', 'tmp/phase756_summary_soft_floor_uplift.json',
+    '--requireAllSlicesPass', 'true',
+    '--requireStrictRuntimeSignals', 'true',
+    '--requireCompatGovernance', 'true',
+    '--requireSoftFloor', 'true',
+    '--requireNoGoGateMandatory', 'true',
+    '--output', 'tmp/phase756_release_policy_soft_floor_uplift.json'
+  ]);
+  assert.equal(strict.status, 0, strict.stderr || strict.stdout);
+
+  const result = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'tmp', 'phase756_release_policy_soft_floor_uplift.json'), 'utf8')
+  );
+  assert.equal(result.ok, true);
+  assert.equal(result.candidateSourceType, 'runtime_summary');
+  assert.equal(result.failures.some((item) => String(item).startsWith('soft_floor_unmet:')), false);
+  assert.equal(result.softFloorChecks.some((row) => row.key === 'procedural_utility' && row.pass === true), true);
+  assert.equal(result.softFloorChecks.some((row) => row.key === 'latency_surface_efficiency' && row.pass === true), true);
+});
