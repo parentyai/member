@@ -836,3 +836,132 @@ test('phase719: region already-set command does not hijack natural language prom
     assert.equal(String(replies[index] || '').includes('・'), false, `turn_${index + 1}_one_line_no_bullet`);
   });
 });
+
+test('phase719: live transcript regression sequence keeps reverse correction, message-only rewrite, and soft followups on-topic', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    useActionLogHistory: true,
+    regionResponse: { status: 'already_set', regionKey: 'wa::seattle' }
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const inputs = [
+    '住まい探しと学校手続きが同時に不安。先に何を見るべきか順番だけ教えて。',
+    'それは違う。学校じゃなくて住まい優先で考え直して。',
+    '今度は逆で、住まいより学校優先で考え直して。',
+    'SSNと銀行口座、先にどっちを進めるべきか理由つきで短く教えて。',
+    'さっきの説明を、家族に送れる一文にして。',
+    '今の返答の中で、今日やることだけ1行にして。',
+    'それも違う。今ほしいのは説明じゃなくて、相手に送る文面だけ。',
+    '予約が必要かどうかを、失礼なく聞く短文を1つ作って。',
+    '今の文面を、断定しすぎない言い方に直して。',
+    '公式情報を確認すべき場面かどうか、判断基準だけ教えて。',
+    '地域によって違うなら、何を確認すべきかだけ教えて。',
+    '今の返し、少し硬い。人に話す感じで2文にして。',
+    '違う、やさしくしたいんじゃなくて、事務的すぎない文面にしたい。',
+    'ここまでを踏まえて、次の一手だけをやわらかく提案して。'
+  ];
+  const replies = [];
+  const sequenceUserId = 'U_PHASE719_LIVE_REGRESSION';
+
+  for (const [index, text] of inputs.entries()) {
+    const body = createWebhookBody(text, sequenceUserId);
+    const turnReplies = [];
+    const result = await loaded.handleLineWebhook({
+      body,
+      signature: signBody(body),
+      requestId: `phase719_live_regression_${index + 1}`,
+      logger: () => {},
+      allowWelcome: false,
+      replyFn: async (_replyToken, message) => {
+        turnReplies.push(message);
+      }
+    });
+
+    assert.equal(result.status, 200, `turn_${index + 1}`);
+    assert.equal(turnReplies.length, 1, `turn_${index + 1}`);
+    replies.push(String(turnReplies[0].text || ''));
+  }
+
+  assert.match(replies[2], /学校優先|学区|対象校/);
+  assert.equal(replies[2].includes('住まい探しですね'), false);
+  assert.equal(String(replies[6] || '').split('\n').length, 1);
+  assert.equal(replies[6].includes('まずはSSN手続き'), false);
+  assert.match(replies[7], /事前予約が必要かどうか/);
+  assert.equal(String(replies[8] || '').split('\n').length, 1);
+  assert.equal(replies[8].includes('まずはSSN手続き'), false);
+  assert.match(replies[8], /(もし|差し支えなければ|助かります|無理が少なそう)/);
+  assert.match(replies[10], /対象地域|窓口|必要書類|受付期限/);
+  assert.equal(replies[10].includes('地域は既に登録済みです'), false);
+  assert.equal(String(replies[11] || '').split('\n').length, 2);
+  assert.equal(replies[11].includes('SSN'), false);
+  assert.equal(String(replies[12] || '').split('\n').length, 1);
+  assert.equal(replies[12].includes('まずはSSN手続き'), false);
+  assert.match(replies[13], /よさそう|無理が少ない/);
+
+  replies.forEach((reply, index) => {
+    assert.equal(reply.includes('いまの状況を整理します。'), false, `turn_${index + 1}_generic_reset`);
+    assert.equal(reply.includes('いま一番困っている手続きを1つだけ教えてください'), false, `turn_${index + 1}_generic_followup`);
+    assertNoInternalConciergeLabels(reply);
+  });
+});
+
+test('phase719: echoed prior assistant line inherits matched prior domain instead of stale unrelated domain', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    useActionLogHistory: true,
+    regionResponse: { status: 'already_set', regionKey: 'wa::seattle' }
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const sequenceUserId = 'U_PHASE719_ECHO_MATCH';
+  const inputs = [
+    'SSNと銀行口座、先にどっちを進めるべきか理由つきで短く教えて。',
+    '公式情報を確認すべき場面かどうか、判断基準だけ教えて。',
+    '特に申請可否や法的条件に触れるときは、案内より先に公式窓口で最終確認してください。'
+  ];
+  const replies = [];
+
+  for (const [index, text] of inputs.entries()) {
+    const body = createWebhookBody(text, sequenceUserId);
+    const turnReplies = [];
+    const result = await loaded.handleLineWebhook({
+      body,
+      signature: signBody(body),
+      requestId: `phase719_echo_match_${index + 1}`,
+      logger: () => {},
+      allowWelcome: false,
+      replyFn: async (_replyToken, message) => {
+        turnReplies.push(message);
+      }
+    });
+
+    assert.equal(result.status, 200, `turn_${index + 1}`);
+    assert.equal(turnReplies.length, 1, `turn_${index + 1}`);
+    replies.push(String(turnReplies[0].text || ''));
+  }
+
+  assert.match(replies[1], /制度・期限・必要書類・費用/);
+  assert.equal(replies[2].includes('SSN'), false);
+  assert.equal(replies[2].includes('在留ステータス'), false);
+  assert.equal(replies[2].includes('まずはSSN手続き'), false);
+  assert.equal(replies[2].includes('いまの状況を整理します。'), false);
+});
