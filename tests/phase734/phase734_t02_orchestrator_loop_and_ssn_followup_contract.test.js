@@ -438,3 +438,41 @@ test('phase734: utility transformation and correction presets stay concise and t
   assert.notEqual(messageOnly.replyText, softerTone.replyText);
   assert.notEqual(hedgedRewrite.replyText, nonDogmaticNext.replyText);
 });
+
+test('phase734: deepen and message-only transforms stay source-aware without generic reset', () => {
+  const deepen = generatePaidDomainConciergeReply({
+    domainIntent: 'school',
+    messageText: 'どうやって？',
+    requestContract: {
+      primaryDomainIntent: 'school',
+      requestShape: 'followup_continue',
+      depthIntent: 'deepen',
+      transformSource: 'prior_assistant',
+      outputForm: 'two_sentences',
+      sourceReplyText: 'その続きなら、まず対象地域の公式窓口ページで必要書類と受付期限だけ確認すると進めやすいです。',
+      detailObligations: ['preserve_source_facts', 'expand_source_facts']
+    }
+  });
+  assert.match(deepen.replyText, /必要書類/);
+  assert.match(deepen.replyText, /受付期限/);
+  assert.equal(deepen.replyText.includes('優先するものを1つだけ決める'), false);
+  assert.equal((deepen.replyText.match(/[。！？]/g) || []).length >= 2, true);
+
+  const messageOnly = generatePaidDomainConciergeReply({
+    domainIntent: 'housing',
+    messageText: '説明はいらないので、相手に送る文面だけ作って。',
+    requestContract: {
+      primaryDomainIntent: 'housing',
+      requestShape: 'message_template',
+      depthIntent: 'transform',
+      transformSource: 'prior_assistant',
+      outputForm: 'message_only',
+      sourceReplyText: '住まい優先で進めたいので、まずは希望エリアと入居時期を整理してみます。',
+      detailObligations: ['message_only', 'preserve_source_facts']
+    }
+  });
+  assert.match(messageOnly.replyText, /住まい優先/);
+  assert.match(messageOnly.replyText, /希望エリア/);
+  assert.equal(/[?？]$/.test(messageOnly.replyText), false);
+  assert.equal(String(messageOnly.replyText).split('\n').filter(Boolean).length, 1);
+});

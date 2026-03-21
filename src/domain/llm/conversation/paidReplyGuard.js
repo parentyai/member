@@ -63,6 +63,20 @@ function ensureSentence(line) {
   return `${normalized}。`;
 }
 
+function isQuestionLikeLine(line) {
+  const normalized = sanitizeLine(line);
+  if (!normalized) return false;
+  if (/[?？]$/.test(normalized)) return true;
+  return /(教えてください|教えてもらえますか|教えてもらえますでしょうか|決めましょうか|分かりますか|できますか|でしょうか|ますか|ませんか|ですか|いただけますか)/.test(normalized);
+}
+
+function looksLikeStatusLine(line) {
+  const normalized = sanitizeLine(line);
+  if (!normalized) return false;
+  return /^(了解です|承知しました|わかりました|分かりました|大丈夫です|ありがとうございます|ありがとう|そうですね|そうですか|状況を整理しながら進めます|整理しながら進めます)/.test(normalized)
+    || /ながら進めます/.test(normalized);
+}
+
 function toConciseActionLine(action) {
   const normalized = sanitizeLine(action);
   if (!normalized) return '';
@@ -72,13 +86,14 @@ function toConciseActionLine(action) {
 
 function looksLikeActionLine(line) {
   if (!line) return false;
+  if (isQuestionLikeLine(line) || looksLikeStatusLine(line)) return false;
   if (/^[\-・*\d０-９0-9.\)\(]/.test(line)) return true;
   return /(確認|整理|決める|準備|申請|提出|連絡|予約|確定|進める|絞る)/.test(line);
 }
 
 function pickSituationLine(lines, fallback) {
   const list = Array.isArray(lines) ? lines : [];
-  const picked = list.find((line) => line && !looksLikeActionLine(line) && !/[?？]$/.test(line));
+  const picked = list.find((line) => line && !looksLikeActionLine(line) && !isQuestionLikeLine(line));
   return picked || sanitizeLine(fallback) || DEFAULT_SITUATION_LINE;
 }
 
@@ -93,17 +108,28 @@ function pickPitfallLine(lines, fallback) {
 
 function pickQuestionLine(lines, fallback) {
   const list = Array.isArray(lines) ? lines : [];
-  const question = list.find((line) => /[?？]$/.test(line) || /ですか[?？]?$/.test(line));
+  const question = list.find((line) => isQuestionLikeLine(line));
   const normalized = sanitizeLine(question || fallback);
   if (!normalized) return null;
-  if (/[?？]$/.test(normalized)) return normalized;
+  if (isQuestionLikeLine(normalized)) return normalized;
   return `${normalized}。`;
+}
+
+function isRepeatedQuestionLine(line, hints) {
+  const normalized = sanitizeLine(line);
+  const rows = Array.isArray(hints) ? hints : [];
+  if (!normalized || !rows.length) return false;
+  return rows.some((item) => {
+    const hint = sanitizeLine(item);
+    if (!hint) return false;
+    return hint === normalized;
+  });
 }
 
 function extractActionLines(lines, fallbackActions, maxActions) {
   const sourceLines = Array.isArray(lines) ? lines : [];
   const parsed = sourceLines
-    .filter((line) => looksLikeActionLine(line) && !PITFALL_PATTERN.test(line) && !/[?？]$/.test(line))
+    .filter((line) => looksLikeActionLine(line) && !PITFALL_PATTERN.test(line) && !isQuestionLikeLine(line))
     .map((line) => stripActionPrefix(line));
   return dedupeLines(parsed.concat(Array.isArray(fallbackActions) ? fallbackActions : []), maxActions);
 }
@@ -128,6 +154,8 @@ function sanitizePaidMainReply(text, options) {
   const raw = normalizeText(text);
   const parsedLines = parseReplyLines(raw);
   const conciseMode = payload.conciseMode === true;
+  const recentAssistantCommitments = dedupeLines(payload.recentAssistantCommitments, 8);
+  const repetitionPrevented = payload.repetitionPrevented === true;
   const requestContract = payload.requestContract && typeof payload.requestContract === 'object'
     ? payload.requestContract
     : {};
@@ -185,6 +213,9 @@ function sanitizePaidMainReply(text, options) {
   let followupQuestion = payload.disableFollowup === true
     ? null
     : pickQuestionLine(parsedLines, payload.followupQuestion);
+  if (repetitionPrevented && isRepeatedQuestionLine(followupQuestion, recentAssistantCommitments)) {
+    followupQuestion = null;
+  }
 
   if (!followupQuestion && nextActions.length === 0) {
     followupQuestion = sanitizeLine(payload.defaultQuestion || DEFAULT_QUESTION_LINE);

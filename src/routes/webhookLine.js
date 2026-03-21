@@ -2729,10 +2729,22 @@ async function appendLlmActionLogBestEffort(data) {
       verificationOutcome: typeof payload.verificationOutcome === 'string' ? payload.verificationOutcome : null,
       contradictionFlags: Array.isArray(payload.contradictionFlags) ? payload.contradictionFlags : [],
       requestShape: typeof payload.requestShape === 'string' ? payload.requestShape : null,
+      depthIntent: typeof payload.depthIntent === 'string' ? payload.depthIntent : null,
+      transformSource: typeof payload.transformSource === 'string' ? payload.transformSource : null,
       outputForm: typeof payload.outputForm === 'string' ? payload.outputForm : null,
+      knowledgeScope: typeof payload.knowledgeScope === 'string' ? payload.knowledgeScope : null,
+      locationHintKind: typeof payload.locationHintKind === 'string' ? payload.locationHintKind : null,
+      locationHintCityKey: typeof payload.locationHintCityKey === 'string' ? payload.locationHintCityKey : null,
+      locationHintState: typeof payload.locationHintState === 'string' ? payload.locationHintState : null,
+      locationHintRegionKey: typeof payload.locationHintRegionKey === 'string' ? payload.locationHintRegionKey : null,
       detailObligations: Array.isArray(payload.detailObligations) ? payload.detailObligations : [],
       answerability: typeof payload.answerability === 'string' ? payload.answerability : null,
       echoOfPriorAssistant: typeof payload.echoOfPriorAssistant === 'boolean' ? payload.echoOfPriorAssistant : null,
+      requestedCityKey: typeof payload.requestedCityKey === 'string' ? payload.requestedCityKey : null,
+      matchedCityKey: typeof payload.matchedCityKey === 'string' ? payload.matchedCityKey : null,
+      citySpecificitySatisfied: typeof payload.citySpecificitySatisfied === 'boolean' ? payload.citySpecificitySatisfied : null,
+      citySpecificityReason: typeof payload.citySpecificityReason === 'string' ? payload.citySpecificityReason : null,
+      scopeDisclosureRequired: typeof payload.scopeDisclosureRequired === 'boolean' ? payload.scopeDisclosureRequired : null,
       violationCodes: Array.isArray(payload.violationCodes) ? payload.violationCodes : [],
       candidateCount: Number.isFinite(Number(payload.candidateCount)) ? Number(payload.candidateCount) : 0,
       humanReviewLabel: typeof payload.humanReviewLabel === 'string' ? payload.humanReviewLabel : null,
@@ -2885,14 +2897,35 @@ async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
         requestShape: normalizeReplyText(right.requestShape)
           || normalizeReplyText(left.requestShape)
           || null,
+        depthIntent: normalizeReplyText(right.depthIntent)
+          || normalizeReplyText(left.depthIntent)
+          || null,
+        transformSource: normalizeReplyText(right.transformSource)
+          || normalizeReplyText(left.transformSource)
+          || null,
         outputForm: normalizeReplyText(right.outputForm)
           || normalizeReplyText(left.outputForm)
+          || null,
+        knowledgeScope: normalizeReplyText(right.knowledgeScope)
+          || normalizeReplyText(left.knowledgeScope)
           || null,
         detailObligations: (
           Array.isArray(right.detailObligations) && right.detailObligations.length > 0
             ? right.detailObligations
             : (Array.isArray(left.detailObligations) ? left.detailObligations : [])
-        )
+        ),
+        locationHintKind: normalizeReplyText(right.locationHintKind)
+          || normalizeReplyText(left.locationHintKind)
+          || null,
+        locationHintCityKey: normalizeReplyText(right.locationHintCityKey)
+          || normalizeReplyText(left.locationHintCityKey)
+          || null,
+        locationHintState: normalizeReplyText(right.locationHintState)
+          || normalizeReplyText(left.locationHintState)
+          || null,
+        locationHintRegionKey: normalizeReplyText(right.locationHintRegionKey)
+          || normalizeReplyText(left.locationHintRegionKey)
+          || null
       });
     };
     const pushRow = (row) => {
@@ -3238,12 +3271,24 @@ async function tryHandlePaidOrchestratorV2(params) {
     verificationOutcome: orchestrated.telemetry ? orchestrated.telemetry.verificationOutcome : null,
     contradictionFlags: orchestrated.telemetry ? orchestrated.telemetry.contradictionFlags : [],
     requestShape: orchestrated.telemetry ? orchestrated.telemetry.requestShape : null,
+    depthIntent: orchestrated.telemetry ? orchestrated.telemetry.depthIntent : null,
+    transformSource: orchestrated.telemetry ? orchestrated.telemetry.transformSource : null,
     outputForm: orchestrated.telemetry ? orchestrated.telemetry.outputForm : null,
+    knowledgeScope: orchestrated.telemetry ? orchestrated.telemetry.knowledgeScope : null,
+    locationHintKind: orchestrated.telemetry ? orchestrated.telemetry.locationHintKind : null,
+    locationHintCityKey: orchestrated.telemetry ? orchestrated.telemetry.locationHintCityKey : null,
+    locationHintState: orchestrated.telemetry ? orchestrated.telemetry.locationHintState : null,
+    locationHintRegionKey: orchestrated.telemetry ? orchestrated.telemetry.locationHintRegionKey : null,
     detailObligations: orchestrated.telemetry ? orchestrated.telemetry.detailObligations : [],
     answerability: orchestrated.telemetry ? orchestrated.telemetry.answerability : null,
     echoOfPriorAssistant: orchestrated.telemetry
       ? (typeof orchestrated.telemetry.echoOfPriorAssistant === 'boolean' ? orchestrated.telemetry.echoOfPriorAssistant : null)
       : null,
+    requestedCityKey: orchestrated.telemetry ? orchestrated.telemetry.requestedCityKey : null,
+    matchedCityKey: orchestrated.telemetry ? orchestrated.telemetry.matchedCityKey : null,
+    citySpecificitySatisfied: orchestrated.telemetry ? orchestrated.telemetry.citySpecificitySatisfied === true : null,
+    citySpecificityReason: orchestrated.telemetry ? orchestrated.telemetry.citySpecificityReason : null,
+    scopeDisclosureRequired: orchestrated.telemetry ? orchestrated.telemetry.scopeDisclosureRequired === true : null,
     violationCodes: orchestrated.telemetry ? orchestrated.telemetry.violationCodes : [],
     candidateCount: orchestrated.telemetry ? orchestrated.telemetry.candidateCount : 0,
     sourceAuthorityScore: orchestrated.telemetry ? orchestrated.telemetry.sourceAuthorityScore : null,

@@ -259,6 +259,8 @@ function buildConversationPacket(params) {
     lowInformationMessage,
     contextResumeCue,
     recoverySignal,
+    intentReason: intentDecision.reason,
+    intentMode: intentDecision.mode,
     highRiskIntent: detectedConversationIntent === 'ssn' || detectedConversationIntent === 'banking'
   });
   const sourceDomainIntent = normalizeText(preliminaryRequestContract.sourceDomainIntent).toLowerCase();
@@ -304,6 +306,8 @@ function buildConversationPacket(params) {
     lowInformationMessage,
     contextResumeCue,
     recoverySignal,
+    intentReason: intentDecision.reason,
+    intentMode: intentDecision.mode,
     highRiskIntent: (
       preliminaryRequestContract.primaryDomainIntent === 'ssn'
       || preliminaryRequestContract.primaryDomainIntent === 'banking'
@@ -328,8 +332,12 @@ function buildConversationPacket(params) {
   const followupIntentReason = followupIntentDecision && typeof followupIntentDecision.reason === 'string'
     ? followupIntentDecision.reason
     : 'none';
+  const suppressGenericKickoffFollowupIntent = followupIntentReason === 'general_next_step_keyword'
+    && normalizedConversationIntent === 'general'
+    && contextResume !== true
+    && requestContract.requestShape === 'answer';
   const recoveryFollowupIntent = recoverySignal ? resolveRecoveryFollowupIntent(messageText) : null;
-  const followupIntent = detectedFollowupIntent
+  const followupIntent = (suppressGenericKickoffFollowupIntent ? null : detectedFollowupIntent)
     || recoveryFollowupIntent
     || normalizeText(requestContract.sourceFollowupIntent).toLowerCase()
     || ((contextResume && normalizedConversationIntent !== 'general') ? 'next_step' : null);
@@ -390,7 +398,13 @@ function buildConversationPacket(params) {
     followupResolvedFromHistory,
     recoveryFollowupIntent,
     requestShape: requestContract.requestShape,
+    depthIntent: requestContract.depthIntent || 'answer',
+    transformSource: requestContract.transformSource || 'none',
     outputForm: requestContract.outputForm,
+    knowledgeScope: requestContract.knowledgeScope || 'general',
+    locationHint: requestContract.locationHint && typeof requestContract.locationHint === 'object'
+      ? Object.assign({}, requestContract.locationHint)
+      : { kind: 'none', matchedText: null, regionKey: null, state: null, city: null, cityKey: null, source: 'none' },
     detailObligations: requestContract.detailObligations,
     answerability: requestContract.answerability,
     echoOfPriorAssistant: requestContract.echoOfPriorAssistant === true,

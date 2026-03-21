@@ -1,6 +1,7 @@
 'use strict';
 
 const { detectConversationIntentHits, DOMAIN_INTENTS } = require('../router/normalizeConversationIntent');
+const { extractLocationHintFromText } = require('../../regionNormalization');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -117,9 +118,25 @@ function detectOutputForm(messageText) {
   if (/(相手に送る文面だけ|文面だけ|返信文だけ|送る文面|メッセージだけ)/i.test(text)) return 'message_only';
   if (/(失礼なく|丁寧に|やわらかい敬語|失礼のない)/i.test(text)) return 'polite_template';
   if (/(断定しすぎない|断定せずに|言い切らない|やわらかく提案)/i.test(text)) return 'non_dogmatic';
+  if (/(判断基準だけ|確認する項目名だけ|何を確認すべきかだけ|項目名だけ並べて)/i.test(text)) return 'criteria_only';
   if (/(1行にして|一行にして|1行だけ|一行だけ|一文にして|一文だけ)/i.test(text)) return 'one_line';
   if (/(2文にして|二文にして|2文だけ|二文だけ)/i.test(text)) return 'two_sentences';
+  if (/(事務的すぎない|事務的じゃない|少し硬い|人に話す感じ|やさしくしたい)/i.test(text)) return 'softer';
   return 'default';
+}
+
+function referencesPriorAssistantText(messageText, options) {
+  const payload = options && typeof options === 'object' ? options : {};
+  const text = normalizeText(messageText);
+  if (!text) return false;
+  if (payload.matchedPriorReply === true || payload.echoOfPriorAssistant === true) return true;
+  if (/(さっきの説明|今の返答|今の説明|今の文面|今の返し|ここまでの会話|ここまでを踏まえて)/i.test(text)) {
+    return true;
+  }
+  if (/(それなら|それで|じゃあ|前提だと|どう言い換える|違う、|それは違う|それも違う)/i.test(text)) {
+    return payload.contextResumeCue === true || payload.recoverySignal === true;
+  }
+  return false;
 }
 
 function detectRequestShape(messageText, options) {
@@ -151,8 +168,7 @@ function detectRequestShape(messageText, options) {
     return 'high_risk_clarify';
   }
   if (
-    payload.contextResumeCue === true
-    || /(それなら|それで|じゃあ|さっきの説明|ここまでを踏まえて|前提だと|それなら最初の|今の返答|今の説明)/i.test(text)
+    /(それなら|それで|じゃあ|さっきの説明|ここまでを踏まえて|前提だと|それなら最初の|今の返答|今の説明|今の文面|今の返し|この2つが決まると|これが決まると|その3点だけ見れば|制度名が分かるなら)/i.test(text)
   ) {
     return 'followup_continue';
   }
@@ -176,6 +192,8 @@ function detectDetailObligations(messageText, options) {
   if (payload.outputForm === 'message_only') obligations.push('message_only');
   if (payload.outputForm === 'polite_template') obligations.push('polite_template');
   if (payload.outputForm === 'non_dogmatic') obligations.push('non_dogmatic');
+  if (payload.outputForm === 'softer') obligations.push('softer');
+  if (payload.outputForm === 'criteria_only') obligations.push('criteria_only');
   if (payload.outputForm === 'one_line') obligations.push('one_line_only');
   if (payload.outputForm === 'two_sentences') obligations.push('two_sentences_only');
   if (payload.requestShape === 'message_template' || payload.requestShape === 'rewrite' || payload.requestShape === 'summarize') {
@@ -190,6 +208,9 @@ function detectAnswerability(messageText, options) {
   const text = normalizeText(messageText);
   const requestShape = payload.requestShape || 'answer';
   if (requestShape === 'high_risk_clarify') return 'high_risk_clarify';
+  if (payload.depthIntent === 'deepen') {
+    return payload.sourceReplyText ? 'answer_now' : 'needs_clarify';
+  }
   if (['rewrite', 'summarize', 'message_template', 'compare', 'criteria', 'correction'].includes(requestShape)) {
     return 'answer_now';
   }
@@ -230,22 +251,79 @@ function resolveMatchedPriorReply(messageText, recentReplyRows) {
   return best ? best.row : null;
 }
 
-function resolveSourceReplyText(requestShape, matchedPriorReply, latestAssistantReplyText) {
+function shouldUseLatestAssistantSource(requestShape, options) {
+  const payload = options && typeof options === 'object' ? options : {};
+  if (payload.matchedPriorReply === true || payload.echoOfPriorAssistant === true) return true;
+  if (requestShape === 'correction' || requestShape === 'followup_continue') return true;
+  if (requestShape === 'summarize') return true;
+  if (requestShape === 'rewrite' || requestShape === 'message_template') {
+    return referencesPriorAssistantText(payload.messageText, payload);
+  }
+  return false;
+}
+
+function resolveSourceReplyText(requestShape, matchedPriorReply, latestAssistantReplyText, options) {
   if (matchedPriorReply && matchedPriorReply.replyText) return matchedPriorReply.replyText;
-  if (['rewrite', 'message_template', 'summarize', 'followup_continue', 'correction'].includes(requestShape)) {
+  if (shouldUseLatestAssistantSource(requestShape, Object.assign({}, options, {
+    matchedPriorReply: Boolean(matchedPriorReply)
+  }))) {
     return normalizeText(latestAssistantReplyText);
   }
   return '';
 }
 
+function detectDepthIntent(messageText, options) {
+  const payload = options && typeof options === 'object' ? options : {};
+  const text = normalizeText(messageText);
+  const requestShape = normalizeText(payload.requestShape).toLowerCase() || 'answer';
+  if (requestShape === 'rewrite' || requestShape === 'message_template') return 'transform';
+  if (requestShape === 'compare') return 'compare';
+  if (requestShape === 'criteria') return 'criteria';
+  if (requestShape === 'correction') return 'correction';
+  if (
+    /(どうやって|具体的には|何を見ればいい|どう進める|どこを見ればいい|何を見ればよい|何を確認すればいい)/i.test(text)
+  ) {
+    return payload.sourceReplyText ? 'deepen' : 'followup_continue';
+  }
+  if (requestShape === 'followup_continue') return 'followup_continue';
+  return 'answer';
+}
+
+function resolveTransformSource(depthIntent, sourceReplyText) {
+  if (depthIntent === 'transform' || depthIntent === 'deepen') {
+    return sourceReplyText ? 'prior_assistant' : 'none';
+  }
+  return 'none';
+}
+
+function detectKnowledgeScope(messageText, options) {
+  const payload = options && typeof options === 'object' ? options : {};
+  const requestShape = normalizeText(payload.requestShape).toLowerCase() || 'answer';
+  const locationHint = payload.locationHint && typeof payload.locationHint === 'object' ? payload.locationHint : {};
+  if (locationHint.cityKey) return 'city';
+  if (requestShape === 'criteria' && payload.highRiskIntent === true) return 'exact_procedure';
+  if (normalizeText(messageText)) return 'general';
+  return 'none';
+}
+
 function buildRequestContract(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const messageText = normalizeText(payload.messageText);
+  const locationHint = extractLocationHintFromText(messageText);
   const explicitDomainSignals = detectExplicitDomainSignals(messageText);
   const fallbackDomain = normalizeText(payload.fallbackDomain).toLowerCase();
   const recentResponseHints = Array.isArray(payload.recentResponseHints) ? payload.recentResponseHints : [];
-  const matchedPriorReply = resolveMatchedPriorReply(messageText, payload.recentReplyRows);
-  const echoOfPriorAssistant = Boolean(matchedPriorReply) || detectEchoOfPriorAssistant(messageText, recentResponseHints);
+  const intentReason = normalizeText(payload.intentReason).toLowerCase();
+  const intentMode = normalizeText(payload.intentMode).toLowerCase();
+  const greetingOrSmalltalkTurn = intentMode === 'greeting'
+    || intentReason === 'greeting_detected'
+    || intentReason === 'smalltalk_detected';
+  const matchedPriorReply = greetingOrSmalltalkTurn
+    ? null
+    : resolveMatchedPriorReply(messageText, payload.recentReplyRows);
+  const echoOfPriorAssistant = greetingOrSmalltalkTurn
+    ? false
+    : (Boolean(matchedPriorReply) || detectEchoOfPriorAssistant(messageText, recentResponseHints));
   const currentTurnHasExplicitDomain = explicitDomainSignals.length > 0;
   const outputForm = detectOutputForm(messageText);
   const highRiskIntent = payload.highRiskIntent === true;
@@ -255,7 +333,22 @@ function buildRequestContract(params) {
     echoOfPriorAssistant,
     highRiskIntent
   });
-  const sourceReplyText = resolveSourceReplyText(requestShape, matchedPriorReply, payload.latestAssistantReplyText);
+  const sourceReplyText = resolveSourceReplyText(requestShape, matchedPriorReply, payload.latestAssistantReplyText, {
+    messageText,
+    contextResumeCue: payload.contextResumeCue === true,
+    recoverySignal: payload.recoverySignal === true,
+    echoOfPriorAssistant
+  });
+  const depthIntent = detectDepthIntent(messageText, {
+    requestShape,
+    sourceReplyText
+  });
+  const transformSource = resolveTransformSource(depthIntent, sourceReplyText);
+  const knowledgeScope = detectKnowledgeScope(messageText, {
+    requestShape,
+    locationHint,
+    highRiskIntent
+  });
   const sourceReplySignals = detectExplicitDomainSignals(sourceReplyText);
   const sourceDomainIntent = normalizeText(
     (matchedPriorReply && matchedPriorReply.domainIntent) || payload.latestAssistantDomainIntent
@@ -273,7 +366,9 @@ function buildRequestContract(params) {
   const primaryFromCorrection = requestShape === 'correction'
     ? resolveCorrectionPreferredDomain(messageText, explicitDomainSignals)
     : null;
-  const preserveSourceDomain = ['rewrite', 'message_template', 'correction', 'followup_continue'].includes(requestShape);
+  const preserveSourceDomain = requestShape === 'correction'
+    || requestShape === 'followup_continue'
+    || transformSource === 'prior_assistant';
   const utilityGeneralOverride = explicitDomainSignals.length === 0
     && (requestShape === 'criteria' || requestShape === 'summarize');
   const primaryDomainIntent = primaryFromCorrection
@@ -298,8 +393,13 @@ function buildRequestContract(params) {
     recoverySignal: payload.recoverySignal === true,
     echoOfPriorAssistant
   });
+  if (transformSource === 'prior_assistant') detailObligations.push('preserve_source_facts');
+  if (depthIntent === 'deepen') detailObligations.push('expand_source_facts');
+  const normalizedDetailObligations = uniqueList(detailObligations, 12);
   const answerability = detectAnswerability(messageText, {
     requestShape,
+    depthIntent,
+    sourceReplyText,
     lowInformationMessage: payload.lowInformationMessage === true,
     currentTurnHasExplicitDomain,
     contextResumeCue: payload.contextResumeCue === true,
@@ -310,8 +410,12 @@ function buildRequestContract(params) {
     primaryDomainIntent,
     domainSignals,
     requestShape,
+    depthIntent,
+    transformSource,
     outputForm,
-    detailObligations,
+    knowledgeScope,
+    locationHint,
+    detailObligations: normalizedDetailObligations,
     answerability,
     echoOfPriorAssistant,
     currentTurnHasExplicitDomain,

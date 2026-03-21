@@ -79,6 +79,48 @@ function hasQualityFramework(payload) {
   );
 }
 
+const STRICT_RUNTIME_REQUIRED_CONVERSATION_QUALITY_KEYS = Object.freeze([
+  'legacyTemplateHitRate',
+  'defaultCasualRate',
+  'followupQuestionIncludedRate',
+  'conciseModeAppliedRate',
+  'retrieveNeededRate',
+  'avgActionCount',
+  'directAnswerAppliedRate',
+  'avgRepeatRiskScore',
+  'formatComplianceRate',
+  'detailCarryRate',
+  'correctionRecoveryRate',
+  'mixedDomainRetentionRate',
+  'citySpecificityResolvedRate',
+  'cityOverclaimRate',
+  'transformSourceCarryRate',
+  'depthResetRate',
+  'followupOveraskRate',
+  'internalLabelLeakRate',
+  'parrotEchoRate',
+  'commandBoundaryCollisionRate',
+  'domainIntentConciergeRate',
+  'officialOnlySatisfiedRate',
+  'followupResolutionRate',
+  'contextualResumeHandledRate',
+  'avgUnsupportedClaimCount'
+]);
+
+function missingStrictRuntimeKeys(payload) {
+  const conversationQuality = payload
+    && payload.summary
+    && typeof payload.summary === 'object'
+    && payload.summary.conversationQuality
+    && typeof payload.summary.conversationQuality === 'object'
+    ? payload.summary.conversationQuality
+    : {};
+  return STRICT_RUNTIME_REQUIRED_CONVERSATION_QUALITY_KEYS.filter((key) => {
+    const value = conversationQuality[key];
+    return typeof value !== 'number' || Number.isNaN(value);
+  });
+}
+
 function main(argv) {
   const args = parseArgs(argv);
   const outPath = args.output
@@ -106,7 +148,9 @@ function main(argv) {
         const ageMinutes = preparedAtMs > 0 ? ((now - preparedAtMs) / 60000) : Number.POSITIVE_INFINITY;
         const stale = ageMinutes > maxAgeMinutes;
         const fixtureSeededSource = isFixtureSeededSource(existingSource);
-        if (!refreshRequested && !stale && !(strictRuntime && fixtureSeededSource)) {
+        const strictMissingKeys = strictRuntime ? missingStrictRuntimeKeys(existing) : [];
+        const strictCoverageInvalid = strictRuntime && strictMissingKeys.length > 0;
+        if (!refreshRequested && !stale && !(strictRuntime && fixtureSeededSource) && !strictCoverageInvalid) {
           mode = 'existing_runtime_summary_kept';
           const result = {
             ok: true,
@@ -121,7 +165,9 @@ function main(argv) {
           return 0;
         }
         reseedRequired = true;
-        if (strictRuntime && fixtureSeededSource) {
+        if (strictCoverageInvalid) {
+          mode = 'existing_missing_strict_runtime_signals_reseeded';
+        } else if (strictRuntime && fixtureSeededSource) {
           mode = 'existing_fixture_seed_disallowed_in_strict';
         } else {
           mode = refreshRequested ? 'forced_refresh_from_seed' : 'existing_stale_reseeded';

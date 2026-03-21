@@ -246,6 +246,36 @@ function buildIssueCandidates(reviewUnit, signalResults, combinedBlockers) {
     }));
   }
 
+  if (hasViolationCode(telemetry, 'transform_source_drop')) {
+    issues.push(createIssueCandidate('transform_source_drop', {
+      slice,
+      status: SIGNAL_STATUS.FAIL,
+      confidence: 0.91,
+      reasons: ['source-aware transform dropped facts from the prior assistant answer'],
+      supportingSignalCodes: issueSignalCodes(continuity, proceduralUtility)
+    }));
+  }
+
+  if (hasViolationCode(telemetry, 'deepen_reset')) {
+    issues.push(createIssueCandidate('deepen_reset', {
+      slice,
+      status: SIGNAL_STATUS.FAIL,
+      confidence: 0.9,
+      reasons: ['deepen request reset into a shallow or generic response instead of expanding the prior answer'],
+      supportingSignalCodes: issueSignalCodes(continuity, fallbackRepetition, proceduralUtility)
+    }));
+  }
+
+  if (hasViolationCode(telemetry, 'message_only_violated')) {
+    issues.push(createIssueCandidate('message_only_violated', {
+      slice,
+      status: SIGNAL_STATUS.FAIL,
+      confidence: 0.92,
+      reasons: ['message-only request drifted back into dialogue or extra coaching'],
+      supportingSignalCodes: issueSignalCodes(proceduralUtility, continuity)
+    }));
+  }
+
   if (hasViolationCode(telemetry, 'correction_ignored')) {
     issues.push(createIssueCandidate('correction_ignored', {
       slice,
@@ -263,6 +293,16 @@ function buildIssueCandidates(reviewUnit, signalResults, combinedBlockers) {
       confidence: 0.9,
       reasons: ['mixed-domain request dropped one of the required domains in the final answer'],
       supportingSignalCodes: issueSignalCodes(continuity, specificity, proceduralUtility)
+    }));
+  }
+
+  if (hasViolationCode(telemetry, 'city_scope_overclaim')) {
+    issues.push(createIssueCandidate('city_scope_overclaim', {
+      slice,
+      status: SIGNAL_STATUS.FAIL,
+      confidence: 0.94,
+      reasons: ['reply made city-specific claims even though exact city grounding was not satisfied'],
+      supportingSignalCodes: issueSignalCodes(specificity, knowledgeUse)
     }));
   }
 

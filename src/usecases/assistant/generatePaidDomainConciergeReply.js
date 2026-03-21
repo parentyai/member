@@ -223,6 +223,12 @@ function applyContractOutputForm(lines, requestContract) {
   if (outputForm === 'non_dogmatic') {
     return [softenLine(shaped[0])];
   }
+  if (outputForm === 'softer') {
+    return [ensureSentence(shaped[0])];
+  }
+  if (outputForm === 'criteria_only') {
+    return shaped.slice(0, 2);
+  }
   if (outputForm === 'message_only' || outputForm === 'polite_template') {
     return [ensureSentence(shaped[0])];
   }
@@ -247,16 +253,23 @@ function extractFirstSourceLine(sourceReplyText) {
   return lines[0] || '';
 }
 
+function isRegionSpecificSourceReply(sourceReplyText) {
+  return /対象地域|地域差|制度名が分かるなら|地域で差が出る話/.test(normalizeText(sourceReplyText));
+}
+
 function buildMessageTemplateFromSource(sourceReplyText, domainIntent) {
   const sourceLine = extractFirstSourceLine(sourceReplyText);
   if (/事前予約が必要かどうか/.test(sourceLine)) {
     return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります';
   }
-  if (/対象地域の窓口|受付期限|制度名が分かるなら/.test(normalizeText(sourceReplyText))) {
+  if (isRegionSpecificSourceReply(sourceReplyText)) {
     return '地域差がありそうなので、対象地域の窓口と受付期限だけ先に確認してみます';
   }
   if (/今日は最優先の1件の期限だけ確認して/.test(sourceLine)) {
     return '今日は最優先の1件の期限だけ確認して、必要書類か予約要否のどちらを先に見るか決めてみます';
+  }
+  if (/制度や期限|公式情報/.test(normalizeText(sourceReplyText))) {
+    return '制度や期限が変わりそうなところだけ、先に公式情報を見ておきます';
   }
   if (/今進める順番を整理したいので/.test(sourceLine)) {
     return '今進める順番を整理したいので、最初に何を優先すべきか教えてもらえると助かります';
@@ -287,11 +300,14 @@ function buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent) {
   if (/今進める順番を整理したいので/.test(sourceLine)) {
     return 'もしよければ、今進める順番を整理したいので、最初に何を優先すべきか教えていただけると助かります';
   }
+  if (isRegionSpecificSourceReply(sourceReplyText)) {
+    return '地域差がありそうなら、対象地域の窓口と受付期限だけ見ておくと安心かもしれません';
+  }
   if (/制度・期限・必要書類・費用/.test(sourceLine)) {
     return '制度や期限が変わりそうな話なら、まず公式情報を見ておくと安心かもしれません';
   }
-  if (/対象地域の窓口|受付期限|制度名が分かるなら/.test(normalizeText(sourceReplyText))) {
-    return '地域差がありそうな話なら、まず対象地域の窓口と受付期限だけ見ておくと安心かもしれません';
+  if (/制度や期限|公式情報/.test(normalizeText(sourceReplyText))) {
+    return '制度や期限が変わりそうな話なら、まず公式情報を見ておくと安心かもしれません';
   }
   if (/今日は/.test(sourceLine)) {
     return '今日はひとまず、最優先の1件の期限だけ確認してみる形でもよさそうです';
@@ -304,16 +320,16 @@ function buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent) {
 
 function buildConversationalRewriteFromSource(sourceReplyText) {
   const sourceLine = extractFirstSourceLine(sourceReplyText);
-  if (/制度・期限・必要書類・費用/.test(sourceLine)) {
-    return [
-      '制度や期限が変わる話は、まず公式情報を見ておくと安心です',
-      'そのあとで、どこを確認するか一緒に絞っていけます'
-    ];
-  }
-  if (/対象地域の窓口|受付期限|制度名が分かるなら/.test(normalizeText(sourceReplyText))) {
+  if (isRegionSpecificSourceReply(sourceReplyText)) {
     return [
       '地域で差が出る話は、まず窓口と必要書類、受付期限だけ見れば大丈夫です',
       '制度名が分かれば、その3点だけでもかなり判断しやすくなります'
+    ];
+  }
+  if (/制度・期限・必要書類・費用/.test(sourceLine)) {
+    return [
+      '制度や期限が変わる話は、まず公式窓口や受付期限を見ておくと安心です',
+      '必要書類まで見えてくると、どこを確認すべきかかなり判断しやすくなります'
     ];
   }
   if (/いまの状況を整理します|優先する手続きを1つ|いま一番困っている/.test(normalizeText(sourceReplyText))) {
@@ -342,14 +358,14 @@ function buildLessBureaucraticRewriteFromSource(sourceReplyText, domainIntent) {
   if (/今進める順番を整理したいので/.test(sourceLine)) {
     return 'よければ、今進める順番を整理したいので、最初に何を優先するとよさそうか教えてもらえると助かります';
   }
-  if (/制度・期限・必要書類・費用/.test(sourceLine)) {
-    return '制度や期限が変わりそうなところだけ、先に公式情報で見ておけると安心です';
-  }
-  if (/対象地域の窓口|受付期限|制度名が分かるなら/.test(normalizeText(sourceReplyText))) {
-    return '地域差がありそうなら、窓口と必要書類、受付期限だけ先に見ておけると安心です';
+  if (isRegionSpecificSourceReply(sourceReplyText)) {
+    return '地域差がありそうなら、公式窓口と受付期限だけ先に見ておけると安心です';
   }
   if (/制度や期限|公式情報|確認ポイント/.test(normalizeText(sourceReplyText))) {
     return '制度や期限が動きそうなところだけ、先に公式情報を見ておけると安心です';
+  }
+  if (/制度・期限・必要書類・費用/.test(sourceLine)) {
+    return '制度や期限が変わりそうなところだけ、先に公式情報で見ておけると安心です';
   }
   if (/住まい|学校|SSN|銀行/.test(sourceLine) || domainIntent !== 'general') {
     return `よければ、${buildMessageTemplateFromSource(sourceReplyText, domainIntent).replace(/[。！？!?]+$/g, '')}。`;
@@ -393,6 +409,47 @@ function buildEchoContinuationFromSource(sourceReplyText) {
   return [];
 }
 
+function buildDeepenReplyFromSource(sourceReplyText, domainIntent, messageText) {
+  const source = normalizeText(sourceReplyText);
+  const sourceLine = extractFirstSourceLine(sourceReplyText);
+  const normalizedMessage = normalizeText(messageText);
+  if (!source) return [];
+  if (/対象地域の窓口|必要書類|受付期限/.test(source) || /確認するのは/.test(sourceLine)) {
+    return [
+      '具体的には、窓口名、必要書類、受付期限の3点だけを同じ画面で確認すると判断しやすいです',
+      '制度名まで分かるなら、その制度ページでこの3点だけ見れば十分です'
+    ];
+  }
+  if (/住むエリアと学区の関係/.test(source) || /住居候補と学校候補/.test(source)) {
+    return [
+      '具体的には、住む候補エリアを1つ決めて、そのエリアに対応する学区と学校候補を同じ表で並べると判断しやすいです',
+      'そのあとで、住所証明など共通で使う書類を先にまとめると二度手間が減ります'
+    ];
+  }
+  if (/先にSSNを進める/.test(source) || /SSN/.test(sourceLine)) {
+    return [
+      '具体的には、まず本人確認書類と在留情報の2点がそろうかを確認して、次に窓口の予約要否を見れば十分です',
+      '口座開設を急ぐ事情があるときだけ、SSN不要で進められる条件を並行確認する形が安全です'
+    ];
+  }
+  if (/今日は/.test(sourceLine) || /最優先の1件/.test(sourceLine)) {
+    return [
+      '具体的には、今日はその1件の期限を書き出して、必要書類か予約要否のどちらを先に確認するか決めるところまでで十分です',
+      'そこで止まっても、次に再開しやすい形が残ります'
+    ];
+  }
+  if (/どうやって|具体的には|何を見ればいい/.test(normalizedMessage)) {
+    return [
+      withDomainAnchor('具体的には、いまの回答で出てきた条件を1つに絞って、その条件に必要な情報だけを先に確認すると進めやすいです', domainIntent),
+      withDomainAnchor('確認する順番は、期限、必要書類、予約要否の順で十分です', domainIntent)
+    ];
+  }
+  return [
+    withDomainAnchor('具体的には、直前の案内で出てきた条件を1つに絞って確認すると進めやすいです', domainIntent),
+    withDomainAnchor('そのあとで、必要書類か予約要否のどちらを先に見るか決めれば十分です', domainIntent)
+  ];
+}
+
 function buildContractReply(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const messageText = normalizeText(payload.messageText);
@@ -400,13 +457,16 @@ function buildContractReply(params) {
     ? payload.requestContract
     : {};
   const requestShape = normalizeText(requestContract.requestShape).toLowerCase() || 'answer';
+  const depthIntent = normalizeText(requestContract.depthIntent).toLowerCase() || 'answer';
   const outputForm = normalizeText(requestContract.outputForm).toLowerCase() || 'default';
   const domainIntent = resolveDomainIntent(requestContract.primaryDomainIntent || payload.domainIntent, payload.contextResumeDomain);
   const domainSignals = Array.isArray(requestContract.domainSignals) ? requestContract.domainSignals : [];
   const sourceReplyText = normalizeText(requestContract.sourceReplyText || payload.sourceReplyText);
   const lines = [];
 
-  if (requestContract.echoOfPriorAssistant === true && requestShape === 'followup_continue') {
+  if (depthIntent === 'deepen' && sourceReplyText) {
+    lines.push(...buildDeepenReplyFromSource(sourceReplyText, domainIntent, messageText));
+  } else if (requestShape === 'followup_continue' && sourceReplyText) {
     const echoContinuationLines = buildEchoContinuationFromSource(sourceReplyText);
     const followupLine = payload.followupIntent
       ? resolveFollowupDirectAnswer({
@@ -459,7 +519,7 @@ function buildContractReply(params) {
       lines.push(...buildConversationalRewriteFromSource(sourceReplyText));
     } else if (outputForm === 'non_dogmatic') {
       lines.push(buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent));
-    } else if (/(事務的すぎない|事務的じゃない)/i.test(messageText)) {
+    } else if (outputForm === 'softer' || /(事務的すぎない|事務的じゃない)/i.test(messageText)) {
       lines.push(buildLessBureaucraticRewriteFromSource(sourceReplyText, domainIntent));
     } else {
       lines.push('疲れている前提なら、今日は1件だけ決めて期限だけ確認すれば十分です');
@@ -1048,5 +1108,6 @@ function generatePaidDomainConciergeReply(params) {
 module.exports = {
   generatePaidDomainConciergeReply,
   FORBIDDEN_REPLY_PATTERN,
-  buildEchoContinuationFromSource
+  buildEchoContinuationFromSource,
+  buildDeepenReplyFromSource
 };

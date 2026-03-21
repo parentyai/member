@@ -34,11 +34,18 @@ function resolveCandidatePriority(packet, candidate) {
   const context = buildCandidatePriorityContext(packet);
   const payload = candidate && typeof candidate === 'object' ? candidate : {};
   const kind = normalizeText(payload.kind).toLowerCase();
+  const broadSetupDirectAnswer = context.domainIntent === 'general'
+    && context.generalSetupQuestion === true
+    && !context.followupIntent
+    && context.requestShape === 'answer';
+  const followupContextPreferred = context.genericFallbackSlice === 'followup'
+    || context.priorContextUsed
+    || context.followupResolvedFromHistory
+    || Boolean(context.followupIntent);
   const generalDirectAnswerPreferred = context.domainIntent === 'general'
     && (
       Boolean(context.followupIntent)
       || context.servicePlanQuestion
-      || context.generalSetupQuestion
       || context.utilityTransformQuestion
       || ['rewrite', 'summarize', 'message_template', 'compare', 'criteria', 'correction', 'followup_continue'].includes(context.requestShape)
     );
@@ -47,13 +54,16 @@ function resolveCandidatePriority(packet, candidate) {
 
   if (kind === 'city_pack_backed_candidate') return 120;
   if (kind === 'city_grounded_candidate') return 115;
+  if (kind === 'saved_faq_candidate' && followupContextPreferred) return 88;
   if (kind === 'saved_faq_candidate' && generalDirectAnswerPreferred) return 92;
   if (kind === 'saved_faq_candidate') return 110;
+  if ((kind === 'knowledge_grounded_candidate' || kind === 'knowledge_backed_candidate' || kind === 'housing_knowledge_candidate') && followupContextPreferred) return 89;
   if ((kind === 'knowledge_grounded_candidate' || kind === 'knowledge_backed_candidate' || kind === 'housing_knowledge_candidate') && generalDirectAnswerPreferred) return 90;
   if (kind === 'knowledge_grounded_candidate' || kind === 'knowledge_backed_candidate' || kind === 'housing_knowledge_candidate') return 106;
-  if (kind === 'grounded_candidate') return 102;
+  if (kind === 'grounded_candidate') return broadSetupDirectAnswer ? 98 : 102;
   if (kind === 'structured_answer_candidate') {
     if (formatLocked) return 94;
+    if (broadSetupDirectAnswer) return 96;
     return context.genericFallbackSlice === 'broad' || context.genericFallbackSlice === 'followup' ? 100 : 96;
   }
   if (kind === 'continuation_candidate') {
@@ -64,6 +74,7 @@ function resolveCandidatePriority(packet, candidate) {
   if (kind === 'composed_concierge_candidate') return 88;
   if (kind === 'domain_concierge_candidate') {
     if (formatLocked) return 116;
+    if (broadSetupDirectAnswer) return 104;
     if (generalDirectAnswerPreferred) return 112;
     if (context.domainIntent === 'ssn' || context.domainIntent === 'banking') return 84;
     return context.followupIntent ? 78 : 72;
@@ -78,11 +89,14 @@ function isDirectAnswerEligibleCandidate(packet, candidate) {
   const context = buildCandidatePriorityContext(packet);
   const payload = candidate && typeof candidate === 'object' ? candidate : {};
   const kind = normalizeText(payload.kind).toLowerCase();
+  const broadSetupDirectAnswer = context.domainIntent === 'general'
+    && context.generalSetupQuestion === true
+    && !context.followupIntent
+    && context.requestShape === 'answer';
   const generalDirectAnswerPreferred = context.domainIntent === 'general'
     && (
       Boolean(context.followupIntent)
       || context.servicePlanQuestion
-      || context.generalSetupQuestion
       || context.utilityTransformQuestion
       || ['rewrite', 'summarize', 'message_template', 'compare', 'criteria', 'correction', 'followup_continue'].includes(context.requestShape)
     );
@@ -94,6 +108,14 @@ function isDirectAnswerEligibleCandidate(packet, candidate) {
     return kind === 'domain_concierge_candidate'
       || kind === 'continuation_candidate'
       || kind === 'structured_answer_candidate';
+  }
+  if (broadSetupDirectAnswer) {
+    return kind === 'domain_concierge_candidate'
+      || kind === 'grounded_candidate'
+      || kind === 'structured_answer_candidate'
+      || kind === 'knowledge_backed_candidate'
+      || kind === 'saved_faq_candidate'
+      || kind === 'housing_knowledge_candidate';
   }
   if (generalDirectAnswerPreferred) {
     return kind === 'domain_concierge_candidate'

@@ -84,6 +84,12 @@ function resolveKnowledgeIntegrationContext(params) {
   if (optionalInvalidRefs.length > 0 && !reasonCodes.includes('city_pack_optional_source_stale')) {
     reasonCodes.push('city_pack_optional_source_stale');
   }
+  if (cityPack.requestedCityKey && cityPack.citySpecificitySatisfied !== true && !reasonCodes.includes('city_specificity_missing')) {
+    reasonCodes.push('city_specificity_missing');
+  }
+  if (cityPack.scopeDisclosureRequired === true && !reasonCodes.includes('city_scope_disclosure_required')) {
+    reasonCodes.push('city_scope_disclosure_required');
+  }
   if (savedFaqReused && savedFaqReusePass !== true) {
     savedFaqReuseReasonCodes.forEach((code) => {
       if (!reasonCodes.includes(code)) reasonCodes.push(code);
@@ -102,6 +108,11 @@ function resolveKnowledgeIntegrationContext(params) {
     cityPackRequiredSourcesSatisfied: cityPack.requiredSourcesSatisfied,
     cityPackSourceSnapshot: cityPack.sourceSnapshot,
     cityPackPackId: cityPack.packId,
+    requestedCityKey: cityPack.requestedCityKey,
+    matchedCityKey: cityPack.matchedCityKey,
+    citySpecificitySatisfied: cityPack.citySpecificitySatisfied === true,
+    citySpecificityReason: cityPack.citySpecificityReason || null,
+    scopeDisclosureRequired: cityPack.scopeDisclosureRequired === true,
     cityPackValidation: cityPack.validation,
     savedFaqReused,
     savedFaqReusePass,

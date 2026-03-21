@@ -44,9 +44,14 @@ function resolveCityPackQualityContext(params) {
   const sourceReadinessDecision = normalizeText(payload.cityPackSourceReadinessDecision).toLowerCase() || null;
   const sourceReadinessReasons = uniqueStrings(payload.cityPackSourceReadinessReasons, 8)
     .map((item) => item.toLowerCase().replace(/\s+/g, '_'));
-  const context = payload.cityPackContext === true || Boolean(packId) || Boolean(validation);
+  const requestedCityKey = normalizeText(payload.requestedCityKey).toLowerCase() || null;
+  const matchedCityKey = normalizeText(payload.matchedCityKey).toLowerCase() || null;
+  const citySpecificitySatisfied = payload.citySpecificitySatisfied === true;
+  const citySpecificityReason = normalizeText(payload.citySpecificityReason).toLowerCase() || null;
+  const scopeDisclosureRequired = payload.scopeDisclosureRequired === true;
+  const context = payload.cityPackContext === true || Boolean(packId) || Boolean(validation) || Boolean(requestedCityKey);
   const grounded = payload.cityPackGrounded === true
-    || (validation ? validation.blocked !== true : false);
+    || (citySpecificitySatisfied === true && validation ? validation.blocked !== true : false);
   const requiredSourcesSatisfied = typeof payload.cityPackRequiredSourcesSatisfied === 'boolean'
     ? payload.cityPackRequiredSourcesSatisfied
     : (validation ? blockingInvalidSourceRefs.length === 0 : null);
@@ -54,6 +59,7 @@ function resolveCityPackQualityContext(params) {
   let groundingReason = normalizeText(payload.cityPackGroundingReason).toLowerCase() || null;
   if (!groundingReason) {
     if (requiredSourcesSatisfied === false) groundingReason = 'required_sources_blocked';
+    else if (citySpecificitySatisfied !== true && citySpecificityReason) groundingReason = citySpecificityReason;
     else if (optionalInvalidSourceRefs.length > 0) groundingReason = 'optional_sources_stale';
     else if (grounded === true) groundingReason = 'validated_sources_available';
     else if (context) groundingReason = 'city_pack_context_without_grounding';
@@ -72,8 +78,10 @@ function resolveCityPackQualityContext(params) {
 
   const reasonCodes = [];
   if (context) reasonCodes.push('city_pack_context_active');
+  if (requestedCityKey && citySpecificitySatisfied !== true) reasonCodes.push('city_specificity_missing');
   if (requiredSourcesSatisfied === false) reasonCodes.push('city_pack_required_source_blocked');
   if (optionalInvalidSourceRefs.length > 0) reasonCodes.push('city_pack_optional_source_stale');
+  if (scopeDisclosureRequired) reasonCodes.push('city_scope_disclosure_required');
   if (groundingReason && !reasonCodes.includes(groundingReason)) reasonCodes.push(groundingReason);
   sourceReadinessReasons.forEach((item) => {
     if (!reasonCodes.includes(item)) reasonCodes.push(item);
@@ -86,6 +94,11 @@ function resolveCityPackQualityContext(params) {
     freshnessScore: clamp01(payload.cityPackFreshnessScore),
     authorityScore: clamp01(payload.cityPackAuthorityScore),
     requiredSourcesSatisfied,
+    requestedCityKey,
+    matchedCityKey,
+    citySpecificitySatisfied,
+    citySpecificityReason,
+    scopeDisclosureRequired,
     sourceSnapshot,
     packId,
     validation,

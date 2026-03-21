@@ -150,6 +150,8 @@ function shouldPreserveDirectAnswerFlow(packet, strategyPlan, selected) {
   const candidate = selected && typeof selected === 'object' ? selected : {};
   const domainIntent = normalizeText(payload.normalizedConversationIntent).toLowerCase();
   const requestShape = normalizeText(payload.requestShape).toLowerCase();
+  const knowledgeScope = normalizeText(payload.knowledgeScope).toLowerCase() || 'none';
+  const genericFallbackSlice = normalizeText(payload.genericFallbackSlice).toLowerCase();
   const strategy = normalizeText(plan.strategy).toLowerCase();
   const fallbackType = normalizeText(plan.fallbackType).toLowerCase();
   const selectedKind = normalizeText(candidate.kind).toLowerCase();
@@ -169,10 +171,24 @@ function shouldPreserveDirectAnswerFlow(packet, strategyPlan, selected) {
   const mixedDomainDirectAnswer = fallbackType === 'mixed_domain_direct_answer'
     && strategy === 'domain_concierge'
     && (selectedKind === 'domain_concierge_candidate' || selectedKind === 'continuation_candidate');
+  const broadKickoffDirectAnswer = domainIntent === 'general'
+    && requestShape === 'answer'
+    && knowledgeScope === 'general'
+    && genericFallbackSlice === 'broad'
+    && strategy === 'grounded_answer'
+    && [
+      'domain_concierge_candidate',
+      'grounded_candidate',
+      'structured_answer_candidate',
+      'knowledge_backed_candidate',
+      'saved_faq_candidate',
+      'housing_knowledge_candidate'
+    ].includes(selectedKind);
   return requestShapeDirectAnswer === true
     || generalDirectAnswer === true
     || utilityTransformDirectAnswer === true
-    || mixedDomainDirectAnswer === true;
+    || mixedDomainDirectAnswer === true
+    || broadKickoffDirectAnswer === true;
 }
 
 function resolveMixedDomainCanonicalReply(replyText, packet, strategyPlan) {
@@ -683,10 +699,12 @@ function buildContinuationCandidate(result, packet) {
 function shouldBuildContinuationCandidate(packet, strategyPlan) {
   const payload = packet && typeof packet === 'object' ? packet : {};
   const plan = strategyPlan && typeof strategyPlan === 'object' ? strategyPlan : {};
-  return (
-    payload.priorContextUsed === true
+  const continuationContext = payload.priorContextUsed === true
     || payload.followupResolvedFromHistory === true
-    || Boolean(payload.followupIntent)
+    || payload.contextResume === true;
+  return (
+    continuationContext
+    || (Boolean(payload.followupIntent) && continuationContext)
     || normalizeText(plan.fallbackType).toLowerCase() === 'followup_grounding_probe'
     || normalizeText(plan.fallbackType).toLowerCase() === 'general_followup_direct_answer'
     || normalizeText(plan.fallbackType).toLowerCase() === 'utility_transform_direct_answer'
@@ -1064,7 +1082,8 @@ async function runPaidConversationOrchestrator(params) {
     const attempt = verifyCandidate({
       packet,
       selected: candidate,
-      evidenceSufficiency: effectiveEvidenceSufficiency
+      evidenceSufficiency: effectiveEvidenceSufficiency,
+      knowledgeTelemetry: candidateSet.knowledgeTelemetry || null
     });
     if (!attempt || typeof attempt !== 'object') continue;
     verified = attempt;
@@ -1074,7 +1093,8 @@ async function runPaidConversationOrchestrator(params) {
     verified = verifyCandidate({
       packet,
       selected: null,
-      evidenceSufficiency: effectiveEvidenceSufficiency
+      evidenceSufficiency: effectiveEvidenceSufficiency,
+      knowledgeTelemetry: candidateSet.knowledgeTelemetry || null
     });
   }
   const evidenceCoverage = selectedHasKnowledgeReadiness && Number.isFinite(Number(selectedForReadiness.evidenceCoverage))
@@ -1163,7 +1183,17 @@ async function runPaidConversationOrchestrator(params) {
     cityPackRequiredSourcesSatisfied: cityPackSignals.cityPackRequiredSourcesSatisfied,
     cityPackSourceSnapshot: cityPackSignals.cityPackSourceSnapshot || null,
     cityPackPackId: cityPackSignals.cityPackPackId || null,
+    requestedCityKey: cityPackSignals.requestedCityKey
+      || (candidateSet.knowledgeTelemetry ? candidateSet.knowledgeTelemetry.requestedCityKey || null : null),
+    matchedCityKey: cityPackSignals.matchedCityKey
+      || (candidateSet.knowledgeTelemetry ? candidateSet.knowledgeTelemetry.matchedCityKey || null : null),
+    citySpecificitySatisfied: cityPackSignals.citySpecificitySatisfied === true
+      || (candidateSet.knowledgeTelemetry ? candidateSet.knowledgeTelemetry.citySpecificitySatisfied === true : false),
+    citySpecificityReason: cityPackSignals.citySpecificityReason
+      || (candidateSet.knowledgeTelemetry ? candidateSet.knowledgeTelemetry.citySpecificityReason || null : null),
+    scopeDisclosureRequired: cityPackSignals.scopeDisclosureRequired === true,
     cityPackValidation: cityPackSignals.cityPackValidation,
+    knowledgeScope: packet.knowledgeScope || 'general',
     savedFaqContext: false,
     crossSystemConflictDetected: false
   });
@@ -1197,6 +1227,8 @@ async function runPaidConversationOrchestrator(params) {
     contradictionFlags: verified.contradictionFlags,
     violationCodes: verified.violationCodes,
     requestContract: packet.requestContract,
+    recentAssistantCommitments: packet.recentAssistantCommitments,
+    repetitionPrevented: loopResolved.repetitionPrevented === true,
     readinessDecision: preservedReadiness.decision,
     readinessSafeResponseMode: preservedReadiness.safeResponseMode,
     readinessClarifyText,
@@ -1276,7 +1308,14 @@ async function runPaidConversationOrchestrator(params) {
       fallbackPriorityReason,
       directAnswerApplied,
       requestShape: packet.requestShape || null,
+      depthIntent: packet.depthIntent || null,
+      transformSource: packet.transformSource || null,
       outputForm: packet.outputForm || null,
+      knowledgeScope: packet.knowledgeScope || null,
+      locationHintKind: packet.locationHint && typeof packet.locationHint.kind === 'string' ? packet.locationHint.kind : null,
+      locationHintCityKey: packet.locationHint && typeof packet.locationHint.cityKey === 'string' ? packet.locationHint.cityKey : null,
+      locationHintState: packet.locationHint && typeof packet.locationHint.state === 'string' ? packet.locationHint.state : null,
+      locationHintRegionKey: packet.locationHint && typeof packet.locationHint.regionKey === 'string' ? packet.locationHint.regionKey : null,
       detailObligations: Array.isArray(packet.detailObligations) ? packet.detailObligations.slice(0, 8) : [],
       answerability: packet.answerability || null,
       echoOfPriorAssistant: packet.echoOfPriorAssistant === true,
@@ -1326,6 +1365,18 @@ async function runPaidConversationOrchestrator(params) {
       cityPackCandidateAvailable: candidateSet.knowledgeTelemetry
         ? candidateSet.knowledgeTelemetry.cityPackCandidateAvailable === true
         : false,
+      requestedCityKey: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.requestedCityKey || null
+        : (packet.locationHint && packet.locationHint.cityKey ? packet.locationHint.cityKey : null),
+      matchedCityKey: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.matchedCityKey || null
+        : null,
+      citySpecificitySatisfied: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.citySpecificitySatisfied === true
+        : false,
+      citySpecificityReason: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.citySpecificityReason || null
+        : null,
       cityPackRejectedReason: candidateSet.knowledgeTelemetry
         ? candidateSet.knowledgeTelemetry.cityPackRejectedReason || null
         : null,
@@ -1386,6 +1437,7 @@ async function runPaidConversationOrchestrator(params) {
       cityPackRequiredSourcesSatisfied: typeof readinessGate.telemetry.cityPackRequiredSourcesSatisfied === 'boolean'
         ? readinessGate.telemetry.cityPackRequiredSourcesSatisfied
         : null,
+      scopeDisclosureRequired: readinessGate.telemetry.scopeDisclosureRequired === true,
       cityPackSourceSnapshot: readinessGate.telemetry.cityPackSourceSnapshot || null,
       cityPackPackId: readinessGate.telemetry.cityPackPackId || null,
       cityPackValidation: readinessGate.telemetry.cityPackValidation || null,

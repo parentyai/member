@@ -252,6 +252,30 @@ const PROPOSAL_TEMPLATE_BY_CAUSE = Object.freeze({
     objective: 'Increase city-specific grounding so city replies stop collapsing into generic guidance.',
     whyNotOthers: 'Continuity or template changes do not create city-specific evidence.'
   },
+  [ROOT_CAUSE_TYPE.specificityResolutionGap]: {
+    proposalType: PROPOSAL_TYPE.specificityFix,
+    title: 'City specificity resolution repair',
+    objective: 'Require exact city grounding before city-specific guidance is allowed to ship.',
+    whyNotOthers: 'Template or continuity tuning cannot prevent city overclaims when specificity resolution is still loose.'
+  },
+  [ROOT_CAUSE_TYPE.sourceTransformDrop]: {
+    proposalType: PROPOSAL_TYPE.runtimeFix,
+    title: 'Source-aware transform carry repair',
+    objective: 'Keep prior assistant facts intact through rewrite, one-line, and message-only transforms.',
+    whyNotOthers: 'Specificity or readiness fixes do not restore facts once the transform path drops them.'
+  },
+  [ROOT_CAUSE_TYPE.deepenPlannerReset]: {
+    proposalType: PROPOSAL_TYPE.runtimeFix,
+    title: 'Deep-response planner reset repair',
+    objective: 'Expand one layer deeper from the prior answer instead of resetting into a shallow template.',
+    whyNotOthers: 'Continuity-only tuning will not stop deepen requests from collapsing inside the reply planner.'
+  },
+  [ROOT_CAUSE_TYPE.regionCommandCollision]: {
+    proposalType: PROPOSAL_TYPE.runtimeFix,
+    title: 'Natural-language region collision repair',
+    objective: 'Keep natural-language city hints out of explicit region-command handling paths.',
+    whyNotOthers: 'Specificity fixes downstream cannot help once the request is misclassified as a command.'
+  },
   [ROOT_CAUSE_TYPE.proceduralGuidanceGap]: {
     proposalType: PROPOSAL_TYPE.runtimeFix,
     title: 'Procedural guidance repair',

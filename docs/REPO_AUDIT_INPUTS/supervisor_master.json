@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-16T22:04:33-04:00",
-  "gitCommit": "9289238b67b5f49cd9066778bf686e8378b2fa98",
+  "generatedAt": "2026-03-21T14:05:15-04:00",
+  "gitCommit": "d9096118d09552ea83d3b2d261c657ad38124e3e",
   "branch": "codex/quality-patrol-prA-T001",
-  "sourceDigest": "421a9b562fbf4f20c4d6eabc85d10096051ec5c05d52bbfc36c6d068f2a2e002",
+  "sourceDigest": "67fa2b4a8083f460b118c8101bcedd7cee99532d0b8ad77b3c44eba0e1483ce7",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -1046,10 +1046,17 @@ function buildConversationQualitySummary(actionRows) {
   let correctionRecoveryPassCount = 0;
   let mixedDomainRetentionSeenCount = 0;
   let mixedDomainRetentionPassCount = 0;
+  let citySpecificityResolvedSeenCount = 0;
+  let citySpecificityResolvedPassCount = 0;
+  let transformSourceCarrySeenCount = 0;
+  let transformSourceCarryPassCount = 0;
+  let depthResetSeenCount = 0;
+  let depthResetCount = 0;
   let followupOveraskCount = 0;
   let internalLabelLeakCount = 0;
   let parrotEchoCount = 0;
   let commandBoundaryCollisionCount = 0;
+  let cityOverclaimCount = 0;
   const requiredCoreFactsGateDecisions = new Map();
 
   rows.forEach((row) => {
@@ -1137,9 +1144,15 @@ function buildConversationQualitySummary(actionRows) {
       : null;
     const knowledgeCandidateCountBySource = normalizeKnowledgeCandidateCountBySource(row && row.knowledgeCandidateCountBySource);
     const requestShape = normalizeReason(row && row.requestShape ? row.requestShape : 'none');
+    const depthIntent = normalizeReason(row && row.depthIntent ? row.depthIntent : 'none');
+    const transformSource = normalizeReason(row && row.transformSource ? row.transformSource : 'none');
     const outputForm = normalizeReason(row && row.outputForm ? row.outputForm : 'default');
+    const knowledgeScope = normalizeReason(row && row.knowledgeScope ? row.knowledgeScope : 'none');
+    const locationHintKind = normalizeReason(row && row.locationHintKind ? row.locationHintKind : 'none');
+    const requestedCityKey = normalizeReason(row && row.requestedCityKey ? row.requestedCityKey : 'none');
     const detailObligations = normalizeReasonList(row && row.detailObligations, 12);
     const violationCodes = normalizeReasonList(row && row.violationCodes, 16);
+    const citySpecificitySatisfied = row && row.citySpecificitySatisfied === true;
 
     naturalnessVersions.set(naturalnessVersion, (naturalnessVersions.get(naturalnessVersion) || 0) + 1);
     domainCounts.set(domainIntent, (domainCounts.get(domainIntent) || 0) + 1);
@@ -1457,10 +1470,23 @@ function buildConversationQualitySummary(actionRows) {
       mixedDomainRetentionSeenCount += 1;
       if (!violationCodes.includes('mixed_domain_collapse')) mixedDomainRetentionPassCount += 1;
     }
+    if (knowledgeScope === 'city' || locationHintKind === 'city' || requestedCityKey !== 'none') {
+      citySpecificityResolvedSeenCount += 1;
+      if (citySpecificitySatisfied === true) citySpecificityResolvedPassCount += 1;
+    }
+    if (transformSource === 'prior_assistant' || detailObligations.includes('preserve_source_facts')) {
+      transformSourceCarrySeenCount += 1;
+      if (!violationCodes.includes('transform_source_drop')) transformSourceCarryPassCount += 1;
+    }
+    if (depthIntent === 'deepen' || detailObligations.includes('expand_source_facts')) {
+      depthResetSeenCount += 1;
+      if (violationCodes.includes('deepen_reset')) depthResetCount += 1;
+    }
     if (violationCodes.includes('followup_overask')) followupOveraskCount += 1;
     if (violationCodes.includes('internal_label_leak')) internalLabelLeakCount += 1;
     if (violationCodes.includes('parrot_echo')) parrotEchoCount += 1;
     if (violationCodes.includes('command_boundary_collision')) commandBoundaryCollisionCount += 1;
+    if (violationCodes.includes('city_scope_overclaim')) cityOverclaimCount += 1;
   });
 
   const sampleCount = rows.length;
@@ -1541,6 +1567,18 @@ function buildConversationQualitySummary(actionRows) {
     mixedDomainRetentionRate: mixedDomainRetentionSeenCount > 0
       ? Math.round((mixedDomainRetentionPassCount / mixedDomainRetentionSeenCount) * 10000) / 10000
       : 1,
+    citySpecificityResolvedRate: citySpecificityResolvedSeenCount > 0
+      ? Math.round((citySpecificityResolvedPassCount / citySpecificityResolvedSeenCount) * 10000) / 10000
+      : 1,
+    cityOverclaimRate: sampleCount > 0
+      ? Math.round((cityOverclaimCount / sampleCount) * 10000) / 10000
+      : 0,
+    transformSourceCarryRate: transformSourceCarrySeenCount > 0
+      ? Math.round((transformSourceCarryPassCount / transformSourceCarrySeenCount) * 10000) / 10000
+      : 1,
+    depthResetRate: depthResetSeenCount > 0
+      ? Math.round((depthResetCount / depthResetSeenCount) * 10000) / 10000
+      : 0,
     followupOveraskRate: sampleCount > 0
       ? Math.round((followupOveraskCount / sampleCount) * 10000) / 10000
       : 0,

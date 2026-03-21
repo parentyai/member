@@ -223,7 +223,8 @@ test('phase656: webhook pro path switches between paid FAQ and paid assistant by
     LINE_CHANNEL_SECRET: SECRET,
     ENABLE_SNAPSHOT_ONLY_CONTEXT_V1: '0',
     ENABLE_PAID_FAQ_QUALITY_V2: '1',
-    ENABLE_PAID_ORCHESTRATOR_V2: '0'
+    ENABLE_PAID_ORCHESTRATOR_V2: '0',
+    ENABLE_V1_CHANNEL_EDGE: '0'
   });
   const loaded = loadWebhookWithStubs({
     snapshotResult: { ok: true, stale: false, snapshot: { phase: 'pre' } }
@@ -291,7 +292,8 @@ test('phase656: snapshot strict mode blocks paid generation and falls back to pa
     LINE_CHANNEL_SECRET: SECRET,
     ENABLE_SNAPSHOT_ONLY_CONTEXT_V1: '1',
     ENABLE_PAID_FAQ_QUALITY_V2: '1',
-    ENABLE_PAID_ORCHESTRATOR_V2: '0'
+    ENABLE_PAID_ORCHESTRATOR_V2: '0',
+    ENABLE_V1_CHANNEL_EDGE: '0'
   });
   const loaded = loadWebhookWithStubs({
     snapshotResult: { ok: true, stale: true, snapshot: { phase: 'pre' } }

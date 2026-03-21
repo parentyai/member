@@ -28,7 +28,13 @@ test('phase719: conversation quality summary aggregates naturalness and domain c
       routeDecisionSource: 'conversation_router',
       entryType: 'webhook',
       requestShape: 'compare',
+      depthIntent: 'answer',
+      transformSource: 'none',
       outputForm: 'default',
+      knowledgeScope: 'city',
+      locationHintKind: 'city',
+      requestedCityKey: 'new-york',
+      citySpecificitySatisfied: true,
       detailObligations: ['preserve_reason', 'preserve_order_axis'],
       answerability: 'answer_now',
       echoOfPriorAssistant: false,
@@ -51,11 +57,17 @@ test('phase719: conversation quality summary aggregates naturalness and domain c
       routeDecisionSource: 'compat_route',
       entryType: 'compat',
       requestShape: 'correction',
+      depthIntent: 'deepen',
+      transformSource: 'prior_assistant',
       outputForm: 'one_line',
-      detailObligations: ['respect_correction', 'preserve_reason'],
+      knowledgeScope: 'city',
+      locationHintKind: 'city',
+      requestedCityKey: 'new-york',
+      citySpecificitySatisfied: false,
+      detailObligations: ['respect_correction', 'preserve_reason', 'preserve_source_facts', 'expand_source_facts'],
       answerability: 'answer_now',
       echoOfPriorAssistant: false,
-      violationCodes: ['correction_ignored', 'format_noncompliance']
+      violationCodes: ['correction_ignored', 'format_noncompliance', 'transform_source_drop', 'deepen_reset', 'city_scope_overclaim']
     },
     {
       legacyTemplateHit: true,
@@ -71,11 +83,17 @@ test('phase719: conversation quality summary aggregates naturalness and domain c
       routeDecisionSource: 'webhook_route',
       entryType: 'webhook',
       requestShape: 'message_template',
+      depthIntent: 'transform',
+      transformSource: 'prior_assistant',
       outputForm: 'message_only',
-      detailObligations: ['preserve_both_domains', 'message_only'],
+      knowledgeScope: 'general',
+      locationHintKind: 'none',
+      requestedCityKey: null,
+      citySpecificitySatisfied: false,
+      detailObligations: ['preserve_both_domains', 'message_only', 'preserve_source_facts'],
       answerability: 'answer_now',
       echoOfPriorAssistant: true,
-      violationCodes: ['detail_drop', 'mixed_domain_collapse', 'followup_overask', 'internal_label_leak', 'parrot_echo', 'command_boundary_collision']
+      violationCodes: ['detail_drop', 'mixed_domain_collapse', 'followup_overask', 'internal_label_leak', 'parrot_echo', 'command_boundary_collision', 'message_only_violated']
     }
   ]);
 
@@ -90,6 +108,10 @@ test('phase719: conversation quality summary aggregates naturalness and domain c
   assert.equal(summary.detailCarryRate, 0.3333);
   assert.equal(summary.correctionRecoveryRate, 0);
   assert.equal(summary.mixedDomainRetentionRate, 0);
+  assert.equal(summary.citySpecificityResolvedRate, 0.5);
+  assert.equal(summary.cityOverclaimRate, 0.3333);
+  assert.equal(summary.transformSourceCarryRate, 0.5);
+  assert.equal(summary.depthResetRate, 1);
   assert.equal(summary.followupOveraskRate, 0.3333);
   assert.equal(summary.internalLabelLeakRate, 0.3333);
   assert.equal(summary.parrotEchoRate, 0.3333);
@@ -136,7 +158,16 @@ test('phase719: llm action log schema includes conversation quality metadata fie
     'transcriptSnapshotBuildAttempted',
     'transcriptSnapshotBuildSkippedReason',
     'requestShape',
+    'depthIntent',
+    'transformSource',
     'outputForm',
+    'knowledgeScope',
+    'locationHintKind',
+    'requestedCityKey',
+    'matchedCityKey',
+    'citySpecificitySatisfied',
+    'citySpecificityReason',
+    'scopeDisclosureRequired',
     'detailObligations',
     'answerability',
     'echoOfPriorAssistant',
@@ -149,5 +180,9 @@ test('phase719: llm action log schema includes conversation quality metadata fie
   assert.ok(usageSummary.includes('buildConversationQualitySummary'));
   assert.ok(usageSummary.includes('conversationQuality'));
   assert.ok(usageSummary.includes('formatComplianceRate'));
+  assert.ok(usageSummary.includes('citySpecificityResolvedRate'));
+  assert.ok(usageSummary.includes('cityOverclaimRate'));
+  assert.ok(usageSummary.includes('transformSourceCarryRate'));
+  assert.ok(usageSummary.includes('depthResetRate'));
   assert.ok(usageSummary.includes('violationCodeCounts'));
 });

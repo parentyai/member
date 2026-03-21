@@ -66,9 +66,15 @@ function finalizeCandidate(params) {
       nextActions: Array.isArray(atoms.nextActions) ? atoms.nextActions : [],
       pitfall: atoms.pitfall || '',
       followupQuestion: atoms.followupQuestion || '',
+      recentAssistantCommitments: Array.isArray(payload.recentAssistantCommitments)
+        ? payload.recentAssistantCommitments
+        : [],
       defaultQuestion: verificationOutcome === 'clarify'
         ? 'まず対象手続きと期限を1つずつ教えてください。'
-        : '',
+        : (payload.repetitionPrevented === true
+          ? '対象を絞って案内したいので、いま一番気になっている手続きを1つ教えてください。'
+          : ''),
+      repetitionPrevented: payload.repetitionPrevented === true,
       conciseMode: selected.conciseModeApplied === true,
       requestContract
     });

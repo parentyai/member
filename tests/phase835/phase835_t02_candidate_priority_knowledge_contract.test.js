@@ -5,7 +5,7 @@ const { test } = require('node:test');
 
 const { resolveCandidatePriority } = require('../../src/domain/llm/orchestrator/candidatePriority');
 
-test('phase835: knowledge-backed candidates outrank continuation and concierge fallbacks', () => {
+test('phase835: followup history prefers continuation, then knowledge, then concierge fallbacks', () => {
   const packet = {
     normalizedConversationIntent: 'housing',
     genericFallbackSlice: 'housing',
@@ -21,8 +21,8 @@ test('phase835: knowledge-backed candidates outrank continuation and concierge f
   const clarify = resolveCandidatePriority(packet, { kind: 'clarify_candidate' });
 
   assert.ok(cityPack > savedFaq);
-  assert.ok(savedFaq > knowledge);
-  assert.ok(knowledge > continuation);
+  assert.ok(continuation > knowledge);
+  assert.ok(knowledge > savedFaq);
   assert.ok(continuation > concierge);
   assert.ok(concierge > clarify);
 });

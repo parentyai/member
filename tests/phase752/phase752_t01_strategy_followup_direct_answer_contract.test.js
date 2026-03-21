@@ -82,7 +82,7 @@ test('phase752: mixed housing and school question prefers concierge direct answe
   assert.equal(plan.fallbackType, 'mixed_domain_direct_answer');
 });
 
-test('phase752: general kickoff question prefers direct answer without retrieval', () => {
+test('phase752: general kickoff question probes grounding before fallback on broad setup asks', () => {
   const plan = buildStrategyPlan({
     routerMode: 'question',
     normalizedConversationIntent: 'general',
@@ -90,10 +90,20 @@ test('phase752: general kickoff question prefers direct answer without retrieval
     llmFlags: { llmConciergeEnabled: true }
   });
 
-  assert.equal(plan.strategy, 'domain_concierge');
-  assert.equal(plan.retrieveNeeded, false);
-  assert.equal(plan.directAnswerFirst, true);
-  assert.equal(plan.fallbackType, 'general_followup_direct_answer');
+  assert.equal(plan.strategy, 'grounded_answer');
+  assert.equal(plan.retrieveNeeded, true);
+  assert.equal(plan.verifyNeeded, true);
+  assert.equal(plan.directAnswerFirst, false);
+  assert.equal(plan.clarifySuppressed, false);
+  assert.equal(plan.fallbackType, null);
+  assert.equal(plan.strategyReason, 'broad_question_grounding_probe');
+  assert.equal(plan.fallbackPriorityReason, 'structured_before_clarify');
+  assert.deepEqual(plan.candidateSet, [
+    'structured_answer_candidate',
+    'grounded_candidate',
+    'domain_concierge_candidate',
+    'clarify_candidate'
+  ]);
 });
 
 test('phase752: utility transform prompt prefers direct answer on contextual followup', () => {

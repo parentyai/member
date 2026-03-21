@@ -218,7 +218,25 @@ const LLM_GATE_KEYS = new Set([
   'policySourceResolved',
   'policyGate',
   'policyDisclosureRequired',
-  'policyEscalationRequired'
+  'policyEscalationRequired',
+  'requestShape',
+  'depthIntent',
+  'transformSource',
+  'outputForm',
+  'knowledgeScope',
+  'locationHintKind',
+  'locationHintCityKey',
+  'locationHintState',
+  'locationHintRegionKey',
+  'detailObligations',
+  'answerability',
+  'echoOfPriorAssistant',
+  'requestedCityKey',
+  'matchedCityKey',
+  'citySpecificitySatisfied',
+  'citySpecificityReason',
+  'scopeDisclosureRequired',
+  'violationCodes'
 ]);
 
 const LLM_USAGE_KEYS = new Set([

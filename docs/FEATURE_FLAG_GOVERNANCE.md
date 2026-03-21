@@ -1,8 +1,8 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-16T13:07:02.836Z
-- gitCommit: 00384d9ad0aa4648032eb9ab4dad172b8be3b3be
-- branch: codex/data-c01-generated-view-T004
+- generatedAt: 2026-03-21T20:54:06.489Z
+- gitCommit: d9096118d09552ea83d3b2d261c657ad38124e3e
+- branch: codex/quality-patrol-prA-T001
 - flagCount: 93
 - source: src/**/*.js
 - check: `npm run feature-flags:check`
