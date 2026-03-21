@@ -2717,6 +2717,12 @@ async function appendLlmActionLogBestEffort(data) {
       judgeScores: Array.isArray(payload.judgeScores) ? payload.judgeScores : [],
       verificationOutcome: typeof payload.verificationOutcome === 'string' ? payload.verificationOutcome : null,
       contradictionFlags: Array.isArray(payload.contradictionFlags) ? payload.contradictionFlags : [],
+      requestShape: typeof payload.requestShape === 'string' ? payload.requestShape : null,
+      outputForm: typeof payload.outputForm === 'string' ? payload.outputForm : null,
+      detailObligations: Array.isArray(payload.detailObligations) ? payload.detailObligations : [],
+      answerability: typeof payload.answerability === 'string' ? payload.answerability : null,
+      echoOfPriorAssistant: typeof payload.echoOfPriorAssistant === 'boolean' ? payload.echoOfPriorAssistant : null,
+      violationCodes: Array.isArray(payload.violationCodes) ? payload.violationCodes : [],
       candidateCount: Number.isFinite(Number(payload.candidateCount)) ? Number(payload.candidateCount) : 0,
       humanReviewLabel: typeof payload.humanReviewLabel === 'string' ? payload.humanReviewLabel : null,
       committedNextActions: Array.isArray(payload.committedNextActions) ? payload.committedNextActions : [],
@@ -3179,6 +3185,14 @@ async function tryHandlePaidOrchestratorV2(params) {
     judgeScores: orchestrated.telemetry ? orchestrated.telemetry.judgeScores : [],
     verificationOutcome: orchestrated.telemetry ? orchestrated.telemetry.verificationOutcome : null,
     contradictionFlags: orchestrated.telemetry ? orchestrated.telemetry.contradictionFlags : [],
+    requestShape: orchestrated.telemetry ? orchestrated.telemetry.requestShape : null,
+    outputForm: orchestrated.telemetry ? orchestrated.telemetry.outputForm : null,
+    detailObligations: orchestrated.telemetry ? orchestrated.telemetry.detailObligations : [],
+    answerability: orchestrated.telemetry ? orchestrated.telemetry.answerability : null,
+    echoOfPriorAssistant: orchestrated.telemetry
+      ? (typeof orchestrated.telemetry.echoOfPriorAssistant === 'boolean' ? orchestrated.telemetry.echoOfPriorAssistant : null)
+      : null,
+    violationCodes: orchestrated.telemetry ? orchestrated.telemetry.violationCodes : [],
     candidateCount: orchestrated.telemetry ? orchestrated.telemetry.candidateCount : 0,
     sourceAuthorityScore: orchestrated.telemetry ? orchestrated.telemetry.sourceAuthorityScore : null,
     sourceFreshnessScore: orchestrated.telemetry ? orchestrated.telemetry.sourceFreshnessScore : null,
@@ -3680,6 +3694,7 @@ async function handleAssistantMessage(params) {
       pitfall: '',
       followupQuestion: '',
       defaultQuestion: '',
+      preserveReplyText: true,
       disablePitfall: true,
       disableFollowup: true
     });
@@ -3693,10 +3708,10 @@ async function handleAssistantMessage(params) {
       nextSteps: [],
       followupQuestion: null
     });
-    const replyText = semanticReplyEnvelope.replyText;
+    const replyText = normalizeReplyText(casual && casual.replyText ? casual.replyText : '') || guardedReply.replyText;
     await payload.replyFn(
       payload.replyToken,
-      semanticReplyEnvelope.lineMessage || { type: 'text', text: replyText }
+      { type: 'text', text: replyText }
     );
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
@@ -4131,36 +4146,39 @@ async function handleAssistantMessage(params) {
     }));
   }
   const maxNextActionsCap = await resolveMaxNextActionsCapFromJourneyCatalog(planInfo);
-  const orchestrated = await tryHandlePaidOrchestratorV2({
-    lineUserId,
-    text,
-    replyToken: payload.replyToken,
-    replyFn: payload.replyFn,
-    eventSource: payload.eventSource,
-    planInfo,
-    explicitPaidIntent,
-    paidIntent,
-    routerMode,
-    routerReason,
-    normalizedConversationIntent,
-    contextSnapshot,
-    llmConciergeEnabled,
-    llmWebSearchEnabled,
-    llmStyleEngineEnabled,
-    llmBanditEnabled,
-    qualityEnabled,
-    actionGatewayEnabled,
-    snapshotStrictMode,
-    maxNextActionsCap,
-    recentEngagement,
-    opportunityDecision,
-    budgetPolicy: budget.policy || null,
-    banditStateFetcher,
-    traceId,
-    requestId
-  });
-  if (orchestrated && orchestrated.handled === true) {
-    return orchestrated;
+  const skipLegacyGreetingOrchestrator = !conversationRouterEnabled && greetingOrSmalltalk === true;
+  if (!skipLegacyGreetingOrchestrator) {
+    const orchestrated = await tryHandlePaidOrchestratorV2({
+      lineUserId,
+      text,
+      replyToken: payload.replyToken,
+      replyFn: payload.replyFn,
+      eventSource: payload.eventSource,
+      planInfo,
+      explicitPaidIntent,
+      paidIntent,
+      routerMode,
+      routerReason,
+      normalizedConversationIntent,
+      contextSnapshot,
+      llmConciergeEnabled,
+      llmWebSearchEnabled,
+      llmStyleEngineEnabled,
+      llmBanditEnabled,
+      qualityEnabled,
+      actionGatewayEnabled,
+      snapshotStrictMode,
+      maxNextActionsCap,
+      recentEngagement,
+      opportunityDecision,
+      budgetPolicy: budget.policy || null,
+      banditStateFetcher,
+      traceId,
+      requestId
+    });
+    if (orchestrated && orchestrated.handled === true) {
+      return orchestrated;
+    }
   }
   const greetingOrSmalltalkCasual = (
     opportunityDecision.conversationMode === 'casual'
@@ -4184,6 +4202,7 @@ async function handleAssistantMessage(params) {
       pitfall: '',
       followupQuestion: '',
       defaultQuestion: '',
+      preserveReplyText: true,
       disablePitfall: true,
       disableFollowup: true
     });
@@ -4197,10 +4216,10 @@ async function handleAssistantMessage(params) {
       nextSteps: [],
       followupQuestion: null
     });
-    const replyText = semanticReplyEnvelope.replyText;
+    const replyText = normalizeReplyText(casual && casual.replyText ? casual.replyText : '') || guardedReply.replyText;
     await payload.replyFn(
       payload.replyToken,
-      semanticReplyEnvelope.lineMessage || { type: 'text', text: replyText }
+      { type: 'text', text: replyText }
     );
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,

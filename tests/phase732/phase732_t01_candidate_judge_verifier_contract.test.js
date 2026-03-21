@@ -86,3 +86,32 @@ test('phase732: verifier clarify reply stays domain-aware for follow-up intents 
   assert.ok(/SSN|在留/.test(clarify.selected.replyText));
   assert.equal(clarify.selected.replyText.includes(genericLine), false);
 });
+
+test('phase732: verifier clarify output does not leak internal labels or retrieval template markers', () => {
+  const clarify = verifyCandidate({
+    packet: {
+      normalizedConversationIntent: 'general',
+      followupIntent: 'next_step',
+      recentResponseHints: ['domain_concierge_candidate'],
+      recentAssistantCommitments: []
+    },
+    selected: {
+      id: 'internal_shape_candidate',
+      kind: 'grounded_candidate',
+      replyText: 'domain_concierge_candidate fallbackType=utility_transform_direct_answer\nFAQ候補:\n根拠キー: kb_1'
+    },
+    evidenceSufficiency: 'clarify'
+  });
+
+  assert.equal(clarify.verificationOutcome, 'clarify');
+  [
+    'domain_concierge_candidate',
+    'fallbackType',
+    'routerReason',
+    'FAQ候補',
+    'CityPack候補',
+    '根拠キー'
+  ].forEach((token) => {
+    assert.equal(clarify.selected.replyText.includes(token), false, `unexpected token: ${token}`);
+  });
+});

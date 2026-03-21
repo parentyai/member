@@ -337,6 +337,23 @@ function assertNoRetrievalTemplate(text) {
   });
 }
 
+function assertNoInternalConciergeLabels(text) {
+  const message = String(text || '');
+  [
+    'domain_concierge_candidate',
+    'clarify_candidate',
+    'fallbackType',
+    'routerReason',
+    'contextual_domain_resume',
+    'opportunityReasonKeys',
+    'FAQ候補',
+    'CityPack候補',
+    '根拠キー'
+  ].forEach((token) => {
+    assert.equal(message.includes(token), false, `unexpected internal label: ${token}`);
+  });
+}
+
 test('phase719: router-enabled paid greeting bypasses budget and retrieval with routerReason in audit', { concurrency: false }, async (t) => {
   const restoreEnv = withEnv({
     LINE_CHANNEL_SECRET: HMAC_SEED,
@@ -776,7 +793,8 @@ test('phase719: region already-set command does not hijack natural language prom
   const inputs = [
     '地域によって違うなら、何を確認すべきかだけ教えて。',
     '今の返し、少し硬い。人に話す感じで2文にして。',
-    '違う、やさしくしたいんじゃなくて、事務的すぎない文面にしたい。'
+    '違う、やさしくしたいんじゃなくて、事務的すぎない文面にしたい。',
+    'それも違う。今ほしいのは説明じゃなくて、相手に送る文面だけ。'
   ];
   const replies = [];
   const sequenceUserId = 'U_PHASE719_REGION_COLLISION';
@@ -806,9 +824,15 @@ test('phase719: region already-set command does not hijack natural language prom
   assert.match(replies[1], /安心|確認ポイント/);
   assert.equal(String(replies[2] || '').split('\n').length, 1);
   assert.match(replies[2], /順番を一緒に整理/);
+  assert.equal(String(replies[3] || '').split('\n').length, 1);
+  assert.match(replies[3], /教えてもらえると助かります|共有してもらえると助かります/);
 
   replies.forEach((reply) => {
     assert.equal(reply.includes('まずは次の一手から進めましょう'), false);
     assert.equal(reply.includes('優先したい手続きがあれば1つだけ教えてください'), false);
+    assertNoInternalConciergeLabels(reply);
+  });
+  [2, 3].forEach((index) => {
+    assert.equal(String(replies[index] || '').includes('・'), false, `turn_${index + 1}_one_line_no_bullet`);
   });
 });

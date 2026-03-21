@@ -365,7 +365,20 @@ function buildPatrolKpis(params) {
     repeatedTemplateResponseRate: aggregateIssueCandidateMetric(evaluations, 'repeated_template_response', KPI_THRESHOLDS.issueRate, () => true),
     knowledgeActivationMissingRate: aggregateIssueCandidateMetric(evaluations, 'knowledge_activation_missing', KPI_THRESHOLDS.issueRate, () => true),
     savedFaqUnusedRate: aggregateIssueCandidateMetric(evaluations, 'saved_faq_unused', KPI_THRESHOLDS.issueRate, () => true),
-    cityPackUnusedRate: aggregateIssueCandidateMetric(evaluations, 'city_pack_unused', KPI_THRESHOLDS.issueRate, () => true)
+    cityPackUnusedRate: aggregateIssueCandidateMetric(evaluations, 'city_pack_unused', KPI_THRESHOLDS.issueRate, () => true),
+    conciergeDirectAnswerMissingRate: aggregateIssueCandidateMetric(evaluations, 'concierge_direct_answer_missing', KPI_THRESHOLDS.issueRate, () => true),
+    conciergeContextCarryMissingRate: aggregateIssueCandidateMetric(evaluations, 'concierge_context_carry_missing', KPI_THRESHOLDS.issueRate, (row) => row && row.slice === 'follow-up'),
+    conciergeKnowledgeBypassRate: aggregateIssueCandidateMetric(evaluations, 'concierge_knowledge_bypass', KPI_THRESHOLDS.issueRate, () => true),
+    conciergeTemplateOveruseRate: aggregateIssueCandidateMetric(evaluations, 'concierge_template_overuse', KPI_THRESHOLDS.issueRate, () => true),
+    genericLoopFixedReplyRate: aggregateIssueCandidateMetric(evaluations, 'generic_loop_fixed_reply', KPI_THRESHOLDS.issueRate, () => true),
+    detailFormatDropRate: aggregateIssueCandidateMetric(evaluations, 'detail_format_drop', KPI_THRESHOLDS.issueRate, () => true),
+    correctionIgnoredRate: aggregateIssueCandidateMetric(evaluations, 'correction_ignored', KPI_THRESHOLDS.issueRate, () => true),
+    mixedDomainCollapseRate: aggregateIssueCandidateMetric(evaluations, 'mixed_domain_collapse', KPI_THRESHOLDS.issueRate, () => true),
+    followupOveraskRate: aggregateIssueCandidateMetric(evaluations, 'followup_overask', KPI_THRESHOLDS.issueRate, () => true),
+    internalLabelLeakRate: aggregateIssueCandidateMetric(evaluations, 'internal_label_leak', KPI_THRESHOLDS.issueRate, () => true),
+    commandBoundaryCollisionRate: aggregateIssueCandidateMetric(evaluations, 'command_boundary_collision', KPI_THRESHOLDS.issueRate, () => true),
+    punctuationAnomalyRate: aggregateIssueCandidateMetric(evaluations, 'punctuation_anomaly', KPI_THRESHOLDS.issueRate, () => true),
+    parrotEchoRate: aggregateIssueCandidateMetric(evaluations, 'parrot_echo', KPI_THRESHOLDS.issueRate, () => true)
   };
 
   return {

@@ -124,3 +124,38 @@ test('phase752: ssn-vs-banking compare question prefers mixed direct answer', ()
   assert.equal(plan.directAnswerFirst, true);
   assert.equal(plan.fallbackType, 'mixed_domain_direct_answer');
 });
+
+test('phase752: rewrite-only request keeps direct-answer shape and suppresses clarify path', () => {
+  const plan = buildStrategyPlan({
+    routerMode: 'question',
+    normalizedConversationIntent: 'general',
+    messageText: '今の文面を、断定しすぎない言い方に直して。',
+    llmFlags: { llmConciergeEnabled: true }
+  });
+
+  assert.equal(plan.strategy, 'domain_concierge');
+  assert.equal(plan.retrieveNeeded, false);
+  assert.equal(plan.directAnswerFirst, true);
+  assert.equal(plan.clarifySuppressed, true);
+  assert.equal(plan.fallbackType, 'utility_transform_direct_answer');
+});
+
+test('phase752: recovery correction on domain route stays concierge-first and avoids clarify fallback', () => {
+  const plan = buildStrategyPlan({
+    routerMode: 'question',
+    normalizedConversationIntent: 'school',
+    messageText: 'それは違う。学校じゃなくて住まい優先で考え直して。',
+    recoverySignal: true,
+    llmFlags: { llmConciergeEnabled: true }
+  });
+
+  assert.equal(plan.strategy, 'domain_concierge');
+  assert.equal(plan.retrieveNeeded, false);
+  assert.equal(plan.directAnswerFirst, true);
+  assert.equal(plan.clarifySuppressed, true);
+  assert.equal(
+    plan.fallbackType === 'recovery_domain_resume'
+      || plan.fallbackType === 'mixed_domain_direct_answer',
+    true
+  );
+});

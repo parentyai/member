@@ -200,6 +200,149 @@ function ensureSentence(value) {
   return `${line}。`;
 }
 
+function hasDetailObligation(requestContract, key) {
+  const obligations = requestContract && Array.isArray(requestContract.detailObligations)
+    ? requestContract.detailObligations
+    : [];
+  return obligations.includes(key);
+}
+
+function softenLine(value) {
+  const line = ensureSentence(value);
+  if (!line) return '';
+  if (/もしよければ|よさそう|無理が少ない/.test(line)) return line;
+  return ensureSentence(`もしよければ、${line.replace(/[。！？!?]+$/g, '')}と無理が少ないです`);
+}
+
+function applyContractOutputForm(lines, requestContract) {
+  const shaped = (Array.isArray(lines) ? lines : [])
+    .map((line) => ensureSentence(line))
+    .filter(Boolean);
+  if (!shaped.length) return [];
+  const outputForm = normalizeText(requestContract && requestContract.outputForm).toLowerCase() || 'default';
+  if (outputForm === 'non_dogmatic') {
+    return [softenLine(shaped[0])];
+  }
+  if (outputForm === 'message_only' || outputForm === 'polite_template') {
+    return [ensureSentence(shaped[0])];
+  }
+  if (outputForm === 'one_line') {
+    const compact = shaped
+      .slice(0, 2)
+      .map((line) => line.replace(/[。！？!?]+$/g, ''))
+      .join('、');
+    return [ensureSentence(compact)];
+  }
+  if (outputForm === 'two_sentences') {
+    return shaped.slice(0, 2);
+  }
+  return shaped.slice(0, 3);
+}
+
+function buildContractReply(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const messageText = normalizeText(payload.messageText);
+  const requestContract = payload.requestContract && typeof payload.requestContract === 'object'
+    ? payload.requestContract
+    : {};
+  const requestShape = normalizeText(requestContract.requestShape).toLowerCase() || 'answer';
+  const outputForm = normalizeText(requestContract.outputForm).toLowerCase() || 'default';
+  const domainIntent = resolveDomainIntent(requestContract.primaryDomainIntent || payload.domainIntent, payload.contextResumeDomain);
+  const domainSignals = Array.isArray(requestContract.domainSignals) ? requestContract.domainSignals : [];
+  const lines = [];
+
+  if (requestContract.echoOfPriorAssistant === true && requestShape === 'followup_continue') {
+    const followupLine = payload.followupIntent
+      ? resolveFollowupDirectAnswer({
+        followupIntent: payload.followupIntent,
+        domainIntent,
+        repeatedFollowupStreak: payload.repeatedFollowupStreak || 0,
+        directAnswers: (DOMAIN_SPECS[domainIntent] || DOMAIN_SPECS.general).directAnswers || {}
+      })
+      : '';
+    lines.push(followupLine || withDomainAnchor('その続きなら、次の一手を1つだけ決めると進めやすいです', domainIntent));
+  } else if (requestShape === 'compare') {
+    if (/(無料プラン|有料プラン|プランの違い|プラン比較)/i.test(messageText)) {
+      lines.push('短く言うと、無料はFAQ検索中心で、有料は状況整理や次の一手の提案まで対応します');
+      lines.push('有料なら、抜け漏れ確認や順序整理まで一緒に進められます');
+    } else if (domainSignals.includes('ssn') && domainSignals.includes('banking')) {
+      lines.push('先にSSNを進めるのが無難です');
+      lines.push('理由は、本人確認や後続手続きの判断材料として使いやすいからです');
+      lines.push('ただし口座開設を急ぐなら、SSN不要で進められる条件だけ先に確認しましょう');
+    } else {
+      lines.push('比べる軸は、期限の近さ、後続への影響、今日動けるかの3つです');
+      lines.push('この順で見ると、優先順位を決めやすくなります');
+    }
+  } else if (requestShape === 'correction') {
+    if (domainSignals.includes('housing') && domainSignals.includes('school')) {
+      if (domainIntent === 'housing') {
+        lines.push('了解です。住まい優先で見るなら、希望エリアと入居時期を先に固定しましょう');
+        lines.push('次に、内見候補を3件までに絞って必要書類を確認すると進めやすいです');
+      } else {
+        lines.push('了解です。学校優先で見るなら、学区と対象校の条件を先に確認しましょう');
+        lines.push('次に、住所証明や予防接種記録など必要書類をまとめると進めやすいです');
+      }
+    } else if (outputForm === 'message_only') {
+      lines.push('今必要なのは説明ではなく、送る文面だけなので、その形で整えます');
+    } else {
+      lines.push(withDomainAnchor('了解です。前提を修正して、その条件で考え直します', domainIntent));
+      lines.push(withDomainAnchor('次は優先する1件だけ固定して進めると整理しやすいです', domainIntent));
+    }
+  } else if (requestShape === 'message_template') {
+    if (/(予約が必要かどうか).*(失礼なく|短文)|失礼なく聞く短文|短文を1つ作って/i.test(messageText)) {
+      lines.push('ご都合のよい範囲で、事前予約が必要かどうか教えていただけますか');
+    } else if (/(家族に送れる一文|家族に送れる|一文にして)/i.test(messageText)) {
+      lines.push('まずは最優先の1件だけ決めて、順番に進めれば大丈夫そうだよ');
+    } else {
+      lines.push('今進める順番を整理したいので、最初に何を優先すべきか教えてもらえると助かります');
+    }
+  } else if (requestShape === 'rewrite') {
+    if (outputForm === 'two_sentences') {
+      lines.push('まずは優先するものを1つだけ決めると、進め方がかなり楽になります');
+      lines.push('そのあとで、必要書類か予約要否のどちらを見るか選べば十分です');
+    } else if (outputForm === 'non_dogmatic') {
+      lines.push('まずは優先するものを1つだけ決める形で進めると、無理が少なそうです');
+    } else if (/(事務的すぎない|事務的じゃない)/i.test(messageText)) {
+      lines.push('よければ、まずは優先するものを1つだけ決めて、順番を一緒に整理していきましょう');
+    } else {
+      lines.push('疲れている前提なら、今日は1件だけ決めて期限だけ確認すれば十分です');
+      lines.push('残りは今週に回す前提で、いまは最優先の1件だけ進めましょう');
+    }
+  } else if (requestShape === 'criteria') {
+    if (/(地域によって違う|地域差がある|何を確認すべきかだけ)/i.test(messageText)) {
+      lines.push('確認するのは、対象地域の窓口、必要書類、受付期限の3点です');
+      lines.push('制度名が分かるなら、その3点だけ見れば判断しやすくなります');
+    } else {
+      lines.push('制度・期限・必要書類・費用が変わりうる話なら、公式情報を確認する場面です');
+      lines.push('特に申請可否や法的条件に触れるときは、案内より先に公式窓口で最終確認してください');
+    }
+  } else if (requestShape === 'summarize') {
+    if (/(今日.*今週.*今月|今日・今週・今月|今週・今月)/i.test(messageText)) {
+      lines.push('今日: 期限だけ確認する');
+      lines.push('今週: 最優先の1件を動かす');
+      lines.push('今月: 残りを順番に整える');
+    } else if (/(足りていない|足りない|不足|抜け漏れ|抜け|漏れ)/i.test(messageText)) {
+      lines.push('足りていないのは、優先順位の固定、期限の見える化、次の一手の1件化です');
+    } else {
+      lines.push('今日は最優先の1件の期限だけ確認して、必要書類か予約要否のどちらを見るか決めましょう');
+    }
+  }
+
+  if (!lines.length) return null;
+  const shapedLines = applyContractOutputForm(lines, requestContract);
+  const replyText = trimForLineMessage(shapedLines.join('\n'));
+  return {
+    replyText,
+    preserveReplyText: true,
+    atoms: {
+      situationLine: shapedLines[0] || '',
+      nextActions: shapedLines.slice(1),
+      pitfall: '',
+      followupQuestion: ''
+    }
+  };
+}
+
 function buildActionLine(action) {
   const normalized = sanitizeReplyLine(action);
   if (!normalized) return '';
@@ -544,6 +687,9 @@ function resolvePresetReply(params) {
 function buildConciseReply(parts) {
   const payload = parts && typeof parts === 'object' ? parts : {};
   const domainIntent = resolveDomainIntent(payload.domainIntent, payload.contextResumeDomain);
+  const requestContract = payload.requestContract && typeof payload.requestContract === 'object'
+    ? payload.requestContract
+    : {};
   const spec = DOMAIN_SPECS[domainIntent] || DOMAIN_SPECS.general;
   const followupIntent = payload.followupIntent || null;
   const repeatedFollowupStreak = Number.isFinite(Number(payload.repeatedFollowupStreak))
@@ -554,6 +700,15 @@ function buildConciseReply(parts) {
   const directAnswers = spec.directAnswers && typeof spec.directAnswers === 'object' ? spec.directAnswers : {};
   const followupActionVariants = resolveFollowupActionVariants(followupIntent, domainIntent);
   const recoveryLeadLine = payload.recoverySignal === true ? '了解です。前提を修正して続けます。' : '';
+  const contractReply = buildContractReply({
+    messageText: payload.messageText,
+    domainIntent,
+    contextResumeDomain: payload.contextResumeDomain,
+    requestContract,
+    followupIntent,
+    repeatedFollowupStreak
+  });
+  if (contractReply) return contractReply;
   const presetReply = resolvePresetReply({
     messageText: payload.messageText
   });
@@ -583,6 +738,7 @@ function buildConciseReply(parts) {
   const actionLine = followupActionLine || buildActionLine(actions[0] || spec.defaultAction);
   const pitfall = ensureSentence(`詰まりやすいのは ${sanitizeReplyLine(payload.pitfall) || spec.pitfall}`);
   const question = sanitizeReplyLine(payload.followupQuestion);
+  const avoidQuestionBack = hasDetailObligation(requestContract, 'avoid_question_back');
   const questionLine = question
     ? (/[?？]$/.test(question) ? question : `${question}？`)
     : '';
@@ -590,24 +746,26 @@ function buildConciseReply(parts) {
   const lines = [primaryLine];
   if (followupIntent) {
     if (actionLine && actionLine !== primaryLine) lines.push(actionLine);
-    if (repeatedFollowupIntent && questionLine) lines.push(questionLine);
+    if (repeatedFollowupIntent && questionLine && avoidQuestionBack !== true) lines.push(questionLine);
   } else {
     if (actionLine && actionLine !== primaryLine) lines.push(actionLine);
-    if (questionLine) {
+    if (questionLine && avoidQuestionBack !== true) {
       lines.push(questionLine);
     } else if (pitfall) {
       lines.push(pitfall);
     }
   }
+  const shapedLines = applyContractOutputForm(lines.filter(Boolean), requestContract);
   const lineLimit = followupIntent ? 2 : 3;
-  const replyText = trimForLineMessage(lines.filter(Boolean).slice(0, lineLimit).join('\n'));
+  const replyText = trimForLineMessage((shapedLines.length ? shapedLines : lines.filter(Boolean)).slice(0, lineLimit).join('\n'));
   return {
     replyText,
+    preserveReplyText: requestContract.outputForm && requestContract.outputForm !== 'default',
     atoms: {
-      situationLine: primaryLine,
+      situationLine: shapedLines[0] || primaryLine,
       nextActions: actionLine && actionLine !== primaryLine ? [actionLine] : [],
-      pitfall: questionLine ? '' : pitfall,
-      followupQuestion: questionLine || ''
+      pitfall: questionLine && avoidQuestionBack !== true ? '' : pitfall,
+      followupQuestion: avoidQuestionBack === true ? '' : (questionLine || '')
     }
   };
 }
@@ -688,7 +846,8 @@ function generatePaidDomainConciergeReply(params) {
     followupIntent,
     repeatedFollowupStreak,
     recentResponseHints: payload.recentResponseHints,
-    recoverySignal: payload.recoverySignal === true
+    recoverySignal: payload.recoverySignal === true,
+    requestContract: payload.requestContract
   });
 
   return {

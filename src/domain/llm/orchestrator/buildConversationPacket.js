@@ -3,6 +3,7 @@
 const { detectIntent } = require('../router/detectIntent');
 const { normalizeConversationIntent } = require('../router/normalizeConversationIntent');
 const { resolveFollowupIntent } = require('./followupIntentResolver');
+const { buildRequestContract } = require('./buildRequestContract');
 const { resolveGenericFallbackSlice } = require('../conversation/replyTemplateTelemetry');
 
 function normalizeText(value) {
@@ -137,7 +138,7 @@ function isContextResumeCue(text) {
 function detectRecoverySignal(text) {
   const normalized = normalizeText(text);
   if (!normalized) return false;
-  return /(違う|ちがう|違います|いや|そうじゃない|それじゃない|誤解|訂正|修正|じゃなくて)/i.test(normalized);
+  return /(違う|ちがう|違います|いや|そうじゃない|それじゃない|誤解|訂正|修正|じゃなくて|考え直して|今度は逆)/i.test(normalized);
 }
 
 function resolveRecoveryFollowupIntent(text) {
@@ -203,20 +204,53 @@ function buildConversationPacket(params) {
     || detectedConversationIntent === contextSnapshotDomain
   ) ? contextSnapshotDomain : null;
   const recentDomain = recentHistory.recentDomains[0] || snapshotResumeDomain || null;
+  const preliminaryRequestContract = buildRequestContract({
+    messageText,
+    fallbackDomain: recentDomain,
+    recentResponseHints: recentHistory.recentResponseHints,
+    lowInformationMessage,
+    contextResumeCue,
+    recoverySignal,
+    highRiskIntent: detectedConversationIntent === 'ssn' || detectedConversationIntent === 'banking'
+  });
   const shouldAllowContextResume = intentDecision.mode !== 'greeting'
     && (
       intentDecision.reason !== 'smalltalk_detected'
       || contextResumeCue
       || recoverySignal
     );
-  const contextResume = (lowInformationMessage || contextResumeCue || recoverySignal)
+  const contextResume = (
+    lowInformationMessage
+    || contextResumeCue
+    || recoverySignal
+    || preliminaryRequestContract.echoOfPriorAssistant === true
+    || preliminaryRequestContract.requestShape === 'rewrite'
+    || preliminaryRequestContract.requestShape === 'summarize'
+    || preliminaryRequestContract.requestShape === 'message_template'
+    || preliminaryRequestContract.requestShape === 'followup_continue'
+  )
     && Boolean(recentDomain)
     && shouldAllowContextResume
     && (
-      detectedConversationIntent === 'general'
-      || detectedConversationIntent === recentDomain
+      preliminaryRequestContract.currentTurnHasExplicitDomain !== true
+      || preliminaryRequestContract.requestShape === 'rewrite'
+      || preliminaryRequestContract.requestShape === 'message_template'
+      || preliminaryRequestContract.requestShape === 'summarize'
+      || preliminaryRequestContract.echoOfPriorAssistant === true
     );
-  const normalizedConversationIntent = contextResume ? recentDomain : detectedConversationIntent;
+  const requestContract = buildRequestContract({
+    messageText,
+    fallbackDomain: contextResume ? recentDomain : null,
+    recentResponseHints: recentHistory.recentResponseHints,
+    lowInformationMessage,
+    contextResumeCue,
+    recoverySignal,
+    highRiskIntent: (
+      preliminaryRequestContract.primaryDomainIntent === 'ssn'
+      || preliminaryRequestContract.primaryDomainIntent === 'banking'
+    )
+  });
+  const normalizedConversationIntent = requestContract.primaryDomainIntent || 'general';
   const followupIntentDecision = resolveFollowupIntent({
     messageText,
     domainIntent: normalizedConversationIntent,
@@ -279,6 +313,8 @@ function buildConversationPacket(params) {
     explicitPaidIntent: normalizeText(payload.explicitPaidIntent) || null,
     paidIntent: normalizeText(payload.paidIntent) || 'faq_search',
     detectedConversationIntent,
+    primaryDomainIntent: requestContract.primaryDomainIntent,
+    domainSignals: requestContract.domainSignals,
     normalizedConversationIntent,
     intentDecision,
     routerMode: normalizeText(payload.routerMode || intentDecision.mode) || 'casual',
@@ -293,6 +329,12 @@ function buildConversationPacket(params) {
     followupCarryFromHistory,
     followupResolvedFromHistory,
     recoveryFollowupIntent,
+    requestShape: requestContract.requestShape,
+    outputForm: requestContract.outputForm,
+    detailObligations: requestContract.detailObligations,
+    answerability: requestContract.answerability,
+    echoOfPriorAssistant: requestContract.echoOfPriorAssistant === true,
+    requestContract,
     lowInformationMessage,
     unresolvedTaskCount,
     priorContextUsed,

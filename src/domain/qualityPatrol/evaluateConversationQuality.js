@@ -3,6 +3,7 @@
 const { RESULT_STATUS, SIGNAL_STATUS } = require('./constants');
 const {
   createEvaluatorBlocker,
+  normalizeToken,
   uniqueByCode,
   mergeSourceCollections
 } = require('./scoreHelpers');
@@ -29,9 +30,35 @@ function issueSignalCodes() {
     ))));
 }
 
+function includesToken(value, token) {
+  const normalized = normalizeToken(value);
+  if (!normalized) return false;
+  return normalized.includes(String(token || '').toLowerCase());
+}
+
+function hasViolationCode(telemetry, code) {
+  const payload = telemetry && typeof telemetry === 'object' ? telemetry : {};
+  const normalizedCode = normalizeToken(code);
+  if (!normalizedCode) return false;
+  return (Array.isArray(payload.violationCodes) ? payload.violationCodes : []).some((item) => normalizeToken(item) === normalizedCode);
+}
+
+function isConciergePath(telemetry) {
+  const payload = telemetry && typeof telemetry === 'object' ? telemetry : {};
+  return [
+    payload.selectedCandidateKind,
+    payload.strategy,
+    payload.strategyReason,
+    payload.routeKind,
+    payload.fallbackTemplateKind,
+    payload.finalizerTemplateKind
+  ].some((item) => includesToken(item, 'concierge') || includesToken(item, 'domain_concierge'));
+}
+
 function buildIssueCandidates(reviewUnit, signalResults, combinedBlockers) {
   const telemetry = reviewUnit && reviewUnit.telemetrySignals ? reviewUnit.telemetrySignals : {};
   const slice = reviewUnit && reviewUnit.slice ? reviewUnit.slice : 'other';
+  const conciergePath = isConciergePath(telemetry);
   const issues = [];
   const naturalness = signalResults.naturalness;
   const continuity = signalResults.continuity;
@@ -128,6 +155,164 @@ function buildIssueCandidates(reviewUnit, signalResults, combinedBlockers) {
       confidence: 0.82,
       reasons: ['knowledge candidate signals were present without downstream activation'],
       supportingSignalCodes: issueSignalCodes(knowledgeUse)
+    }));
+  }
+
+  if (conciergePath && telemetry.directAnswerApplied === false) {
+    issues.push(createIssueCandidate('concierge_direct_answer_missing', {
+      slice,
+      status: signalStatus(proceduralUtility) === SIGNAL_STATUS.FAIL ? SIGNAL_STATUS.FAIL : SIGNAL_STATUS.WARN,
+      confidence: 0.84,
+      reasons: ['concierge route was selected but direct-answer-first was not applied'],
+      supportingSignalCodes: issueSignalCodes(proceduralUtility, continuity)
+    }));
+  }
+
+  if (
+    conciergePath
+    && slice === 'follow-up'
+    && (telemetry.priorContextUsed === false || telemetry.followupResolvedFromHistory === false)
+  ) {
+    issues.push(createIssueCandidate('concierge_context_carry_missing', {
+      slice,
+      status: signalStatus(continuity) === SIGNAL_STATUS.FAIL ? SIGNAL_STATUS.FAIL : SIGNAL_STATUS.WARN,
+      confidence: 0.88,
+      reasons: ['concierge follow-up lost context carry signals from prior turns'],
+      supportingSignalCodes: issueSignalCodes(continuity)
+    }));
+  }
+
+  if (
+    conciergePath
+    && (
+      telemetry.groundedCandidateAvailable === true
+      || telemetry.cityPackCandidateAvailable === true
+      || telemetry.savedFaqCandidateAvailable === true
+    )
+    && telemetry.knowledgeCandidateUsed === false
+  ) {
+    issues.push(createIssueCandidate('concierge_knowledge_bypass', {
+      slice,
+      status: signalStatus(knowledgeUse) === SIGNAL_STATUS.FAIL ? SIGNAL_STATUS.FAIL : SIGNAL_STATUS.WARN,
+      confidence: 0.86,
+      reasons: ['concierge route bypassed available grounded knowledge candidates'],
+      supportingSignalCodes: issueSignalCodes(knowledgeUse, specificity)
+    }));
+  }
+
+  if (
+    conciergePath
+    && (
+      (typeof telemetry.repeatRiskScore === 'number' && telemetry.repeatRiskScore >= 0.55)
+      || (fallbackRepetition && fallbackRepetition.value >= 0.4)
+      || includesToken(telemetry.fallbackTemplateKind, 'generic')
+      || includesToken(telemetry.finalizerTemplateKind, 'generic')
+    )
+  ) {
+    issues.push(createIssueCandidate('concierge_template_overuse', {
+      slice,
+      status: signalStatus(fallbackRepetition) === SIGNAL_STATUS.FAIL ? SIGNAL_STATUS.FAIL : SIGNAL_STATUS.WARN,
+      confidence: fallbackRepetition && fallbackRepetition.value >= 0.65 ? 0.84 : 0.7,
+      reasons: ['concierge route shows elevated template reuse/repetition risk'],
+      supportingSignalCodes: issueSignalCodes(fallbackRepetition, naturalness)
+    }));
+  }
+
+  if (
+    conciergePath
+    && [SIGNAL_STATUS.WARN, SIGNAL_STATUS.FAIL].includes(signalStatus(fallbackRepetition))
+    && (
+      includesToken(telemetry.fallbackTemplateKind, 'generic')
+      || includesToken(telemetry.finalizerTemplateKind, 'generic')
+      || telemetry.genericFallbackSlice === 'followup'
+    )
+  ) {
+    issues.push(createIssueCandidate('generic_loop_fixed_reply', {
+      slice,
+      status: SIGNAL_STATUS.FAIL,
+      confidence: 0.88,
+      reasons: ['concierge reply reused a generic fixed skeleton instead of advancing the conversation'],
+      supportingSignalCodes: issueSignalCodes(fallbackRepetition, continuity, naturalness)
+    }));
+  }
+
+  if (hasViolationCode(telemetry, 'format_noncompliance') || hasViolationCode(telemetry, 'detail_drop')) {
+    issues.push(createIssueCandidate('detail_format_drop', {
+      slice,
+      status: SIGNAL_STATUS.FAIL,
+      confidence: 0.9,
+      reasons: ['reply dropped requested detail or violated the requested output form'],
+      supportingSignalCodes: issueSignalCodes(proceduralUtility, continuity)
+    }));
+  }
+
+  if (hasViolationCode(telemetry, 'correction_ignored')) {
+    issues.push(createIssueCandidate('correction_ignored', {
+      slice,
+      status: SIGNAL_STATUS.FAIL,
+      confidence: 0.92,
+      reasons: ['explicit user correction was not reflected in the final answer'],
+      supportingSignalCodes: issueSignalCodes(continuity, proceduralUtility)
+    }));
+  }
+
+  if (hasViolationCode(telemetry, 'mixed_domain_collapse')) {
+    issues.push(createIssueCandidate('mixed_domain_collapse', {
+      slice,
+      status: SIGNAL_STATUS.FAIL,
+      confidence: 0.9,
+      reasons: ['mixed-domain request dropped one of the required domains in the final answer'],
+      supportingSignalCodes: issueSignalCodes(continuity, specificity, proceduralUtility)
+    }));
+  }
+
+  if (hasViolationCode(telemetry, 'followup_overask')) {
+    issues.push(createIssueCandidate('followup_overask', {
+      slice,
+      status: SIGNAL_STATUS.FAIL,
+      confidence: 0.86,
+      reasons: ['answerable concierge request still asked an unnecessary follow-up question'],
+      supportingSignalCodes: issueSignalCodes(proceduralUtility, continuity)
+    }));
+  }
+
+  if (hasViolationCode(telemetry, 'internal_label_leak')) {
+    issues.push(createIssueCandidate('internal_label_leak', {
+      slice,
+      status: SIGNAL_STATUS.FAIL,
+      confidence: 0.96,
+      reasons: ['internal routing or candidate labels leaked into the user-visible reply'],
+      supportingSignalCodes: issueSignalCodes(naturalness)
+    }));
+  }
+
+  if (hasViolationCode(telemetry, 'command_boundary_collision')) {
+    issues.push(createIssueCandidate('command_boundary_collision', {
+      slice,
+      status: SIGNAL_STATUS.FAIL,
+      confidence: 0.95,
+      reasons: ['natural-language request collided with a command-only boundary and produced the wrong behavior'],
+      supportingSignalCodes: issueSignalCodes(continuity, proceduralUtility)
+    }));
+  }
+
+  if (hasViolationCode(telemetry, 'punctuation_anomaly')) {
+    issues.push(createIssueCandidate('punctuation_anomaly', {
+      slice,
+      status: SIGNAL_STATUS.WARN,
+      confidence: 0.82,
+      reasons: ['reply punctuation quality degraded in a user-visible way'],
+      supportingSignalCodes: issueSignalCodes(naturalness)
+    }));
+  }
+
+  if (hasViolationCode(telemetry, 'parrot_echo')) {
+    issues.push(createIssueCandidate('parrot_echo', {
+      slice,
+      status: SIGNAL_STATUS.FAIL,
+      confidence: 0.91,
+      reasons: ['reply repeated the prior assistant phrasing instead of moving the conversation forward'],
+      supportingSignalCodes: issueSignalCodes(continuity, fallbackRepetition, naturalness)
     }));
   }
 

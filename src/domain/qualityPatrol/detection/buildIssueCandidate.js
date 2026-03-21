@@ -5,6 +5,7 @@ const {
   DETECTION_PROVENANCE,
   ISSUE_TYPE_BY_METRIC,
   CATEGORY_BY_METRIC,
+  ISSUE_CODE_BY_METRIC,
   TITLE_BY_METRIC,
   METRIC_THRESHOLDS
 } = require('./constants');
@@ -60,6 +61,24 @@ function buildIssueKey(seed) {
   return `qpd_${crypto.createHash('sha256').update(seed, 'utf8').digest('hex').slice(0, 20)}`;
 }
 
+function normalizeIssueCode(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toUpperCase().replace(/[^A-Z0-9_]+/g, '_');
+  return normalized || null;
+}
+
+function defaultIssueCode(metricKey) {
+  if (!metricKey) return null;
+  if (Object.prototype.hasOwnProperty.call(ISSUE_CODE_BY_METRIC, metricKey)) {
+    return ISSUE_CODE_BY_METRIC[metricKey];
+  }
+  const normalizedMetric = String(metricKey)
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[^A-Za-z0-9_]+/g, '_')
+    .toUpperCase();
+  return normalizedMetric ? `QP_${normalizedMetric}` : null;
+}
+
 function buildIssueCandidate(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const metricKey = payload.metricKey;
@@ -94,11 +113,13 @@ function buildIssueCandidate(params) {
   const title = payload.title || TITLE_BY_METRIC[metricKey] || category;
   const summary = payload.summary || `${title} (${slice})`;
   const thresholds = payload.thresholds || toThresholdShape(METRIC_THRESHOLDS[metricKey]);
+  const issueCode = normalizeIssueCode(payload.issueCode) || defaultIssueCode(metricKey);
   const supportingSignals = normalizeSignals(payload.supportingSignals);
   const supportingEvidence = normalizeEvidence(payload.supportingEvidence);
   const sourceCollections = Array.from(new Set((Array.isArray(payload.sourceCollections) ? payload.sourceCollections : []).filter(Boolean))).sort((left, right) => left.localeCompare(right, 'ja'));
   const observationBlockers = Array.isArray(payload.observationBlockers) ? payload.observationBlockers.slice() : [];
   const issueKey = payload.issueKey || buildIssueKey([
+    issueCode || 'NO_CODE',
     issueType,
     category,
     metricKey,
@@ -110,6 +131,7 @@ function buildIssueCandidate(params) {
   return {
     issueType,
     issueKey,
+    issueCode,
     title,
     summary,
     severity,

@@ -56,11 +56,14 @@ const TARGET_FILE_MAP = Object.freeze({
   ],
   [PROPOSAL_TYPE.templateFix]: [
     'src/domain/llm/orchestrator/finalizeCandidate.js',
+    'src/domain/llm/orchestrator/verifyCandidate.js',
     'src/domain/llm/conversation/paidReplyGuard.js'
   ],
   [PROPOSAL_TYPE.continuityFix]: [
+    'src/domain/llm/orchestrator/buildRequestContract.js',
     'src/domain/llm/orchestrator/buildConversationPacket.js',
     'src/domain/llm/orchestrator/followupIntentResolver.js',
+    'src/domain/llm/orchestrator/strategyPlanner.js',
     'src/domain/llm/orchestrator/runPaidConversationOrchestrator.js'
   ],
   [PROPOSAL_TYPE.specificityFix]: [
@@ -74,8 +77,13 @@ const TARGET_FILE_MAP = Object.freeze({
     'src/domain/llm/orchestrator/runPaidConversationOrchestrator.js'
   ],
   [PROPOSAL_TYPE.runtimeFix]: [
+    'src/domain/llm/orchestrator/buildRequestContract.js',
     'src/domain/llm/orchestrator/runPaidConversationOrchestrator.js',
-    'src/domain/llm/orchestrator/candidatePriority.js'
+    'src/domain/llm/orchestrator/candidatePriority.js',
+    'src/domain/llm/orchestrator/verifyCandidate.js',
+    'src/usecases/assistant/generatePaidDomainConciergeReply.js',
+    'src/usecases/assistant/generatePaidCasualReply.js',
+    'src/routes/webhookLine.js'
   ],
   [PROPOSAL_TYPE.observationOnly]: [
     'docs/QUALITY_PATROL_TRANSCRIPT_RUNBOOK.md',
@@ -109,7 +117,7 @@ const EXPECTED_IMPACT_MAP = Object.freeze({
   [PROPOSAL_TYPE.continuityFix]: ['continuity should improve', 'followupContextResetRate should decrease'],
   [PROPOSAL_TYPE.specificityFix]: ['specificity should improve', 'citySpecificityMissingRate should decrease'],
   [PROPOSAL_TYPE.retrievalFix]: ['retrieval-related blockers should decrease', 'knowledge activation opportunities should increase'],
-  [PROPOSAL_TYPE.runtimeFix]: ['proceduralUtility should improve', 'nextStepMissingRate should decrease'],
+  [PROPOSAL_TYPE.runtimeFix]: ['proceduralUtility should improve', 'nextStepMissingRate should decrease', 'detail/output-form failures should decrease'],
   [PROPOSAL_TYPE.observationOnly]: ['observationBlockerRate should decrease', 'planner confidence should increase'],
   [PROPOSAL_TYPE.sampleCollection]: ['reviewableTranscriptRate should increase', 'blockedFollowupJudgementRate should decrease'],
   [PROPOSAL_TYPE.transcriptCoverageRepair]: ['transcriptAvailability should improve', 'reviewableTranscriptRate should increase'],
@@ -195,6 +203,48 @@ const PROPOSAL_TEMPLATE_BY_CAUSE = Object.freeze({
     title: 'Follow-up continuity repair',
     objective: 'Carry prior context through packet building and follow-up resolution more reliably.',
     whyNotOthers: 'Template or readiness changes will not restore dropped follow-up context.'
+  },
+  [ROOT_CAUSE_TYPE.intentCompression]: {
+    proposalType: PROPOSAL_TYPE.runtimeFix,
+    title: 'Request-contract intent expansion repair',
+    objective: 'Preserve mixed-domain, correction, and output-form signals before strategy selection.',
+    whyNotOthers: 'Continuity or template tuning alone will not recover detail that was compressed out of the request contract.'
+  },
+  [ROOT_CAUSE_TYPE.contextOverride]: {
+    proposalType: PROPOSAL_TYPE.continuityFix,
+    title: 'Current-turn correction supremacy repair',
+    objective: 'Keep current-turn corrections and explicit detail above prior-context carry when the packet is built.',
+    whyNotOthers: 'Runtime generation changes will keep drifting if packet-level context precedence is still wrong.'
+  },
+  [ROOT_CAUSE_TYPE.followupCoarsening]: {
+    proposalType: PROPOSAL_TYPE.continuityFix,
+    title: 'Follow-up anti-coarsening repair',
+    objective: 'Prevent answerable follow-ups from collapsing into generic continuation or echo responses.',
+    whyNotOthers: 'Template diversification alone will not stop the planner from flattening the follow-up path.'
+  },
+  [ROOT_CAUSE_TYPE.clarifyOverselection]: {
+    proposalType: PROPOSAL_TYPE.runtimeFix,
+    title: 'Clarify over-selection suppression',
+    objective: 'Limit clarify selection to requests that truly need more context or high-risk gating.',
+    whyNotOthers: 'Readiness tuning is not sufficient when answerable requests are misrouted before candidate release.'
+  },
+  [ROOT_CAUSE_TYPE.detailBlindGeneration]: {
+    proposalType: PROPOSAL_TYPE.runtimeFix,
+    title: 'Detail-obligation generation repair',
+    objective: 'Force reply generation and verification to respect output form, reasons, and mixed-domain obligations.',
+    whyNotOthers: 'Continuity-only changes will not restore dropped output-form and detail requirements.'
+  },
+  [ROOT_CAUSE_TYPE.guardTemplateCollapse]: {
+    proposalType: PROPOSAL_TYPE.templateFix,
+    title: 'Guard template collapse repair',
+    objective: 'Stop the final guard from flattening shaped concierge replies back into a generic skeleton.',
+    whyNotOthers: 'Planner/runtime repairs can still be erased if the final guard keeps collapsing the reply.'
+  },
+  [ROOT_CAUSE_TYPE.commandBoundaryMisfire]: {
+    proposalType: PROPOSAL_TYPE.runtimeFix,
+    title: 'Command-boundary collision repair',
+    objective: 'Keep natural-language criteria/rewrite requests away from command-only handling paths.',
+    whyNotOthers: 'Template tuning cannot fix collisions that happen before reply generation.'
   },
   [ROOT_CAUSE_TYPE.citySpecificityGap]: {
     proposalType: PROPOSAL_TYPE.specificityFix,
