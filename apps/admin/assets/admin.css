@@ -2086,6 +2086,11 @@ body.app-body {
   padding: 0;
 }
 
+.top-metric-passive {
+  display: grid;
+  gap: var(--space-1);
+}
+
 .page-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -2161,6 +2166,11 @@ details[data-json-collapsible="true"].json-collapsed > summary {
   align-items: flex-end;
 }
 
+.top-passive-line {
+  font-size: var(--font-12);
+  color: var(--text-muted);
+}
+
 .top-developer-actions {
   display: flex;
   gap: var(--space-2);
@@ -2193,6 +2203,12 @@ details[data-json-collapsible="true"].json-collapsed > summary {
 
 .nav-group + .nav-group {
   margin-top: var(--space-2);
+}
+
+.nav-group[data-nav-surface="secondary"] {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
 }
 
 .app-nav .nav-group:not(.nav-group-dashboard):not(.nav-group-run):not(.nav-group-control):not(.nav-group-developer) {
@@ -3244,6 +3260,14 @@ details:not([open]) > *:not(summary) {
 }
 
 .top-summary-line.is-hidden-by-flag {
+  display: none !important;
+}
+
+.app-topbar[data-ui-topbar-mode="passive"] .top-summary-link {
+  pointer-events: none;
+}
+
+.app-topbar[data-ui-topbar-mode="passive"] .top-developer {
   display: none !important;
 }
 

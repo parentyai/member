@@ -1401,11 +1401,15 @@ function applyOpsOnlyChrome(role) {
     if (hideDeveloperRole) el.setAttribute('aria-hidden', 'true');
     else el.removeAttribute('aria-hidden');
   });
-  document.querySelectorAll('.nav-group-developer, .top-developer').forEach((el) => {
+  document.querySelectorAll('.nav-group-developer').forEach((el) => {
     const shouldHide = hideDeveloperRole || nextRole !== 'developer';
     el.classList.toggle('hidden', shouldHide);
     if (shouldHide) el.setAttribute('aria-hidden', 'true');
     else el.removeAttribute('aria-hidden');
+  });
+  document.querySelectorAll('.top-developer').forEach((el) => {
+    el.classList.add('hidden');
+    el.setAttribute('aria-hidden', 'true');
   });
   const hideLegacyStatusSurface = !ADMIN_LEGACY_STATUS_V1 || (nextRole !== 'developer' && nextRole !== 'admin');
   document.querySelectorAll('[data-legacy-status-surface="1"]').forEach((el) => {
@@ -3668,7 +3672,8 @@ function applyTopSummaryVisibility() {
   const summaryLine = document.getElementById('topbar-summary-line')
     || document.querySelector('.top-summary-line');
   if (!summaryLine) return;
-  if (ADMIN_TOP_SUMMARY_V1) {
+  const forcePassiveTopbar = appShell?.getAttribute('data-ui-v2-foundation') === 'true';
+  if (ADMIN_TOP_SUMMARY_V1 && !forcePassiveTopbar) {
     summaryLine.classList.remove('is-hidden-by-flag');
     summaryLine.removeAttribute('aria-hidden');
     return;
