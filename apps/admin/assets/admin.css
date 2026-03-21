@@ -2870,6 +2870,10 @@ details:not([open]) > *:not(summary) {
   margin-top: var(--space-2);
 }
 
+.admin-home-blocked-banner {
+  margin-top: var(--space-2);
+}
+
 .admin-guard-banner.is-danger {
   border-left-color: var(--status-danger);
 }
