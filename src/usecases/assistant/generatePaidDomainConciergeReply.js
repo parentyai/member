@@ -239,6 +239,94 @@ function applyContractOutputForm(lines, requestContract) {
   return shaped.slice(0, 3);
 }
 
+function extractFirstSourceLine(sourceReplyText) {
+  const lines = normalizeText(sourceReplyText)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return lines[0] || '';
+}
+
+function buildMessageTemplateFromSource(sourceReplyText, domainIntent) {
+  const sourceLine = extractFirstSourceLine(sourceReplyText);
+  if (/事前予約が必要かどうか/.test(sourceLine)) {
+    return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります';
+  }
+  if (/今日は/.test(sourceLine)) {
+    return sourceLine.replace(/しましょう|決めましょう/g, 'してみます').replace(/ください/g, 'もらえると助かります');
+  }
+  if (/住まい優先|希望エリア|入居時期/.test(sourceLine) || domainIntent === 'housing') {
+    return '住まい優先で進めたいので、まずは希望エリアと入居時期を整理してみます';
+  }
+  if (/学校優先|学区|対象校/.test(sourceLine) || domainIntent === 'school') {
+    return '学校優先で進めたいので、まずは学区と対象校の条件を確認してみます';
+  }
+  if (/SSN|ソーシャルセキュリティ/.test(sourceLine) || domainIntent === 'ssn') {
+    return 'まずはSSNを先に進めると、そのあとが整理しやすくなりそうだよ';
+  }
+  if (/制度・期限・必要書類・費用/.test(sourceLine)) {
+    return '制度や期限が変わりうる部分は、公式窓口で確認してみます';
+  }
+  return '今進める順番を整理したいので、最初に何を優先すべきか教えてもらえると助かります';
+}
+
+function buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent) {
+  const sourceLine = extractFirstSourceLine(sourceReplyText);
+  if (/事前予約が必要かどうか/.test(sourceLine)) {
+    return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります';
+  }
+  if (/制度・期限・必要書類・費用/.test(sourceLine)) {
+    return '制度や期限が変わりそうな話なら、まず公式情報を見ておくと安心かもしれません';
+  }
+  if (/今日は/.test(sourceLine)) {
+    return '今日はひとまず、最優先の1件の期限だけ確認してみる形でもよさそうです';
+  }
+  if (/住まい|学校|SSN|銀行/.test(sourceLine)) {
+    return softenLine(sourceLine);
+  }
+  return 'もしよければ、まずは優先するものを1つだけ決める形で進めると無理が少なそうです';
+}
+
+function buildConversationalRewriteFromSource(sourceReplyText) {
+  const sourceLine = extractFirstSourceLine(sourceReplyText);
+  if (/制度・期限・必要書類・費用/.test(sourceLine)) {
+    return [
+      '制度や期限が変わる話は、まず公式情報を見ておくと安心です',
+      'そのあとで、どこを確認するか一緒に絞っていけます'
+    ];
+  }
+  if (/いまの状況を整理します|優先する手続きを1つ|いま一番困っている/.test(normalizeText(sourceReplyText))) {
+    return [
+      'まずは、いちばん気になっている手続きを1つに絞るところからで大丈夫です',
+      'そこが決まれば、次に見ることを一緒に整理できます'
+    ];
+  }
+  if (/今日は/.test(sourceLine)) {
+    return [
+      '今日は、最優先の1件だけ見れば十分だと思います',
+      '残りは今週に回す前提で大丈夫です'
+    ];
+  }
+  return [
+    'まずは、優先するものを1つだけ決めると進めやすくなります',
+    'そのあとで、必要書類か予約要否のどちらを見るか選べば十分です'
+  ];
+}
+
+function buildLessBureaucraticRewriteFromSource(sourceReplyText, domainIntent) {
+  const sourceLine = extractFirstSourceLine(sourceReplyText);
+  if (/事前予約が必要かどうか/.test(sourceLine)) {
+    return 'よければ、事前予約が必要かどうかだけ教えていただけると助かります';
+  }
+  if (/制度・期限・必要書類・費用/.test(sourceLine)) {
+    return '制度や期限が変わりそうなところだけ、先に公式情報で見ておけると安心です';
+  }
+  if (/住まい|学校|SSN|銀行/.test(sourceLine) || domainIntent !== 'general') {
+    return `よければ、${buildMessageTemplateFromSource(sourceReplyText, domainIntent).replace(/[。！？!?]+$/g, '')}。`;
+  }
+  return 'よければ、まずは優先するものを1つだけ決めて、順番を一緒に整理していきましょう';
+}
+
 function buildContractReply(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const messageText = normalizeText(payload.messageText);
@@ -249,6 +337,7 @@ function buildContractReply(params) {
   const outputForm = normalizeText(requestContract.outputForm).toLowerCase() || 'default';
   const domainIntent = resolveDomainIntent(requestContract.primaryDomainIntent || payload.domainIntent, payload.contextResumeDomain);
   const domainSignals = Array.isArray(requestContract.domainSignals) ? requestContract.domainSignals : [];
+  const sourceReplyText = normalizeText(requestContract.sourceReplyText || payload.sourceReplyText);
   const lines = [];
 
   if (requestContract.echoOfPriorAssistant === true && requestShape === 'followup_continue') {
@@ -283,7 +372,7 @@ function buildContractReply(params) {
         lines.push('次に、住所証明や予防接種記録など必要書類をまとめると進めやすいです');
       }
     } else if (outputForm === 'message_only') {
-      lines.push('今必要なのは説明ではなく、送る文面だけなので、その形で整えます');
+      lines.push(buildMessageTemplateFromSource(sourceReplyText, domainIntent));
     } else {
       lines.push(withDomainAnchor('了解です。前提を修正して、その条件で考え直します', domainIntent));
       lines.push(withDomainAnchor('次は優先する1件だけ固定して進めると整理しやすいです', domainIntent));
@@ -292,18 +381,17 @@ function buildContractReply(params) {
     if (/(予約が必要かどうか).*(失礼なく|短文)|失礼なく聞く短文|短文を1つ作って/i.test(messageText)) {
       lines.push('ご都合のよい範囲で、事前予約が必要かどうか教えていただけますか');
     } else if (/(家族に送れる一文|家族に送れる|一文にして)/i.test(messageText)) {
-      lines.push('まずは最優先の1件だけ決めて、順番に進めれば大丈夫そうだよ');
+      lines.push(sourceReplyText ? buildMessageTemplateFromSource(sourceReplyText, domainIntent) : 'まずは最優先の1件だけ決めて、順番に進めれば大丈夫そうだよ');
     } else {
-      lines.push('今進める順番を整理したいので、最初に何を優先すべきか教えてもらえると助かります');
+      lines.push(buildMessageTemplateFromSource(sourceReplyText, domainIntent));
     }
   } else if (requestShape === 'rewrite') {
     if (outputForm === 'two_sentences') {
-      lines.push('まずは優先するものを1つだけ決めると、進め方がかなり楽になります');
-      lines.push('そのあとで、必要書類か予約要否のどちらを見るか選べば十分です');
+      lines.push(...buildConversationalRewriteFromSource(sourceReplyText));
     } else if (outputForm === 'non_dogmatic') {
-      lines.push('まずは優先するものを1つだけ決める形で進めると、無理が少なそうです');
+      lines.push(buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent));
     } else if (/(事務的すぎない|事務的じゃない)/i.test(messageText)) {
-      lines.push('よければ、まずは優先するものを1つだけ決めて、順番を一緒に整理していきましょう');
+      lines.push(buildLessBureaucraticRewriteFromSource(sourceReplyText, domainIntent));
     } else {
       lines.push('疲れている前提なら、今日は1件だけ決めて期限だけ確認すれば十分です');
       lines.push('残りは今週に回す前提で、いまは最優先の1件だけ進めましょう');
@@ -322,7 +410,11 @@ function buildContractReply(params) {
       lines.push('今週: 最優先の1件を動かす');
       lines.push('今月: 残りを順番に整える');
     } else if (/(足りていない|足りない|不足|抜け漏れ|抜け|漏れ)/i.test(messageText)) {
-      lines.push('足りていないのは、優先順位の固定、期限の見える化、次の一手の1件化です');
+      if (/(2つ|二つ|2点|二点)/i.test(messageText)) {
+        lines.push('足りていないのは、優先順位の固定と期限の見える化です');
+      } else {
+        lines.push('足りていないのは、優先順位の固定、期限の見える化、次の一手の1件化です');
+      }
     } else {
       lines.push('今日は最優先の1件の期限だけ確認して、必要書類か予約要否のどちらを見るか決めましょう');
     }
@@ -567,9 +659,11 @@ function resolvePresetReply(params) {
     });
   }
 
-  if (/最初の5分/i.test(messageText)) {
+  if (/最初の(5分|10分)/i.test(messageText)) {
     return buildPresetReply({
-      primaryLine: '最初の5分は、いちばん詰まっている手続きを1つだけ決めて、期限と窓口をメモしてください',
+      primaryLine: /10分/i.test(messageText)
+        ? '最初の10分は、いちばん詰まっている手続きを1つだけ決めて、期限と窓口、必要書類をメモしてください'
+        : '最初の5分は、いちばん詰まっている手続きを1つだけ決めて、期限と窓口をメモしてください',
       secondaryLine: 'そのあと必要書類か予約要否のどちらを先に確認するか決めれば十分です'
     });
   }
@@ -597,10 +691,14 @@ function resolvePresetReply(params) {
     });
   }
 
-  if (/(足りていない|足りない|不足|抜け漏れ|抜け|漏れ).*(3つ|三つ|3点|3つまで)/i.test(messageText)) {
+  if (/(足りていない|足りない|不足|抜け漏れ|抜け|漏れ).*((3つ|三つ|3点|3つまで)|(2つ|二つ|2点|二点))/i.test(messageText)) {
     return buildPresetReply({
-      primaryLine: '足りていないのは、優先順位の固定、期限の見える化、次の一手の1件化です',
-      secondaryLine: 'この3つが決まると、進め方がかなり安定します'
+      primaryLine: /(2つ|二つ|2点|二点)/i.test(messageText)
+        ? '足りていないのは、優先順位の固定と期限の見える化です'
+        : '足りていないのは、優先順位の固定、期限の見える化、次の一手の1件化です',
+      secondaryLine: /(2つ|二つ|2点|二点)/i.test(messageText)
+        ? 'この2つが決まると、進め方がかなり安定します'
+        : 'この3つが決まると、進め方がかなり安定します'
     });
   }
 
@@ -648,6 +746,13 @@ function resolvePresetReply(params) {
     });
   }
 
+  if (/((住まい|住居|住宅|引っ越し|家探し|部屋探し).*(学校|学区|入学|転校))|(学校優先で考え直して|学校優先)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '了解です。学校優先で見るなら、学区と対象校の条件を先に確認しましょう',
+      secondaryLine: '次に、住所証明や予防接種記録など必要書類をまとめると進めやすいです'
+    });
+  }
+
   if (/(不安が強い前提|不安が強い).*(1つだけ|一つだけ|絞って)/i.test(messageText)) {
     return buildPresetReply({
       primaryLine: '不安が強いときは、今日は最優先の1件の期限だけ確認すれば十分です'
@@ -674,7 +779,7 @@ function resolvePresetReply(params) {
     });
   }
 
-  if (/(ここまでの会話を踏まえて).*(断定せずに提案)|断定せずに提案/i.test(messageText)) {
+  if (/(ここまでの会話を踏まえて).*(断定せずに提案|やわらかく提案)|断定せずに提案|やわらかく提案/i.test(messageText)) {
     return buildPresetReply({
       primaryLine: '次の一手としては、いちばん後続に影響する手続きを1件だけ先に決めるのがよさそうです',
       secondaryLine: 'そのあとで、必要書類か予約要否のどちらを先に確認するか選ぶ進め方が無理が少ないです'

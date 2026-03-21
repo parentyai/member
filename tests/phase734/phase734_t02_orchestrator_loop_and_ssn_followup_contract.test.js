@@ -282,6 +282,21 @@ test('phase734: general kickoff and ssn-vs-banking prompts answer directly witho
 });
 
 test('phase734: utility transformation and correction presets stay concise and task-shaped', () => {
+  const tenMinute = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: 'それなら最初の10分は何をする？'
+  });
+  assert.match(tenMinute.replyText, /最初の10分/);
+  assert.match(tenMinute.replyText, /必要書類|窓口/);
+
+  const missingTwo = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: '今の進め方で足りていないものを、2つだけ教えて。'
+  });
+  assert.match(missingTwo.replyText, /優先順位の固定/);
+  assert.match(missingTwo.replyText, /期限の見える化/);
+  assert.equal(missingTwo.replyText.includes('いま一番困っている手続きを1つだけ教えてください'), false);
+
   const familyLine = generatePaidDomainConciergeReply({
     domainIntent: 'general',
     messageText: 'さっきの説明を、家族に送れる一文にして。'
@@ -303,6 +318,13 @@ test('phase734: utility transformation and correction presets stay concise and t
   assert.match(housingCorrection.replyText, /住まい優先/);
   assert.match(housingCorrection.replyText, /入居時期|希望エリア/);
   assert.equal(housingCorrection.replyText.includes('学校手続きの相談'), false);
+
+  const schoolCorrection = generatePaidDomainConciergeReply({
+    domainIntent: 'housing',
+    messageText: '今度は逆で、住まいより学校優先で考え直して。'
+  });
+  assert.match(schoolCorrection.replyText, /学校優先|学区|対象校/);
+  assert.equal(schoolCorrection.replyText.includes('住まい探しですね'), false);
 
   const anxietyNarrow = generatePaidDomainConciergeReply({
     domainIntent: 'general',
@@ -356,7 +378,7 @@ test('phase734: utility transformation and correction presets stay concise and t
 
   const nonDogmaticNext = generatePaidDomainConciergeReply({
     domainIntent: 'general',
-    messageText: 'ここまでの会話を踏まえて、次の一手だけを断定せずに提案して。'
+    messageText: 'ここまでの会話を踏まえて、次の一手だけをやわらかく提案して。'
   });
   assert.match(nonDogmaticNext.replyText, /次の一手としては/);
   assert.match(nonDogmaticNext.replyText, /よさそう/);

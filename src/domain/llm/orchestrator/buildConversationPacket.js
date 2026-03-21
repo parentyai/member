@@ -79,6 +79,10 @@ function summarizeRecentActionRows(rows) {
   const recentDomains = [];
   const recentResponseHints = [];
   const recentFollowupIntents = [];
+  const recentReplyRows = [];
+  let latestAssistantReplyText = '';
+  let latestAssistantDomainIntent = '';
+  let latestAssistantFollowupIntent = '';
 
   ordered.forEach((row) => {
     if (!row || typeof row !== 'object') return;
@@ -103,6 +107,21 @@ function summarizeRecentActionRows(rows) {
     if (followupIntent && !recentFollowupIntents.includes(followupIntent)) {
       recentFollowupIntents.push(followupIntent);
     }
+    const replyText = normalizeText(row.replyText);
+    const committedFollowupQuestion = normalizeText(row.committedFollowupQuestion);
+    if (replyText || committedFollowupQuestion) {
+      recentReplyRows.push({
+        replyText,
+        committedFollowupQuestion,
+        domainIntent,
+        followupIntent,
+        requestShape: normalizeText(row.requestShape).toLowerCase(),
+        outputForm: normalizeText(row.outputForm).toLowerCase()
+      });
+    }
+    if (!latestAssistantReplyText && replyText) latestAssistantReplyText = replyText;
+    if (!latestAssistantDomainIntent && domainIntent) latestAssistantDomainIntent = domainIntent;
+    if (!latestAssistantFollowupIntent && followupIntent) latestAssistantFollowupIntent = followupIntent;
   });
 
   return {
@@ -110,7 +129,11 @@ function summarizeRecentActionRows(rows) {
     recentUserGoals: recentUserGoals.slice(0, 6),
     recentDomains: recentDomains.slice(0, 4),
     recentResponseHints: recentResponseHints.slice(0, 6),
-    recentFollowupIntents: recentFollowupIntents.slice(0, 6)
+    recentFollowupIntents: recentFollowupIntents.slice(0, 6),
+    recentReplyRows: recentReplyRows.slice(0, 6),
+    latestAssistantReplyText: latestAssistantReplyText || null,
+    latestAssistantDomainIntent: latestAssistantDomainIntent || null,
+    latestAssistantFollowupIntent: latestAssistantFollowupIntent || null
   };
 }
 
@@ -138,7 +161,8 @@ function isContextResumeCue(text) {
 function detectRecoverySignal(text) {
   const normalized = normalizeText(text);
   if (!normalized) return false;
-  return /(違う|ちがう|違います|いや|そうじゃない|それじゃない|誤解|訂正|修正|じゃなくて|考え直して|今度は逆)/i.test(normalized);
+  if (/(地域によって違う|地域差がある)/i.test(normalized)) return false;
+  return /(それは違う|それも違う|違う、|ちがう、|違います|いや|そうじゃない|それじゃない|誤解|訂正|修正|じゃなくて|考え直して|今度は逆)/i.test(normalized);
 }
 
 function resolveRecoveryFollowupIntent(text) {
@@ -208,11 +232,21 @@ function buildConversationPacket(params) {
     messageText,
     fallbackDomain: recentDomain,
     recentResponseHints: recentHistory.recentResponseHints,
+    recentReplyRows: recentHistory.recentReplyRows,
+    latestAssistantReplyText: recentHistory.latestAssistantReplyText,
+    latestAssistantDomainIntent: recentHistory.latestAssistantDomainIntent,
+    latestAssistantFollowupIntent: recentHistory.latestAssistantFollowupIntent,
     lowInformationMessage,
     contextResumeCue,
     recoverySignal,
     highRiskIntent: detectedConversationIntent === 'ssn' || detectedConversationIntent === 'banking'
   });
+  const sourceDomainIntent = normalizeText(preliminaryRequestContract.sourceDomainIntent).toLowerCase();
+  const resumeAnchorDomain = sourceDomainIntent && sourceDomainIntent !== 'general'
+    ? sourceDomainIntent
+    : recentDomain;
+  const suppressStaleDomainResume = preliminaryRequestContract.sourceMatchedFromHistory === true
+    && sourceDomainIntent === 'general';
   const shouldAllowContextResume = intentDecision.mode !== 'greeting'
     && (
       intentDecision.reason !== 'smalltalk_detected'
@@ -229,7 +263,8 @@ function buildConversationPacket(params) {
     || preliminaryRequestContract.requestShape === 'message_template'
     || preliminaryRequestContract.requestShape === 'followup_continue'
   )
-    && Boolean(recentDomain)
+    && Boolean(resumeAnchorDomain)
+    && suppressStaleDomainResume !== true
     && shouldAllowContextResume
     && (
       preliminaryRequestContract.currentTurnHasExplicitDomain !== true
@@ -240,8 +275,12 @@ function buildConversationPacket(params) {
     );
   const requestContract = buildRequestContract({
     messageText,
-    fallbackDomain: contextResume ? recentDomain : null,
+    fallbackDomain: normalizeText(preliminaryRequestContract.sourceDomainIntent).toLowerCase() || (contextResume ? resumeAnchorDomain : null),
     recentResponseHints: recentHistory.recentResponseHints,
+    recentReplyRows: recentHistory.recentReplyRows,
+    latestAssistantReplyText: recentHistory.latestAssistantReplyText,
+    latestAssistantDomainIntent: recentHistory.latestAssistantDomainIntent,
+    latestAssistantFollowupIntent: recentHistory.latestAssistantFollowupIntent,
     lowInformationMessage,
     contextResumeCue,
     recoverySignal,
@@ -254,7 +293,7 @@ function buildConversationPacket(params) {
   const followupIntentDecision = resolveFollowupIntent({
     messageText,
     domainIntent: normalizedConversationIntent,
-    contextResumeDomain: contextResume ? recentDomain : null,
+    contextResumeDomain: contextResume ? resumeAnchorDomain : null,
     recentFollowupIntents: recentHistory.recentFollowupIntents
   });
   const providedRouterReason = normalizeText(payload.routerReason);
@@ -272,6 +311,7 @@ function buildConversationPacket(params) {
   const recoveryFollowupIntent = recoverySignal ? resolveRecoveryFollowupIntent(messageText) : null;
   const followupIntent = detectedFollowupIntent
     || recoveryFollowupIntent
+    || normalizeText(requestContract.sourceFollowupIntent).toLowerCase()
     || ((contextResume && normalizedConversationIntent !== 'general') ? 'next_step' : null);
   const followupCarryFromHistory = followupIntentReason === 'history_followup_carry';
   const priorContextUsed = contextResume === true || followupCarryFromHistory === true;
@@ -323,7 +363,7 @@ function buildConversationPacket(params) {
     contextResume,
     contextResumeCue,
     recoverySignal,
-    contextResumeDomain: contextResume ? recentDomain : null,
+    contextResumeDomain: contextResume ? resumeAnchorDomain : null,
     followupIntent,
     followupIntentReason,
     followupCarryFromHistory,
@@ -359,6 +399,9 @@ function buildConversationPacket(params) {
     recentDomains: recentHistory.recentDomains,
     recentResponseHints: recentHistory.recentResponseHints,
     recentFollowupIntents: recentHistory.recentFollowupIntents,
+    sourceReplyText: requestContract.sourceReplyText || null,
+    sourceDomainIntent: requestContract.sourceDomainIntent || null,
+    sourceFollowupIntent: requestContract.sourceFollowupIntent || null,
     opportunityDecision: payload.opportunityDecision && typeof payload.opportunityDecision === 'object'
       ? payload.opportunityDecision
       : null

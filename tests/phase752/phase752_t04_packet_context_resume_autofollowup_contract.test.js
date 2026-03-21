@@ -172,3 +172,30 @@ test('phase752: reverse correction supersedes prior housing carry and keeps scho
   assert.equal(packet.contextResumeDomain, null);
   assert.equal(packet.normalizedConversationIntent, 'school');
 });
+
+test('phase752: echoed prior assistant line reuses matched prior general source instead of stale ssn carry', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_ECHO_MATCH',
+    messageText: '特に申請可否や法的条件に触れるときは、案内より先に公式窓口で最終確認してください。',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'general',
+        replyText: '制度・期限・必要書類・費用が変わりうる話なら、公式情報を確認する場面です。\n特に申請可否や法的条件に触れるときは、案内より先に公式窓口で最終確認してください。'
+      },
+      {
+        createdAt: new Date(Date.now() - 60_000).toISOString(),
+        domainIntent: 'ssn',
+        followupIntent: 'next_step',
+        replyText: 'SSNの次は、必要書類を1つの一覧にまとめてから窓口の予約要否を確認するのが確実です。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.echoOfPriorAssistant, true);
+  assert.equal(packet.sourceReplyText.includes('公式窓口'), true);
+  assert.equal(packet.normalizedConversationIntent, 'general');
+  assert.equal(packet.contextResumeDomain, null);
+});

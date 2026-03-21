@@ -60,10 +60,68 @@ function hasDomainWord(text, domainIntent) {
   return true;
 }
 
+function extractFirstLine(text) {
+  return normalizeText(text).split('\n').map((line) => line.trim()).filter(Boolean)[0] || '';
+}
+
+function ensureSentence(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return '';
+  if (/[。！？!?]$/.test(normalized)) return normalized;
+  return `${normalized}。`;
+}
+
+function buildMessageTemplateFallback(sourceReplyText, domainIntent) {
+  const firstLine = extractFirstLine(sourceReplyText);
+  if (/事前予約が必要かどうか/.test(firstLine)) {
+    return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります。';
+  }
+  if (/住まい|入居|エリア/.test(firstLine) || domainIntent === 'housing') {
+    return '住まい優先で進めたいので、まずは希望エリアと入居時期を整理してみます。';
+  }
+  if (/学校|学区|対象校/.test(firstLine) || domainIntent === 'school') {
+    return '学校優先で進めたいので、まずは学区と対象校の条件を確認してみます。';
+  }
+  if (/SSN|ソーシャルセキュリティ/.test(firstLine) || domainIntent === 'ssn') {
+    return 'まずはSSNの必要書類を整理して、窓口の条件を確認してみます。';
+  }
+  return '今進める順番を整理したいので、最初に何を優先すべきか教えてもらえると助かります。';
+}
+
 function buildConstrainedFallbackReply(packet) {
   const payload = packet && typeof packet === 'object' ? packet : {};
+  const requestShape = normalizeText(payload.requestShape).toLowerCase();
   const outputForm = normalizeText(payload.outputForm).toLowerCase();
   const primaryDomainIntent = normalizeText(payload.primaryDomainIntent || payload.normalizedConversationIntent).toLowerCase() || 'general';
+  const sourceReplyText = normalizeText(payload.sourceReplyText || (payload.requestContract && payload.requestContract.sourceReplyText));
+  if (requestShape === 'message_template' || outputForm === 'message_only' || outputForm === 'polite_template') {
+    return buildMessageTemplateFallback(sourceReplyText, primaryDomainIntent);
+  }
+  if (requestShape === 'rewrite' && outputForm === 'non_dogmatic') {
+    const line = extractFirstLine(sourceReplyText);
+    if (/事前予約が必要かどうか/.test(line)) {
+      return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります。';
+    }
+    if (/制度|期限|必要書類|費用/.test(line)) {
+      return '制度や期限が変わりそうな話なら、まず公式情報を見ておくと安心かもしれません。';
+    }
+    return 'もしよければ、まずは優先するものを1つだけ決める形で進めると無理が少なそうです。';
+  }
+  if (requestShape === 'rewrite' && outputForm === 'two_sentences') {
+    if (/制度|期限|必要書類|費用/.test(sourceReplyText)) {
+      return '制度や期限が変わる話は、まず公式情報を見ておくと安心です。\nそのあとで、どこを確認するか一緒に絞っていけます。';
+    }
+    return 'まずは、いちばん気になっている手続きを1つに絞るところからで大丈夫です。\nそこが決まれば、次に見ることを一緒に整理できます。';
+  }
+  if (requestShape === 'rewrite') {
+    return ensureSentence(buildMessageTemplateFallback(sourceReplyText, primaryDomainIntent).replace(/教えてもらえると助かります。?$/, '一緒に整理していきましょう'));
+  }
+  if (requestShape === 'correction' && /(housing|school)/.test(primaryDomainIntent)) {
+    if (primaryDomainIntent === 'housing') {
+      return '了解です。住まい優先で見るなら、希望エリアと入居時期を先に固定しましょう。';
+    }
+    return '了解です。学校優先で見るなら、学区と対象校の条件を先に確認しましょう。';
+  }
   const baseLineByDomain = {
     housing: 'まずは住まいの優先条件を1つだけ決める形で進めると無理が少ないです。',
     school: 'まずは学校手続きの対象校か学区を1つだけ決める形で進めると整理しやすいです。',
@@ -125,7 +183,12 @@ function collectViolationCodes(packet, selected, replyText) {
     const allDomainsPresent = domainSignals.every((domain) => hasDomainWord(normalizedReply, domain));
     if (!allDomainsPresent) violationCodes.push('mixed_domain_collapse');
   }
-  if (detailObligations.includes('respect_correction')) {
+  const correctionRequiresDomainSurface = requestShape !== 'message_template'
+    && requestShape !== 'rewrite'
+    && outputForm !== 'message_only'
+    && outputForm !== 'polite_template'
+    && outputForm !== 'non_dogmatic';
+  if (detailObligations.includes('respect_correction') && correctionRequiresDomainSurface) {
     const primaryDomainIntent = normalizeText(payload.primaryDomainIntent || payload.normalizedConversationIntent).toLowerCase();
     if (primaryDomainIntent && primaryDomainIntent !== 'general' && !hasDomainWord(normalizedReply, primaryDomainIntent)) {
       violationCodes.push('correction_ignored');

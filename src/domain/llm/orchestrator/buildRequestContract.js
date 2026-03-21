@@ -37,6 +37,18 @@ function uniqueList(values, limit) {
   return out;
 }
 
+function normalizeReplyRow(row) {
+  const payload = row && typeof row === 'object' ? row : {};
+  return {
+    replyText: normalizeText(payload.replyText),
+    committedFollowupQuestion: normalizeText(payload.committedFollowupQuestion),
+    domainIntent: normalizeText(payload.domainIntent).toLowerCase(),
+    followupIntent: normalizeText(payload.followupIntent).toLowerCase(),
+    requestShape: normalizeText(payload.requestShape).toLowerCase(),
+    outputForm: normalizeText(payload.outputForm).toLowerCase()
+  };
+}
+
 function detectExplicitDomainSignals(messageText) {
   const hits = detectConversationIntentHits(messageText);
   return DOMAIN_INTENTS.filter((key) => hits[key] === true);
@@ -85,15 +97,14 @@ function detectRequestShape(messageText, options) {
   const payload = options && typeof options === 'object' ? options : {};
   const text = normalizeText(messageText);
   if (!text) return 'answer';
-  if (payload.echoOfPriorAssistant === true) return 'followup_continue';
-  if (payload.recoverySignal === true || /(違う|ちがう|ではなく|じゃなくて|考え直して|今度は逆|訂正|修正|それも違う)/i.test(text)) {
-    return 'correction';
-  }
   if (/(相手に送る文面だけ|文面だけ|返信文だけ|家族に送れる|一文にして|短文を1つ作って|短文だけ|文章だけ|文面を作って)/i.test(text)) {
     return 'message_template';
   }
-  if (/(言い換える|言い方に直して|断定しすぎない|断定せずに|人に話す感じ|2文にして|二文にして|事務的すぎない|やさしく|やわらかく)/i.test(text)) {
+  if (/(言い換える|言い方に直して|断定しすぎない|断定せずに|人に話す感じ|2文にして|二文にして|事務的すぎない|やさしく|やわらかく|少し硬い)/i.test(text)) {
     return 'rewrite';
+  }
+  if (payload.recoverySignal === true || /(それは違う|それも違う|違う、|ちがう、|そうじゃない|それじゃない|ではなく|じゃなくて|考え直して|今度は逆|訂正|修正)/i.test(text)) {
+    return 'correction';
   }
   if (/(無料プラン.*有料プラン|有料プラン.*無料プラン|どっち|どちら|比較|違い|理由つき|理由付き)/i.test(text)) {
     return 'compare';
@@ -101,7 +112,7 @@ function detectRequestShape(messageText, options) {
   if (/(判断基準だけ|何を確認すべきかだけ|確認すべき場面|基準だけ|criteria)/i.test(text)) {
     return 'criteria';
   }
-  if (/(今日・今週・今月|今日.*今週.*今月|今週.*今月|1行にして|一行にして|3つだけ|三つだけ|短く並べて|要点だけ|短くして)/i.test(text)) {
+  if (/(今日・今週・今月|今日.*今週.*今月|今週.*今月|1行にして|一行にして|3つだけ|三つだけ|2つだけ|二つだけ|2点|二点|短く並べて|要点だけ|短くして|不安が強い.*(1つだけ|一つだけ|絞って))/i.test(text)) {
     return 'summarize';
   }
   if (
@@ -116,6 +127,7 @@ function detectRequestShape(messageText, options) {
   ) {
     return 'followup_continue';
   }
+  if (payload.echoOfPriorAssistant === true) return 'followup_continue';
   return 'answer';
 }
 
@@ -140,6 +152,7 @@ function detectDetailObligations(messageText, options) {
   if (payload.requestShape === 'message_template' || payload.requestShape === 'rewrite' || payload.requestShape === 'summarize') {
     obligations.push('avoid_question_back');
   }
+  if (payload.echoOfPriorAssistant === true) obligations.push('avoid_question_back');
   return uniqueList(obligations, 10);
 }
 
@@ -167,13 +180,45 @@ function detectEchoOfPriorAssistant(messageText, recentResponseHints) {
   return hints.slice(0, 2).some((hint) => similarityScore(text, hint) >= 0.86);
 }
 
+function resolveMatchedPriorReply(messageText, recentReplyRows) {
+  const text = normalizeText(messageText);
+  const rows = Array.isArray(recentReplyRows) ? recentReplyRows : [];
+  if (!text || !rows.length) return null;
+  let best = null;
+  rows.slice(0, 6).forEach((row, index) => {
+    const normalized = normalizeReplyRow(row);
+    const similarity = Math.max(
+      similarityScore(text, normalized.replyText),
+      similarityScore(text, normalized.committedFollowupQuestion)
+    );
+    if (similarity < 0.86) return;
+    if (!best || similarity > best.similarity || (similarity === best.similarity && index < best.index)) {
+      best = {
+        index,
+        similarity,
+        row: normalized
+      };
+    }
+  });
+  return best ? best.row : null;
+}
+
+function resolveSourceReplyText(requestShape, matchedPriorReply, latestAssistantReplyText) {
+  if (matchedPriorReply && matchedPriorReply.replyText) return matchedPriorReply.replyText;
+  if (['rewrite', 'message_template', 'summarize', 'followup_continue', 'correction'].includes(requestShape)) {
+    return normalizeText(latestAssistantReplyText);
+  }
+  return '';
+}
+
 function buildRequestContract(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const messageText = normalizeText(payload.messageText);
   const explicitDomainSignals = detectExplicitDomainSignals(messageText);
   const fallbackDomain = normalizeText(payload.fallbackDomain).toLowerCase();
   const recentResponseHints = Array.isArray(payload.recentResponseHints) ? payload.recentResponseHints : [];
-  const echoOfPriorAssistant = detectEchoOfPriorAssistant(messageText, recentResponseHints);
+  const matchedPriorReply = resolveMatchedPriorReply(messageText, payload.recentReplyRows);
+  const echoOfPriorAssistant = Boolean(matchedPriorReply) || detectEchoOfPriorAssistant(messageText, recentResponseHints);
   const currentTurnHasExplicitDomain = explicitDomainSignals.length > 0;
   const outputForm = detectOutputForm(messageText);
   const highRiskIntent = payload.highRiskIntent === true;
@@ -183,11 +228,23 @@ function buildRequestContract(params) {
     echoOfPriorAssistant,
     highRiskIntent
   });
+  const sourceReplyText = resolveSourceReplyText(requestShape, matchedPriorReply, payload.latestAssistantReplyText);
+  const sourceDomainIntent = normalizeText(
+    (matchedPriorReply && matchedPriorReply.domainIntent) || payload.latestAssistantDomainIntent
+  ).toLowerCase();
+  const sourceFollowupIntent = normalizeText(
+    (matchedPriorReply && matchedPriorReply.followupIntent) || payload.latestAssistantFollowupIntent
+  ).toLowerCase();
   const primaryFromCorrection = requestShape === 'correction'
     ? resolveCorrectionPreferredDomain(messageText, explicitDomainSignals)
     : null;
+  const preserveSourceDomain = ['rewrite', 'message_template', 'correction', 'followup_continue'].includes(requestShape);
+  const utilityGeneralOverride = explicitDomainSignals.length === 0
+    && (requestShape === 'criteria' || requestShape === 'summarize');
   const primaryDomainIntent = primaryFromCorrection
     || explicitDomainSignals[0]
+    || (preserveSourceDomain ? (sourceDomainIntent || null) : null)
+    || (utilityGeneralOverride ? 'general' : null)
     || (fallbackDomain && fallbackDomain !== 'general' ? fallbackDomain : 'general');
   const domainSignals = uniqueList(
     explicitDomainSignals.length > 0 ? explicitDomainSignals : (primaryDomainIntent !== 'general' ? [primaryDomainIntent] : []),
@@ -197,7 +254,8 @@ function buildRequestContract(params) {
     domainSignals,
     requestShape,
     outputForm,
-    recoverySignal: payload.recoverySignal === true
+    recoverySignal: payload.recoverySignal === true,
+    echoOfPriorAssistant
   });
   const answerability = detectAnswerability(messageText, {
     requestShape,
@@ -216,7 +274,11 @@ function buildRequestContract(params) {
     answerability,
     echoOfPriorAssistant,
     currentTurnHasExplicitDomain,
-    fallbackDomainUsed: currentTurnHasExplicitDomain !== true && primaryDomainIntent !== 'general'
+    fallbackDomainUsed: currentTurnHasExplicitDomain !== true && primaryDomainIntent !== 'general',
+    sourceReplyText,
+    sourceDomainIntent: sourceDomainIntent || null,
+    sourceFollowupIntent: sourceFollowupIntent || null,
+    sourceMatchedFromHistory: Boolean(matchedPriorReply)
   };
 }
 
