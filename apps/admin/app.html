@@ -4491,16 +4491,32 @@
         </section>
 
         <section id="pane-llm" class="app-pane" data-pane="llm" data-role="admin" data-role-allow="admin,developer" data-pane-mode="llm-workspace" data-task-context="llm-operations" data-surface-tier="workspace">
-          <div class="pane-grid">
+          <div class="pane-grid llm-workspace-grid" data-llm-workspace-view="run">
             <div class="pane-main">
-              <div class="panel">
-                <div class="panel-title" data-dict-key="ui.label.llm.validation">LLM検証</div>
-                <div class="panel-body">
-                  <div id="llm-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="llm" role="status" aria-live="polite">
-                    LLM支援は管理ロールのみ表示されます。表示されない場合はRoleを管理または開発に切り替えてください。
+              <div class="decision-card llm-workspace-card is-ready" id="llm-workspace-card" data-surface-tier="hero">
+                <div class="decision-card-header">
+                  <div>
+                    <div class="decision-title" data-dict-key="ui.label.llm.workspace">LLM運用ワークスペース</div>
+                    <div id="llm-mode-purpose" class="decision-reason" data-dict-key="ui.desc.llm.mode.run">検証を表示中です。質問、返答候補、trace を同じ流れで確認します。</div>
                   </div>
-                  <div id="llm-rollout-visibility-reason" class="note role-visibility-rollout" role="status" aria-live="polite">品質ループの段階は状態更新後に表示されます。</div>
-                  <div class="input-grid">
+                  <span id="llm-mode-badge" class="decision-state state-ready" data-dict-key="ui.label.llm.mode.run">検証</span>
+                </div>
+                <div id="llm-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="llm" role="status" aria-live="polite">
+                  LLM支援は管理ロールのみ表示されます。表示されない場合はRoleを管理または開発に切り替えてください。
+                </div>
+                <div id="llm-rollout-visibility-reason" class="note role-visibility-rollout" role="status" aria-live="polite">品質ループの段階は状態更新後に表示されます。</div>
+                <div class="llm-mode-switch" data-ui="llm-mode-switch">
+                  <button id="llm-view-run" type="button" class="secondary-btn llm-mode-btn is-active" data-llm-view-target="run" aria-pressed="true" data-dict-key="ui.label.llm.view.run">検証する</button>
+                  <button id="llm-view-control" type="button" class="secondary-btn llm-mode-btn" data-llm-view-target="control" aria-pressed="false" data-dict-key="ui.label.llm.view.control">方針を管理する</button>
+                  <button id="llm-view-quality" type="button" class="secondary-btn llm-mode-btn" data-llm-view-target="quality" aria-pressed="false" data-dict-key="ui.label.llm.view.quality">履歴を確認する</button>
+                </div>
+                <div id="llm-view-note" class="note" data-dict-key="ui.desc.llm.mode.run">検証を表示中です。質問、返答候補、trace を同じ流れで確認します。</div>
+              </div>
+
+              <div class="panel llm-run-panel" data-llm-surface="run" data-surface-tier="primary">
+                <div class="panel-title" data-dict-key="ui.label.llm.runInput">検証入力</div>
+                <div class="panel-body">
+                  <div class="input-grid llm-run-input-grid">
                     <div>
                       <label data-dict-key="ui.label.llm.lineUserId" data-dict-tip="ui.help.llm.lineUserId">LINEユーザーID</label>
                       <input id="llm-line-user-id" data-dict-placeholder="ui.desc.llm.lineUserIdPlaceholder" placeholder="" />
@@ -4512,8 +4528,9 @@
                   </div>
                 </div>
               </div>
-              <div class="panel">
-                <div class="panel-title" data-dict-key="ui.label.llm.results">結果</div>
+
+              <div class="panel llm-results-panel" data-llm-surface="run" data-surface-tier="primary">
+                <div class="panel-title" data-dict-key="ui.label.llm.runResults">検証結果</div>
                 <div class="panel-body">
                   <details class="section" open data-json-collapsible="true">
                     <summary data-dict-key="ui.label.llm.opsExplain">Ops説明</summary>
@@ -4543,101 +4560,192 @@
                     </div>
                   </details>
                   <details class="section" data-json-collapsible="true">
-                    <summary>LLM Route &amp; Trace</summary>
-                    <div class="input-grid">
+                    <summary data-dict-key="ui.label.llm.routeTrace">応答ルートと追跡</summary>
+                    <div class="input-grid llm-route-grid">
                       <div>
-                        <label>apiSource</label>
+                        <label data-dict-key="ui.label.llm.route.apiSource">呼び出し元</label>
                         <div id="llm-route-api-source">-</div>
                       </div>
                       <div>
-                        <label>routeKind</label>
+                        <label data-dict-key="ui.label.llm.route.kind">ルート種別</label>
                         <div id="llm-route-kind">-</div>
                       </div>
                       <div>
-                        <label>entryType</label>
+                        <label data-dict-key="ui.label.llm.route.entryType">入口種別</label>
                         <div id="llm-route-entry-type">-</div>
                       </div>
                       <div>
-                        <label>traceId</label>
+                        <label data-dict-key="ui.label.llm.route.traceId">追跡ID</label>
                         <div id="llm-route-trace-id">-</div>
                       </div>
                       <div>
-                        <label>conversationMode</label>
+                        <label data-dict-key="ui.label.llm.route.conversationMode">会話モード</label>
                         <div id="llm-route-conversation-mode">-</div>
                       </div>
                       <div>
-                        <label>routerReason</label>
+                        <label data-dict-key="ui.label.llm.route.routerReason">ルーティング理由</label>
                         <div id="llm-route-router-reason">-</div>
                       </div>
                       <div>
-                        <label>fallbackType</label>
+                        <label data-dict-key="ui.label.llm.route.fallbackType">代替経路</label>
                         <div id="llm-route-fallback-type">-</div>
                       </div>
                       <div>
-                        <label>routeDecisionSource</label>
+                        <label data-dict-key="ui.label.llm.route.decisionSource">判定根拠</label>
                         <div id="llm-route-decision-source">-</div>
                       </div>
                       <div>
-                        <label>sharedReadinessBridge</label>
+                        <label data-dict-key="ui.label.llm.route.bridge">共有可否橋渡し</label>
                         <div id="llm-route-bridge">-</div>
                       </div>
                       <div>
-                        <label>compatFallbackReason</label>
+                        <label data-dict-key="ui.label.llm.route.compatReason">互換代替理由</label>
                         <div id="llm-route-compat-reason">-</div>
                       </div>
                       <div>
-                        <label>compatShareWindow</label>
+                        <label data-dict-key="ui.label.llm.route.compatShare">互換共有窓</label>
                         <div id="llm-route-compat-share">-</div>
                       </div>
                     </div>
                     <div id="llm-route-warning" class="note">-</div>
                     <div class="row row-top">
-                      <button id="llm-route-trace-open" type="button">この返答を追跡</button>
+                      <button id="llm-route-trace-open" type="button" class="button-subtle" data-dict-key="ui.label.llm.route.openTrace">この返答を追跡</button>
                     </div>
                     <pre id="llm-route-trace-result" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
                   <details class="section" data-json-collapsible="true">
-                    <summary>Cross-System Trace Join</summary>
+                    <summary data-dict-key="ui.label.llm.traceJoin">跨ぎ証跡の要約</summary>
                     <pre id="llm-route-trace-join-summary" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
                 </div>
               </div>
-            </div>
-            <div class="pane-detail">
-              <div class="panel">
-                <div class="panel-title" data-dict-key="ui.label.llm.policy">運用ポリシー</div>
+
+              <div id="llm-quality-panel" class="panel llm-quality-panel is-hidden" data-llm-surface="quality" data-surface-tier="primary">
+                <div class="panel-title" data-dict-key="ui.label.llm.qualityPanel">履歴と品質</div>
                 <div class="panel-body">
-                  <p data-dict-key="ui.desc.llm.policy">提案のみ。自動実行は行いません。最終判断は運用担当が実施します。</p>
+                  <div class="note" data-dict-key="ui.desc.llm.quality">利用状況、品質ボード、改善候補を読み取り専用で確認します。</div>
+                  <div class="row row-top llm-quality-toolbar">
+                    <label for="llm-usage-window-days" data-dict-key="ui.label.llm.usageWindow">集計期間（日）</label>
+                    <input id="llm-usage-window-days" type="number" min="1" max="90" value="7" class="input-sm" />
+                    <button id="llm-usage-summary-reload" type="button" data-llm-primary-for="quality" data-dict-key="ui.label.llm.usageReload">LLM usage集計</button>
+                    <button id="llm-usage-export" type="button" class="secondary-btn" data-dict-key="ui.label.llm.usageExport">LLM usage Export CSV</button>
+                  </div>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.usageSummary">LLM usage集計（JSON）</summary>
+                    <pre id="llm-usage-summary-result" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.entryControl">入口統制ダッシュボード</summary>
+                    <pre id="llm-entry-control-dashboard" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityScorecard">Quality Scorecard</summary>
+                    <pre id="llm-quality-scorecard" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualitySlices">Slice-first Board</summary>
+                    <pre id="llm-quality-slices" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityJudge">Judge Calibration Board</summary>
+                    <pre id="llm-quality-judge" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityBenchmark">Benchmark Registry</summary>
+                    <pre id="llm-quality-benchmark" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityReplay">Replay / Perturbation</summary>
+                    <pre id="llm-quality-replay" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityFrontier">Quality-Latency-Cost Frontier</summary>
+                    <pre id="llm-quality-frontier" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityFailures">Top Quality Failures</summary>
+                    <pre id="llm-quality-top-failures" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityCounterexamples">Counterexample Queue</summary>
+                    <pre id="llm-quality-counterexamples" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityPatterns">Top Loop / Context Loss Patterns</summary>
+                    <pre id="llm-quality-top-patterns" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityV2Overview">LLM Quality Loop v2</summary>
+                    <pre id="llm-quality-v2-overview" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityReadiness">Readiness v2 Board</summary>
+                    <pre id="llm-quality-v2-readiness" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityIntegration">Integration KPI Board</summary>
+                    <pre id="llm-quality-v2-integration" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityCriticalSlices">Critical Slice Board v2</summary>
+                    <pre id="llm-quality-v2-critical-slices" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.qualityImprovementLoop">Improvement Loop v3</summary>
+                    <pre id="llm-quality-v3-improvement-loop" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
                 </div>
               </div>
-              <div class="panel">
+            </div>
+
+            <div class="pane-detail llm-pane-detail" data-detail-rail="llm-control">
+              <div class="panel llm-control-intro is-hidden" data-llm-surface="control" data-surface-tier="secondary">
+                <div class="panel-title" data-dict-key="ui.label.llm.policy">運用ポリシー</div>
+                <div class="panel-body">
+                  <p data-dict-key="ui.desc.llm.control">有効化、ガード、ポリシーの順で確認し、適用前には必ず計画結果を確認します。</p>
+                </div>
+              </div>
+
+              <div class="panel llm-control-panel is-hidden" data-llm-surface="control" data-surface-tier="primary">
                 <div class="panel-title" data-dict-key="ui.label.llm.config">LLM設定</div>
                 <div class="panel-body">
-                  <label data-dict-key="ui.label.llm.config.enabled" data-dict-tip="ui.help.llm.config.enabled">LLM提案機能</label>
-                  <select id="llm-config-enabled">
-                    <option value="true" data-dict-key="ui.value.llm.enabled">有効</option>
-                    <option value="false" data-dict-key="ui.value.llm.disabled">停止</option>
-                  </select>
-                  <label data-dict-key="ui.label.llm.config.conciergeEnabled">LLMコンシェルジュ</label>
-                  <select id="llm-config-concierge-enabled">
-                    <option value="true" data-dict-key="ui.value.llm.enabled">有効</option>
-                    <option value="false" data-dict-key="ui.value.llm.disabled">停止</option>
-                  </select>
-                  <label data-dict-key="ui.label.llm.config.webSearchEnabled">LLM Web検索</label>
-                  <select id="llm-config-web-search-enabled">
-                    <option value="true" data-dict-key="ui.value.llm.enabled">有効</option>
-                    <option value="false" data-dict-key="ui.value.llm.disabled">停止</option>
-                  </select>
-                  <label data-dict-key="ui.label.llm.config.styleEngineEnabled">LLM Style Engine</label>
-                  <select id="llm-config-style-engine-enabled">
-                    <option value="true" data-dict-key="ui.value.llm.enabled">有効</option>
-                    <option value="false" data-dict-key="ui.value.llm.disabled">停止</option>
-                  </select>
-                  <label data-dict-key="ui.label.llm.config.banditEnabled">LLM Bandit</label>
-                  <select id="llm-config-bandit-enabled">
-                    <option value="true" data-dict-key="ui.value.llm.enabled">有効</option>
-                    <option value="false" data-dict-key="ui.value.llm.disabled">停止</option>
-                  </select>
+                  <div class="input-grid llm-config-grid">
+                    <div>
+                      <label data-dict-key="ui.label.llm.config.enabled" data-dict-tip="ui.help.llm.config.enabled">LLM提案機能</label>
+                      <select id="llm-config-enabled">
+                        <option value="true" data-dict-key="ui.value.llm.enabled">有効</option>
+                        <option value="false" data-dict-key="ui.value.llm.disabled">停止</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label data-dict-key="ui.label.llm.config.conciergeEnabled">LLMコンシェルジュ</label>
+                      <select id="llm-config-concierge-enabled">
+                        <option value="true" data-dict-key="ui.value.llm.enabled">有効</option>
+                        <option value="false" data-dict-key="ui.value.llm.disabled">停止</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label data-dict-key="ui.label.llm.config.webSearchEnabled">LLM Web検索</label>
+                      <select id="llm-config-web-search-enabled">
+                        <option value="true" data-dict-key="ui.value.llm.enabled">有効</option>
+                        <option value="false" data-dict-key="ui.value.llm.disabled">停止</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label data-dict-key="ui.label.llm.config.styleEngineEnabled">LLM Style Engine</label>
+                      <select id="llm-config-style-engine-enabled">
+                        <option value="true" data-dict-key="ui.value.llm.enabled">有効</option>
+                        <option value="false" data-dict-key="ui.value.llm.disabled">停止</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label data-dict-key="ui.label.llm.config.banditEnabled">LLM Bandit</label>
+                      <select id="llm-config-bandit-enabled">
+                        <option value="true" data-dict-key="ui.value.llm.enabled">有効</option>
+                        <option value="false" data-dict-key="ui.value.llm.disabled">停止</option>
+                      </select>
+                    </div>
+                  </div>
                   <div class="row row-top">
                     <button id="llm-config-reload" type="button" data-dict-key="ui.label.llm.config.reload">状態更新</button>
                     <button id="llm-config-plan" type="button" data-dict-key="ui.label.llm.config.plan">計画</button>
@@ -4655,81 +4763,86 @@
                     <summary data-dict-key="ui.label.llm.config.setResult">適用結果</summary>
                     <pre id="llm-config-set-result" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <details class="section">
-                    <summary>LLM Runtime Status</summary>
-                    <div class="input-grid">
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.llm.runtime">LLM Runtime Status</summary>
+                    <div class="input-grid llm-route-grid">
                       <div>
-                        <label>Env Flag</label>
+                        <label data-dict-key="ui.label.llm.runtime.envFlag">Env Flag</label>
                         <div id="llm-runtime-env-flag">-</div>
                       </div>
                       <div>
-                        <label>System Flag</label>
+                        <label data-dict-key="ui.label.llm.runtime.systemFlag">System Flag</label>
                         <div id="llm-runtime-system-flag">-</div>
                       </div>
                       <div>
-                        <label>Effective Enabled</label>
+                        <label data-dict-key="ui.label.llm.runtime.effectiveEnabled">Effective Enabled</label>
                         <div id="llm-runtime-effective-enabled">-</div>
                       </div>
                       <div>
-                        <label>Blocking Reason</label>
+                        <label data-dict-key="ui.label.llm.runtime.blockingReason">Blocking Reason</label>
                         <div id="llm-runtime-blocking-reason">-</div>
                       </div>
                     </div>
                     <div id="llm-runtime-warning" class="note">-</div>
                   </details>
-                  <hr />
-                  <label>LLMポリシー有効</label>
+                </div>
+              </div>
+
+              <div class="panel llm-policy-panel is-hidden" data-llm-surface="control" data-surface-tier="secondary">
+                <div class="panel-title" data-dict-key="ui.label.llm.policyPanel">ポリシー管理</div>
+                <div class="panel-body">
+                  <label data-dict-key="ui.label.llm.policy.enabled">LLMポリシー有効</label>
                   <select id="llm-policy-enabled">
                     <option value="true">true</option>
                     <option value="false">false</option>
                   </select>
-                  <div class="input-grid">
+                  <div class="input-grid llm-policy-grid">
                     <div>
-                      <label>model</label>
+                      <label data-dict-key="ui.label.llm.policy.model">モデル</label>
                       <input id="llm-policy-model" value="gpt-4o-mini" />
                     </div>
                     <div>
-                      <label>temperature</label>
+                      <label data-dict-key="ui.label.llm.policy.temperature">温度</label>
                       <input id="llm-policy-temperature" type="number" step="0.1" min="0" max="2" value="0.2" />
                     </div>
                     <div>
-                      <label>top_p</label>
+                      <label data-dict-key="ui.label.llm.policy.topP">上位確率</label>
                       <input id="llm-policy-top-p" type="number" step="0.1" min="0" max="1" value="1" />
                     </div>
                     <div>
-                      <label>max_tokens (alias: max_output_tokens)</label>
+                      <label data-dict-key="ui.label.llm.policy.maxTokens">最大出力トークン</label>
                       <input id="llm-policy-max-output-tokens" type="number" step="1" min="32" max="4096" value="600" />
                     </div>
                     <div>
-                      <label>per_user_limit (alias: per_user_daily_limit)</label>
+                      <label data-dict-key="ui.label.llm.policy.perUserLimit">1人あたり日次上限</label>
                       <input id="llm-policy-per-user-daily-limit" type="number" step="1" min="0" max="2000" value="20" />
                     </div>
                     <div>
-                      <label>per_user_daily_token_budget (alias: per_user_token_budget)</label>
+                      <label data-dict-key="ui.label.llm.policy.perUserTokenBudget">1人あたり日次トークン上限</label>
                       <input id="llm-policy-per-user-token-budget" type="number" step="1" min="0" max="500000" value="12000" />
                     </div>
                     <div>
-                      <label>rate_limit (alias: global_qps_limit)</label>
+                      <label data-dict-key="ui.label.llm.policy.rateLimit">全体QPS上限</label>
                       <input id="llm-policy-global-qps-limit" type="number" step="1" min="0" max="1000" value="5" />
                     </div>
                     <div>
-                      <label>cache_ttl_sec</label>
+                      <label data-dict-key="ui.label.llm.policy.cacheTtlSec">キャッシュTTL秒</label>
                       <input id="llm-policy-cache-ttl-sec" type="number" step="1" min="0" max="86400" value="120" />
                     </div>
                     <div>
-                      <label>allowed_intents_free(csv)</label>
+                      <label data-dict-key="ui.label.llm.policy.allowedIntentsFree">無料許可intent(csv)</label>
                       <input id="llm-policy-allowed-intents-free" value="faq_search" />
                     </div>
                     <div>
-                      <label>allowed_intents_pro(csv)</label>
+                      <label data-dict-key="ui.label.llm.policy.allowedIntentsPro">有料許可intent(csv)</label>
                       <input id="llm-policy-allowed-intents-pro" value="situation_analysis,gap_check,timeline_build,next_action_generation,risk_alert,faq_search" />
                     </div>
                     <div>
-                      <label>forbidden_domains(csv)</label>
+                      <label data-dict-key="ui.label.llm.policy.forbiddenDomains">禁止ドメイン(csv)</label>
                       <input id="llm-policy-forbidden-domains" value="" />
                     </div>
                     <div>
-                      <label>safety_mode</label>
+                      <label data-dict-key="ui.label.llm.policy.safetyMode">セーフティモード</label>
                       <select id="llm-policy-safety-mode">
                         <option value="strict">strict</option>
                         <option value="balanced">balanced</option>
@@ -4737,135 +4850,64 @@
                       </select>
                     </div>
                     <div>
-                      <label>effectiveEnabled</label>
+                      <label data-dict-key="ui.label.llm.policy.effectiveEnabled">実効有効状態</label>
                       <div id="llm-policy-effective-enabled">-</div>
                     </div>
                     <div>
-                      <label>disclaimer_templates(json)</label>
+                      <label data-dict-key="ui.label.llm.policy.disclaimerTemplates">免責テンプレート(json)</label>
                       <textarea id="llm-policy-disclaimer-templates" rows="6" class="input-mono"></textarea>
                     </div>
                     <div>
-                      <label>output_constraints(json)</label>
+                      <label data-dict-key="ui.label.llm.policy.outputConstraints">出力制約(json)</label>
                       <textarea id="llm-policy-output-constraints" rows="6" class="input-mono"></textarea>
                     </div>
                   </div>
                   <div class="row row-top">
-                    <button id="llm-policy-reload" type="button">ポリシー状態</button>
-                    <button id="llm-policy-plan" type="button">ポリシー計画</button>
-                    <button id="llm-policy-set" type="button">ポリシー適用</button>
-                    <button id="llm-policy-history" type="button">ポリシー履歴</button>
+                    <button id="llm-policy-reload" type="button" class="secondary-btn" data-dict-key="ui.label.llm.policy.reload">ポリシー状態</button>
+                    <button id="llm-policy-plan" type="button" data-llm-primary-for="control" data-dict-key="ui.label.llm.policy.plan">ポリシー計画</button>
+                    <button id="llm-policy-set" type="button" data-dict-key="ui.label.llm.policy.set">ポリシー適用</button>
+                    <button id="llm-policy-history" type="button" class="secondary-btn" data-dict-key="ui.label.llm.policy.history">ポリシー履歴</button>
                   </div>
                   <details class="section" data-json-collapsible="true">
-                    <summary>ポリシー状態</summary>
+                    <summary data-dict-key="ui.label.llm.policy.status">ポリシー状態</summary>
                     <pre id="llm-policy-status" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
                   <details class="section" data-json-collapsible="true">
-                    <summary>ポリシー計画結果</summary>
+                    <summary data-dict-key="ui.label.llm.policy.planResult">ポリシー計画結果</summary>
                     <pre id="llm-policy-plan-result" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
                   <details class="section" data-json-collapsible="true">
-                    <summary>ポリシー適用結果</summary>
+                    <summary data-dict-key="ui.label.llm.policy.setResult">ポリシー適用結果</summary>
                     <pre id="llm-policy-set-result" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
-                  <div class="note">ポリシー変更履歴</div>
                   <details class="section" data-json-collapsible="true">
-                    <summary>ポリシー変更履歴（JSON）</summary>
+                    <summary data-dict-key="ui.label.llm.policy.historyResult">ポリシー変更履歴（JSON）</summary>
                     <pre id="llm-policy-history-result" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <hr />
-                  <div class="row row-top">
-                    <label for="llm-usage-window-days">usage window(days)</label>
-                    <input id="llm-usage-window-days" type="number" min="1" max="90" value="7" class="input-sm" />
-                    <button id="llm-usage-summary-reload" type="button">LLM usage集計</button>
-                    <button id="llm-usage-export" type="button">LLM usage Export CSV</button>
-                  </div>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>LLM usage集計（JSON）</summary>
-                    <pre id="llm-usage-summary-result" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>入口統制ダッシュボード</summary>
-                    <pre id="llm-entry-control-dashboard" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Quality Scorecard</summary>
-                    <pre id="llm-quality-scorecard" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Slice-first Board</summary>
-                    <pre id="llm-quality-slices" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Judge Calibration Board</summary>
-                    <pre id="llm-quality-judge" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Benchmark Registry</summary>
-                    <pre id="llm-quality-benchmark" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Replay / Perturbation</summary>
-                    <pre id="llm-quality-replay" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Quality-Latency-Cost Frontier</summary>
-                    <pre id="llm-quality-frontier" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Top Quality Failures</summary>
-                    <pre id="llm-quality-top-failures" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Counterexample Queue</summary>
-                    <pre id="llm-quality-counterexamples" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Top Loop / Context Loss Patterns</summary>
-                    <pre id="llm-quality-top-patterns" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>LLM Quality Loop v2</summary>
-                    <pre id="llm-quality-v2-overview" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Readiness v2 Board</summary>
-                    <pre id="llm-quality-v2-readiness" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Integration KPI Board</summary>
-                    <pre id="llm-quality-v2-integration" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Critical Slice Board v2</summary>
-                    <pre id="llm-quality-v2-critical-slices" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
-                  <details class="section" data-json-collapsible="true">
-                    <summary>Improvement Loop v3</summary>
-                    <pre id="llm-quality-v3-improvement-loop" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
                 </div>
               </div>
             </div>
-            <aside class="pane-actions">
-              <div class="action-panel">
+
+            <aside class="pane-actions llm-pane-actions">
+              <div class="action-panel llm-run-actions" data-llm-surface="run" data-surface-tier="secondary">
                 <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.llm.actions">追跡IDを付けて実行し、結果を証跡として確認します。</div>
                   <div class="note">
                     <span data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</span>:
                     <input type="text" id="llm-trace" class="input-inline input-trace" />
-                    <button id="llm-regen" type="button" data-dict-key="ui.label.trace.regen">再生成</button>
+                    <button id="llm-regen" type="button" class="secondary-btn" data-dict-key="ui.label.trace.regen">再生成</button>
                     <span id="llm-trace-note"></span>
                   </div>
                   <div class="row row-top">
-                    <button id="llm-run-ops-explain" type="button" data-dict-key="ui.label.llm.runOpsExplain">Ops説明を取得</button>
-                    <button id="llm-run-next-actions" type="button" data-dict-key="ui.label.llm.runNextActions">次候補を取得</button>
+                    <button id="llm-run-ops-explain" type="button" class="secondary-btn" data-dict-key="ui.label.llm.runOpsExplain">Ops説明を取得</button>
+                    <button id="llm-run-next-actions" type="button" class="secondary-btn" data-dict-key="ui.label.llm.runNextActions">次候補を取得</button>
                   </div>
                   <div class="row row-top">
-                    <button id="llm-run-faq" type="button" data-dict-key="ui.label.llm.runFaq">FAQ回答を生成</button>
+                    <button id="llm-run-faq" type="button" data-llm-primary-for="run" data-primary-action="pane-primary" data-dict-key="ui.label.llm.runFaq">FAQ回答を生成</button>
                   </div>
                   <div class="row row-top">
-                    <button id="llm-open-audit" type="button" data-dict-key="ui.label.llm.openAudit">証跡を開く</button>
+                    <button id="llm-open-audit" type="button" class="button-subtle" data-dict-key="ui.label.llm.openAudit">証跡を開く</button>
                   </div>
                 </div>
               </div>

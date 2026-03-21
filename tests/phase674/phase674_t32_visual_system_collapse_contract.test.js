@@ -29,7 +29,7 @@ test('phase674: visual cleanup marks monitor/audit/settings/llm evidence blocks 
 
   assert.match(llmPane, /<details class="section" open data-json-collapsible="true">\s*<summary[^>]*>Ops説明<\/summary>/m);
   assert.match(llmPane, /<pre id="llm-config-set-result"[^>]*data-visual-noise="evidence-placeholder"/m);
-  assert.match(llmPane, /<details class="section" data-json-collapsible="true">\s*<summary>LLM usage集計（JSON）<\/summary>/m);
+  assert.match(llmPane, /<details class="section" data-json-collapsible="true">\s*<summary[^>]*>LLM usage集計（JSON）<\/summary>/m);
 
   assert.match(settingsPane, /<details class="section" data-json-collapsible="true">\s*<summary>Journey Policy（status）<\/summary>/m);
   assert.match(settingsPane, /<pre id="ux-policy-fatigue-warning"[^>]*data-visual-noise="evidence-placeholder"/m);
