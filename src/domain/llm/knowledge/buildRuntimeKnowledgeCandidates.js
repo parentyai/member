@@ -231,6 +231,9 @@ function buildKnowledgeCandidate(params) {
     ? payload.savedFaqSignals
     : null;
   const cityPack = payload.cityPack && typeof payload.cityPack === 'object' ? payload.cityPack : null;
+  const cityPackSpecificity = payload.cityPackSpecificity && typeof payload.cityPackSpecificity === 'object'
+    ? payload.cityPackSpecificity
+    : null;
   const knowledgeGroundingKind = normalizeText(payload.knowledgeGroundingKind) || 'faq';
   const evidenceCoverage = Number.isFinite(Number(payload.evidenceCoverage))
     ? Number(payload.evidenceCoverage)
@@ -272,6 +275,10 @@ function buildKnowledgeCandidate(params) {
         cityPackGroundingReason: cityPack ? 'runtime_city_pack_candidate' : null,
         cityPackPackId: cityPack ? cityPack.sourceId : null,
         cityPackSourceSnapshot: cityPack ? { sourceRefIds: sourceSnapshotRefs } : null,
+        requestedCityKey: cityPackSpecificity ? cityPackSpecificity.requestedCityKey || null : null,
+        matchedCityKey: cityPackSpecificity ? cityPackSpecificity.matchedCityKey || null : null,
+        citySpecificitySatisfied: cityPackSpecificity ? cityPackSpecificity.citySpecificitySatisfied === true : null,
+        citySpecificityReason: cityPackSpecificity ? cityPackSpecificity.citySpecificityReason || null : null,
         savedFaqReused: savedFaqSignals ? savedFaqSignals.savedFaqReused === true : false,
         savedFaqReusePass: savedFaqSignals ? savedFaqSignals.savedFaqReusePass === true : false,
         savedFaqReuseReasonCodes: savedFaqSignals && Array.isArray(savedFaqSignals.savedFaqReuseReasonCodes)
@@ -378,9 +385,16 @@ async function buildRuntimeKnowledgeCandidates(params, deps) {
     lineUserId: packet.lineUserId,
     locale,
     messageText: packet.messageText,
-    genericFallbackSlice: packet.genericFallbackSlice
+    genericFallbackSlice: packet.genericFallbackSlice,
+    requestContract: packet.requestContract
   }, resolvedDeps);
   const topCityPack = Array.isArray(cityPackResult && cityPackResult.candidates) ? cityPackResult.candidates[0] : null;
+  telemetry.requestedCityKey = cityPackResult && cityPackResult.requestedCityKey ? cityPackResult.requestedCityKey : null;
+  telemetry.matchedCityKey = cityPackResult && cityPackResult.matchedCityKey ? cityPackResult.matchedCityKey : null;
+  telemetry.citySpecificitySatisfied = cityPackResult && cityPackResult.citySpecificitySatisfied === true;
+  telemetry.citySpecificityReason = cityPackResult && cityPackResult.citySpecificityReason
+    ? cityPackResult.citySpecificityReason
+    : null;
   if (topCityPack) {
     telemetry.cityPackCandidateAvailable = true;
     const sourceRefs = await resolveCityPackSourceRefs(topCityPack, resolvedDeps);
@@ -394,6 +408,7 @@ async function buildRuntimeKnowledgeCandidates(params, deps) {
         sourceSnapshotRefs: sourceRefs.map((item) => item.id),
         sourceReadiness: cityPackReadiness,
         cityPack: topCityPack,
+        cityPackSpecificity: cityPackResult,
         knowledgeGroundingKind: 'city_pack'
       }));
       telemetry.knowledgeGroundingKind = 'city_pack';
@@ -401,7 +416,7 @@ async function buildRuntimeKnowledgeCandidates(params, deps) {
       telemetry.cityPackRejectedReason = `city_pack_${cityPackReadiness.sourceReadinessDecision}`;
     }
   } else {
-    telemetry.cityPackRejectedReason = 'no_city_pack_match';
+    telemetry.cityPackRejectedReason = telemetry.citySpecificityReason || 'no_city_pack_match';
   }
 
   if (telemetry.knowledgeCandidateRejectedReason === null && candidates.length === 0) {

@@ -10,6 +10,10 @@ const RUNTIME_CAUSES = new Set([
   ROOT_CAUSE_TYPE.commandBoundaryMisfire,
   ROOT_CAUSE_TYPE.readinessRejection,
   ROOT_CAUSE_TYPE.citySpecificityGap,
+  ROOT_CAUSE_TYPE.specificityResolutionGap,
+  ROOT_CAUSE_TYPE.sourceTransformDrop,
+  ROOT_CAUSE_TYPE.deepenPlannerReset,
+  ROOT_CAUSE_TYPE.regionCommandCollision,
   ROOT_CAUSE_TYPE.proceduralGuidanceGap,
   ROOT_CAUSE_TYPE.retrievalBlocked
 ]);

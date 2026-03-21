@@ -26,7 +26,7 @@ test('phase829: readiness gate telemetry exposes decision source and hardening v
 
   assert.equal(gate.readinessV2.decisionSource, 'high_risk_evidence_guard');
   assert.equal(gate.telemetry.readinessDecisionSourceV2, 'high_risk_evidence_guard');
-  assert.equal(gate.telemetry.readinessHardeningVersion, 'r829');
+  assert.equal(gate.telemetry.readinessHardeningVersion, 'r830');
 });
 
 test('phase829: sinks preserve readiness decision source fields additively', () => {

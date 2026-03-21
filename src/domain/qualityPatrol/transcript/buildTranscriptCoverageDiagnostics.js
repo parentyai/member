@@ -69,6 +69,8 @@ function createSnapshotInputDiagnostics() {
     sanitized_reply_empty: 0,
     masking_removed_text: 0,
     region_prompt_fallback: 0,
+    city_hint_detected: 0,
+    region_command_collision: 0,
     assistantReplyPresent: {
       trueCount: 0,
       falseCount: 0
@@ -165,12 +167,16 @@ function buildTranscriptCoverageDiagnostics(params) {
       ? row.transcriptSnapshotBuildAttempted
       : null;
     const skippedReason = normalizeTranscriptSnapshotBuildSkippedReason(row && row.transcriptSnapshotBuildSkippedReason);
+    const locationHintKind = normalizeReason(row && row.locationHintKind);
+    const violationCodes = Array.isArray(row && row.violationCodes) ? row.violationCodes.map((item) => normalizeReason(item)) : [];
 
     recordBooleanCounts(snapshotInputDiagnostics.assistantReplyPresent, assistantReplyPresent);
     recordBooleanCounts(snapshotInputDiagnostics.snapshotBuildAttempted, snapshotBuildAttempted);
     recordLengthStat(snapshotInputDiagnostics.assistantReplyLength, row && row.transcriptSnapshotAssistantReplyLength);
     recordLengthStat(snapshotInputDiagnostics.sanitizedReplyLength, row && row.transcriptSnapshotSanitizedReplyLength);
     recordSnapshotBuildSkippedReason(snapshotInputDiagnostics, skippedReason);
+    if (locationHintKind === 'city') snapshotInputDiagnostics.city_hint_detected += 1;
+    if (violationCodes.includes('command_boundary_collision')) snapshotInputDiagnostics.region_command_collision += 1;
   });
 
   const writtenCount = Number(transcriptWriteOutcomeCounts.written || 0);

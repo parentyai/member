@@ -24,5 +24,5 @@ test('phase829: high-risk weak evidence now clarifies instead of staying hedged'
   assert.equal(result.decision, 'clarify');
   assert.ok(result.reasonCodes.includes('high_risk_evidence_not_ready'));
   assert.equal(result.decisionSource, 'high_risk_evidence_guard');
-  assert.equal(result.qualitySnapshot.readinessHardeningVersion, 'r829');
+  assert.equal(result.qualitySnapshot.readinessHardeningVersion, 'r830');
 });

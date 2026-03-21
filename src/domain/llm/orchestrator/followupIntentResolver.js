@@ -86,6 +86,13 @@ function resolveFollowupIntent(params) {
     };
   }
 
+  if (domainIntent === 'general' && !hasCarryContext && hasPattern(messageText, GENERAL_NEXT_STEP_PATTERN)) {
+    return {
+      followupIntent: 'next_step',
+      reason: 'general_next_step_keyword'
+    };
+  }
+
   if (hasPattern(messageText, NEXT_STEP_PATTERN) || hasPattern(messageText, GENERAL_NEXT_STEP_PATTERN)) {
     return {
       followupIntent: 'next_step',

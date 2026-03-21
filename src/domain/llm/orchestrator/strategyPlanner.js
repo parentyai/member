@@ -9,7 +9,7 @@ function isBroadQuestion(text) {
   const normalized = normalizeText(text).replace(/[?？!！。]+$/g, '');
   if (!normalized) return true;
   if (normalized.length <= 8) return true;
-  return /(どうすれば|どうしたら|何から|何をすれば|相談したい|困ってる|進めたい)/.test(normalized);
+  return /(どうすれば|どうしたら|何から|何をすれば|相談したい|困ってる|進めたい|順番だけ|最初の順番|ざっくり|短く教えて)/.test(normalized);
 }
 
 function hasPattern(text, pattern) {
@@ -64,6 +64,10 @@ function buildStrategyPlan(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const routerMode = normalizeText(payload.routerMode || 'casual').toLowerCase();
   const normalizedIntent = normalizeText(payload.normalizedConversationIntent || 'general').toLowerCase();
+  const contextResumeDomain = normalizeText(payload.contextResumeDomain || '').toLowerCase();
+  const requestContractPrimaryDomain = normalizeText(
+    payload.requestContract && payload.requestContract.primaryDomainIntent
+  ).toLowerCase();
   const followupIntent = normalizeText(payload.followupIntent || '').toLowerCase();
   const followupIntentReason = normalizeText(payload.followupIntentReason || '').toLowerCase();
   const followupCarryFromHistory = payload.followupCarryFromHistory === true || followupIntentReason === 'history_followup_carry';
@@ -89,13 +93,17 @@ function buildStrategyPlan(params) {
   const priorContextUsed = payload.priorContextUsed === true || payload.contextResume === true || followupCarryFromHistory;
   const strategySignals = detectStrategySignals(messageText);
   const highRiskIntent = isHighRiskDomainIntent(normalizedIntent);
-  const broadGroundingEligible = isBroadQuestion(messageText)
+  const broadQuestionLike = isBroadQuestion(messageText) || strategySignals.generalSetupQuestion;
+  const broadGroundingEligible = broadQuestionLike
     && (
       priorContextUsed
       || normalizedIntent !== 'general'
+      || (contextResumeDomain && contextResumeDomain !== 'general')
+      || (requestContractPrimaryDomain && requestContractPrimaryDomain !== 'general')
       || strategySignals.costQuestion
       || strategySignals.timelineQuestion
       || strategySignals.checklistQuestion
+      || strategySignals.generalSetupQuestion
       || strategySignals.relocationQuestion
       || strategySignals.cityQuestion
     );
@@ -111,7 +119,11 @@ function buildStrategyPlan(params) {
       || strategySignals.cityQuestion
     );
   const continuationGroundingPreferred = priorContextUsed
-    && normalizedIntent !== 'general'
+    && (
+      normalizedIntent !== 'general'
+      || (contextResumeDomain && contextResumeDomain !== 'general')
+      || (requestContractPrimaryDomain && requestContractPrimaryDomain !== 'general')
+    )
     && highRiskIntent !== true
     && (hasFollowupIntent || followupCarryFromHistory || payload.contextResume === true);
   const utilityTransformDirectAnswerPreferred = strategySignals.utilityTransformQuestion
@@ -120,10 +132,10 @@ function buildStrategyPlan(params) {
     && (
       strategySignals.servicePlanQuestion
       || strategySignals.generalContinuationQuestion
-      || strategySignals.generalSetupQuestion
       || strategySignals.utilityTransformQuestion
       || ((hasFollowupIntent || followupCarryFromHistory) && priorContextUsed)
-    );
+    )
+    && broadGroundingEligible !== true;
   const groundedFirstCandidateSet = appendClarifyCandidateSet(
     ['grounded_candidate', 'structured_answer_candidate', 'domain_concierge_candidate'],
     clarifyCandidateAllowed
@@ -629,7 +641,7 @@ function buildStrategyPlan(params) {
         { strategyAlternativeSet: ['domain_concierge', 'clarify'] }
       ));
     }
-    const clarifyFirst = isBroadQuestion(messageText)
+    const clarifyFirst = broadQuestionLike
       && (!opportunityDecision || opportunityDecision.conversationMode !== 'concierge')
       && directAnswerHint !== true
       && broadGroundingEligible !== true;

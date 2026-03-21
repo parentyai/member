@@ -50,3 +50,35 @@ test('phase851: city specificity gap is detected for city slice specificity fail
   const causeTypes = result.rootCauseReports[0].causeCandidates.map((item) => item.causeType);
   assert.ok(causeTypes.includes('city_specificity_gap'));
 });
+
+test('phase851: city scope overclaim maps to specificity resolution gap', () => {
+  const detectionResult = buildDetectionResult({
+    metricKey: 'cityOverclaimRate',
+    category: 'city_scope_overclaim',
+    issueType: 'specificity',
+    slice: 'city'
+  });
+  const context = buildReviewContext({
+    slice: 'city',
+    telemetrySignals: {
+      cityPackCandidateAvailable: true,
+      cityPackUsedInAnswer: true,
+      knowledgeGroundingKind: 'city_pack',
+      citySpecificitySatisfied: false,
+      replyTemplateFingerprint: 'fp_city_overclaim',
+      repeatRiskScore: 0.12,
+      committedNextActions: []
+    }
+  });
+
+  const result = analyzeRootCauses({
+    detectionResult,
+    kpiResult: buildKpiResult('cityOverclaimRate'),
+    reviewUnits: context.reviewUnits,
+    evaluations: [],
+    traceBundles: context.traceBundles
+  });
+
+  const causeTypes = result.rootCauseReports[0].causeCandidates.map((item) => item.causeType);
+  assert.ok(causeTypes.includes('specificity_resolution_gap'));
+});

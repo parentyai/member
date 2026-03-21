@@ -38,13 +38,16 @@ test('phase758: clarify candidate avoids repeating recent generic clarification 
   assert.equal(result.telemetry.strategy, 'grounded_answer');
   assert.equal(result.telemetry.strategyReason, 'broad_question_grounding_probe');
   assert.ok(
-    ['knowledge_backed_candidate', 'clarify_candidate'].includes(result.telemetry.selectedCandidateKind),
+    ['knowledge_backed_candidate', 'saved_faq_candidate', 'clarify_candidate'].includes(result.telemetry.selectedCandidateKind),
     `unexpected selectedCandidateKind: ${result.telemetry.selectedCandidateKind}`
   );
   assert.equal(result.telemetry.retrieveNeeded, true);
   assert.equal(result.telemetry.retrievalBlockedByStrategy, false);
   assert.match(result.telemetry.retrievalPermitReason || '', /broad_structured_grounding_probe/);
-  if (result.telemetry.selectedCandidateKind === 'knowledge_backed_candidate') {
+  if (
+    result.telemetry.selectedCandidateKind === 'knowledge_backed_candidate'
+    || result.telemetry.selectedCandidateKind === 'saved_faq_candidate'
+  ) {
     assert.equal(result.telemetry.knowledgeCandidateUsed, true);
   }
   assert.equal(result.replyText.includes(repeatedPhrase), false);
@@ -92,7 +95,7 @@ test('phase758: domain follow-up clarify remains domain-specific when domain can
   assert.equal(result.telemetry.followupIntent, 'appointment_needed');
 });
 
-test('phase758: recovery signal preserves domain context before high-risk safety refusal', async () => {
+test('phase758: correction request preserves domain context and routes docs follow-up through direct clarify path', async () => {
   const result = await runPaidConversationOrchestrator({
     lineUserId: 'U_PHASE758_RECOVERY',
     messageText: '違う、予約じゃなくて書類',
@@ -128,14 +131,15 @@ test('phase758: recovery signal preserves domain context before high-risk safety
   assert.equal(result.packet.normalizedConversationIntent, 'ssn');
   assert.equal(result.packet.followupIntent, 'docs_required');
   assert.equal(result.telemetry.directAnswerApplied, true);
-  assert.equal(result.telemetry.strategyReason, 'recovery_signal_domain_resume');
+  assert.equal(result.telemetry.strategyReason, 'request_shape_correction');
   assert.equal(result.telemetry.priorContextUsed, true);
-  assert.match(result.telemetry.retrievalPermitReason || '', /followup_context_grounding_probe/);
+  assert.equal(result.telemetry.retrievalBlockedByStrategy, true);
+  assert.equal(result.telemetry.retrievalBlockReason, 'request_shape_correction');
   assert.equal(result.telemetry.selectedCandidateKind, 'clarify_candidate');
-  assert.equal(result.telemetry.readinessDecision, 'refuse');
-  assert.equal(result.telemetry.officialOnlySatisfied, false);
-  assert.equal(result.telemetry.finalizerTemplateKind, 'refuse_template');
-  assert.match(result.replyText, /公式窓口|最終確認/);
+  assert.equal(result.telemetry.readinessDecision, 'allow');
+  assert.equal(result.telemetry.officialOnlySatisfied, true);
+  assert.equal(result.telemetry.finalizerTemplateKind, 'clarify_template');
+  assert.match(result.replyText, /SSN|書類/);
   assert.equal(result.replyText.includes('対象を絞って案内したいので'), false);
 });
 

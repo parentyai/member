@@ -1,6 +1,10 @@
 'use strict';
 
-const { buildEchoContinuationFromSource } = require('../../../usecases/assistant/generatePaidDomainConciergeReply');
+const {
+  buildEchoContinuationFromSource,
+  buildDeepenReplyFromSource
+} = require('../../../usecases/assistant/generatePaidDomainConciergeReply');
+const { extractLocationHintFromText } = require('../../regionNormalization');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -52,6 +56,24 @@ function containsPunctuationAnomaly(text) {
   return /(\.\.|。。|？？|！！|。？|？。|！。|。！)/.test(normalizeText(text));
 }
 
+function extractFactTokens(text) {
+  return Array.from(new Set(
+    normalizeText(text)
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .map((item) => item.trim())
+      .filter((item) => item.length >= 2)
+  )).slice(0, 24);
+}
+
+function hasSourceFactCarry(replyText, sourceReplyText) {
+  const sourceTokens = extractFactTokens(sourceReplyText);
+  const replyTokens = new Set(extractFactTokens(replyText));
+  if (!sourceTokens.length) return true;
+  const overlap = sourceTokens.filter((token) => replyTokens.has(token)).length;
+  return overlap >= Math.min(2, sourceTokens.length);
+}
+
 function hasDomainWord(text, domainIntent) {
   const normalized = normalizeText(text);
   if (!normalized) return false;
@@ -66,6 +88,10 @@ function extractFirstLine(text) {
   return normalizeText(text).split('\n').map((line) => line.trim()).filter(Boolean)[0] || '';
 }
 
+function isRegionSpecificSourceReply(sourceReplyText) {
+  return /対象地域|地域差|制度名が分かるなら|地域で差が出る話/.test(normalizeText(sourceReplyText));
+}
+
 function ensureSentence(text) {
   const normalized = normalizeText(text);
   if (!normalized) return '';
@@ -76,10 +102,13 @@ function ensureSentence(text) {
 function buildMessageTemplateFallback(sourceReplyText, domainIntent) {
   const firstLine = extractFirstLine(sourceReplyText);
   if (/事前予約が必要かどうか/.test(firstLine)) {
-    return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります。';
+    return '事前予約が必要かどうかを、先に確認してみます。';
   }
   if (/今日は最優先の1件の期限だけ確認して/.test(firstLine)) {
     return '今日は最優先の1件の期限だけ確認して、必要書類か予約要否のどちらを先に見るか決めてみます。';
+  }
+  if (isRegionSpecificSourceReply(sourceReplyText)) {
+    return '地域差がありそうなので、対象地域の窓口と受付期限だけ先に確認してみます。';
   }
   if (/制度や期限|公式情報/.test(normalizeText(sourceReplyText))) {
     return '制度や期限が変わりそうなところだけ、先に公式情報を見ておきます。';
@@ -93,15 +122,23 @@ function buildMessageTemplateFallback(sourceReplyText, domainIntent) {
   if (/SSN|ソーシャルセキュリティ/.test(firstLine) || domainIntent === 'ssn') {
     return 'まずはSSNの必要書類を整理して、窓口の条件を確認してみます。';
   }
-  return '今進める順番を整理したいので、最初に何を優先すべきか教えてもらえると助かります。';
+  return '今進める順番を整理したいので、最初に優先する1件を決めてみます。';
 }
 
 function buildConstrainedFallbackReply(packet) {
   const payload = packet && typeof packet === 'object' ? packet : {};
   const requestShape = normalizeText(payload.requestShape).toLowerCase();
+  const depthIntent = normalizeText(payload.depthIntent).toLowerCase();
   const outputForm = normalizeText(payload.outputForm).toLowerCase();
+  const messageText = normalizeText(payload.messageText);
   const primaryDomainIntent = normalizeText(payload.primaryDomainIntent || payload.normalizedConversationIntent).toLowerCase() || 'general';
   const sourceReplyText = normalizeText(payload.sourceReplyText || (payload.requestContract && payload.requestContract.sourceReplyText));
+  if (depthIntent === 'deepen' && sourceReplyText) {
+    const deepenLines = buildDeepenReplyFromSource(sourceReplyText, primaryDomainIntent, payload.messageText);
+    if (Array.isArray(deepenLines) && deepenLines.length > 0) {
+      return deepenLines.slice(0, outputForm === 'two_sentences' ? 2 : 1).map(ensureSentence).join('\n');
+    }
+  }
   if (requestShape === 'followup_continue' && payload.echoOfPriorAssistant === true) {
     const sourceAwareContinuation = buildEchoContinuationFromSource(sourceReplyText);
     if (Array.isArray(sourceAwareContinuation) && sourceAwareContinuation.length > 0) {
@@ -109,6 +146,9 @@ function buildConstrainedFallbackReply(packet) {
     }
   }
   if (requestShape === 'message_template' || outputForm === 'message_only' || outputForm === 'polite_template') {
+    if (!sourceReplyText && /(予約が必要かどうか).*(失礼なく|短文)|失礼なく聞く短文|短文を1つ作って/i.test(messageText)) {
+      return 'ご都合のよい範囲で、事前予約が必要かどうか教えていただけますか。';
+    }
     return buildMessageTemplateFallback(sourceReplyText, primaryDomainIntent);
   }
   if (requestShape === 'rewrite' && outputForm === 'non_dogmatic') {
@@ -116,14 +156,20 @@ function buildConstrainedFallbackReply(packet) {
     if (/事前予約が必要かどうか/.test(line)) {
       return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります。';
     }
+    if (isRegionSpecificSourceReply(sourceReplyText)) {
+      return '地域差がありそうなら、対象地域の窓口と受付期限だけ見ておくと安心かもしれません。';
+    }
     if (/制度|期限|必要書類|費用/.test(line)) {
       return '制度や期限が変わりそうな話なら、まず公式情報を見ておくと安心かもしれません。';
     }
     return 'もしよければ、まずは優先するものを1つだけ決める形で進めると無理が少なそうです。';
   }
   if (requestShape === 'rewrite' && outputForm === 'two_sentences') {
+    if (isRegionSpecificSourceReply(sourceReplyText)) {
+      return '地域で差が出る話は、まず窓口と必要書類、受付期限だけ見れば大丈夫です。\n制度名が分かれば、その3点だけでもかなり判断しやすくなります。';
+    }
     if (/制度|期限|必要書類|費用/.test(sourceReplyText)) {
-      return '制度や期限が変わる話は、まず公式情報を見ておくと安心です。\nそのあとで、どこを確認するか一緒に絞っていけます。';
+      return '制度や期限が変わる話は、まず公式窓口や受付期限を見ておくと安心です。\n必要書類まで見えてくると、どこを確認すべきかかなり判断しやすくなります。';
     }
     return 'まずは、いちばん気になっている手続きを1つに絞るところからで大丈夫です。\nそこが決まれば、次に見ることを一緒に整理できます。';
   }
@@ -157,10 +203,16 @@ function collectViolationCodes(packet, selected, replyText) {
   const payload = packet && typeof packet === 'object' ? packet : {};
   const candidate = selected && typeof selected === 'object' ? selected : {};
   const requestShape = normalizeText(payload.requestShape).toLowerCase();
+  const depthIntent = normalizeText(payload.depthIntent).toLowerCase();
+  const transformSource = normalizeText(payload.transformSource).toLowerCase();
   const outputForm = normalizeText(payload.outputForm).toLowerCase();
   const detailObligations = Array.isArray(payload.detailObligations) ? payload.detailObligations : [];
+  const sourceReplyText = normalizeText(payload.sourceReplyText || (payload.requestContract && payload.requestContract.sourceReplyText));
   const domainSignals = Array.isArray(payload.domainSignals) ? payload.domainSignals : [];
   const recentHints = Array.isArray(payload.recentResponseHints) ? payload.recentResponseHints : [];
+  const knowledgeTelemetry = payload.knowledgeTelemetry && typeof payload.knowledgeTelemetry === 'object'
+    ? payload.knowledgeTelemetry
+    : {};
   const normalizedReply = normalizeText(replyText);
   const violationCodes = [];
 
@@ -180,8 +232,32 @@ function collectViolationCodes(packet, selected, replyText) {
   if ((outputForm === 'message_only' || detailObligations.includes('message_only')) && countLines(normalizedReply) !== 1) {
     violationCodes.push('format_noncompliance');
   }
+  if (
+    (outputForm === 'message_only' || detailObligations.includes('message_only'))
+    && (containsQuestionBack(normalizedReply) || /一緒に整理|教えてもらえると助かります/.test(normalizedReply))
+  ) {
+    violationCodes.push('message_only_violated');
+  }
   if (outputForm === 'non_dogmatic' && !/(もしよければ|よさそう|無理が少ない|かもしれません)/.test(normalizedReply)) {
     violationCodes.push('format_noncompliance');
+  }
+  if (
+    (transformSource === 'prior_assistant' || detailObligations.includes('preserve_source_facts'))
+    && sourceReplyText
+    && hasSourceFactCarry(normalizedReply, sourceReplyText) !== true
+  ) {
+    violationCodes.push('transform_source_drop');
+  }
+  if (
+    depthIntent === 'deepen'
+    && sourceReplyText
+    && (
+      similarityScore(normalizedReply, sourceReplyText) >= 0.88
+      || hasSourceFactCarry(normalizedReply, sourceReplyText) !== true
+      || containsQuestionBack(normalizedReply)
+    )
+  ) {
+    violationCodes.push('deepen_reset');
   }
   if (
     payload.answerability === 'answer_now'
@@ -216,6 +292,15 @@ function collectViolationCodes(packet, selected, replyText) {
   }
   if (candidate.kind === 'clarify_candidate' && payload.answerability === 'answer_now') {
     violationCodes.push('followup_overask');
+  }
+  if (
+    normalizeText(payload.knowledgeScope).toLowerCase() === 'city'
+    && knowledgeTelemetry.citySpecificitySatisfied !== true
+  ) {
+    const replyLocationHint = extractLocationHintFromText(normalizedReply);
+    if (replyLocationHint && (replyLocationHint.kind === 'city' || replyLocationHint.kind === 'regionKey')) {
+      violationCodes.push('city_scope_overclaim');
+    }
   }
   return Array.from(new Set(violationCodes));
 }
@@ -298,12 +383,17 @@ function addHedge(text) {
 function verifyCandidate(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const packet = payload.packet && typeof payload.packet === 'object' ? payload.packet : {};
+  const verificationPacket = Object.assign({}, packet, {
+    knowledgeTelemetry: payload.knowledgeTelemetry && typeof payload.knowledgeTelemetry === 'object'
+      ? payload.knowledgeTelemetry
+      : null
+  });
   const selected = payload.selected && typeof payload.selected === 'object' ? payload.selected : null;
   const evidenceSufficiency = normalizeText(payload.evidenceSufficiency).toLowerCase();
   const contradictionFlags = [];
 
   if (!selected) {
-    const fallbackReplyText = buildConstrainedFallbackReply(packet);
+    const fallbackReplyText = buildConstrainedFallbackReply(verificationPacket);
     return {
       selected: {
         id: 'domain_concierge_candidate',
@@ -361,9 +451,9 @@ function verifyCandidate(params) {
     }
   }
 
-  const violationCodes = collectViolationCodes(packet, selected, replyText);
+  const violationCodes = collectViolationCodes(verificationPacket, selected, replyText);
   const blockingViolationCodes = violationCodes.slice();
-  const constrainedFallbackReply = buildConstrainedFallbackReply(packet);
+  const constrainedFallbackReply = buildConstrainedFallbackReply(verificationPacket);
 
   return {
     selected: Object.assign({}, selected, {

@@ -4,6 +4,11 @@ const cityPacksRepo = require('../../../repos/firestore/cityPacksRepo');
 const { searchCityPackCandidates } = require('../../../usecases/assistant/retrieval/searchCityPackCandidates');
 const { validateCityPackSources } = require('../../../usecases/cityPack/validateCityPackSources');
 const { computeSourceReadiness } = require('../knowledge/computeSourceReadiness');
+const {
+  extractLocationHintFromText,
+  buildLocationHintFromRegionKey,
+  normalizeCityKey
+} = require('../../regionNormalization');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -55,6 +60,86 @@ function scoreCityPackInspection(item) {
   return score;
 }
 
+function normalizeLocationHint(hint) {
+  const payload = hint && typeof hint === 'object' ? hint : {};
+  return {
+    kind: normalizeText(payload.kind) || 'none',
+    matchedText: normalizeText(payload.matchedText) || null,
+    regionKey: normalizeText(payload.regionKey).toLowerCase() || null,
+    state: normalizeText(payload.state).toUpperCase() || null,
+    city: normalizeText(payload.city) || null,
+    cityKey: normalizeCityKey(payload.cityKey || payload.city),
+    source: normalizeText(payload.source) || 'none'
+  };
+}
+
+function resolveRequestedLocationHint(payload, fallbackRegionKey) {
+  const contractHint = normalizeLocationHint(payload.requestContract && payload.requestContract.locationHint);
+  if (contractHint.kind !== 'none') return contractHint;
+  const textHint = normalizeLocationHint(extractLocationHintFromText(payload.messageText));
+  if (textHint.kind !== 'none') return textHint;
+  const profileHint = normalizeLocationHint(buildLocationHintFromRegionKey(fallbackRegionKey, 'profile_region'));
+  return profileHint.kind !== 'none' ? profileHint : normalizeLocationHint(null);
+}
+
+function resolvePackLocationHint(pack) {
+  const payload = pack && typeof pack === 'object' ? pack : {};
+  if (payload.regionKey || (payload.metadata && payload.metadata.regionKey)) {
+    return normalizeLocationHint(buildLocationHintFromRegionKey(payload.regionKey || payload.metadata.regionKey, 'pack_region_key'));
+  }
+  if (payload.regionCity || (payload.metadata && payload.metadata.regionCity)) {
+    return normalizeLocationHint({
+      kind: 'city',
+      matchedText: payload.regionCity || payload.metadata.regionCity,
+      regionKey: payload.regionState && payload.regionCity
+        ? `${payload.regionState}::${normalizeCityKey(payload.regionCity)}`
+        : null,
+      state: payload.regionState || (payload.metadata && payload.metadata.regionState) || null,
+      city: payload.regionCity || (payload.metadata && payload.metadata.regionCity) || null,
+      cityKey: normalizeCityKey(payload.regionCity || (payload.metadata && payload.metadata.regionCity)),
+      source: 'pack_metadata'
+    });
+  }
+  return normalizeLocationHint(null);
+}
+
+function buildCitySpecificity(requestedLocationHint, matchedLocationHint) {
+  const requested = normalizeLocationHint(requestedLocationHint);
+  const matched = normalizeLocationHint(matchedLocationHint);
+  const requestedCityKey = requested.cityKey || null;
+  const matchedCityKey = matched.cityKey || null;
+  if (!requestedCityKey) {
+    return {
+      requestedCityKey: null,
+      matchedCityKey,
+      citySpecificitySatisfied: false,
+      citySpecificityReason: requested.kind === 'state' ? 'requested_state_only' : 'requested_city_missing'
+    };
+  }
+  if (!matchedCityKey) {
+    return {
+      requestedCityKey,
+      matchedCityKey: null,
+      citySpecificitySatisfied: false,
+      citySpecificityReason: 'candidate_city_missing'
+    };
+  }
+  if (requestedCityKey !== matchedCityKey) {
+    return {
+      requestedCityKey,
+      matchedCityKey,
+      citySpecificitySatisfied: false,
+      citySpecificityReason: 'city_mismatch'
+    };
+  }
+  return {
+    requestedCityKey,
+    matchedCityKey,
+    citySpecificitySatisfied: true,
+    citySpecificityReason: 'city_exact_match'
+  };
+}
+
 async function resolveRuntimeCityPackSignals(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
@@ -75,7 +160,9 @@ async function resolveRuntimeCityPackSignals(params, deps) {
       limit: 3
     }).catch(() => ({ ok: false, candidates: [] }));
     cityPackCandidates = Array.isArray(searchResult && searchResult.candidates) ? searchResult.candidates : [];
+    payload.seededRegionKey = searchResult && searchResult.regionKey ? searchResult.regionKey : null;
   }
+  const requestedLocationHint = resolveRequestedLocationHint(payload, payload.seededRegionKey);
 
   if (!cityPackCandidates.length) {
     return {
@@ -89,7 +176,12 @@ async function resolveRuntimeCityPackSignals(params, deps) {
       cityPackValidation: null,
       cityPackSourceReadinessDecision: null,
       cityPackSourceReadinessReasons: [],
-      cityPackPackId: null
+      cityPackPackId: null,
+      requestedCityKey: requestedLocationHint.cityKey || null,
+      matchedCityKey: null,
+      citySpecificitySatisfied: false,
+      citySpecificityReason: requestedLocationHint.cityKey ? 'no_city_pack_candidate' : 'requested_city_missing',
+      scopeDisclosureRequired: false
     };
   }
 
@@ -99,6 +191,7 @@ async function resolveRuntimeCityPackSignals(params, deps) {
     if (!cityPackId) continue;
     const pack = await getCityPack(cityPackId).catch(() => null);
     if (!pack || !Array.isArray(pack.sourceRefs) || !pack.sourceRefs.length) continue;
+    const specificity = buildCitySpecificity(requestedLocationHint, resolvePackLocationHint(pack));
     const validation = await validateSources({
       sourceRefIds: pack.sourceRefs,
       packClass: pack.packClass || candidate.packClass || null
@@ -113,6 +206,7 @@ async function resolveRuntimeCityPackSignals(params, deps) {
     });
     inspections.push({
       cityPackId,
+      specificity,
       validation,
       readiness
     });
@@ -130,20 +224,33 @@ async function resolveRuntimeCityPackSignals(params, deps) {
       cityPackValidation: null,
       cityPackSourceReadinessDecision: null,
       cityPackSourceReadinessReasons: [],
-      cityPackPackId: null
+      cityPackPackId: null,
+      requestedCityKey: requestedLocationHint.cityKey || null,
+      matchedCityKey: null,
+      citySpecificitySatisfied: false,
+      citySpecificityReason: requestedLocationHint.cityKey ? 'candidate_present_without_valid_sources' : 'requested_city_missing',
+      scopeDisclosureRequired: false
     };
   }
 
   const selected = inspections
     .slice()
-    .sort((left, right) => scoreCityPackInspection(right) - scoreCityPackInspection(left))[0];
+    .sort((left, right) => {
+      if (left.specificity.citySpecificitySatisfied !== right.specificity.citySpecificitySatisfied) {
+        return left.specificity.citySpecificitySatisfied === true ? -1 : 1;
+      }
+      return scoreCityPackInspection(right) - scoreCityPackInspection(left);
+    })[0];
+  const specificitySatisfied = selected.specificity.citySpecificitySatisfied === true;
+  const grounded = specificitySatisfied && selected.validation && selected.validation.blocked !== true;
+  const groundingReason = selected.validation && selected.validation.blocked === true
+    ? 'required_sources_blocked'
+    : (specificitySatisfied ? 'validated_sources_available' : selected.specificity.citySpecificityReason);
 
   return {
     cityPackContext: true,
-    cityPackGrounded: selected.validation && selected.validation.blocked !== true,
-    cityPackGroundingReason: selected.validation && selected.validation.blocked === true
-      ? 'required_sources_blocked'
-      : 'validated_sources_available',
+    cityPackGrounded: grounded,
+    cityPackGroundingReason: groundingReason,
     cityPackFreshnessScore: Number.isFinite(Number(selected.readiness.sourceFreshnessScore))
       ? Number(selected.readiness.sourceFreshnessScore)
       : null,
@@ -174,7 +281,12 @@ async function resolveRuntimeCityPackSignals(params, deps) {
     cityPackSourceReadinessReasons: Array.isArray(selected.readiness.reasonCodes)
       ? selected.readiness.reasonCodes.slice(0, 8)
       : [],
-    cityPackPackId: selected.cityPackId
+    cityPackPackId: selected.cityPackId,
+    requestedCityKey: selected.specificity.requestedCityKey,
+    matchedCityKey: selected.specificity.matchedCityKey,
+    citySpecificitySatisfied: specificitySatisfied,
+    citySpecificityReason: selected.specificity.citySpecificityReason,
+    scopeDisclosureRequired: specificitySatisfied !== true && requestedLocationHint.kind === 'state'
   };
 }
 

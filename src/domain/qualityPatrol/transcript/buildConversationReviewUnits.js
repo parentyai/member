@@ -208,6 +208,20 @@ function buildTelemetrySignals(snapshot, latestAction) {
       hasOwn(latestAction, 'savedFaqUsedInAnswer') ? latestAction.savedFaqUsedInAnswer === true : null
     ),
     knowledgeGroundingKind: pickToken(latestAction && latestAction.knowledgeGroundingKind),
+    requestShape: pickToken(latestAction && latestAction.requestShape),
+    depthIntent: pickToken(latestAction && latestAction.depthIntent),
+    transformSource: pickToken(latestAction && latestAction.transformSource),
+    outputForm: pickToken(latestAction && latestAction.outputForm),
+    knowledgeScope: pickToken(latestAction && latestAction.knowledgeScope),
+    locationHintKind: pickToken(latestAction && latestAction.locationHintKind),
+    locationHintCityKey: pickToken(latestAction && latestAction.locationHintCityKey),
+    requestedCityKey: pickToken(latestAction && latestAction.requestedCityKey),
+    matchedCityKey: pickToken(latestAction && latestAction.matchedCityKey),
+    citySpecificitySatisfied: pickBoolean(
+      hasOwn(latestAction, 'citySpecificitySatisfied') ? latestAction.citySpecificitySatisfied === true : null
+    ),
+    citySpecificityReason: pickToken(latestAction && latestAction.citySpecificityReason),
+    violationCodes: pickStringList(latestAction && latestAction.violationCodes),
     readinessDecision: pickToken(latestAction && latestAction.readinessDecision, snapshot && snapshot.readinessDecision),
     replyTemplateFingerprint: pickString(latestAction && latestAction.replyTemplateFingerprint, snapshot && snapshot.replyTemplateFingerprint),
     repeatRiskScore: pickNumber(latestAction && latestAction.repeatRiskScore),
