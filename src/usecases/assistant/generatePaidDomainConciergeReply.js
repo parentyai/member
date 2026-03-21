@@ -210,7 +210,7 @@ function hasDetailObligation(requestContract, key) {
 function softenLine(value) {
   const line = ensureSentence(value);
   if (!line) return '';
-  if (/もしよければ|よさそう|無理が少ない/.test(line)) return line;
+  if (/もしよければ|差し支えなければ|よさそう|無理が少ない|かもしれません|助かります|してみます/.test(line)) return line;
   return ensureSentence(`もしよければ、${line.replace(/[。！？!?]+$/g, '')}と無理が少ないです`);
 }
 
@@ -252,6 +252,9 @@ function buildMessageTemplateFromSource(sourceReplyText, domainIntent) {
   if (/事前予約が必要かどうか/.test(sourceLine)) {
     return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります';
   }
+  if (/対象地域の窓口|受付期限|制度名が分かるなら/.test(normalizeText(sourceReplyText))) {
+    return '地域差がありそうなので、対象地域の窓口と受付期限だけ先に確認してみます';
+  }
   if (/今日は最優先の1件の期限だけ確認して/.test(sourceLine)) {
     return '今日は最優先の1件の期限だけ確認して、必要書類か予約要否のどちらを先に見るか決めてみます';
   }
@@ -287,6 +290,9 @@ function buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent) {
   if (/制度・期限・必要書類・費用/.test(sourceLine)) {
     return '制度や期限が変わりそうな話なら、まず公式情報を見ておくと安心かもしれません';
   }
+  if (/対象地域の窓口|受付期限|制度名が分かるなら/.test(normalizeText(sourceReplyText))) {
+    return '地域差がありそうな話なら、まず対象地域の窓口と受付期限だけ見ておくと安心かもしれません';
+  }
   if (/今日は/.test(sourceLine)) {
     return '今日はひとまず、最優先の1件の期限だけ確認してみる形でもよさそうです';
   }
@@ -302,6 +308,12 @@ function buildConversationalRewriteFromSource(sourceReplyText) {
     return [
       '制度や期限が変わる話は、まず公式情報を見ておくと安心です',
       'そのあとで、どこを確認するか一緒に絞っていけます'
+    ];
+  }
+  if (/対象地域の窓口|受付期限|制度名が分かるなら/.test(normalizeText(sourceReplyText))) {
+    return [
+      '地域で差が出る話は、まず窓口と必要書類、受付期限だけ見れば大丈夫です',
+      '制度名が分かれば、その3点だけでもかなり判断しやすくなります'
     ];
   }
   if (/いまの状況を整理します|優先する手続きを1つ|いま一番困っている/.test(normalizeText(sourceReplyText))) {
@@ -333,6 +345,12 @@ function buildLessBureaucraticRewriteFromSource(sourceReplyText, domainIntent) {
   if (/制度・期限・必要書類・費用/.test(sourceLine)) {
     return '制度や期限が変わりそうなところだけ、先に公式情報で見ておけると安心です';
   }
+  if (/対象地域の窓口|受付期限|制度名が分かるなら/.test(normalizeText(sourceReplyText))) {
+    return '地域差がありそうなら、窓口と必要書類、受付期限だけ先に見ておけると安心です';
+  }
+  if (/制度や期限|公式情報|確認ポイント/.test(normalizeText(sourceReplyText))) {
+    return '制度や期限が動きそうなところだけ、先に公式情報を見ておけると安心です';
+  }
   if (/住まい|学校|SSN|銀行/.test(sourceLine) || domainIntent !== 'general') {
     return `よければ、${buildMessageTemplateFromSource(sourceReplyText, domainIntent).replace(/[。！？!?]+$/g, '')}。`;
   }
@@ -345,6 +363,11 @@ function buildEchoContinuationFromSource(sourceReplyText) {
   if (/住まい・学校・SSN|生活基盤|後回しできる手続き/.test(source)) {
     return [
       'その続きなら、まず住むエリアと学区の条件が両立する候補を1つに絞り、SSNは必要書類だけ先にまとめると進めやすいです'
+    ];
+  }
+  if (/住むエリアと学区|住所証明など共通で使う書類|住居候補と学校候補/.test(source)) {
+    return [
+      'その続きなら、まず住所証明など共通で使う書類を先にまとめ、そのあと住居候補と学校候補を同じエリア軸で絞ると進めやすいです'
     ];
   }
   if (/優先順位の固定と期限の見える化/.test(source)) {

@@ -78,6 +78,12 @@ function buildMessageTemplateFallback(sourceReplyText, domainIntent) {
   if (/事前予約が必要かどうか/.test(firstLine)) {
     return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります。';
   }
+  if (/今日は最優先の1件の期限だけ確認して/.test(firstLine)) {
+    return '今日は最優先の1件の期限だけ確認して、必要書類か予約要否のどちらを先に見るか決めてみます。';
+  }
+  if (/制度や期限|公式情報/.test(normalizeText(sourceReplyText))) {
+    return '制度や期限が変わりそうなところだけ、先に公式情報を見ておきます。';
+  }
   if (/住まい|入居|エリア/.test(firstLine) || domainIntent === 'housing') {
     return '住まい優先で進めたいので、まずは希望エリアと入居時期を整理してみます。';
   }

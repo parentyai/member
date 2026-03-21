@@ -78,6 +78,11 @@ function detectExplicitDomainSignals(messageText) {
   return DOMAIN_INTENTS.filter((key) => hits[key] === true);
 }
 
+function hasSourceMixedHousingSchoolSignals(signals) {
+  const rows = Array.isArray(signals) ? signals : [];
+  return rows.includes('housing') && rows.includes('school');
+}
+
 function resolveCorrectionPreferredDomain(messageText, explicitDomainSignals) {
   const normalized = normalizeText(messageText);
   const signals = uniqueList(explicitDomainSignals, 4);
@@ -251,6 +256,7 @@ function buildRequestContract(params) {
     highRiskIntent
   });
   const sourceReplyText = resolveSourceReplyText(requestShape, matchedPriorReply, payload.latestAssistantReplyText);
+  const sourceReplySignals = detectExplicitDomainSignals(sourceReplyText);
   const sourceDomainIntent = normalizeText(
     (matchedPriorReply && matchedPriorReply.domainIntent) || payload.latestAssistantDomainIntent
   ).toLowerCase();
@@ -261,6 +267,9 @@ function buildRequestContract(params) {
     && echoOfPriorAssistant === true
     && sourceDomainIntent === 'general'
     && explicitDomainSignals.length >= 2;
+  const echoSharedHousingSchoolContinuation = requestShape === 'followup_continue'
+    && echoOfPriorAssistant === true
+    && hasSourceMixedHousingSchoolSignals(sourceReplySignals);
   const primaryFromCorrection = requestShape === 'correction'
     ? resolveCorrectionPreferredDomain(messageText, explicitDomainSignals)
     : null;
@@ -268,13 +277,18 @@ function buildRequestContract(params) {
   const utilityGeneralOverride = explicitDomainSignals.length === 0
     && (requestShape === 'criteria' || requestShape === 'summarize');
   const primaryDomainIntent = primaryFromCorrection
+    || (echoSharedHousingSchoolContinuation ? 'general' : null)
     || (echoGeneralMixedContinuation ? 'general' : null)
     || explicitDomainSignals[0]
     || (preserveSourceDomain ? (sourceDomainIntent || null) : null)
     || (utilityGeneralOverride ? 'general' : null)
     || (fallbackDomain && fallbackDomain !== 'general' ? fallbackDomain : 'general');
   const domainSignals = uniqueList(
-    explicitDomainSignals.length > 0 ? explicitDomainSignals : (primaryDomainIntent !== 'general' ? [primaryDomainIntent] : []),
+    explicitDomainSignals.length > 0
+      ? explicitDomainSignals
+      : (echoSharedHousingSchoolContinuation
+        ? sourceReplySignals
+        : (primaryDomainIntent !== 'general' ? [primaryDomainIntent] : [])),
     4
   );
   const detailObligations = detectDetailObligations(messageText, {

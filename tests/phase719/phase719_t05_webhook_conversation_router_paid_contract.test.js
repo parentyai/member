@@ -753,7 +753,7 @@ test('phase719: paid conversation sequence handles kickoff, rewrite, correction,
   assert.match(replies[7], /先にSSN/);
   assert.match(replies[7], /理由/);
   assert.equal(String(replies[8] || '').split('\n').length, 1);
-  assert.match(replies[8], /大丈夫そう/);
+  assert.match(replies[8], /SSN|整理しやすく/);
   assert.equal(String(replies[9] || '').split('\n').length, 1);
   assert.match(replies[9], /今日は最優先/);
   assert.match(replies[10], /住まい優先/);
@@ -764,8 +764,8 @@ test('phase719: paid conversation sequence handles kickoff, rewrite, correction,
   assert.match(replies[12], /公式窓口/);
   assert.equal(String(replies[13] || '').split('\n').length, 1);
   assert.match(replies[13], /事前予約が必要かどうか/);
-  assert.match(replies[14], /次の一手としては/);
-  assert.match(replies[14], /よさそう/);
+  assert.match(replies[14], /事前予約が必要かどうか/);
+  assert.match(replies[14], /助かります/);
 
   replies.slice(8).forEach((reply) => {
     assert.equal(reply.includes('まずは次の一手から進めましょう'), false);
@@ -821,11 +821,11 @@ test('phase719: region already-set command does not hijack natural language prom
   assert.equal(replies[0].includes('地域は既に登録済みです'), false);
   assert.match(replies[0], /確認|制度|窓口|地域/);
   assert.equal(String(replies[1] || '').split('\n').length, 2);
-  assert.match(replies[1], /安心|確認ポイント/);
+  assert.match(replies[1], /窓口|受付期限|判断しやすく/);
   assert.equal(String(replies[2] || '').split('\n').length, 1);
-  assert.match(replies[2], /順番を一緒に整理/);
+  assert.match(replies[2], /地域差|窓口|受付期限|安心/);
   assert.equal(String(replies[3] || '').split('\n').length, 1);
-  assert.match(replies[3], /教えてもらえると助かります|共有してもらえると助かります/);
+  assert.match(replies[3], /対象地域の窓口|受付期限|確認してみます/);
 
   replies.forEach((reply) => {
     assert.equal(reply.includes('まずは次の一手から進めましょう'), false);
@@ -906,7 +906,79 @@ test('phase719: live transcript regression sequence keeps reverse correction, me
   assert.equal(replies[11].includes('SSN'), false);
   assert.equal(String(replies[12] || '').split('\n').length, 1);
   assert.equal(replies[12].includes('まずはSSN手続き'), false);
-  assert.match(replies[13], /よさそう|無理が少ない/);
+  assert.match(replies[13], /地域差|窓口|受付期限|安心かもしれません/);
+
+  replies.forEach((reply, index) => {
+    assert.equal(reply.includes('いまの状況を整理します。'), false, `turn_${index + 1}_generic_reset`);
+    assert.equal(reply.includes('いま一番困っている手続きを1つだけ教えてください'), false, `turn_${index + 1}_generic_followup`);
+    assertNoInternalConciergeLabels(reply);
+  });
+});
+
+test('phase719: source-aware live sequence keeps echo and rewrite transforms anchored to the prior reply', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    useActionLogHistory: true,
+    regionResponse: { status: 'already_set', regionKey: 'wa::seattle' }
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const inputs = [
+    '住まい探しと学校手続きが同時に不安。先に何を見るべきか順番だけ教えて。',
+    '次に、住所証明など共通で使う書類をまとめます。',
+    'SSNと銀行口座、先にどっちを進めるべきか理由つきで短く教えて。',
+    'さっきの説明を、家族に送れる一文にして。',
+    '今の返答の中で、今日やることだけ1行にして。',
+    'それも違う。今ほしいのは説明じゃなくて、相手に送る文面だけ。',
+    '予約が必要かどうかを、失礼なく聞く短文を1つ作って。',
+    '今の文面を、断定しすぎない言い方に直して。',
+    '公式情報を確認すべき場面かどうか、判断基準だけ教えて。',
+    '今の返し、少し硬い。人に話す感じで2文にして。',
+    '違う、やさしくしたいんじゃなくて、事務的すぎない文面にしたい。'
+  ];
+  const replies = [];
+  const sequenceUserId = 'U_PHASE719_SOURCE_ANCHORED';
+
+  for (const [index, text] of inputs.entries()) {
+    const body = createWebhookBody(text, sequenceUserId);
+    const turnReplies = [];
+    const result = await loaded.handleLineWebhook({
+      body,
+      signature: signBody(body),
+      requestId: `phase719_source_anchored_${index + 1}`,
+      logger: () => {},
+      allowWelcome: false,
+      replyFn: async (_replyToken, message) => {
+        turnReplies.push(message);
+      }
+    });
+
+    assert.equal(result.status, 200, `turn_${index + 1}`);
+    assert.equal(turnReplies.length, 1, `turn_${index + 1}`);
+    replies.push(String(turnReplies[0].text || ''));
+  }
+
+  assert.match(replies[1], /住所証明/);
+  assert.match(replies[1], /住居候補|学校候補/);
+  assert.equal(replies[1].includes('住まいの優先条件'), false);
+  assert.match(replies[3], /SSN/);
+  assert.equal(replies[3].includes('大丈夫そうだよ'), false);
+  assert.match(replies[5], /今日は最優先/);
+  assert.equal(replies[5].includes('教えてもらえると助かります'), false);
+  assert.match(replies[7], /事前予約/);
+  assert.equal(replies[7].includes('優先するもの'), false);
+  assert.equal(replies[7].includes('もしよければ、もし差し支えなければ'), false);
+  assert.match(replies[10], /制度や期限|公式情報/);
+  assert.equal(replies[10].includes('順番を一緒に整理'), false);
 
   replies.forEach((reply, index) => {
     assert.equal(reply.includes('いまの状況を整理します。'), false, `turn_${index + 1}_generic_reset`);

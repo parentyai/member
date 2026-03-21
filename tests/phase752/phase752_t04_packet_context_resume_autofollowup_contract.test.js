@@ -220,3 +220,25 @@ test('phase752: echoed second line of multiline reply still matches prior assist
   assert.equal(packet.requestShape, 'followup_continue');
   assert.equal(packet.normalizedConversationIntent, 'general');
 });
+
+test('phase752: echoed mixed-domain document line stays general and preserves both domains from source reply', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_ECHO_MIXED_ORDER',
+    messageText: '次に、住所証明など共通で使う書類をまとめます。',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'housing',
+        replyText: '順番は、住むエリアと学区の関係を先に確認することです\n次に、住所証明など共通で使う書類をまとめます\nそのうえで、住居候補と学校候補を同じエリア軸で絞り込みましょう'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.echoOfPriorAssistant, true);
+  assert.equal(packet.requestShape, 'followup_continue');
+  assert.equal(packet.normalizedConversationIntent, 'general');
+  assert.deepEqual(packet.domainSignals, ['housing', 'school']);
+  assert.match(packet.sourceReplyText, /住居候補と学校候補/);
+});
