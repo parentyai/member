@@ -49,6 +49,25 @@ function normalizeReplyRow(row) {
   };
 }
 
+function extractReplyCandidates(row) {
+  const normalized = normalizeReplyRow(row);
+  const values = [normalized.replyText, normalized.committedFollowupQuestion];
+  const out = [];
+  values.forEach((value) => {
+    const text = normalizeText(value);
+    if (!text) return;
+    if (!out.includes(text)) out.push(text);
+    text
+      .split('\n')
+      .map((line) => normalizeText(line))
+      .filter(Boolean)
+      .forEach((line) => {
+        if (!out.includes(line)) out.push(line);
+      });
+  });
+  return out;
+}
+
 function detectExplicitDomainSignals(messageText) {
   const hits = detectConversationIntentHits(messageText);
   return DOMAIN_INTENTS.filter((key) => hits[key] === true);
@@ -187,10 +206,8 @@ function resolveMatchedPriorReply(messageText, recentReplyRows) {
   let best = null;
   rows.slice(0, 6).forEach((row, index) => {
     const normalized = normalizeReplyRow(row);
-    const similarity = Math.max(
-      similarityScore(text, normalized.replyText),
-      similarityScore(text, normalized.committedFollowupQuestion)
-    );
+    const similarity = extractReplyCandidates(normalized)
+      .reduce((max, candidateText) => Math.max(max, similarityScore(text, candidateText)), 0);
     if (similarity < 0.86) return;
     if (!best || similarity > best.similarity || (similarity === best.similarity && index < best.index)) {
       best = {
@@ -235,6 +252,10 @@ function buildRequestContract(params) {
   const sourceFollowupIntent = normalizeText(
     (matchedPriorReply && matchedPriorReply.followupIntent) || payload.latestAssistantFollowupIntent
   ).toLowerCase();
+  const echoGeneralMixedContinuation = requestShape === 'followup_continue'
+    && echoOfPriorAssistant === true
+    && sourceDomainIntent === 'general'
+    && explicitDomainSignals.length >= 2;
   const primaryFromCorrection = requestShape === 'correction'
     ? resolveCorrectionPreferredDomain(messageText, explicitDomainSignals)
     : null;
@@ -242,6 +263,7 @@ function buildRequestContract(params) {
   const utilityGeneralOverride = explicitDomainSignals.length === 0
     && (requestShape === 'criteria' || requestShape === 'summarize');
   const primaryDomainIntent = primaryFromCorrection
+    || (echoGeneralMixedContinuation ? 'general' : null)
     || explicitDomainSignals[0]
     || (preserveSourceDomain ? (sourceDomainIntent || null) : null)
     || (utilityGeneralOverride ? 'general' : null)

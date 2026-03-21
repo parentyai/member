@@ -41,6 +41,23 @@ function normalizeStringList(value, limit) {
   return out;
 }
 
+function appendHintValue(target, value, limit) {
+  const out = Array.isArray(target) ? target : [];
+  const max = Number.isFinite(Number(limit)) ? Math.max(1, Math.floor(Number(limit))) : 8;
+  normalizeStringList([value], max).forEach((item) => {
+    if (out.length >= max || out.includes(item)) return;
+    out.push(item);
+  });
+  normalizeText(value)
+    .split('\n')
+    .map((line) => normalizeText(line))
+    .filter(Boolean)
+    .forEach((line) => {
+      if (out.length >= max || out.includes(line)) return;
+      out.push(line);
+    });
+}
+
 function resolveDomainIntentFromTaskKey(value) {
   const key = normalizeText(value).toLowerCase();
   if (!key) return null;
@@ -100,9 +117,7 @@ function summarizeRecentActionRows(rows) {
       recentDomains.push(domainIntent);
     }
     const responseHint = normalizeText(row.replyText || row.committedFollowupQuestion || '');
-    if (responseHint && !recentResponseHints.includes(responseHint)) {
-      recentResponseHints.push(responseHint);
-    }
+    appendHintValue(recentResponseHints, responseHint, 12);
     const followupIntent = normalizeText(row.followupIntent).toLowerCase();
     if (followupIntent && !recentFollowupIntents.includes(followupIntent)) {
       recentFollowupIntents.push(followupIntent);

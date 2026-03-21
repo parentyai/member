@@ -199,3 +199,24 @@ test('phase752: echoed prior assistant line reuses matched prior general source 
   assert.equal(packet.normalizedConversationIntent, 'general');
   assert.equal(packet.contextResumeDomain, null);
 });
+
+test('phase752: echoed second line of multiline reply still matches prior assistant source', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_ECHO_LINE_ONLY',
+    messageText: 'この2つが決まると、進め方がかなり安定します。',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'general',
+        replyText: '足りていないのは、優先順位の固定と期限の見える化です。\nこの2つが決まると、進め方がかなり安定します。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.echoOfPriorAssistant, true);
+  assert.equal(packet.sourceReplyText.includes('優先順位の固定'), true);
+  assert.equal(packet.requestShape, 'followup_continue');
+  assert.equal(packet.normalizedConversationIntent, 'general');
+});

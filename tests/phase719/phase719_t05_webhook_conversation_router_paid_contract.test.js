@@ -965,3 +965,65 @@ test('phase719: echoed prior assistant line inherits matched prior domain instea
   assert.equal(replies[2].includes('まずはSSN手続き'), false);
   assert.equal(replies[2].includes('いまの状況を整理します。'), false);
 });
+
+test('phase719: echoed assistant lines continue from source reply without wrong-domain correction or generic reset', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    useActionLogHistory: true,
+    regionResponse: { status: 'already_set', regionKey: 'wa::seattle' }
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const sequenceUserId = 'U_PHASE719_ECHO_RESIDUALS';
+  const inputs = [
+    'アメリカ赴任の準備って、最初の順番だけ短く教えて。',
+    'まずは住まい・学校・SSNなど、後続に影響するものを1つだけ先に固定しましょう。',
+    '今の進め方で足りていないものを、2つだけ教えて。',
+    'この2つが決まると、進め方がかなり安定します。',
+    'SSNと銀行口座、先にどっちを進めるべきか理由つきで短く教えて。',
+    '理由は、本人確認や就労まわりの手続きとつながりやすく、後続の判断材料になりやすいからです。',
+    '地域によって違うなら、何を確認すべきかだけ教えて。',
+    '制度名が分かるなら、その3点だけ見れば判断しやすくなります。'
+  ];
+  const replies = [];
+
+  for (const [index, text] of inputs.entries()) {
+    const body = createWebhookBody(text, sequenceUserId);
+    const turnReplies = [];
+    const result = await loaded.handleLineWebhook({
+      body,
+      signature: signBody(body),
+      requestId: `phase719_echo_residuals_${index + 1}`,
+      logger: () => {},
+      allowWelcome: false,
+      replyFn: async (_replyToken, message) => {
+        turnReplies.push(message);
+      }
+    });
+
+    assert.equal(result.status, 200, `turn_${index + 1}`);
+    assert.equal(turnReplies.length, 1, `turn_${index + 1}`);
+    replies.push(String(turnReplies[0].text || ''));
+  }
+
+  assert.match(replies[1], /住むエリア|学区/);
+  assert.match(replies[1], /SSN/);
+  assert.equal(replies[1].includes('学校優先'), false);
+  assert.equal(replies[1].includes('住まい優先'), false);
+  assert.equal(replies[3].includes('いまの状況を整理します。'), false);
+  assert.match(replies[3], /期限|最優先/);
+  assert.equal(replies[5].includes('いまの状況を整理します。'), false);
+  assert.match(replies[5], /SSN/);
+  assert.match(replies[5], /必要書類|窓口/);
+  assert.equal(replies[7].includes('いまの状況を整理します。'), false);
+  assert.match(replies[7], /対象地域|受付期限|公式窓口/);
+});
