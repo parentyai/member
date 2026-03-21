@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-21T11:38:41-04:00",
-  "gitCommit": "822f51cd14805a21e4a5987d3cab4091342fec7e",
-  "branch": "codex/admin-ui-v2-pr0-foundation",
-  "sourceDigest": "1574bff23c1b6506975d74b0992e0a2c4b38da974ea439f6d47a18f8df7d1c45",
+  "generatedAt": "2026-03-21T12:11:38-04:00",
+  "gitCommit": "6ee430589c3d10a0aa6c7e5d2db2307498ec6185",
+  "branch": "codex/admin-ui-v2-pr1-nav",
+  "sourceDigest": "07bfaa7392f3f913bf18b4c64cf4e8708c1eca7c36694e1b203134be9bf4872b",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
