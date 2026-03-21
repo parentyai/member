@@ -376,6 +376,48 @@ test('phase734: utility transformation and correction presets stay concise and t
   assert.equal(String(hedgedRewrite.replyText || '').split('\n').length, 1);
   assert.match(hedgedRewrite.replyText, /無理が少なそう/);
 
+  const sourceAwareMessageOnly = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: 'それも違う。今ほしいのは説明じゃなくて、相手に送る文面だけ。',
+    requestContract: {
+      requestShape: 'message_template',
+      outputForm: 'message_only',
+      primaryDomainIntent: 'general',
+      sourceReplyText: '今日は最優先の1件の期限だけ確認して、必要書類か予約要否のどちらを先に見るか決めましょう'
+    }
+  });
+  assert.match(sourceAwareMessageOnly.replyText, /今日は最優先/);
+  assert.match(sourceAwareMessageOnly.replyText, /決めてみます/);
+  assert.equal(sourceAwareMessageOnly.replyText.includes('教えてもらえると助かります'), false);
+
+  const sourceAwareNonDogmatic = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: '今の文面を、断定しすぎない言い方に直して。',
+    requestContract: {
+      requestShape: 'rewrite',
+      outputForm: 'non_dogmatic',
+      primaryDomainIntent: 'general',
+      sourceReplyText: 'ご都合のよい範囲で、事前予約が必要かどうか教えていただけますか'
+    }
+  });
+  assert.match(sourceAwareNonDogmatic.replyText, /事前予約/);
+  assert.match(sourceAwareNonDogmatic.replyText, /差し支えなければ|助かります/);
+  assert.equal(sourceAwareNonDogmatic.replyText.includes('もしよければ、もし差し支えなければ'), false);
+  assert.equal(sourceAwareNonDogmatic.replyText.includes('優先するもの'), false);
+
+  const sourceAwareLessBureaucratic = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: '違う、やさしくしたいんじゃなくて、事務的すぎない文面にしたい。',
+    requestContract: {
+      requestShape: 'rewrite',
+      outputForm: 'default',
+      primaryDomainIntent: 'general',
+      sourceReplyText: '制度や期限が変わる話は、まず公式情報を見ておくと安心です\n必要なら、そのあとで確認ポイントを一緒に絞れます'
+    }
+  });
+  assert.match(sourceAwareLessBureaucratic.replyText, /制度や期限|公式情報/);
+  assert.equal(sourceAwareLessBureaucratic.replyText.includes('順番を一緒に整理'), false);
+
   const nonDogmaticNext = generatePaidDomainConciergeReply({
     domainIntent: 'general',
     messageText: 'ここまでの会話を踏まえて、次の一手だけをやわらかく提案して。'

@@ -747,6 +747,11 @@ async function buildPaidDomainConciergeResult(params) {
       opportunityDecision,
       followupIntent: payload.followupIntent || null,
       recentFollowupIntents: derivedRecentFollowupIntents,
+      recentResponseHints: Array.isArray(payload.recentResponseHints) ? payload.recentResponseHints : [],
+      requestContract: payload.requestContract && typeof payload.requestContract === 'object'
+        ? payload.requestContract
+        : null,
+      recoverySignal: payload.recoverySignal === true,
       blockedReason: payload.blockedReason || null
     });
   const domainAtoms = domainReply && domainReply.atoms && typeof domainReply.atoms === 'object'
@@ -2936,6 +2941,11 @@ async function tryHandlePaidOrchestratorV2(params) {
     opportunityDecision: options && options.opportunityDecision ? options.opportunityDecision : payload.opportunityDecision,
     followupIntent: options && typeof options.followupIntent === 'string' ? options.followupIntent : null,
     recentFollowupIntents: options && Array.isArray(options.recentFollowupIntents) ? options.recentFollowupIntents : [],
+    recentResponseHints: options && Array.isArray(options.recentResponseHints) ? options.recentResponseHints : [],
+    requestContract: options && options.requestContract && typeof options.requestContract === 'object'
+      ? options.requestContract
+      : null,
+    recoverySignal: options && options.recoverySignal === true,
     recentEngagement: payload.recentEngagement,
     blockedReason: options && Object.prototype.hasOwnProperty.call(options, 'blockedReason') ? options.blockedReason : null,
     forceConcierge: true,
