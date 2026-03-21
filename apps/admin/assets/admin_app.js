@@ -810,6 +810,28 @@ const PANE_HEADER_MAP = Object.freeze({
   maintenance: { titleKey: 'ui.label.page.maintenance', subtitleKey: 'ui.desc.page.maintenance' }
 });
 
+const PANE_V2_META = Object.freeze({
+  home: Object.freeze({ paneMode: 'decision-console', taskContext: 'today-judgment', taskContextKey: 'ui.label.v2.task.todayJudgment', taskContextFallback: '今日の判断を進める' }),
+  'ops-feature-catalog': Object.freeze({ paneMode: 'system-diagnostics', taskContext: 'feature-catalog-health', taskContextKey: 'ui.label.v2.task.featureCatalogHealth', taskContextFallback: '機能公開の健全性を確認する' }),
+  'ops-system-health': Object.freeze({ paneMode: 'system-diagnostics', taskContext: 'system-health', taskContextKey: 'ui.label.v2.task.systemHealth', taskContextFallback: 'システム状態を切り分ける' }),
+  alerts: Object.freeze({ paneMode: 'evidence-review', taskContext: 'alert-triage', taskContextKey: 'ui.label.v2.task.alertTriage', taskContextFallback: '要対応案件を仕分ける' }),
+  composer: Object.freeze({ paneMode: 'notification-workbench', taskContext: 'notification-execution', taskContextKey: 'ui.label.v2.task.notificationExecution', taskContextFallback: '通知の作成から実行まで進める' }),
+  monitor: Object.freeze({ paneMode: 'data-workspace', taskContext: 'delivery-monitoring', taskContextKey: 'ui.label.v2.task.deliveryMonitoring', taskContextFallback: '配信結果と反応を確認する' }),
+  errors: Object.freeze({ paneMode: 'evidence-review', taskContext: 'error-recovery', taskContextKey: 'ui.label.v2.task.errorRecovery', taskContextFallback: '異常の原因を見極めて戻り先を決める' }),
+  'read-model': Object.freeze({ paneMode: 'data-workspace', taskContext: 'read-model-analysis', taskContextKey: 'ui.label.v2.task.readModelAnalysis', taskContextFallback: '一覧から状態差分を比較する' }),
+  vendors: Object.freeze({ paneMode: 'data-workspace', taskContext: 'vendor-relations', taskContextKey: 'ui.label.v2.task.vendorRelations', taskContextFallback: 'Vendorの関係と状態を確認する' }),
+  'emergency-layer': Object.freeze({ paneMode: 'notification-workbench', taskContext: 'emergency-operations', taskContextKey: 'ui.label.v2.task.emergencyOperations', taskContextFallback: '緊急レイヤーの差分判断を進める' }),
+  'city-pack': Object.freeze({ paneMode: 'data-workspace', taskContext: 'city-pack-operations', taskContextKey: 'ui.label.v2.task.cityPackOperations', taskContextFallback: 'City Packの候補・編集・関係確認を進める' }),
+  audit: Object.freeze({ paneMode: 'evidence-review', taskContext: 'trace-review', taskContextKey: 'ui.label.v2.task.traceReview', taskContextFallback: 'trace単位で証跡を確認する' }),
+  'quality-patrol': Object.freeze({ paneMode: 'evidence-review', taskContext: 'quality-review', taskContextKey: 'ui.label.v2.task.qualityReview', taskContextFallback: '品質観測と改善候補を確認する' }),
+  'developer-map': Object.freeze({ paneMode: 'developer-map', taskContext: 'developer-systems-map', taskContextKey: 'ui.label.v2.task.developerSystemsMap', taskContextFallback: 'システム全体像を開発者向けに確認する' }),
+  'developer-manual-redac': Object.freeze({ paneMode: 'developer-manual', taskContext: 'manual-redac', taskContextKey: 'ui.label.v2.task.manualRedac', taskContextFallback: '取説をRedac向けに確認する' }),
+  'developer-manual-user': Object.freeze({ paneMode: 'developer-manual', taskContext: 'manual-user', taskContextKey: 'ui.label.v2.task.manualUser', taskContextFallback: '取説をユーザー向けに確認する' }),
+  llm: Object.freeze({ paneMode: 'llm-workspace', taskContext: 'llm-operations', taskContextKey: 'ui.label.v2.task.llmOperations', taskContextFallback: 'LLM運用を役割ごとに進める' }),
+  settings: Object.freeze({ paneMode: 'system-configuration', taskContext: 'operations-settings', taskContextKey: 'ui.label.v2.task.operationsSettings', taskContextFallback: '運用設定の現在値と変更先を判断する' }),
+  maintenance: Object.freeze({ paneMode: 'system-recovery', taskContext: 'system-recovery', taskContextKey: 'ui.label.v2.task.systemRecovery', taskContextFallback: '回復操作と保守手順を管理する' })
+});
+
 const PAGE_HEADER_ACTION_MAP = Object.freeze({
   home: Object.freeze({
     primary: Object.freeze({
@@ -3440,6 +3462,29 @@ function setupNav() {
   });
 }
 
+function syncPaneV2Metadata(paneKey) {
+  const meta = PANE_V2_META[paneKey] || PANE_V2_META.home;
+  const pageHeader = document.querySelector('[data-ui="page-header"]');
+  const taskContextEl = document.getElementById('page-task-context');
+  const activePane = document.querySelector(`.app-pane[data-pane="${paneKey}"]`);
+  if (appShell) {
+    appShell.dataset.paneMode = meta.paneMode;
+    appShell.dataset.taskContext = meta.taskContext;
+  }
+  if (pageHeader) {
+    pageHeader.dataset.paneMode = meta.paneMode;
+    pageHeader.dataset.taskContext = meta.taskContext;
+  }
+  if (taskContextEl) {
+    taskContextEl.textContent = t(meta.taskContextKey, meta.taskContextFallback);
+    taskContextEl.dataset.taskContext = meta.taskContext;
+  }
+  if (activePane) {
+    activePane.dataset.paneMode = meta.paneMode;
+    activePane.dataset.taskContext = meta.taskContext;
+  }
+}
+
 function updatePageHeader(paneKey) {
   const meta = PANE_HEADER_MAP[paneKey] || PANE_HEADER_MAP.home;
   const actionMeta = PAGE_HEADER_ACTION_MAP[paneKey] || null;
@@ -3453,6 +3498,7 @@ function updatePageHeader(paneKey) {
     subtitleEl.textContent = t(meta.subtitleKey, subtitleEl.textContent || '');
     subtitleEl.setAttribute('data-pane-purpose', paneKey);
   }
+  syncPaneV2Metadata(paneKey);
   if (updatedEl) {
     const updatedAt = resolvePaneUpdatedAt(paneKey);
     updatedEl.textContent = `最終更新: ${updatedAt && updatedAt !== '-' ? formatDateLabel(updatedAt) : '-'}`;
