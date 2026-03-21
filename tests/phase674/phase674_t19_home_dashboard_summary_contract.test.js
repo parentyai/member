@@ -22,23 +22,20 @@ test('phase674: local preflight banner supports summary-first detail toggle cont
   assert.ok(css.includes('.admin-local-preflight-detail.is-collapsed'));
 });
 
-test('phase674: page header keeps dashboard entry as read-only deep links', () => {
+test('phase674: page header keeps dashboard surface read-only while home actions stay in-pane', () => {
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
   const css = fs.readFileSync('apps/admin/assets/admin.css', 'utf8');
   const actionMapStart = js.indexOf('const PAGE_HEADER_ACTION_MAP = Object.freeze({');
-  const homeMapStart = js.indexOf('home: Object.freeze({', actionMapStart);
-  const homeMapEnd = js.indexOf("'city-pack': Object.freeze({", homeMapStart);
-  const homeMap = homeMapStart >= 0 && homeMapEnd > homeMapStart
-    ? js.slice(homeMapStart, homeMapEnd)
+  const cityPackStart = js.indexOf("'city-pack': Object.freeze({", actionMapStart);
+  const actionMap = actionMapStart >= 0 && cityPackStart > actionMapStart
+    ? js.slice(actionMapStart, cityPackStart)
     : '';
 
   assert.ok(js.includes('const PAGE_HEADER_ACTION_MAP = Object.freeze('));
-  assert.ok(homeMap.includes("labelKey: 'ui.label.alerts.title'"));
-  assert.ok(homeMap.includes("paneTarget: 'alerts'"));
-  assert.ok(homeMap.includes("paneTarget: 'monitor'"));
-  assert.ok(!homeMap.includes("paneTarget: 'composer'"));
+  assert.ok(!actionMap.includes('home: Object.freeze({'));
   assert.ok(js.includes("buttonEl.getAttribute('data-open-pane')"));
 
+  assert.ok(css.includes('.dashboard-first-view-grid'));
   assert.ok(css.includes('.app-shell.home-clean-surface-v1 #home-decision-card .decision-actions'));
   assert.ok(css.includes('.app-shell.home-clean-surface-v1[data-view-pane="home"] #managed-action-evidence'));
 });
