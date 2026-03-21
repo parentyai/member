@@ -161,6 +161,11 @@ const state = {
   monitorUserItems: [],
   monitorInsights: null,
   monitorWorkspaceView: 'monitoring',
+  llmWorkspaceView: 'run',
+  llmWorkspacePrimed: {
+    control: false,
+    quality: false
+  },
   selectedMonitorNotificationId: null,
   monitorSavedView: 'all',
   monitorSearchQuery: '',
@@ -1153,6 +1158,13 @@ function buildUrlWithPaneRole(nextPane, nextRole) {
   }
   const urlObj = new URL(nextUrl, globalThis.location.origin);
   if (nextPane) urlObj.searchParams.set('pane', String(nextPane));
+  if (nextPane === 'llm') {
+    const nextView = normalizeLlmWorkspaceView(state.llmWorkspaceView);
+    if (nextView !== 'run') urlObj.searchParams.set('view', nextView);
+    else urlObj.searchParams.delete('view');
+  } else {
+    urlObj.searchParams.delete('view');
+  }
   return `${urlObj.pathname}?${urlObj.searchParams.toString()}`.replace(/\?$/, '');
 }
 
@@ -3389,6 +3401,121 @@ function applyMonitorWorkspaceView(view, options) {
   }
 }
 
+const LLM_WORKSPACE_VIEW_RUN = 'run';
+const LLM_WORKSPACE_VIEW_CONTROL = 'control';
+const LLM_WORKSPACE_VIEW_QUALITY = 'quality';
+
+const LLM_WORKSPACE_VIEW_META = Object.freeze({
+  [LLM_WORKSPACE_VIEW_RUN]: Object.freeze({
+    badgeKey: 'ui.label.llm.mode.run',
+    badgeFallback: '検証',
+    noteKey: 'ui.desc.llm.mode.run',
+    noteFallback: '検証を表示中です。質問、返答候補、trace を同じ流れで確認します。',
+    badgeClass: 'state-ready',
+    primaryButtonId: 'llm-run-faq'
+  }),
+  [LLM_WORKSPACE_VIEW_CONTROL]: Object.freeze({
+    badgeKey: 'ui.label.llm.view.control',
+    badgeFallback: '方針管理',
+    noteKey: 'ui.desc.llm.control',
+    noteFallback: '設定とポリシーを確認し、必要な変更計画だけを進めます。',
+    badgeClass: 'state-attention',
+    primaryButtonId: 'llm-policy-plan'
+  }),
+  [LLM_WORKSPACE_VIEW_QUALITY]: Object.freeze({
+    badgeKey: 'ui.label.llm.view.quality',
+    badgeFallback: '履歴確認',
+    noteKey: 'ui.desc.llm.quality',
+    noteFallback: '利用状況、品質ボード、改善候補を読み取り専用で確認します。',
+    badgeClass: 'state-ready',
+    primaryButtonId: 'llm-usage-summary-reload'
+  })
+});
+
+function normalizeLlmWorkspaceView(view) {
+  const raw = String(view || '').trim().toLowerCase();
+  if (raw === LLM_WORKSPACE_VIEW_CONTROL) return LLM_WORKSPACE_VIEW_CONTROL;
+  if (raw === LLM_WORKSPACE_VIEW_QUALITY) return LLM_WORKSPACE_VIEW_QUALITY;
+  return LLM_WORKSPACE_VIEW_RUN;
+}
+
+function resolveLlmWorkspaceViewFromLocation() {
+  const currentUrl = new URL(globalThis.location.href);
+  return normalizeLlmWorkspaceView(currentUrl.searchParams.get('view'));
+}
+
+function resolveLlmWorkspaceViewMeta(view) {
+  return LLM_WORKSPACE_VIEW_META[normalizeLlmWorkspaceView(view)] || LLM_WORKSPACE_VIEW_META[LLM_WORKSPACE_VIEW_RUN];
+}
+
+async function primeLlmWorkspaceView(view) {
+  const nextView = normalizeLlmWorkspaceView(view);
+  if (nextView === LLM_WORKSPACE_VIEW_RUN) return;
+  if (state.llmWorkspacePrimed && state.llmWorkspacePrimed[nextView] === true) return;
+  if (!state.llmWorkspacePrimed || typeof state.llmWorkspacePrimed !== 'object') {
+    state.llmWorkspacePrimed = { control: false, quality: false };
+  }
+  if (nextView === LLM_WORKSPACE_VIEW_CONTROL) {
+    await Promise.all([
+      loadLlmConfigStatus().catch(() => {}),
+      loadLlmPolicyStatus({ notify: false }).catch(() => {}),
+      loadLlmPolicyHistory({ notify: false }).catch(() => {})
+    ]);
+    state.llmWorkspacePrimed.control = true;
+    return;
+  }
+  if (nextView === LLM_WORKSPACE_VIEW_QUALITY) {
+    await loadLlmUsageSummary({ notify: false }).catch(() => {});
+    state.llmWorkspacePrimed.quality = true;
+  }
+}
+
+function applyLlmWorkspaceView(view, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const pane = document.getElementById('pane-llm');
+  if (!pane) return;
+  const nextView = normalizeLlmWorkspaceView(view);
+  state.llmWorkspaceView = nextView;
+  pane.setAttribute('data-llm-workspace-view', nextView);
+  const workspaceGrid = pane.querySelector('.llm-workspace-grid');
+  if (workspaceGrid) workspaceGrid.setAttribute('data-llm-workspace-view', nextView);
+  pane.querySelectorAll('[data-llm-view-target]').forEach((buttonEl) => {
+    const target = normalizeLlmWorkspaceView(buttonEl.getAttribute('data-llm-view-target'));
+    const isActive = target === nextView;
+    buttonEl.classList.toggle('is-active', isActive);
+    buttonEl.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+  pane.querySelectorAll('[data-llm-surface]').forEach((surfaceEl) => {
+    const scope = normalizeLlmWorkspaceView(surfaceEl.getAttribute('data-llm-surface'));
+    const visible = scope === nextView;
+    surfaceEl.classList.toggle('is-hidden', !visible);
+    if (visible) surfaceEl.removeAttribute('aria-hidden');
+    else surfaceEl.setAttribute('aria-hidden', 'true');
+  });
+  const meta = resolveLlmWorkspaceViewMeta(nextView);
+  const badgeEl = document.getElementById('llm-mode-badge');
+  if (badgeEl) {
+    badgeEl.textContent = t(meta.badgeKey, meta.badgeFallback);
+    badgeEl.classList.remove('state-ready', 'state-attention', 'state-stop');
+    badgeEl.classList.add(meta.badgeClass);
+  }
+  setTextContent('llm-mode-purpose', t(meta.noteKey, meta.noteFallback));
+  setTextContent('llm-view-note', t(meta.noteKey, meta.noteFallback));
+  pane.querySelectorAll('[data-llm-primary-for]').forEach((buttonEl) => {
+    const target = normalizeLlmWorkspaceView(buttonEl.getAttribute('data-llm-primary-for'));
+    const isPrimary = target === nextView && buttonEl.id === meta.primaryButtonId;
+    if (isPrimary) buttonEl.setAttribute('data-primary-action', 'pane-primary');
+    else buttonEl.removeAttribute('data-primary-action');
+  });
+  if (opts.persist === true) {
+    state.llmWorkspaceView = nextView;
+  }
+  if (opts.syncHistory === true && state.activePane === 'llm') {
+    updateHistoryWithPaneRole('llm', state.role, opts.historyMode || 'replace');
+  }
+  void primeLlmWorkspaceView(nextView);
+}
+
 function setRole(role, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const navCore = resolveCoreSlice('navCore');
@@ -3414,6 +3541,7 @@ function setRole(role, options) {
   applyNavGroupVisibilityPolicy(nextRole, visibleEntries);
   applyNavItemVisibilityPolicy(nextRole, visibleEntries);
   applyMonitorWorkspaceView(state.monitorWorkspaceView, { persist: true });
+  applyLlmWorkspaceView(state.llmWorkspaceView, { persist: true });
   const activePane = document.querySelector('.app-pane.is-active');
   const paneKey = activePane && activePane.dataset ? activePane.dataset.pane : (state.activePane || 'home');
   let allowedPane = resolveAllowedPaneForRole(nextRole, paneKey, 'home');
@@ -5362,6 +5490,9 @@ function activatePane(target, options) {
   expandPaneDetails(nextPane);
   if (nextPane === 'monitor') {
     applyMonitorWorkspaceView(state.monitorWorkspaceView, { persist: true });
+  }
+  if (nextPane === 'llm') {
+    applyLlmWorkspaceView(resolveLlmWorkspaceViewFromLocation(), { persist: true, syncHistory: false });
   }
   if (opts.scrollTarget) {
     scrollToPaneAnchor(opts.scrollTarget);
@@ -20252,6 +20383,12 @@ async function setLlmPolicy() {
 }
 
 function setupLlmControls() {
+  document.querySelectorAll('[data-llm-view-target]').forEach((buttonEl) => {
+    buttonEl.addEventListener('click', () => {
+      const target = normalizeLlmWorkspaceView(buttonEl.getAttribute('data-llm-view-target'));
+      applyLlmWorkspaceView(target, { persist: true, syncHistory: true, historyMode: 'push' });
+    });
+  });
   document.getElementById('llm-regen')?.addEventListener('click', () => {
     const el = document.getElementById('llm-trace');
     if (el) el.value = newTraceId();
@@ -20291,10 +20428,7 @@ function setupLlmControls() {
     void exportLlmUsageCsv();
   });
   renderLlmRouteTraceInfo({}, { traceId: ensureTraceInput('llm-trace') || '-', apiSource: 'admin' });
-  loadLlmConfigStatus();
-  void loadLlmPolicyStatus({ notify: false });
-  void loadLlmPolicyHistory({ notify: false });
-  void loadLlmUsageSummary({ notify: false });
+  applyLlmWorkspaceView(resolveLlmWorkspaceViewFromLocation(), { persist: true });
 }
 
 (async () => {
