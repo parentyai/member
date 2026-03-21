@@ -49,6 +49,11 @@ function normalizeReplyRow(row) {
   };
 }
 
+function isEchoCandidateLine(value) {
+  const text = normalizeText(value);
+  return text.length >= 16;
+}
+
 function extractReplyCandidates(row) {
   const normalized = normalizeReplyRow(row);
   const values = [normalized.replyText, normalized.committedFollowupQuestion];
@@ -60,7 +65,7 @@ function extractReplyCandidates(row) {
     text
       .split('\n')
       .map((line) => normalizeText(line))
-      .filter(Boolean)
+      .filter((line) => isEchoCandidateLine(line))
       .forEach((line) => {
         if (!out.includes(line)) out.push(line);
       });
