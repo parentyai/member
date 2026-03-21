@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-21T16:20:37-04:00",
-  "gitCommit": "e31b6ae7a90c719ed5e72994acce0aa2cb7185f7",
-  "branch": "codex/admin-ui-v2-pr7-launch-fix",
-  "sourceDigest": "439b3a52693329346e46a50df5f13117f49e4ac67f26472e3bd97a0cf7183ae4",
+  "generatedAt": "2026-03-21T17:39:44-04:00",
+  "gitCommit": "04e65ffc1c71b8a8622b65a3bbbb0462fc8faea3",
+  "branch": "codex/admin-ui-v2-pr8-blocked-reason",
+  "sourceDigest": "16a976f48504a6d4143b60247b8164b4eb6978222a593ecb67340c1893b4863e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
