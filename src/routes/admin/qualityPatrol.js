@@ -35,13 +35,14 @@ function parsePositiveInt(value, fallback, max) {
 
 function parseQueryParams(req) {
   const url = new URL(req.url || '/api/admin/quality-patrol', 'http://127.0.0.1');
+  const limit = parsePositiveInt(url.searchParams.get('limit'), 100, 500);
   return {
     mode: url.searchParams.get('mode') || 'latest',
     audience: url.searchParams.get('audience') || 'operator',
     fromAt: url.searchParams.get('fromAt') || null,
     toAt: url.searchParams.get('toAt') || null,
-    limit: parsePositiveInt(url.searchParams.get('limit'), 100, 500),
-    traceLimit: parsePositiveInt(url.searchParams.get('traceLimit'), 50, 200),
+    limit,
+    traceLimit: parsePositiveInt(url.searchParams.get('traceLimit'), Math.min(limit, 200), 200),
     registryLimit: parsePositiveInt(url.searchParams.get('registryLimit'), 100, 200),
     backlogLimit: parsePositiveInt(url.searchParams.get('backlogLimit'), 50, 100)
   };

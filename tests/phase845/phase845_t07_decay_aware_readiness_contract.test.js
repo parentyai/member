@@ -159,3 +159,70 @@ test('phase845: backlog decay is separated from stagnation', () => {
   assert.equal(result.overallReadinessStatus, 'observation_continue_backlog_decay');
   assert.equal(result.deltaFromPreviousFullWindow.status, 'improving');
 });
+
+test('phase845: observation-only blocker residue does not force historical backlog dominant when transcript and join debt are cleared', () => {
+  const result = buildDecayAwareReadiness({
+    recentWindow: buildWindow({
+      blockerCount: 2,
+      blockerCodes: ['missing_user_message', 'transcript_not_reviewable']
+    }),
+    fullWindow: buildWindow({
+      observedCount: 97,
+      written: 97,
+      reviewUnitCount: 100,
+      blockerCount: 5,
+      blockerCodes: [
+        'insufficient_knowledge_signals',
+        'missing_assistant_reply',
+        'missing_faq_evidence',
+        'missing_user_message',
+        'transcript_not_reviewable'
+      ]
+    }),
+    previousFullWindow: buildWindow({
+      sourceWindow: {
+        fromAt: '2026-03-15T11:00:00.000Z',
+        toAt: '2026-03-15T12:00:00.000Z'
+      },
+      observedCount: 1,
+      written: 1,
+      reviewUnitCount: 1,
+      blockerCount: 0,
+      blockerCodes: []
+    })
+  });
+
+  assert.equal(result.recentWindowStatus, 'healthy');
+  assert.equal(result.historicalDebt.status, 'cleared');
+  assert.equal(result.historicalBacklogStatus, 'decaying');
+  assert.equal(result.overallReadinessStatus, 'observation_continue_backlog_decay');
+  assert.equal(result.deltaFromPreviousFullWindow.status, 'worsening');
+});
+
+test('phase845: source-missing blocker residue still keeps historical backlog dominant', () => {
+  const result = buildDecayAwareReadiness({
+    recentWindow: buildWindow(),
+    fullWindow: buildWindow({
+      observedCount: 97,
+      written: 97,
+      reviewUnitCount: 100,
+      blockerCount: 1,
+      blockerCodes: ['missing_trace_evidence']
+    }),
+    previousFullWindow: buildWindow({
+      sourceWindow: {
+        fromAt: '2026-03-15T11:00:00.000Z',
+        toAt: '2026-03-15T12:00:00.000Z'
+      },
+      observedCount: 96,
+      written: 96,
+      reviewUnitCount: 99,
+      blockerCount: 0,
+      blockerCodes: []
+    })
+  });
+
+  assert.equal(result.recentWindowStatus, 'healthy');
+  assert.equal(result.historicalBacklogStatus, 'stagnating');
+  assert.equal(result.overallReadinessStatus, 'historical_backlog_dominant');
+});

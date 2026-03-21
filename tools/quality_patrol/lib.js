@@ -91,13 +91,14 @@ function resolveOutputPath(value, fallbackFilename) {
 function parsePatrolArgs(argv) {
   const args = parseArgs(argv);
   const mode = normalizeMode(args.mode);
+  const limit = normalizePositiveInt(args.limit, 100, 500);
   return {
     mode,
     audience: normalizeAudience(args.audience),
     fromAt: typeof args.fromAt === 'string' ? args.fromAt : null,
     toAt: typeof args.toAt === 'string' ? args.toAt : null,
-    limit: normalizePositiveInt(args.limit, 100, 500),
-    traceLimit: normalizePositiveInt(args.traceLimit, 50, 200),
+    limit,
+    traceLimit: normalizePositiveInt(args.traceLimit, Math.min(limit, 200), 200),
     registryLimit: normalizePositiveInt(args.registryLimit, 100, 200),
     backlogLimit: normalizePositiveInt(args.backlogLimit, 50, 100),
     threadId: typeof args.threadId === 'string' && args.threadId.trim() ? args.threadId.trim() : `quality_patrol_job_${mode}`,

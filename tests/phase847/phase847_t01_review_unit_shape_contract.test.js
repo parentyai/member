@@ -82,6 +82,14 @@ test('phase847: buildConversationReviewUnitsFromSources returns review-ready sha
       getTraceBundle: async ({ traceId }) => ({
         ok: true,
         traceId,
+        joins: {
+          faqAnswerLogs: [{
+            id: 'faq_trace_phase847_shape',
+            traceId: 'trace_phase847_shape',
+            matchedArticleIds: ['faq_1', 'faq_2'],
+            createdAt: '2026-03-14T15:00:02.000Z'
+          }]
+        },
         traceJoinSummary: {
           completeness: 1,
           joinedDomains: ['llmActions', 'faq'],

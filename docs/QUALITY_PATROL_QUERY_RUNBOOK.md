@@ -89,6 +89,7 @@
 - operator action rule:
   - `decision=NO_GO` and `decisionReasonCode=current_runtime_or_current_join_problem` => fix runtime or current join path
   - `decision=NO_GO` and `decisionReasonCode=historical_backlog_dominant` => treat as historical debt and keep PR-D deferred
+  - `decision=OBSERVATION_CONTINUE` because transcript/join debt is cleared and only observation-only blocker residue remains => keep observing instead of reopening runtime repair
   - `decision=OBSERVATION_CONTINUE` => continue backlog decay observation
   - `decision=GO` => readiness review may proceed
 - PR-D condition:
