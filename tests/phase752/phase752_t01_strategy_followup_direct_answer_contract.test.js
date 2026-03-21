@@ -36,3 +36,91 @@ test('phase752: followup intent on domain forces domain_concierge direct-answer-
   assert.equal(plan.clarifySuppressed, true);
   assert.equal(plan.fallbackType === null || plan.fallbackType === 'followup_direct_answer', true);
 });
+
+test('phase752: general followup planning prompt prefers domain concierge direct answer', () => {
+  const plan = buildStrategyPlan({
+    routerMode: 'question',
+    normalizedConversationIntent: 'general',
+    followupIntent: 'next_step',
+    messageText: 'それなら最初の5分は何をする？',
+    llmFlags: { llmConciergeEnabled: true }
+  });
+
+  assert.equal(plan.strategy, 'domain_concierge');
+  assert.equal(plan.retrieveNeeded, false);
+  assert.equal(plan.directAnswerFirst, true);
+  assert.equal(plan.clarifySuppressed, true);
+  assert.equal(plan.fallbackType, 'general_followup_direct_answer');
+});
+
+test('phase752: service plan difference question prefers direct answer without retrieval', () => {
+  const plan = buildStrategyPlan({
+    routerMode: 'question',
+    normalizedConversationIntent: 'general',
+    messageText: '無料プランと有料プランの違いを短く教えて。',
+    llmFlags: { llmConciergeEnabled: true }
+  });
+
+  assert.equal(plan.strategy, 'domain_concierge');
+  assert.equal(plan.retrieveNeeded, false);
+  assert.equal(plan.directAnswerFirst, true);
+  assert.equal(plan.fallbackType, 'service_plan_direct_answer');
+});
+
+test('phase752: mixed housing and school question prefers concierge direct answer', () => {
+  const plan = buildStrategyPlan({
+    routerMode: 'question',
+    normalizedConversationIntent: 'housing',
+    messageText: '引っ越しと学校の手続きが同時に不安。まず何から確認すべきか順番だけ教えて。',
+    followupIntent: 'next_step',
+    llmFlags: { llmConciergeEnabled: true }
+  });
+
+  assert.equal(plan.strategy, 'domain_concierge');
+  assert.equal(plan.retrieveNeeded, false);
+  assert.equal(plan.directAnswerFirst, true);
+  assert.equal(plan.fallbackType, 'mixed_domain_direct_answer');
+});
+
+test('phase752: general kickoff question prefers direct answer without retrieval', () => {
+  const plan = buildStrategyPlan({
+    routerMode: 'question',
+    normalizedConversationIntent: 'general',
+    messageText: 'アメリカ赴任の準備って何から始めればいいですか？',
+    llmFlags: { llmConciergeEnabled: true }
+  });
+
+  assert.equal(plan.strategy, 'domain_concierge');
+  assert.equal(plan.retrieveNeeded, false);
+  assert.equal(plan.directAnswerFirst, true);
+  assert.equal(plan.fallbackType, 'general_followup_direct_answer');
+});
+
+test('phase752: utility transform prompt prefers direct answer on contextual followup', () => {
+  const plan = buildStrategyPlan({
+    routerMode: 'question',
+    normalizedConversationIntent: 'ssn',
+    messageText: 'さっきの説明を、家族に送れる一文にして。',
+    contextResume: true,
+    llmFlags: { llmConciergeEnabled: true }
+  });
+
+  assert.equal(plan.strategy, 'domain_concierge');
+  assert.equal(plan.retrieveNeeded, false);
+  assert.equal(plan.directAnswerFirst, true);
+  assert.equal(plan.fallbackType, 'utility_transform_direct_answer');
+});
+
+test('phase752: ssn-vs-banking compare question prefers mixed direct answer', () => {
+  const plan = buildStrategyPlan({
+    routerMode: 'question',
+    normalizedConversationIntent: 'ssn',
+    messageText: 'SSNと銀行口座の手続き、先にどっちを進めるべきか理由つきで短く教えて。',
+    llmFlags: { llmConciergeEnabled: true }
+  });
+
+  assert.equal(plan.strategy, 'domain_concierge');
+  assert.equal(plan.retrieveNeeded, false);
+  assert.equal(plan.directAnswerFirst, true);
+  assert.equal(plan.fallbackType, 'mixed_domain_direct_answer');
+});

@@ -1,6 +1,7 @@
 'use strict';
 
 const { buildConciergeContextSnapshot } = require('./concierge/composeConciergeReply');
+const { detectConversationIntentHits } = require('../../domain/llm/router/normalizeConversationIntent');
 const { resolveFollowupIntent } = require('../../domain/llm/orchestrator/followupIntentResolver');
 
 const FORBIDDEN_REPLY_PATTERN = /(FAQ候補|CityPack候補|根拠キー|score=|-\s*\[\]|関連情報です)/g;
@@ -110,7 +111,11 @@ function trimForLineMessage(value) {
 }
 
 function sanitizeReplyLine(value) {
-  return normalizeText(value).replace(FORBIDDEN_REPLY_PATTERN, '');
+  return normalizeText(value)
+    .replace(FORBIDDEN_REPLY_PATTERN, '')
+    .replace(/。{2,}/g, '。')
+    .replace(/？{2,}/g, '？')
+    .replace(/！{2,}/g, '！');
 }
 
 function normalizeActions(value, limit) {
@@ -352,6 +357,190 @@ function resolveFollowupIntentForDomain(params) {
   return decision && typeof decision.followupIntent === 'string' ? decision.followupIntent : null;
 }
 
+function buildPresetReply(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const lines = [payload.primaryLine, payload.secondaryLine, payload.tertiaryLine]
+    .map((line) => ensureSentence(line))
+    .filter(Boolean)
+    .slice(0, 3);
+  const replyText = trimForLineMessage(lines.join('\n'));
+  return {
+    replyText,
+    preserveReplyText: payload.preserveReplyText !== false,
+    atoms: {
+      situationLine: lines[0] || '',
+      nextActions: lines.slice(1),
+      pitfall: '',
+      followupQuestion: ''
+    }
+  };
+}
+
+function resolvePresetReply(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const messageText = normalizeText(payload.messageText);
+  if (!messageText) return null;
+  const conversationHits = detectConversationIntentHits(messageText);
+
+  if (/(無料プラン|有料プラン|プランの違い|プラン.*違い|プラン比較|subscription|plan)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '短く言うと、無料はFAQ検索中心で、有料は状況整理や次の一手の提案まで対応します',
+      secondaryLine: 'このアカウントが有料なら、状況整理・抜け漏れ確認・順序整理・次アクション提案を使える前提です'
+    });
+  }
+
+  if (
+    /(赴任|引っ越し|引越し|移住|生活セットアップ|生活立ち上げ).*(何から始め|最初にやるべき|最初に何|順番|ざっくり)/i.test(messageText)
+    && !(conversationHits.housing === true && conversationHits.school === true)
+  ) {
+    return buildPresetReply({
+      primaryLine: '最初に見る順番は、期限がある手続き、生活基盤、後回しできる手続きです',
+      secondaryLine: 'まずは住まい・学校・SSNなど、後続に影響するものを1つだけ先に固定しましょう',
+      tertiaryLine: 'そのうえで、必要書類と予約要否を同じ一覧にまとめると進めやすいです'
+    });
+  }
+
+  if (conversationHits.housing === true && conversationHits.school === true && /(何から|順番|確認|不安|手続き)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '順番は、住むエリアと学区の関係を先に確認することです',
+      secondaryLine: '次に、住所証明など共通で使う書類をまとめます',
+      tertiaryLine: 'そのうえで、住居候補と学校候補を同じエリア軸で絞り込みましょう',
+      preserveReplyText: true
+    });
+  }
+
+  if (/((ssn).*(銀行|口座)|(銀行|口座).*(ssn))/i.test(messageText) && /(先に|どっち|どちら|優先|理由)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '先にSSNを進めるのが無難です',
+      secondaryLine: '理由は、本人確認や就労まわりの手続きとつながりやすく、後続の判断材料になりやすいからです',
+      tertiaryLine: 'ただし口座開設を急ぐ事情があるなら、SSN不要で進められる条件だけ先に確認しましょう'
+    });
+  }
+
+  if (/(優先すべき|優先順位).*(3つ|三つ)|3つだけ教えて/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '優先する3つは、期限が近いこと、後続に影響すること、今日すぐ動かせることです',
+      secondaryLine: 'この順で並べると、同時進行で散りにくくなります'
+    });
+  }
+
+  if (/最初の5分/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '最初の5分は、いちばん詰まっている手続きを1つだけ決めて、期限と窓口をメモしてください',
+      secondaryLine: 'そのあと必要書類か予約要否のどちらを先に確認するか決めれば十分です'
+    });
+  }
+
+  if (/(疲れて|かなり疲れ).*(言い換える|言い方|どう言い換える)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '疲れている前提なら、今日は1件だけ決めて期限だけ確認すれば十分です',
+      secondaryLine: '残りは今週に回す前提で、いまは最優先の1件だけ進めましょう'
+    });
+  }
+
+  if (/(今日.*今週.*今月|今日・今週・今月|今週・今月)/i.test(messageText) && /(短く|順|並べて)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '今日: 期限だけ確認する',
+      secondaryLine: '今週: 最優先の1件を動かす',
+      tertiaryLine: '今月: 残りを順番に整える'
+    });
+  }
+
+  if (/(止めること.*進めること|進めること.*止めること)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '止めること: 同時進行を増やすこと',
+      secondaryLine: '進めること: いちばん詰まっている1件の期限を確認する',
+      tertiaryLine: 'その次に、その1件の次の一手を1つだけ決める'
+    });
+  }
+
+  if (/(足りていない|足りない|不足|抜け漏れ|抜け|漏れ).*(3つ|三つ|3点|3つまで)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '足りていないのは、優先順位の固定、期限の見える化、次の一手の1件化です',
+      secondaryLine: 'この3つが決まると、進め方がかなり安定します'
+    });
+  }
+
+  if (/(家族に送れる一文|家族に送れる|一文にして)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: 'まずは最優先の1件だけ決めて、順番に進めれば大丈夫そうだよ'
+    });
+  }
+
+  if (/(相手に送る文面だけ|文面だけ)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '今進める順番を整理したいので、最初に何を優先すべきか教えてもらえると助かります'
+    });
+  }
+
+  if (/(今日やること.*1行|今日やること.*一行|1行にして|一行にして)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '今日は最優先の1件の期限だけ確認して、必要書類か予約要否のどちらを先に見るか決めましょう'
+    });
+  }
+
+  if (/(断定しすぎない|断定.*言い方に直して|言い方に直して)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: 'もしよければ、まずは優先するものを1つだけ決める形で進めると無理が少なそうです'
+    });
+  }
+
+  if (/(人に話す感じ|2文にして|二文にして)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '制度や期限が変わる話は、まず公式情報を見ておくと安心です',
+      secondaryLine: '必要なら、そのあとで確認ポイントを一緒に絞れます'
+    });
+  }
+
+  if (/(事務的すぎない|やさしくしたいんじゃなくて.*事務的すぎない|事務的じゃない)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: 'よければ、まずは優先するものを1つだけ決めて、順番を一緒に整理していきましょう'
+    });
+  }
+
+  if (/((学校じゃなくて|学校ではなく|学校より).*(住まい|住居|住宅|引っ越し|家探し|部屋探し))|(住まい優先で考え直して)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '了解です。住まい優先で見るなら、希望エリアと入居時期を先に固定しましょう',
+      secondaryLine: '次に、内見候補を3件までに絞って必要書類を確認すると進めやすいです'
+    });
+  }
+
+  if (/(不安が強い前提|不安が強い).*(1つだけ|一つだけ|絞って)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '不安が強いときは、今日は最優先の1件の期限だけ確認すれば十分です'
+    });
+  }
+
+  if (/(公式情報を確認すべき場面|公式情報.*判断基準|判断基準だけ教えて)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '制度・期限・必要書類・費用が変わりうる話なら、公式情報を確認する場面です',
+      secondaryLine: '特に申請可否や法的条件に触れるときは、案内より先に公式窓口で最終確認してください'
+    });
+  }
+
+  if (/(地域によって違う|地域差がある|何を確認すべきかだけ)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '確認するのは、対象地域の窓口、必要書類、受付期限の3点です',
+      secondaryLine: '制度名が分かるなら、その3点だけ見れば判断しやすくなります'
+    });
+  }
+
+  if (/(予約が必要かどうか).*(失礼なく|短文)|失礼なく聞く短文|短文を1つ作って/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: 'ご都合のよい範囲で、事前予約が必要かどうか教えていただけますか'
+    });
+  }
+
+  if (/(ここまでの会話を踏まえて).*(断定せずに提案)|断定せずに提案/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '次の一手としては、いちばん後続に影響する手続きを1件だけ先に決めるのがよさそうです',
+      secondaryLine: 'そのあとで、必要書類か予約要否のどちらを先に確認するか選ぶ進め方が無理が少ないです'
+    });
+  }
+
+  return null;
+}
+
 function buildConciseReply(parts) {
   const payload = parts && typeof parts === 'object' ? parts : {};
   const domainIntent = resolveDomainIntent(payload.domainIntent, payload.contextResumeDomain);
@@ -365,6 +554,10 @@ function buildConciseReply(parts) {
   const directAnswers = spec.directAnswers && typeof spec.directAnswers === 'object' ? spec.directAnswers : {};
   const followupActionVariants = resolveFollowupActionVariants(followupIntent, domainIntent);
   const recoveryLeadLine = payload.recoverySignal === true ? '了解です。前提を修正して続けます。' : '';
+  const presetReply = resolvePresetReply({
+    messageText: payload.messageText
+  });
+  if (presetReply) return presetReply;
   let resolvedPrimaryLine = followupIntent
     ? resolveFollowupDirectAnswer({
       followupIntent,
@@ -485,6 +678,7 @@ function generatePaidDomainConciergeReply(params) {
   );
 
   const concise = buildConciseReply({
+    messageText: payload.messageText,
     domainIntent,
     contextResumeDomain: payload.contextResumeDomain,
     situationLine: spec.situationLine,
@@ -508,6 +702,7 @@ function generatePaidDomainConciergeReply(params) {
     interventionBudget: 1,
     followupIntent,
     conciseModeApplied: true,
+    preserveReplyText: concise.preserveReplyText === true,
     replyText: concise.replyText,
     atoms: concise.atoms,
     auditMeta: buildDomainAuditMeta({

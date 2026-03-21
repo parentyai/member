@@ -67,3 +67,20 @@ test('phase790: answer readiness consumes required-core-facts signal', () => {
   assert.ok(readiness.reasonCodes.includes('missing_required_core_facts'));
   assert.equal(readiness.qualitySnapshot.requiredCoreFactsDecision, 'clarify');
 });
+
+test('phase790: general concierge planning stays log-only even when core facts are sparse', () => {
+  const gate = evaluateRequiredCoreFactsGate({
+    contextSnapshot: {
+      topOpenTasks: [{ key: 'school_registration', status: 'open' }]
+    },
+    domainIntent: 'general',
+    intentRiskTier: 'low',
+    strategy: 'domain_concierge',
+    actionClass: 'draft',
+    followupIntent: 'next_step'
+  });
+
+  assert.equal(gate.decision, 'allow');
+  assert.equal(gate.logOnly, true);
+  assert.ok(gate.reasonCodes.includes('core_facts_log_only'));
+});

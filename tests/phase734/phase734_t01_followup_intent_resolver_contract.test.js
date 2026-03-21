@@ -33,6 +33,20 @@ test('phase734: followup intent resolver avoids domain guess without domain cont
   assert.equal(unknown.followupIntent, null);
 });
 
+test('phase734: followup intent resolver keeps general planning continuations on next-step intent', () => {
+  const nextStep = resolveFollowupIntent({
+    messageText: 'それなら最初の5分は何をする？',
+    domainIntent: 'general'
+  });
+  assert.equal(nextStep.followupIntent, 'next_step');
+
+  const timeline = resolveFollowupIntent({
+    messageText: '今日・今週・今月の順で短く並べて。',
+    domainIntent: 'general'
+  });
+  assert.equal(timeline.followupIntent, 'next_step');
+});
+
 test('phase734: domain anchored short utterance needs carry context', () => {
   const noCarry = resolveFollowupIntent({
     messageText: 'SSNha?',

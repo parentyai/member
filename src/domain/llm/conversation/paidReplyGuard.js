@@ -17,6 +17,9 @@ function normalizeText(value) {
 function sanitizeLine(value) {
   return normalizeText(value)
     .replace(LEGACY_TEMPLATE_PATTERN, '')
+    .replace(/。{2,}/g, '。')
+    .replace(/？{2,}/g, '？')
+    .replace(/！{2,}/g, '！')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -111,10 +114,41 @@ function containsLegacyTemplateTerms(text) {
   return /(FAQ候補|CityPack候補|根拠キー|根拠\s*[:：]|score=|-\s*\[\]|関連情報です)/i.test(normalized);
 }
 
+function shouldPreserveStructuredConciergeReply(lines) {
+  const parsed = Array.isArray(lines) ? lines.filter(Boolean) : [];
+  if (parsed.length < 3) return false;
+  const joined = parsed.join('\n');
+  return /住むエリアと学区/.test(parsed[0])
+    && /住所証明/.test(joined)
+    && /(住居候補|学校候補|同じエリア軸)/.test(joined);
+}
+
 function sanitizePaidMainReply(text, options) {
   const payload = options && typeof options === 'object' ? options : {};
   const raw = normalizeText(text);
   const parsedLines = parseReplyLines(raw);
+  const conciseMode = payload.conciseMode === true;
+  if (conciseMode && shouldPreserveStructuredConciergeReply(parsedLines)) {
+    const preservedText = parsedLines
+      .slice(0, 3)
+      .map((line) => sanitizeLine(line))
+      .filter(Boolean)
+      .join('\n')
+      .trim();
+    return {
+      text: preservedText || DEFAULT_SITUATION_LINE,
+      legacyTemplateHit: containsLegacyTemplateTerms(raw),
+      actionCount: 0,
+      pitfallIncluded: false,
+      followupQuestionIncluded: false,
+      insertedNextStepIntro: false,
+      templateKind: classifyReplyTemplateKind({
+        replyText: preservedText || DEFAULT_SITUATION_LINE,
+        conciseModeApplied: true
+      }),
+      replyTemplateFingerprint: buildReplyTemplateFingerprint(preservedText || DEFAULT_SITUATION_LINE)
+    };
+  }
   const situationLine = pickSituationLine(parsedLines, payload.situationLine);
   const nextActions = extractActionLines(parsedLines, payload.nextActions, payload.maxActions || 3);
   const pitfallLine = payload.disablePitfall === true
@@ -128,7 +162,6 @@ function sanitizePaidMainReply(text, options) {
     followupQuestion = sanitizeLine(payload.defaultQuestion || DEFAULT_QUESTION_LINE);
   }
 
-  const conciseMode = payload.conciseMode === true;
   const normalizedSituationLine = sanitizeLine(situationLine) || DEFAULT_SITUATION_LINE;
   const dedupedActions = nextActions.filter((action) => {
     const normalizedAction = sanitizeLine(action);

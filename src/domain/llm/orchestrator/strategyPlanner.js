@@ -28,7 +28,15 @@ function detectStrategySignals(messageText) {
     timelineQuestion: hasPattern(normalized, /(いつ|どのタイミング|タイミング|いつまで|期限|スケジュール|timeline|何日前|到着後|出国前)/i),
     checklistQuestion: hasPattern(normalized, /(何から|まず何|最初に|準備|チェックリスト|段取り|流れ|手順|どう進める)/i),
     relocationQuestion: hasPattern(normalized, /(引っ越し|引越し|転居|移住|赴任先|生活立ち上げ|住みやすさ|家賃|初期費用|生活で最初に困る|暮らし|生活費)/i),
-    cityQuestion: hasPattern(normalized, /(ニューヨーク|new york|ロサンゼルス|los angeles|サンフランシスコ|san francisco|シアトル|seattle|ボストン|boston|シカゴ|chicago|オースティン|austin|サンディエゴ|san diego|ワシントン|washington|都市|city|州|エリア)/i)
+    cityQuestion: hasPattern(normalized, /(ニューヨーク|new york|ロサンゼルス|los angeles|サンフランシスコ|san francisco|シアトル|seattle|ボストン|boston|シカゴ|chicago|オースティン|austin|サンディエゴ|san diego|ワシントン|washington|都市|city|州|エリア)/i),
+    servicePlanQuestion: hasPattern(normalized, /(無料プラン|有料プラン|プランの違い|プラン.*違い|料金.*違い|プラン比較|subscription|plan)/i),
+    generalContinuationQuestion: hasPattern(normalized, /(最初の5分|今日.*今週.*今月|今週.*今月|止めること.*進めること|進めること.*止めること|どう言い換える|言い換える|短く並べて|3つまで|優先すべき|優先順位)/i),
+    generalSetupQuestion: hasPattern(normalized, /(赴任|引っ越し|引越し|移住|生活セットアップ|生活立ち上げ).*(何から始め|最初にやるべき|最初に何|順番|ざっくり)/i),
+    utilityTransformQuestion: hasPattern(normalized, /(家族に送れる一文|家族に送れる|一文にして|今日やること.*1行|今日やること.*一行|1行にして|一行にして|不安が強い前提|不安が強い.*1つだけ|不安が強い.*一つだけ|公式情報を確認すべき場面|判断基準だけ|失礼なく聞く短文|短文を1つ作って|断定せずに提案|相手に送る文面だけ|文面だけ|断定しすぎない|言い方に直して|人に話す感じ|2文にして|二文にして|事務的すぎない|何を確認すべきかだけ|地域によって違う)/i),
+    mixedHousingSchoolQuestion: hasPattern(normalized, /(引っ越し|引越し|住まい|住宅|部屋探し|賃貸)/i)
+      && hasPattern(normalized, /(学校|学区|入学|転校)/i),
+    mixedSsnBankingQuestion: hasPattern(normalized, /((ssn).*(銀行|口座)|(銀行|口座).*(ssn))/i)
+      && hasPattern(normalized, /(先に|どっち|どちら|優先|理由)/i)
   };
 }
 
@@ -91,10 +99,38 @@ function buildStrategyPlan(params) {
     && normalizedIntent !== 'general'
     && highRiskIntent !== true
     && (hasFollowupIntent || followupCarryFromHistory || payload.contextResume === true);
+  const utilityTransformDirectAnswerPreferred = strategySignals.utilityTransformQuestion
+    && (priorContextUsed || normalizedIntent !== 'general' || normalizedIntent === 'general');
+  const generalDirectAnswerPreferred = normalizedIntent === 'general'
+    && (
+      strategySignals.servicePlanQuestion
+      || strategySignals.generalContinuationQuestion
+      || strategySignals.generalSetupQuestion
+      || strategySignals.utilityTransformQuestion
+      || ((hasFollowupIntent || followupCarryFromHistory) && priorContextUsed)
+    );
   const groundedFirstCandidateSet = ['grounded_candidate', 'structured_answer_candidate', 'domain_concierge_candidate', 'clarify_candidate'];
   const continuationFirstCandidateSet = ['continuation_candidate', 'grounded_candidate', 'structured_answer_candidate', 'domain_concierge_candidate', 'clarify_candidate'];
 
   if (routerMode === 'greeting' || routerMode === 'casual') {
+    if (strategySignals.mixedHousingSchoolQuestion || strategySignals.mixedSsnBankingQuestion) {
+      return Object.assign({
+        strategy: 'domain_concierge',
+        conversationMode: 'concierge',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        fallbackType: 'mixed_domain_direct_answer',
+        directAnswerFirst: true,
+        clarifySuppressed: true
+      }, buildStrategyTelemetry(
+        'domain_concierge',
+        ['domain_concierge_candidate', 'clarify_candidate'],
+        'mixed_domain_direct_answer',
+        'preserve_mixed_domain_direct_answer',
+        { strategyAlternativeSet: ['domain_concierge', 'clarify'] }
+      ));
+    }
     if (recoverySignal && normalizedIntent !== 'general') {
       return Object.assign({
         strategy: 'domain_concierge',
@@ -129,6 +165,42 @@ function buildStrategyPlan(params) {
         'followup_grounding_first',
         'continuation_before_domain_concierge',
         { strategyAlternativeSet: ['continuation', 'grounded_answer', 'domain_concierge', 'clarify'] }
+      ));
+    }
+    if (utilityTransformDirectAnswerPreferred) {
+      return Object.assign({
+        strategy: 'domain_concierge',
+        conversationMode: 'concierge',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        fallbackType: 'utility_transform_direct_answer',
+        directAnswerFirst: true,
+        clarifySuppressed: true
+      }, buildStrategyTelemetry(
+        'domain_concierge',
+        ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        'utility_transform_direct_answer',
+        'preserve_utility_transform_direct_answer',
+        { strategyAlternativeSet: ['continuation', 'domain_concierge', 'clarify'] }
+      ));
+    }
+    if (generalDirectAnswerPreferred) {
+      return Object.assign({
+        strategy: 'domain_concierge',
+        conversationMode: 'concierge',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        fallbackType: strategySignals.servicePlanQuestion ? 'service_plan_direct_answer' : 'general_followup_direct_answer',
+        directAnswerFirst: true,
+        clarifySuppressed: true
+      }, buildStrategyTelemetry(
+        'domain_concierge',
+        ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        strategySignals.servicePlanQuestion ? 'service_plan_direct_answer' : 'general_followup_direct_answer',
+        strategySignals.servicePlanQuestion ? 'preserve_service_plan_direct_answer' : 'preserve_general_followup_direct_answer',
+        { strategyAlternativeSet: ['continuation', 'domain_concierge', 'clarify'] }
       ));
     }
     if (hasFollowupIntent && normalizedIntent !== 'general') {
@@ -223,6 +295,24 @@ function buildStrategyPlan(params) {
   }
 
   if (normalizedIntent !== 'general') {
+    if (strategySignals.mixedHousingSchoolQuestion || strategySignals.mixedSsnBankingQuestion) {
+      return Object.assign({
+        strategy: 'domain_concierge',
+        conversationMode: 'concierge',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        fallbackType: 'mixed_domain_direct_answer',
+        directAnswerFirst: true,
+        clarifySuppressed: true
+      }, buildStrategyTelemetry(
+        'domain_concierge',
+        ['domain_concierge_candidate', 'clarify_candidate'],
+        'mixed_domain_direct_answer',
+        'preserve_mixed_domain_direct_answer',
+        { strategyAlternativeSet: ['domain_concierge', 'clarify'] }
+      ));
+    }
     if (recoverySignal) {
       return Object.assign({
         strategy: 'domain_concierge',
@@ -239,6 +329,24 @@ function buildStrategyPlan(params) {
         'recovery_signal_domain_resume',
         'preserve_domain_concierge_during_recovery',
         { strategyAlternativeSet: ['domain_concierge', 'clarify'] }
+      ));
+    }
+    if (utilityTransformDirectAnswerPreferred) {
+      return Object.assign({
+        strategy: 'domain_concierge',
+        conversationMode: 'concierge',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        fallbackType: 'utility_transform_direct_answer',
+        directAnswerFirst: true,
+        clarifySuppressed: true
+      }, buildStrategyTelemetry(
+        'domain_concierge',
+        ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        'utility_transform_direct_answer',
+        'preserve_utility_transform_direct_answer',
+        { strategyAlternativeSet: ['continuation', 'domain_concierge', 'clarify'] }
       ));
     }
     if (continuationGroundingPreferred) {
@@ -368,6 +476,42 @@ function buildStrategyPlan(params) {
         'followup_grounding_first',
         'continuation_before_domain_concierge',
         { strategyAlternativeSet: ['continuation', 'grounded_answer', 'domain_concierge', 'clarify'] }
+      ));
+    }
+    if (utilityTransformDirectAnswerPreferred) {
+      return Object.assign({
+        strategy: 'domain_concierge',
+        conversationMode: 'concierge',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        fallbackType: 'utility_transform_direct_answer',
+        directAnswerFirst: true,
+        clarifySuppressed: true
+      }, buildStrategyTelemetry(
+        'domain_concierge',
+        ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        'utility_transform_direct_answer',
+        'preserve_utility_transform_direct_answer',
+        { strategyAlternativeSet: ['continuation', 'domain_concierge', 'clarify'] }
+      ));
+    }
+    if (generalDirectAnswerPreferred) {
+      return Object.assign({
+        strategy: 'domain_concierge',
+        conversationMode: 'concierge',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        fallbackType: strategySignals.servicePlanQuestion ? 'service_plan_direct_answer' : 'general_followup_direct_answer',
+        directAnswerFirst: true,
+        clarifySuppressed: true
+      }, buildStrategyTelemetry(
+        'domain_concierge',
+        ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        strategySignals.servicePlanQuestion ? 'service_plan_direct_answer' : 'general_followup_direct_answer',
+        strategySignals.servicePlanQuestion ? 'preserve_service_plan_direct_answer' : 'preserve_general_followup_direct_answer',
+        { strategyAlternativeSet: ['continuation', 'domain_concierge', 'clarify'] }
       ));
     }
     if (hasFollowupIntent && normalizedIntent !== 'general') {

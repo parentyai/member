@@ -22,6 +22,14 @@ on:
         required: false
         default: ""
         type: string
+      enable_paid_orchestrator_v2:
+        description: "Set true to enable paid webhook orchestrator v2 on this deploy"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 permissions:
   contents: read
@@ -81,6 +89,21 @@ jobs:
             echo "confirm_production must be DEPLOY_PROD when target_environment=prod"
             exit 1
           fi
+
+      - name: Normalize paid orchestrator flag
+        env:
+          DISPATCH_ORCHESTRATOR_FLAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_paid_orchestrator_v2 || '' }}
+        run: |
+          ORCHESTRATOR_FLAG="${ENABLE_PAID_ORCHESTRATOR_V2:-$DISPATCH_ORCHESTRATOR_FLAG}"
+          if [ -z "$ORCHESTRATOR_FLAG" ]; then
+            ORCHESTRATOR_FLAG="true"
+            echo "::notice title=Paid orchestrator default applied::ENABLE_PAID_ORCHESTRATOR_V2 was empty; defaulting to true for deploy."
+          fi
+          if [ "$ORCHESTRATOR_FLAG" != "true" ] && [ "$ORCHESTRATOR_FLAG" != "false" ]; then
+            echo "::error title=Invalid orchestrator flag::ENABLE_PAID_ORCHESTRATOR_V2 must be true or false"
+            exit 1
+          fi
+          echo "ENABLE_PAID_ORCHESTRATOR_V2=$ORCHESTRATOR_FLAG" >> "$GITHUB_ENV"
 
       - name: Validate required deploy variables
         run: |
