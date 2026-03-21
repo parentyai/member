@@ -280,9 +280,6 @@ function buildConversationPacket(params) {
     || contextResumeCue
     || recoverySignal
     || preliminaryRequestContract.echoOfPriorAssistant === true
-    || preliminaryRequestContract.requestShape === 'rewrite'
-    || preliminaryRequestContract.requestShape === 'summarize'
-    || preliminaryRequestContract.requestShape === 'message_template'
     || preliminaryRequestContract.requestShape === 'followup_continue'
   )
     && Boolean(resumeAnchorDomain)

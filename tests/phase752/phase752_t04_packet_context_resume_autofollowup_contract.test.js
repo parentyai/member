@@ -242,3 +242,69 @@ test('phase752: echoed mixed-domain document line stays general and preserves bo
   assert.deepEqual(packet.domainSignals, ['housing', 'school']);
   assert.match(packet.sourceReplyText, /住居候補と学校候補/);
 });
+
+test('phase752: family one-line transform anchors to latest assistant source without stale context resume', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_FAMILY_LINE',
+    messageText: '家族に送る用に、一文だけで要点をまとめて。',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'general',
+        replyText: '足りていないのは、優先順位の固定と期限の見える化です。\nこの2つが決まると、進め方がかなり安定します。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.requestShape, 'message_template');
+  assert.equal(packet.transformSource, 'prior_assistant');
+  assert.match(packet.sourceReplyText, /優先順位の固定/);
+  assert.equal(packet.contextResume, false);
+  assert.equal(packet.normalizedConversationIntent, 'general');
+});
+
+test('phase752: deepen cue uses latest assistant source instead of generic followup fallback', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_DEEPEN_SOURCE',
+    messageText: 'どうやって？',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'general',
+        replyText: 'まずは、いちばん気になっている手続きを1つに絞るところからで大丈夫です。\nそこが決まれば、次に見ることを一緒に整理できます。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.requestShape, 'answer');
+  assert.equal(packet.depthIntent, 'deepen');
+  assert.equal(packet.transformSource, 'prior_assistant');
+  assert.match(packet.sourceReplyText, /いちばん気になっている手続きを1つ/);
+  assert.equal(packet.answerability, 'answer_now');
+});
+
+test('phase752: criteria-only list request avoids stale school continuation after city hint turn', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_CITY_CRITERIA',
+    messageText: '地域によって違うなら、確認する項目名だけ並べて。',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'school',
+        followupIntent: 'next_step',
+        replyText: '学校手続きですね。\n次は学区と対象校の条件を確認する。\n学年と希望エリアが分かれば、次の一手を具体化できます。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.requestShape, 'criteria');
+  assert.equal(packet.outputForm, 'criteria_only');
+  assert.equal(packet.contextResume, false);
+  assert.equal(packet.normalizedConversationIntent, 'general');
+});

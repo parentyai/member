@@ -1,6 +1,10 @@
 'use strict';
 
 const {
+  buildMessageTemplateFromSource,
+  buildNonDogmaticRewriteFromSource,
+  buildConversationalRewriteFromSource,
+  buildLessBureaucraticRewriteFromSource,
   buildEchoContinuationFromSource,
   buildDeepenReplyFromSource
 } = require('../../../usecases/assistant/generatePaidDomainConciergeReply');
@@ -100,29 +104,8 @@ function ensureSentence(text) {
 }
 
 function buildMessageTemplateFallback(sourceReplyText, domainIntent) {
-  const firstLine = extractFirstLine(sourceReplyText);
-  if (/事前予約が必要かどうか/.test(firstLine)) {
-    return '事前予約が必要かどうかを、先に確認してみます。';
-  }
-  if (/今日は最優先の1件の期限だけ確認して/.test(firstLine)) {
-    return '今日は最優先の1件の期限だけ確認して、必要書類か予約要否のどちらを先に見るか決めてみます。';
-  }
-  if (isRegionSpecificSourceReply(sourceReplyText)) {
-    return '地域差がありそうなので、対象地域の窓口と受付期限だけ先に確認してみます。';
-  }
-  if (/制度や期限|公式情報/.test(normalizeText(sourceReplyText))) {
-    return '制度や期限が変わりそうなところだけ、先に公式情報を見ておきます。';
-  }
-  if (/住まい|入居|エリア/.test(firstLine) || domainIntent === 'housing') {
-    return '住まい優先で進めたいので、まずは希望エリアと入居時期を整理してみます。';
-  }
-  if (/学校|学区|対象校/.test(firstLine) || domainIntent === 'school') {
-    return '学校優先で進めたいので、まずは学区と対象校の条件を確認してみます。';
-  }
-  if (/SSN|ソーシャルセキュリティ/.test(firstLine) || domainIntent === 'ssn') {
-    return 'まずはSSNの必要書類を整理して、窓口の条件を確認してみます。';
-  }
-  return '今進める順番を整理したいので、最初に優先する1件を決めてみます。';
+  const line = buildMessageTemplateFromSource(sourceReplyText, domainIntent);
+  return ensureSentence(line || '今は優先する1件を先に決めると、進めやすそうです');
 }
 
 function buildConstrainedFallbackReply(packet) {
@@ -152,29 +135,19 @@ function buildConstrainedFallbackReply(packet) {
     return buildMessageTemplateFallback(sourceReplyText, primaryDomainIntent);
   }
   if (requestShape === 'rewrite' && outputForm === 'non_dogmatic') {
-    const line = extractFirstLine(sourceReplyText);
-    if (/事前予約が必要かどうか/.test(line)) {
-      return 'もし差し支えなければ、事前予約が必要かどうか教えていただけると助かります。';
-    }
-    if (isRegionSpecificSourceReply(sourceReplyText)) {
-      return '地域差がありそうなら、対象地域の窓口と受付期限だけ見ておくと安心かもしれません。';
-    }
-    if (/制度|期限|必要書類|費用/.test(line)) {
-      return '制度や期限が変わりそうな話なら、まず公式情報を見ておくと安心かもしれません。';
-    }
-    return 'もしよければ、まずは優先するものを1つだけ決める形で進めると無理が少なそうです。';
+    return ensureSentence(buildNonDogmaticRewriteFromSource(sourceReplyText, primaryDomainIntent));
   }
   if (requestShape === 'rewrite' && outputForm === 'two_sentences') {
-    if (isRegionSpecificSourceReply(sourceReplyText)) {
-      return '地域で差が出る話は、まず窓口と必要書類、受付期限だけ見れば大丈夫です。\n制度名が分かれば、その3点だけでもかなり判断しやすくなります。';
-    }
-    if (/制度|期限|必要書類|費用/.test(sourceReplyText)) {
-      return '制度や期限が変わる話は、まず公式窓口や受付期限を見ておくと安心です。\n必要書類まで見えてくると、どこを確認すべきかかなり判断しやすくなります。';
-    }
-    return 'まずは、いちばん気になっている手続きを1つに絞るところからで大丈夫です。\nそこが決まれば、次に見ることを一緒に整理できます。';
+    return buildConversationalRewriteFromSource(sourceReplyText).slice(0, 2).map(ensureSentence).join('\n');
   }
   if (requestShape === 'rewrite') {
-    return ensureSentence(buildMessageTemplateFallback(sourceReplyText, primaryDomainIntent).replace(/教えてもらえると助かります。?$/, '一緒に整理していきましょう'));
+    if (/(疲れて|かなり疲れ).*(言い換える|言い方|どう言い換える)/i.test(messageText)) {
+      if (/今日はその1件の期限を書き込むところまで/.test(sourceReplyText)) {
+        return '疲れている前提なら、今日はその1件の期限を書き込むところまでで十分です。';
+      }
+      return '疲れている前提なら、今日は1件だけ決めて期限だけ確認すれば十分です。';
+    }
+    return ensureSentence(buildLessBureaucraticRewriteFromSource(sourceReplyText, primaryDomainIntent));
   }
   if (requestShape === 'correction' && /(housing|school)/.test(primaryDomainIntent)) {
     if (primaryDomainIntent === 'housing') {

@@ -1104,3 +1104,81 @@ test('phase719: echoed assistant lines continue from source reply without wrong-
   assert.equal(replies[7].includes('いまの状況を整理します。'), false);
   assert.match(replies[7], /対象地域|受付期限|公式窓口/);
 });
+
+test('phase719: latest live transcript suite keeps source-aware transforms, deepen reply, and city-school prompts out of stale fallback', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    useActionLogHistory: true,
+    regionResponse: { status: 'already_set', regionKey: 'wa::seattle' }
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const inputs = [
+    'アメリカ赴任の準備って、最初の順番だけ短く教えて。',
+    'それなら最初の10分は何をする？',
+    '今日はかなり疲れてる前提だと、どう言い換える？',
+    '今の進め方で足りていないものを、2つだけ教えて。',
+    '家族に送る用に、一文だけで要点をまとめて。',
+    '説明はいらないので、相手に送る文面だけ作って。',
+    '今の文面を、断定しすぎない言い方に変えて。',
+    '今の返しを、事務的すぎない2文にして。',
+    'どうやって？',
+    '住まい探しと学校手続き、今はどちらを優先すべきかだけ教えて。',
+    '違う、学校ではなく住まい優先で答え直して。',
+    '学校手続きnyで',
+    '地域によって違うなら、確認する項目名だけ並べて。',
+    'ここまでを踏まえて、次の一手だけをやわらかく提案して。'
+  ];
+  const replies = [];
+  const sequenceUserId = 'U_PHASE719_LATEST_TRANSCRIPT';
+
+  for (const [index, text] of inputs.entries()) {
+    const body = createWebhookBody(text, sequenceUserId);
+    const turnReplies = [];
+    const result = await loaded.handleLineWebhook({
+      body,
+      signature: signBody(body),
+      requestId: `phase719_latest_transcript_${index + 1}`,
+      logger: () => {},
+      allowWelcome: false,
+      replyFn: async (_replyToken, message) => {
+        turnReplies.push(message);
+      }
+    });
+
+    assert.equal(result.status, 200, `turn_${index + 1}`);
+    assert.equal(turnReplies.length, 1, `turn_${index + 1}`);
+    replies.push(String(turnReplies[0].text || ''));
+  }
+
+  assert.match(replies[4], /優先順位|期限/);
+  assert.equal(replies[4].includes('優先する1件だけ決める'), false);
+  assert.equal(String(replies[5] || '').split('\n').length, 1);
+  assert.equal(replies[5].includes('教えてもらえると助かります'), false);
+  assert.match(replies[6], /(もし|かもしれません|進めやすそう)/);
+  assert.equal(replies[6].includes('優先するものを1つだけ決める'), false);
+  assert.equal(String(replies[7] || '').split('\n').length, 2);
+  assert.equal(replies[7].includes('一緒に整理できます'), false);
+  assert.match(replies[8], /具体的には|確認する順番/);
+  assert.equal(replies[8].includes('いま一番困っている手続きを1つだけ教えてください'), false);
+  assert.match(replies[11], /学校/);
+  assert.equal(replies[11].includes('？'), false);
+  assert.match(replies[12], /対象地域|窓口|必要書類|受付期限/);
+  assert.equal(replies[12].includes('対象校を1校に絞って'), false);
+  assert.equal(replies[13].includes('優先するものを1つだけ決める'), false);
+
+  replies.forEach((reply, index) => {
+    assert.equal(reply.includes('いまの状況を整理します。'), false, `turn_${index + 1}_generic_reset`);
+    assert.equal(reply.includes('いま一番困っている手続きを1つだけ教えてください'), false, `turn_${index + 1}_generic_followup`);
+    assertNoInternalConciergeLabels(reply);
+  });
+});

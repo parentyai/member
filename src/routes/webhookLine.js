@@ -768,8 +768,12 @@ async function buildPaidDomainConciergeResult(params) {
     resolveRuntimeCityPackSignals({
       lineUserId,
       locale: 'ja',
+      messageText: text,
       domainIntent,
-      intentRiskTier: resolveIntentRiskTier({ domainIntent }).intentRiskTier
+      intentRiskTier: resolveIntentRiskTier({ domainIntent }).intentRiskTier,
+      requestContract: payload.requestContract && typeof payload.requestContract === 'object'
+        ? payload.requestContract
+        : null
     }),
     resolveRuntimeEmergencySignals({
       lineUserId,
