@@ -40,15 +40,23 @@ function extractFollowupQuestion(text) {
 function finalizeCandidate(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const selected = payload.selected && typeof payload.selected === 'object' ? payload.selected : {};
+  const requestContract = payload.requestContract && typeof payload.requestContract === 'object'
+    ? payload.requestContract
+    : {};
   const verificationOutcome = normalizeText(payload.verificationOutcome) || 'passed';
   const readinessDecision = normalizeText(payload.readinessDecision) || 'allow';
   const readinessSafeResponseMode = normalizeText(payload.readinessSafeResponseMode) || 'answer';
   const contradictionFlags = Array.isArray(payload.contradictionFlags) ? payload.contradictionFlags : [];
+  const violationCodes = Array.isArray(payload.violationCodes) ? payload.violationCodes : [];
   const fallbackText = normalizeText(payload.fallbackText)
     || '状況を整理しながら進めます。優先手続きを1つ決めて進めましょう。';
   const readinessClarifyText = normalizeText(payload.readinessClarifyText);
   const atoms = selected.atoms && typeof selected.atoms === 'object' ? selected.atoms : {};
-  const preserveReplyText = selected.preserveReplyText === true;
+  const preserveReplyText = selected.preserveReplyText === true
+    || normalizeText(requestContract.outputForm).toLowerCase() !== 'default'
+    || ['rewrite', 'summarize', 'message_template', 'compare', 'criteria', 'correction', 'followup_continue'].includes(
+      normalizeText(requestContract.requestShape).toLowerCase()
+    );
 
   const guardResult = preserveReplyText
     ? null
@@ -61,7 +69,8 @@ function finalizeCandidate(params) {
       defaultQuestion: verificationOutcome === 'clarify'
         ? 'まず対象手続きと期限を1つずつ教えてください。'
         : '',
-      conciseMode: selected.conciseModeApplied === true
+      conciseMode: selected.conciseModeApplied === true,
+      requestContract
     });
   const guardedReplyText = preserveReplyText
     ? (trimForPaidLineMessage(normalizeText(selected.replyText)) || fallbackText)
@@ -98,6 +107,7 @@ function finalizeCandidate(params) {
       committedFollowupQuestion: extractFollowupQuestion(replyText),
       verificationOutcome,
       contradictionFlags: contradictionFlags.slice(0, 8),
+      violationCodes: violationCodes.slice(0, 8),
       candidateId: selected.id || selected.kind || null,
       candidateKind: selected.kind || null,
       fallbackTemplateKind,

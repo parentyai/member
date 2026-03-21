@@ -149,9 +149,12 @@ function shouldPreserveDirectAnswerFlow(packet, strategyPlan, selected) {
   const plan = strategyPlan && typeof strategyPlan === 'object' ? strategyPlan : {};
   const candidate = selected && typeof selected === 'object' ? selected : {};
   const domainIntent = normalizeText(payload.normalizedConversationIntent).toLowerCase();
+  const requestShape = normalizeText(payload.requestShape).toLowerCase();
   const strategy = normalizeText(plan.strategy).toLowerCase();
   const fallbackType = normalizeText(plan.fallbackType).toLowerCase();
   const selectedKind = normalizeText(candidate.kind).toLowerCase();
+  const requestShapeDirectAnswer = ['compare', 'correction', 'rewrite', 'summarize', 'message_template', 'criteria', 'followup_continue'].includes(requestShape)
+    && (selectedKind === 'domain_concierge_candidate' || selectedKind === 'continuation_candidate' || selectedKind === 'structured_answer_candidate');
   const generalDirectAnswer = domainIntent === 'general'
     && (strategy === 'domain_concierge' || strategy === 'concierge')
     && (
@@ -166,7 +169,10 @@ function shouldPreserveDirectAnswerFlow(packet, strategyPlan, selected) {
   const mixedDomainDirectAnswer = fallbackType === 'mixed_domain_direct_answer'
     && strategy === 'domain_concierge'
     && (selectedKind === 'domain_concierge_candidate' || selectedKind === 'continuation_candidate');
-  return generalDirectAnswer === true || utilityTransformDirectAnswer === true || mixedDomainDirectAnswer === true;
+  return requestShapeDirectAnswer === true
+    || generalDirectAnswer === true
+    || utilityTransformDirectAnswer === true
+    || mixedDomainDirectAnswer === true;
 }
 
 function resolveMixedDomainCanonicalReply(replyText, packet, strategyPlan) {
@@ -719,6 +725,7 @@ async function buildCandidateSet(packet, strategyPlan, deps, options) {
       followupIntent: packet.followupIntent,
       recentFollowupIntents: packet.recentFollowupIntents,
       recentResponseHints: packet.recentResponseHints,
+      requestContract: packet.requestContract,
       recoverySignal: packet.recoverySignal === true,
       blockedReason: groundedResult && groundedResult.blockedReason ? groundedResult.blockedReason : null
     });
@@ -731,6 +738,7 @@ async function buildCandidateSet(packet, strategyPlan, deps, options) {
       contextHint: packet.contextResumeDomain || packet.normalizedConversationIntent,
       followupIntent: packet.followupIntent,
       recentResponseHints: packet.recentResponseHints,
+      requestContract: packet.requestContract,
       suggestedAtoms: { nextActions: [], pitfall: null, question: null }
     });
     candidates.push(buildCasualCandidate(casualReply, packet));
@@ -797,6 +805,7 @@ async function buildCandidateSet(packet, strategyPlan, deps, options) {
       contextHint: packet.contextResumeDomain || packet.normalizedConversationIntent,
       followupIntent: packet.followupIntent,
       recentResponseHints: packet.recentResponseHints,
+      requestContract: packet.requestContract,
       suggestedAtoms: { nextActions: [], pitfall: null, question: null }
     });
     pushUniqueCandidate(buildCasualCandidate(casualReply, packet));
@@ -816,6 +825,7 @@ async function buildCandidateSet(packet, strategyPlan, deps, options) {
       followupIntent: packet.followupIntent,
       recentFollowupIntents: packet.recentFollowupIntents,
       recentResponseHints: packet.recentResponseHints,
+      requestContract: packet.requestContract,
       recoverySignal: packet.recoverySignal === true,
       blockedReason: groundedResult && groundedResult.blockedReason ? groundedResult.blockedReason : null
     });
@@ -904,6 +914,21 @@ function resolveLoopSafeCandidate(packet, selected, candidates) {
     repetitionPrevented: true,
     repeatRiskScore
   };
+}
+
+function buildCandidateVerificationQueue(primaryCandidate, rankedCandidates) {
+  const queue = [];
+  const pushUnique = (candidate) => {
+    if (!candidate || typeof candidate !== 'object') return;
+    const key = `${normalizeText(candidate.id)}:${normalizeText(candidate.kind)}:${normalizeText(candidate.replyText)}`;
+    if (queue.some((item) => `${normalizeText(item.id)}:${normalizeText(item.kind)}:${normalizeText(item.replyText)}` === key)) {
+      return;
+    }
+    queue.push(candidate);
+  };
+  pushUnique(primaryCandidate);
+  (Array.isArray(rankedCandidates) ? rankedCandidates : []).forEach((candidate) => pushUnique(candidate));
+  return queue;
 }
 
 async function runPaidConversationOrchestrator(params) {
@@ -1033,11 +1058,25 @@ async function runPaidConversationOrchestrator(params) {
   ) {
     effectiveEvidenceSufficiency = 'answer';
   }
-  const verified = verifyCandidate({
-    packet,
-    selected: loopResolved.selected,
-    evidenceSufficiency: effectiveEvidenceSufficiency
-  });
+  const verificationQueue = buildCandidateVerificationQueue(loopResolved.selected, judged.rankedCandidates);
+  let verified = null;
+  for (const candidate of verificationQueue) {
+    const attempt = verifyCandidate({
+      packet,
+      selected: candidate,
+      evidenceSufficiency: effectiveEvidenceSufficiency
+    });
+    if (!attempt || typeof attempt !== 'object') continue;
+    verified = attempt;
+    if (!Array.isArray(attempt.blockingViolationCodes) || attempt.blockingViolationCodes.length === 0) break;
+  }
+  if (!verified) {
+    verified = verifyCandidate({
+      packet,
+      selected: null,
+      evidenceSufficiency: effectiveEvidenceSufficiency
+    });
+  }
   const evidenceCoverage = selectedHasKnowledgeReadiness && Number.isFinite(Number(selectedForReadiness.evidenceCoverage))
     ? Number(selectedForReadiness.evidenceCoverage)
     : (groundedResult && groundedResult.assistantQuality
@@ -1156,6 +1195,8 @@ async function runPaidConversationOrchestrator(params) {
     selected: finalizationCandidate,
     verificationOutcome: verified.verificationOutcome,
     contradictionFlags: verified.contradictionFlags,
+    violationCodes: verified.violationCodes,
+    requestContract: packet.requestContract,
     readinessDecision: preservedReadiness.decision,
     readinessSafeResponseMode: preservedReadiness.safeResponseMode,
     readinessClarifyText,
@@ -1234,6 +1275,11 @@ async function runPaidConversationOrchestrator(params) {
       strategyPriorityVersion: strategyPlan.strategyPriorityVersion || 'v2',
       fallbackPriorityReason,
       directAnswerApplied,
+      requestShape: packet.requestShape || null,
+      outputForm: packet.outputForm || null,
+      detailObligations: Array.isArray(packet.detailObligations) ? packet.detailObligations.slice(0, 8) : [],
+      answerability: packet.answerability || null,
+      echoOfPriorAssistant: packet.echoOfPriorAssistant === true,
       selectedCandidateKind: finalized.finalMeta && finalized.finalMeta.candidateKind
         ? finalized.finalMeta.candidateKind
         : null,
@@ -1371,6 +1417,7 @@ async function runPaidConversationOrchestrator(params) {
       judgeScores: judged.judgeScores,
       verificationOutcome: finalized.finalMeta.verificationOutcome,
       contradictionFlags: finalized.finalMeta.contradictionFlags,
+      violationCodes: Array.isArray(finalized.finalMeta.violationCodes) ? finalized.finalMeta.violationCodes : [],
       candidateCount: Array.isArray(candidateSet.candidates) ? candidateSet.candidates.length : 0,
       committedNextActions: finalized.finalMeta.committedNextActions,
       committedFollowupQuestion: finalized.finalMeta.committedFollowupQuestion

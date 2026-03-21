@@ -46,7 +46,20 @@ const ISSUE_TYPE_BY_METRIC = Object.freeze({
   repeatedTemplateResponseRate: 'fallback_repetition',
   knowledgeActivationMissingRate: 'knowledge_activation',
   savedFaqUnusedRate: 'knowledge_activation',
-  cityPackUnusedRate: 'knowledge_activation'
+  cityPackUnusedRate: 'knowledge_activation',
+  conciergeDirectAnswerMissingRate: 'procedural_utility',
+  conciergeContextCarryMissingRate: 'continuity',
+  conciergeKnowledgeBypassRate: 'knowledge_activation',
+  conciergeTemplateOveruseRate: 'fallback_repetition',
+  genericLoopFixedReplyRate: 'fallback_repetition',
+  detailFormatDropRate: 'procedural_utility',
+  correctionIgnoredRate: 'continuity',
+  mixedDomainCollapseRate: 'continuity',
+  followupOveraskRate: 'procedural_utility',
+  internalLabelLeakRate: 'conversation_quality',
+  commandBoundaryCollisionRate: 'continuity',
+  punctuationAnomalyRate: 'conversation_quality',
+  parrotEchoRate: 'fallback_repetition'
 });
 
 const CATEGORY_BY_METRIC = Object.freeze({
@@ -71,7 +84,58 @@ const CATEGORY_BY_METRIC = Object.freeze({
   repeatedTemplateResponseRate: 'repeated_template_response',
   knowledgeActivationMissingRate: 'knowledge_activation_missing',
   savedFaqUnusedRate: 'saved_faq_unused',
-  cityPackUnusedRate: 'city_pack_unused'
+  cityPackUnusedRate: 'city_pack_unused',
+  conciergeDirectAnswerMissingRate: 'concierge_direct_answer_missing',
+  conciergeContextCarryMissingRate: 'concierge_context_carry_missing',
+  conciergeKnowledgeBypassRate: 'concierge_knowledge_bypass',
+  conciergeTemplateOveruseRate: 'concierge_template_overuse',
+  genericLoopFixedReplyRate: 'generic_loop_fixed_reply',
+  detailFormatDropRate: 'detail_format_drop',
+  correctionIgnoredRate: 'correction_ignored',
+  mixedDomainCollapseRate: 'mixed_domain_collapse',
+  followupOveraskRate: 'followup_overask',
+  internalLabelLeakRate: 'internal_label_leak',
+  commandBoundaryCollisionRate: 'command_boundary_collision',
+  punctuationAnomalyRate: 'punctuation_anomaly',
+  parrotEchoRate: 'parrot_echo'
+});
+
+const ISSUE_CODE_BY_METRIC = Object.freeze({
+  naturalness: 'QP_NATURALNESS_DEGRADED',
+  continuity: 'QP_CONTINUITY_DEGRADED',
+  specificity: 'QP_SPECIFICITY_DEGRADED',
+  proceduralUtility: 'QP_PROCEDURAL_UTILITY_DEGRADED',
+  knowledgeUse: 'QP_KNOWLEDGE_USE_DEGRADED',
+  fallbackRepetition: 'QP_FALLBACK_REPETITION_ELEVATED',
+  reviewableTranscriptRate: 'QP_REVIEWABLE_TRANSCRIPT_RATE_LOW',
+  userMessageAvailableRate: 'QP_USER_MESSAGE_AVAILABILITY_LOW',
+  assistantReplyAvailableRate: 'QP_ASSISTANT_REPLY_AVAILABILITY_LOW',
+  priorContextSummaryAvailableRate: 'QP_PRIOR_CONTEXT_AVAILABILITY_LOW',
+  transcriptAvailability: 'QP_TRANSCRIPT_AVAILABILITY_LOW',
+  observationBlockerRate: 'QP_OBSERVATION_BLOCKER_RATE_HIGH',
+  blockedFollowupJudgementRate: 'QP_FOLLOWUP_JUDGEMENT_BLOCKED',
+  blockedKnowledgeJudgementRate: 'QP_KNOWLEDGE_JUDGEMENT_BLOCKED',
+  broadAbstractEscapeRate: 'QP_BROAD_ABSTRACT_ESCAPE',
+  followupContextResetRate: 'QP_FOLLOWUP_CONTEXT_RESET',
+  citySpecificityMissingRate: 'QP_CITY_SPECIFICITY_MISSING',
+  nextStepMissingRate: 'QP_NEXT_STEP_MISSING',
+  repeatedTemplateResponseRate: 'QP_REPEATED_TEMPLATE_RESPONSE',
+  knowledgeActivationMissingRate: 'QP_KNOWLEDGE_ACTIVATION_MISSING',
+  savedFaqUnusedRate: 'QP_SAVED_FAQ_UNUSED',
+  cityPackUnusedRate: 'QP_CITY_PACK_UNUSED',
+  conciergeDirectAnswerMissingRate: 'QP_CONCIERGE_DIRECT_ANSWER_MISSING',
+  conciergeContextCarryMissingRate: 'QP_CONCIERGE_CONTEXT_CARRY_MISSING',
+  conciergeKnowledgeBypassRate: 'QP_CONCIERGE_KNOWLEDGE_BYPASS',
+  conciergeTemplateOveruseRate: 'QP_CONCIERGE_TEMPLATE_OVERUSE',
+  genericLoopFixedReplyRate: 'QP_GENERIC_LOOP_FIXED_REPLY',
+  detailFormatDropRate: 'QP_DETAIL_FORMAT_DROP',
+  correctionIgnoredRate: 'QP_CORRECTION_IGNORED',
+  mixedDomainCollapseRate: 'QP_MIXED_DOMAIN_COLLAPSE',
+  followupOveraskRate: 'QP_FOLLOWUP_OVERASK',
+  internalLabelLeakRate: 'QP_INTERNAL_LABEL_LEAK',
+  commandBoundaryCollisionRate: 'QP_COMMAND_BOUNDARY_COLLISION',
+  punctuationAnomalyRate: 'QP_PUNCTUATION_ANOMALY',
+  parrotEchoRate: 'QP_PARROT_ECHO'
 });
 
 const TITLE_BY_METRIC = Object.freeze({
@@ -96,7 +160,20 @@ const TITLE_BY_METRIC = Object.freeze({
   repeatedTemplateResponseRate: 'Repeated template responses are elevated',
   knowledgeActivationMissingRate: 'Knowledge activation is missing',
   savedFaqUnusedRate: 'Saved FAQ reuse is missing',
-  cityPackUnusedRate: 'City Pack reuse is missing'
+  cityPackUnusedRate: 'City Pack reuse is missing',
+  conciergeDirectAnswerMissingRate: 'Concierge direct-answer execution is missing',
+  conciergeContextCarryMissingRate: 'Concierge follow-up context carry is missing',
+  conciergeKnowledgeBypassRate: 'Concierge path is bypassing available knowledge',
+  conciergeTemplateOveruseRate: 'Concierge template overuse is elevated',
+  genericLoopFixedReplyRate: 'Concierge generic fixed-reply loop is elevated',
+  detailFormatDropRate: 'Concierge detail/output-format drops are elevated',
+  correctionIgnoredRate: 'Concierge correction handling is failing',
+  mixedDomainCollapseRate: 'Mixed-domain retention is failing',
+  followupOveraskRate: 'Concierge answers are asking unnecessary follow-up questions',
+  internalLabelLeakRate: 'Internal labels are leaking into replies',
+  commandBoundaryCollisionRate: 'Command boundary collisions are elevated',
+  punctuationAnomalyRate: 'Punctuation anomalies are elevated',
+  parrotEchoRate: 'Parrot-echo replies are elevated'
 });
 
 const BACKLOG_TEMPLATE_BY_METRIC = Object.freeze({
@@ -121,7 +198,20 @@ const BACKLOG_TEMPLATE_BY_METRIC = Object.freeze({
   repeatedTemplateResponseRate: { title: 'Fallback template diversification', priority: 'P1', objective: 'Reduce repeated template responses in generic fallback paths.' },
   knowledgeActivationMissingRate: { title: 'Knowledge activation repair', priority: 'P1', objective: 'Increase activation of available knowledge-backed candidates.' },
   savedFaqUnusedRate: { title: 'Saved FAQ activation repair', priority: 'P2', objective: 'Increase reuse of saved FAQ candidates when they are available.' },
-  cityPackUnusedRate: { title: 'City Pack activation repair', priority: 'P1', objective: 'Increase reuse of City Pack candidates when they are available.' }
+  cityPackUnusedRate: { title: 'City Pack activation repair', priority: 'P1', objective: 'Increase reuse of City Pack candidates when they are available.' },
+  conciergeDirectAnswerMissingRate: { title: 'Concierge direct-answer repair', priority: 'P1', objective: 'Restore direct-answer-first execution in concierge response paths.' },
+  conciergeContextCarryMissingRate: { title: 'Concierge context-carry repair', priority: 'P1', objective: 'Increase follow-up context carry reliability in concierge path.' },
+  conciergeKnowledgeBypassRate: { title: 'Concierge knowledge-bypass repair', priority: 'P1', objective: 'Prevent concierge answers from skipping available grounded candidates.' },
+  conciergeTemplateOveruseRate: { title: 'Concierge template diversification', priority: 'P1', objective: 'Reduce repetitive concierge template reuse across replies.' },
+  genericLoopFixedReplyRate: { title: 'Concierge generic-loop repair', priority: 'P1', objective: 'Stop concierge replies from resetting into a fixed generic skeleton.' },
+  detailFormatDropRate: { title: 'Concierge detail/form repair', priority: 'P1', objective: 'Preserve requested detail and output form through the final reply.' },
+  correctionIgnoredRate: { title: 'Correction supremacy repair', priority: 'P1', objective: 'Ensure explicit user corrections override prior context.' },
+  mixedDomainCollapseRate: { title: 'Mixed-domain retention repair', priority: 'P1', objective: 'Keep both required domains present when the request demands it.' },
+  followupOveraskRate: { title: 'Follow-up overask repair', priority: 'P1', objective: 'Suppress unnecessary ask-backs when the request is already answerable.' },
+  internalLabelLeakRate: { title: 'Internal label leak repair', priority: 'P1', objective: 'Remove internal routing labels from user-visible replies.' },
+  commandBoundaryCollisionRate: { title: 'Command boundary repair', priority: 'P1', objective: 'Prevent natural-language requests from colliding with command-only handling.' },
+  punctuationAnomalyRate: { title: 'Punctuation normalization repair', priority: 'P2', objective: 'Eliminate user-visible punctuation anomalies in replies.' },
+  parrotEchoRate: { title: 'Parrot-echo repair', priority: 'P1', objective: 'Advance the conversation instead of repeating the prior assistant line.' }
 });
 
 const METRIC_THRESHOLDS = Object.freeze({
@@ -146,7 +236,20 @@ const METRIC_THRESHOLDS = Object.freeze({
   repeatedTemplateResponseRate: KPI_THRESHOLDS.issueRate,
   knowledgeActivationMissingRate: KPI_THRESHOLDS.issueRate,
   savedFaqUnusedRate: KPI_THRESHOLDS.issueRate,
-  cityPackUnusedRate: KPI_THRESHOLDS.issueRate
+  cityPackUnusedRate: KPI_THRESHOLDS.issueRate,
+  conciergeDirectAnswerMissingRate: KPI_THRESHOLDS.issueRate,
+  conciergeContextCarryMissingRate: KPI_THRESHOLDS.issueRate,
+  conciergeKnowledgeBypassRate: KPI_THRESHOLDS.issueRate,
+  conciergeTemplateOveruseRate: KPI_THRESHOLDS.issueRate,
+  genericLoopFixedReplyRate: KPI_THRESHOLDS.issueRate,
+  detailFormatDropRate: KPI_THRESHOLDS.issueRate,
+  correctionIgnoredRate: KPI_THRESHOLDS.issueRate,
+  mixedDomainCollapseRate: KPI_THRESHOLDS.issueRate,
+  followupOveraskRate: KPI_THRESHOLDS.issueRate,
+  internalLabelLeakRate: KPI_THRESHOLDS.issueRate,
+  commandBoundaryCollisionRate: KPI_THRESHOLDS.issueRate,
+  punctuationAnomalyRate: KPI_THRESHOLDS.issueRate,
+  parrotEchoRate: KPI_THRESHOLDS.issueRate
 });
 
 const SIGNAL_METRIC_KEYS = Object.freeze([
@@ -180,7 +283,11 @@ const ISSUE_RATE_METRIC_KEYS = Object.freeze([
   'repeatedTemplateResponseRate',
   'knowledgeActivationMissingRate',
   'savedFaqUnusedRate',
-  'cityPackUnusedRate'
+  'cityPackUnusedRate',
+  'conciergeDirectAnswerMissingRate',
+  'conciergeContextCarryMissingRate',
+  'conciergeKnowledgeBypassRate',
+  'conciergeTemplateOveruseRate'
 ]);
 
 module.exports = {
@@ -190,6 +297,7 @@ module.exports = {
   DETECTION_SEVERITY,
   ISSUE_TYPE_BY_METRIC,
   CATEGORY_BY_METRIC,
+  ISSUE_CODE_BY_METRIC,
   TITLE_BY_METRIC,
   BACKLOG_TEMPLATE_BY_METRIC,
   METRIC_THRESHOLDS,

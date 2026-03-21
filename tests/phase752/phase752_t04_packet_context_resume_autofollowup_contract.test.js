@@ -150,3 +150,25 @@ test('phase752: snapshot domain does not hijack general planning followup withou
   assert.equal(packet.normalizedConversationIntent, 'general');
   assert.equal(packet.followupIntent, 'next_step');
 });
+
+test('phase752: reverse correction supersedes prior housing carry and keeps school intent', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_SCHOOL_CORRECTION',
+    messageText: '今度は逆で、住まいより学校優先で考え直して。',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'housing',
+        followupIntent: 'next_step',
+        replyText: '住まい探しの次は、候補物件を3件まで絞って進めましょう。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.recoverySignal, true);
+  assert.equal(packet.contextResume, false);
+  assert.equal(packet.contextResumeDomain, null);
+  assert.equal(packet.normalizedConversationIntent, 'school');
+});

@@ -20,6 +20,13 @@ function isHighRiskDomainIntent(intent) {
   return intent === 'ssn' || intent === 'banking';
 }
 
+function appendClarifyCandidateSet(baseCandidates, allowClarify) {
+  const candidates = Array.isArray(baseCandidates) ? baseCandidates.slice() : [];
+  if (allowClarify !== true || candidates.includes('clarify_candidate')) return candidates;
+  candidates.push('clarify_candidate');
+  return candidates;
+}
+
 function detectStrategySignals(messageText) {
   const normalized = normalizeText(messageText);
   return {
@@ -63,6 +70,14 @@ function buildStrategyPlan(params) {
   const hasFollowupIntent = followupIntent === 'docs_required' || followupIntent === 'appointment_needed' || followupIntent === 'next_step';
   const directAnswerHint = hasFollowupIntent || payload.contextResume === true || payload.lowInformationMessage === true || followupCarryFromHistory;
   const recoverySignal = payload.recoverySignal === true;
+  const requestShape = normalizeText(payload.requestShape || (payload.requestContract && payload.requestContract.requestShape) || '').toLowerCase() || 'answer';
+  const outputForm = normalizeText(payload.outputForm || (payload.requestContract && payload.requestContract.outputForm) || '').toLowerCase() || 'default';
+  const answerability = normalizeText(payload.answerability || (payload.requestContract && payload.requestContract.answerability) || '').toLowerCase() || 'answer_now';
+  const requestShapeDirectAnswer = ['compare', 'correction', 'rewrite', 'summarize', 'message_template', 'criteria', 'followup_continue'].includes(requestShape);
+  const clarifyCandidateAllowed = (
+    answerability === 'needs_clarify'
+    || answerability === 'high_risk_clarify'
+  ) && !['rewrite', 'message_template', 'compare', 'correction'].includes(requestShape);
   const intentReason = payload.intentDecision && typeof payload.intentDecision === 'object'
     ? normalizeText(payload.intentDecision.reason).toLowerCase()
     : '';
@@ -109,41 +124,100 @@ function buildStrategyPlan(params) {
       || strategySignals.utilityTransformQuestion
       || ((hasFollowupIntent || followupCarryFromHistory) && priorContextUsed)
     );
-  const groundedFirstCandidateSet = ['grounded_candidate', 'structured_answer_candidate', 'domain_concierge_candidate', 'clarify_candidate'];
-  const continuationFirstCandidateSet = ['continuation_candidate', 'grounded_candidate', 'structured_answer_candidate', 'domain_concierge_candidate', 'clarify_candidate'];
+  const groundedFirstCandidateSet = appendClarifyCandidateSet(
+    ['grounded_candidate', 'structured_answer_candidate', 'domain_concierge_candidate'],
+    clarifyCandidateAllowed
+  );
+  const continuationFirstCandidateSet = appendClarifyCandidateSet(
+    ['continuation_candidate', 'grounded_candidate', 'structured_answer_candidate', 'domain_concierge_candidate'],
+    clarifyCandidateAllowed
+  );
+  const directAnswerCandidateSet = appendClarifyCandidateSet(
+    ['continuation_candidate', 'domain_concierge_candidate'],
+    clarifyCandidateAllowed
+  );
+  const domainAnswerCandidateSet = appendClarifyCandidateSet(
+    ['domain_concierge_candidate'],
+    clarifyCandidateAllowed
+  );
+
+  if (requestShape === 'high_risk_clarify') {
+    return Object.assign({
+      strategy: 'clarify',
+      conversationMode: 'casual',
+      retrieveNeeded: false,
+      verifyNeeded: false,
+      candidateSet: ['clarify_candidate', 'conversation_candidate'],
+      fallbackType: 'request_shape_high_risk_clarify',
+      directAnswerFirst: false,
+      clarifySuppressed: false
+    }, buildStrategyTelemetry(
+      'clarify',
+      ['clarify_candidate', 'conversation_candidate'],
+      'request_shape_high_risk_clarify',
+      'clarify_required_by_request_contract',
+      { strategyAlternativeSet: ['clarify', 'conversation'] }
+    ));
+  }
+
+  if (requestShapeDirectAnswer) {
+    const prefersContinuation = requestShape === 'followup_continue'
+      || payload.priorContextUsed === true
+      || payload.echoOfPriorAssistant === true;
+    const candidateSet = prefersContinuation ? directAnswerCandidateSet : domainAnswerCandidateSet;
+    return Object.assign({
+      strategy: 'domain_concierge',
+      conversationMode: 'concierge',
+      retrieveNeeded: false,
+      verifyNeeded: false,
+      candidateSet,
+      fallbackType: `request_shape_${requestShape}`,
+      directAnswerFirst: true,
+      clarifySuppressed: clarifyCandidateAllowed !== true,
+      formatLocked: outputForm !== 'default'
+    }, buildStrategyTelemetry(
+      'domain_concierge',
+      candidateSet,
+      `request_shape_${requestShape}`,
+      'request_contract_direct_answer',
+      { strategyAlternativeSet: prefersContinuation ? ['continuation', 'domain_concierge'] : ['domain_concierge'] }
+    ));
+  }
 
   if (routerMode === 'greeting' || routerMode === 'casual') {
     if (strategySignals.mixedHousingSchoolQuestion || strategySignals.mixedSsnBankingQuestion) {
+      const candidateSet = appendClarifyCandidateSet(['domain_concierge_candidate'], clarifyCandidateAllowed);
       return Object.assign({
         strategy: 'domain_concierge',
         conversationMode: 'concierge',
         retrieveNeeded: false,
         verifyNeeded: false,
-        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         fallbackType: 'mixed_domain_direct_answer',
         directAnswerFirst: true,
         clarifySuppressed: true
       }, buildStrategyTelemetry(
         'domain_concierge',
-        ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         'mixed_domain_direct_answer',
         'preserve_mixed_domain_direct_answer',
         { strategyAlternativeSet: ['domain_concierge', 'clarify'] }
       ));
     }
     if (recoverySignal && normalizedIntent !== 'general') {
+      const candidateSet = appendClarifyCandidateSet(['domain_concierge_candidate'], clarifyCandidateAllowed);
       return Object.assign({
         strategy: 'domain_concierge',
         conversationMode: 'concierge',
         retrieveNeeded: false,
         verifyNeeded: false,
-        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         fallbackType: 'recovery_domain_resume',
         directAnswerFirst: true,
-        clarifySuppressed: false
+        clarifySuppressed: clarifyCandidateAllowed !== true
       }, buildStrategyTelemetry(
         'domain_concierge',
-        ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         'recovery_signal_domain_resume',
         'preserve_domain_concierge_during_recovery',
         { strategyAlternativeSet: ['domain_concierge', 'clarify'] }
@@ -173,13 +247,13 @@ function buildStrategyPlan(params) {
         conversationMode: 'concierge',
         retrieveNeeded: false,
         verifyNeeded: false,
-        candidateSet: ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet: directAnswerCandidateSet,
         fallbackType: 'utility_transform_direct_answer',
         directAnswerFirst: true,
         clarifySuppressed: true
       }, buildStrategyTelemetry(
         'domain_concierge',
-        ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        directAnswerCandidateSet,
         'utility_transform_direct_answer',
         'preserve_utility_transform_direct_answer',
         { strategyAlternativeSet: ['continuation', 'domain_concierge', 'clarify'] }
@@ -191,67 +265,70 @@ function buildStrategyPlan(params) {
         conversationMode: 'concierge',
         retrieveNeeded: false,
         verifyNeeded: false,
-        candidateSet: ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet: directAnswerCandidateSet,
         fallbackType: strategySignals.servicePlanQuestion ? 'service_plan_direct_answer' : 'general_followup_direct_answer',
         directAnswerFirst: true,
         clarifySuppressed: true
       }, buildStrategyTelemetry(
         'domain_concierge',
-        ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        directAnswerCandidateSet,
         strategySignals.servicePlanQuestion ? 'service_plan_direct_answer' : 'general_followup_direct_answer',
         strategySignals.servicePlanQuestion ? 'preserve_service_plan_direct_answer' : 'preserve_general_followup_direct_answer',
         { strategyAlternativeSet: ['continuation', 'domain_concierge', 'clarify'] }
       ));
     }
     if (hasFollowupIntent && normalizedIntent !== 'general') {
+      const candidateSet = appendClarifyCandidateSet(['domain_concierge_candidate'], clarifyCandidateAllowed);
       return Object.assign({
         strategy: 'domain_concierge',
         conversationMode: 'concierge',
         retrieveNeeded: false,
         verifyNeeded: false,
-        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         fallbackType: 'followup_direct_answer',
         directAnswerFirst: true,
         clarifySuppressed: true
       }, buildStrategyTelemetry(
         'domain_concierge',
-        ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         'followup_intent_domain_resume',
         highRiskIntent ? 'preserve_high_risk_domain_concierge' : 'preserve_direct_domain_followup',
         { strategyAlternativeSet: ['domain_concierge', 'clarify'] }
       ));
     }
     if (followupCarryFromHistory && normalizedIntent !== 'general') {
+      const candidateSet = appendClarifyCandidateSet(['domain_concierge_candidate'], clarifyCandidateAllowed);
       return Object.assign({
         strategy: 'domain_concierge',
         conversationMode: 'concierge',
         retrieveNeeded: false,
         verifyNeeded: false,
-        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         fallbackType: 'history_followup_carry',
         directAnswerFirst: true,
         clarifySuppressed: true
       }, buildStrategyTelemetry(
         'domain_concierge',
-        ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         'history_followup_carry',
         highRiskIntent ? 'preserve_high_risk_domain_concierge' : 'preserve_history_domain_followup',
         { strategyAlternativeSet: ['domain_concierge', 'clarify'] }
       ));
     }
     if (payload.contextResume === true && normalizedIntent !== 'general') {
+      const candidateSet = appendClarifyCandidateSet(['domain_concierge_candidate'], clarifyCandidateAllowed);
       return Object.assign({
         strategy: 'domain_concierge',
         conversationMode: 'concierge',
         retrieveNeeded: false,
         verifyNeeded: false,
-        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         fallbackType: 'contextual_domain_resume',
         directAnswerFirst: true,
         clarifySuppressed: true
       }, buildStrategyTelemetry(
         'domain_concierge',
-        ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         'contextual_domain_resume',
         highRiskIntent ? 'preserve_high_risk_domain_concierge' : 'preserve_contextual_domain_resume',
         { strategyAlternativeSet: ['domain_concierge', 'clarify'] }
@@ -264,13 +341,13 @@ function buildStrategyPlan(params) {
         conversationMode: 'casual',
         retrieveNeeded: false,
         verifyNeeded: false,
-        candidateSet: ['clarify_candidate', 'conversation_candidate'],
+        candidateSet: clarifyCandidateAllowed ? ['clarify_candidate', 'conversation_candidate'] : ['conversation_candidate'],
         fallbackType: 'low_information_clarify',
         directAnswerFirst: false,
-        clarifySuppressed: false
+        clarifySuppressed: clarifyCandidateAllowed !== true
       }, buildStrategyTelemetry(
         'clarify',
-        ['clarify_candidate', 'conversation_candidate'],
+        clarifyCandidateAllowed ? ['clarify_candidate', 'conversation_candidate'] : ['conversation_candidate'],
         'low_information_clarify',
         'clarify_after_low_information',
         { strategyAlternativeSet: ['clarify', 'conversation'] }
@@ -296,36 +373,38 @@ function buildStrategyPlan(params) {
 
   if (normalizedIntent !== 'general') {
     if (strategySignals.mixedHousingSchoolQuestion || strategySignals.mixedSsnBankingQuestion) {
+      const candidateSet = appendClarifyCandidateSet(['domain_concierge_candidate'], clarifyCandidateAllowed);
       return Object.assign({
         strategy: 'domain_concierge',
         conversationMode: 'concierge',
         retrieveNeeded: false,
         verifyNeeded: false,
-        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         fallbackType: 'mixed_domain_direct_answer',
         directAnswerFirst: true,
         clarifySuppressed: true
       }, buildStrategyTelemetry(
         'domain_concierge',
-        ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         'mixed_domain_direct_answer',
         'preserve_mixed_domain_direct_answer',
         { strategyAlternativeSet: ['domain_concierge', 'clarify'] }
       ));
     }
     if (recoverySignal) {
+      const candidateSet = appendClarifyCandidateSet(['domain_concierge_candidate'], clarifyCandidateAllowed);
       return Object.assign({
         strategy: 'domain_concierge',
         conversationMode: 'concierge',
         retrieveNeeded: false,
         verifyNeeded: false,
-        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         fallbackType: 'recovery_domain_resume',
         directAnswerFirst: true,
-        clarifySuppressed: false
+        clarifySuppressed: clarifyCandidateAllowed !== true
       }, buildStrategyTelemetry(
         'domain_concierge',
-        ['domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet,
         'recovery_signal_domain_resume',
         'preserve_domain_concierge_during_recovery',
         { strategyAlternativeSet: ['domain_concierge', 'clarify'] }
@@ -337,13 +416,13 @@ function buildStrategyPlan(params) {
         conversationMode: 'concierge',
         retrieveNeeded: false,
         verifyNeeded: false,
-        candidateSet: ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        candidateSet: directAnswerCandidateSet,
         fallbackType: 'utility_transform_direct_answer',
         directAnswerFirst: true,
         clarifySuppressed: true
       }, buildStrategyTelemetry(
         'domain_concierge',
-        ['continuation_candidate', 'domain_concierge_candidate', 'clarify_candidate'],
+        directAnswerCandidateSet,
         'utility_transform_direct_answer',
         'preserve_utility_transform_direct_answer',
         { strategyAlternativeSet: ['continuation', 'domain_concierge', 'clarify'] }
@@ -390,13 +469,13 @@ function buildStrategyPlan(params) {
       conversationMode: 'concierge',
       retrieveNeeded: false,
       verifyNeeded: false,
-      candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+      candidateSet: appendClarifyCandidateSet(['domain_concierge_candidate'], clarifyCandidateAllowed),
       fallbackType: null,
       directAnswerFirst: directAnswerHint,
-      clarifySuppressed: directAnswerHint
+      clarifySuppressed: directAnswerHint || clarifyCandidateAllowed !== true
     }, buildStrategyTelemetry(
       'domain_concierge',
-      ['domain_concierge_candidate', 'clarify_candidate'],
+      appendClarifyCandidateSet(['domain_concierge_candidate'], clarifyCandidateAllowed),
       'explicit_domain_intent',
       highRiskIntent ? 'preserve_high_risk_domain_concierge' : 'domain_concierge_after_grounding_not_preferred',
       { strategyAlternativeSet: ['domain_concierge', 'clarify'] }
@@ -409,13 +488,13 @@ function buildStrategyPlan(params) {
       conversationMode: 'concierge',
       retrieveNeeded: false,
       verifyNeeded: false,
-      candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+      candidateSet: appendClarifyCandidateSet(['domain_concierge_candidate'], clarifyCandidateAllowed),
       fallbackType: null,
       directAnswerFirst: false,
-      clarifySuppressed: false
+      clarifySuppressed: clarifyCandidateAllowed !== true
     }, buildStrategyTelemetry(
       'concierge',
-      ['domain_concierge_candidate', 'clarify_candidate'],
+      appendClarifyCandidateSet(['domain_concierge_candidate'], clarifyCandidateAllowed),
       'router_problem_concierge',
       'preserve_problem_concierge',
       { strategyAlternativeSet: ['domain_concierge', 'clarify'] }

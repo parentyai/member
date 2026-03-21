@@ -158,6 +158,7 @@ function judgeCandidates(params) {
   const selected = scored[0] || null;
   return {
     selected: selected ? selected.candidate : null,
+    rankedCandidates: scored.map((entry) => entry.candidate),
     judgeWinner: selected ? selected.verdict.candidateId : null,
     judgeScores: scored.map((entry) => ({
       candidateId: entry.verdict.candidateId,

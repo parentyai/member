@@ -128,6 +128,13 @@ function sanitizePaidMainReply(text, options) {
   const raw = normalizeText(text);
   const parsedLines = parseReplyLines(raw);
   const conciseMode = payload.conciseMode === true;
+  const requestContract = payload.requestContract && typeof payload.requestContract === 'object'
+    ? payload.requestContract
+    : {};
+  const requestShape = normalizeText(requestContract.requestShape).toLowerCase();
+  const outputForm = normalizeText(requestContract.outputForm).toLowerCase() || 'default';
+  const formatLocked = outputForm !== 'default'
+    || ['rewrite', 'summarize', 'message_template', 'compare', 'criteria', 'correction', 'followup_continue'].includes(requestShape);
   if (conciseMode && shouldPreserveStructuredConciergeReply(parsedLines)) {
     const preservedText = parsedLines
       .slice(0, 3)
@@ -147,6 +154,27 @@ function sanitizePaidMainReply(text, options) {
         conciseModeApplied: true
       }),
       replyTemplateFingerprint: buildReplyTemplateFingerprint(preservedText || DEFAULT_SITUATION_LINE)
+    };
+  }
+  if (formatLocked) {
+    const lockedText = parsedLines
+      .slice(0, outputForm === 'two_sentences' ? 2 : 3)
+      .map((line) => sanitizeLine(line))
+      .filter(Boolean)
+      .join('\n')
+      .trim();
+    return {
+      text: lockedText || sanitizeLine(payload.situationLine) || DEFAULT_SITUATION_LINE,
+      legacyTemplateHit: containsLegacyTemplateTerms(raw),
+      actionCount: 0,
+      pitfallIncluded: false,
+      followupQuestionIncluded: /[?？]/.test(lockedText),
+      insertedNextStepIntro: false,
+      templateKind: classifyReplyTemplateKind({
+        replyText: lockedText || DEFAULT_SITUATION_LINE,
+        conciseModeApplied: conciseMode
+      }),
+      replyTemplateFingerprint: buildReplyTemplateFingerprint(lockedText || DEFAULT_SITUATION_LINE)
     };
   }
   const situationLine = pickSituationLine(parsedLines, payload.situationLine);

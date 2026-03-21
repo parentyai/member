@@ -8,6 +8,7 @@ const {
   clampConfidence,
   extractSampleCount
 } = require('./issueModel');
+const { CONCIERGE_ISSUE_CODES } = require('./rootCause/constants');
 
 const SEVERITY_RANK = Object.freeze({
   low: 0,
@@ -24,7 +25,16 @@ const HIGH_SEVERITY_CATEGORIES = new Set([
   'followup_context_lost',
   'machine_like_tone',
   'city_specificity_missing',
-  'compat_over_reliance'
+  'compat_over_reliance',
+  'generic_loop_fixed_reply',
+  'detail_format_drop',
+  'correction_ignored',
+  'mixed_domain_collapse',
+  'followup_overask',
+  'internal_label_leak',
+  'command_boundary_collision',
+  'parrot_echo',
+  ...CONCIERGE_ISSUE_CODES.filter((code) => code !== 'trace_join_incomplete')
 ]);
 
 const MEDIUM_SEVERITY_CATEGORIES = new Set([
@@ -33,7 +43,8 @@ const MEDIUM_SEVERITY_CATEGORIES = new Set([
   'missing_transcript_availability',
   'low_procedural_utility',
   'housing_answer_lacks_grounding',
-  'trace_join_incomplete'
+  'trace_join_incomplete',
+  'punctuation_anomaly'
 ]);
 
 function pickHigherSeverity(left, right) {

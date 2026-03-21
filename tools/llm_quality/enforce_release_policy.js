@@ -2,6 +2,10 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const {
+  buildConciergeReleaseSupport,
+  CONCIERGE_RUNTIME_SIGNAL_KEYS
+} = require('./concierge_quality');
 
 function parseArgs(argv) {
   const args = Array.isArray(argv) ? argv.slice(2) : [];
@@ -101,7 +105,14 @@ function readSummaryData(summaryPath) {
   try {
     const payload = readJson(summaryPath);
     if (payload && typeof payload === 'object' && payload.summary && typeof payload.summary === 'object') {
-      return payload.summary;
+      return Object.assign({}, payload.summary, {
+        runtimeSummarySource: typeof payload.runtimeSummarySource === 'string'
+          ? payload.runtimeSummarySource
+          : payload.summary.runtimeSummarySource,
+        preparedAt: typeof payload.preparedAt === 'string'
+          ? payload.preparedAt
+          : payload.summary.preparedAt
+      });
     }
     return payload && typeof payload === 'object' ? payload : null;
   } catch (_err) {
@@ -186,7 +197,8 @@ const STRICT_RUNTIME_SIGNAL_KEYS = Object.freeze([
   'retrieveNeededRate',
   'avgActionCount',
   'directAnswerAppliedRate',
-  'avgRepeatRiskScore'
+  'avgRepeatRiskScore',
+  ...CONCIERGE_RUNTIME_SIGNAL_KEYS
 ]);
 
 function main(argv) {
@@ -251,6 +263,7 @@ function main(argv) {
   const runtimeSummarySource = summary && typeof summary.runtimeSummarySource === 'string'
     ? summary.runtimeSummarySource
     : null;
+  const conciergeSupport = buildConciergeReleaseSupport(summary);
 
   const baselineDimensionMap = toMap(baseline.dimensions, 'key');
   const candidateDimensionMap = toMap(candidate.dimensions, 'key');
@@ -275,6 +288,7 @@ function main(argv) {
     compatGovernanceRequired: requireCompatGovernance === true,
     liveRuntimeAuditRequired: requireLiveRuntimeAudit === true,
     noGoGateMandatoryRequired: requireNoGoGateMandatory === true,
+    unresolvedConciergeCriticalIssuesResolved: (requireStrictRuntimeSignals === true || requireNoGoGateMandatory === true),
     maxCompatShare,
     softFloorRequired: requireSoftFloor === true,
     softFloorValue: softFloor
@@ -383,6 +397,13 @@ function main(argv) {
     }
   }
 
+  conciergeSupport.criticalIssues.forEach((issue) => {
+    if (!issue || issue.blocked !== true) return;
+    const code = `concierge_critical_issue_unresolved:${issue.issueCode}`;
+    if (requireNoGoGateMandatory === true || requireStrictRuntimeSignals === true) failures.push(code);
+    else warnings.push(code);
+  });
+
   const conversation = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
     ? summary.conversationQuality
     : null;
@@ -415,7 +436,20 @@ function main(argv) {
       directAnswerMissRate: runtimeSignalRaw.directAnswerAppliedRate == null
         ? null
         : Math.max(0, 1 - runtimeSignalRaw.directAnswerAppliedRate),
-      avgRepeatRiskScore: runtimeSignalRaw.avgRepeatRiskScore
+      avgRepeatRiskScore: runtimeSignalRaw.avgRepeatRiskScore,
+      domainIntentConciergeRate: runtimeSignalRaw.domainIntentConciergeRate,
+      officialOnlySatisfiedRate: runtimeSignalRaw.officialOnlySatisfiedRate,
+      followupResolutionRate: runtimeSignalRaw.followupResolutionRate,
+      contextualResumeHandledRate: runtimeSignalRaw.contextualResumeHandledRate,
+      avgUnsupportedClaimCount: runtimeSignalRaw.avgUnsupportedClaimCount,
+      formatComplianceRate: runtimeSignalRaw.formatComplianceRate,
+      detailCarryRate: runtimeSignalRaw.detailCarryRate,
+      correctionRecoveryRate: runtimeSignalRaw.correctionRecoveryRate,
+      mixedDomainRetentionRate: runtimeSignalRaw.mixedDomainRetentionRate,
+      followupOveraskRate: runtimeSignalRaw.followupOveraskRate,
+      internalLabelLeakRate: runtimeSignalRaw.internalLabelLeakRate,
+      parrotEchoRate: runtimeSignalRaw.parrotEchoRate,
+      commandBoundaryCollisionRate: runtimeSignalRaw.commandBoundaryCollisionRate
     }
     : null;
   if (runtimeSignalCoverage.missingKeys.length > 0) {
@@ -443,6 +477,14 @@ function main(argv) {
       failures.push('runtime_signal_repeat_risk_too_high');
     }
   }
+  conciergeSupport.runtimeFailures.forEach((row) => {
+    if (!row || row.status !== 'fail') return;
+    const code = row.direction === 'max'
+      ? `concierge_runtime_signal_too_high:${row.signal}`
+      : `concierge_runtime_signal_too_low:${row.signal}`;
+    if (requireStrictRuntimeSignals === true) failures.push(code);
+    else warnings.push(code);
+  });
 
   if (!mustPass || mustPass.ok !== true) failures.push('must_pass_fixtures_failed');
 
@@ -481,6 +523,12 @@ function main(argv) {
     summaryPath,
     runtimeSignals,
     runtimeSignalCoverage,
+    conciergeRuntimeSignals: conciergeSupport.runtimeSignals,
+    conciergeRuntimeFailures: conciergeSupport.runtimeFailures,
+    conciergeCriticalIssues: conciergeSupport.criticalIssues,
+    conciergeCriticalIssueCodes: conciergeSupport.criticalIssueCodes,
+    conciergeSignalCoverage: conciergeSupport.signalCoverage,
+    conciergeCriticalIssueCount: conciergeSupport.criticalIssueCount,
     qualityLoopV2,
     improvementLoop,
     runtimeSummarySource,

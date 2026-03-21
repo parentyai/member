@@ -9,6 +9,8 @@ const { detectReadinessCauses } = require('./detectReadinessCauses');
 const { detectFinalizerTemplateCauses } = require('./detectFinalizerTemplateCauses');
 const { detectContinuityCauses } = require('./detectContinuityCauses');
 const { detectSpecificityCauses } = require('./detectSpecificityCauses');
+const { detectConciergeCauses } = require('./detectConciergeCauses');
+const { detectFixedRootCauseCauses } = require('./detectFixedRootCauseCauses');
 const {
   ROOT_CAUSE_PROVENANCE,
   ROOT_CAUSE_ANALYSIS_STATUS,
@@ -97,6 +99,8 @@ function buildRootCauseReport(params) {
   let runtimeCandidates = [];
   if (!(issue.issueType === 'observation_blocker' && observationCandidates.length > 0)) {
     runtimeCandidates = []
+      .concat(detectFixedRootCauseCauses(context))
+      .concat(detectConciergeCauses(context))
       .concat(detectRetrievalCauses(context))
       .concat(detectKnowledgeSelectionCauses(context))
       .concat(detectReadinessCauses(context))

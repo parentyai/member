@@ -71,9 +71,11 @@ test('phase769: strict release policy fails when runtime conversation signals ar
   const payload = JSON.parse(fs.readFileSync(path.join(ROOT, outPath), 'utf8'));
   assert.equal(payload.ok, false);
   assert.equal(payload.failures.some((row) => String(row).startsWith('runtime_signal_missing:')), true);
-  assert.equal(payload.runtimeSignalCoverage.missingKeys.length, 8);
+  assert.equal(payload.runtimeSignalCoverage.missingKeys.length, 21);
   assert.equal(payload.runtimeSignalCoverage.requiredKeys.includes('legacyTemplateHitRate'), true);
   assert.equal(payload.runtimeSignalCoverage.requiredKeys.includes('avgActionCount'), true);
+  assert.equal(payload.runtimeSignalCoverage.requiredKeys.includes('formatComplianceRate'), true);
+  assert.equal(payload.runtimeSignalCoverage.requiredKeys.includes('internalLabelLeakRate'), true);
 });
 
 test('phase769: non-strict release policy warns (but does not fail) when runtime signals are missing', () => {
@@ -93,5 +95,5 @@ test('phase769: non-strict release policy warns (but does not fail) when runtime
   const payload = JSON.parse(fs.readFileSync(path.join(ROOT, outPath), 'utf8'));
   assert.equal(payload.ok, true);
   assert.equal(payload.warnings.some((row) => String(row).startsWith('runtime_signal_missing:')), true);
-  assert.equal(payload.runtimeSignalCoverage.missingKeys.length, 8);
+  assert.equal(payload.runtimeSignalCoverage.missingKeys.length, 21);
 });

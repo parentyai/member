@@ -44,6 +44,25 @@ function buildBasePayload(overrides) {
   }, overrides || {});
 }
 
+function assertNoTemplateOrInternalLabels(text) {
+  const message = String(text || '');
+  [
+    'FAQ候補',
+    'CityPack候補',
+    '根拠キー',
+    'score=',
+    '- [ ]',
+    'domain_concierge_candidate',
+    'clarify_candidate',
+    'fallbackType',
+    'routerReason',
+    'contextual_domain_resume',
+    'opportunityReasonKeys'
+  ].forEach((token) => {
+    assert.equal(message.includes(token), false, `unexpected token: ${token}`);
+  });
+}
+
 test('phase734: orchestrator loop-break prevents identical repeated reply on contextual resume', async () => {
   const repeatedReply = '学校手続きの次は、対象校を1校に絞って必要書類を先に確定するのが最短です。';
   const deps = {
@@ -283,6 +302,7 @@ test('phase734: utility transformation and correction presets stay concise and t
   });
   assert.match(housingCorrection.replyText, /住まい優先/);
   assert.match(housingCorrection.replyText, /入居時期|希望エリア/);
+  assert.equal(housingCorrection.replyText.includes('学校手続きの相談'), false);
 
   const anxietyNarrow = generatePaidDomainConciergeReply({
     domainIntent: 'general',
@@ -340,4 +360,17 @@ test('phase734: utility transformation and correction presets stay concise and t
   });
   assert.match(nonDogmaticNext.replyText, /次の一手としては/);
   assert.match(nonDogmaticNext.replyText, /よさそう/);
+
+  [familyLine, todayLine, housingCorrection, anxietyNarrow, officialCriteria, reservationTemplate, messageOnly, humanTone, softerTone, hedgedRewrite, nonDogmaticNext]
+    .forEach((item) => {
+      assertNoTemplateOrInternalLabels(item.replyText);
+      assert.equal(String(item.replyText || '').includes('まずは次の一手から進めましょう'), false);
+      assert.equal(String(item.replyText || '').includes('優先したい手続きがあれば1つだけ教えてください'), false);
+    });
+  [familyLine, todayLine, reservationTemplate, messageOnly, softerTone, hedgedRewrite]
+    .forEach((item) => {
+      assert.equal(String(item.replyText || '').includes('・'), false);
+    });
+  assert.notEqual(messageOnly.replyText, softerTone.replyText);
+  assert.notEqual(hedgedRewrite.replyText, nonDogmaticNext.replyText);
 });

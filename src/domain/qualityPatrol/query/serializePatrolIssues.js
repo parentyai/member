@@ -53,6 +53,7 @@ function serializePatrolIssues(params) {
       : (issue && issue.summary ? String(issue.summary) : `${issue && issue.title ? issue.title : 'Quality finding'} (${issue && issue.slice ? issue.slice : 'global'})`);
     return {
       issueKey: issue && issue.issueKey ? issue.issueKey : '',
+      issueCode: issue && issue.issueCode ? issue.issueCode : '',
       title: issue && issue.title ? issue.title : 'Quality finding',
       severity: issue && issue.severity ? issue.severity : 'medium',
       status: issue && issue.status ? issue.status : 'watching',
