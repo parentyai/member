@@ -833,18 +833,6 @@ const PANE_V2_META = Object.freeze({
 });
 
 const PAGE_HEADER_ACTION_MAP = Object.freeze({
-  home: Object.freeze({
-    primary: Object.freeze({
-      labelKey: 'ui.label.alerts.title',
-      fallback: '要対応',
-      paneTarget: 'alerts'
-    }),
-    secondary: Object.freeze({
-      labelKey: 'ui.label.home.task.monitor',
-      fallback: '配信結果を確認',
-      paneTarget: 'monitor'
-    })
-  }),
   'city-pack': Object.freeze({
     primary: Object.freeze({
       labelKey: 'ui.label.nav.cityPackManage',
@@ -909,6 +897,19 @@ const DASHBOARD_CARD_CONFIG = Object.freeze({
   avgTaskCompletion: { kpiKeys: ['journey_task_completion_rate'], unit: 'percent' },
   dependencyBlockRate: { kpiKeys: ['journey_dependency_block_rate'], unit: 'percent' }
 });
+const DASHBOARD_BAND_METRIC_KEYS = Object.freeze({
+  usage: Object.freeze(['registrations', 'membership', 'proRatio', 'proActive']),
+  delivery: Object.freeze(['notifications', 'reaction', 'faq', 'engagement']),
+  risk: Object.freeze(['llmUsage', 'llmBlockRate', 'avgTaskCompletion', 'dependencyBlockRate'])
+});
+const DASHBOARD_FOCUS_METRICS = Object.freeze([
+  'registrations',
+  'proActive',
+  'notifications',
+  'reaction',
+  'llmBlockRate',
+  'dependencyBlockRate'
+]);
 const OPS_SECTION_ORDER = Object.freeze([
   'notifications',
   'emergency',
@@ -5807,6 +5808,85 @@ function renderDashboardMetricCard(metricKey, payload) {
   }
 }
 
+function resolveDashboardMetricVm(metricKey, payload) {
+  const config = DASHBOARD_CARD_CONFIG[metricKey];
+  if (!config) {
+    return { value: '-', note: '-', state: 'unset' };
+  }
+  if (state.recoveryUx && state.recoveryUx.mode === 'degraded') {
+    return {
+      value: t('ui.value.dashboard.blocked', 'BLOCKED'),
+      note: t('ui.desc.dashboard.blockedByLocalPreflight', 'ローカル診断が未復旧のため取得を停止中です'),
+      state: 'blocked'
+    };
+  }
+  if (!payload) {
+    return {
+      value: t('ui.value.dashboard.awaiting', '情報待ち'),
+      note: t('ui.desc.dashboard.pendingInitialLoad', '最初の取得が完了すると表示されます。'),
+      state: 'pending'
+    };
+  }
+  const metric = resolveDashboardMetric(payload, metricKey);
+  if (!metric || metric.available !== true) {
+    return {
+      value: t('ui.value.dashboard.awaiting', '情報待ち'),
+      note: normalizeCopyForRole(
+        (metric && metric.note) || t('ui.desc.dashboard.notAvailable', '現行データから算出できません'),
+        state.role
+      ),
+      state: 'unset'
+    };
+  }
+  const series = Array.isArray(metric.series)
+    ? metric.series.filter((value) => Number.isFinite(Number(value))).map(Number)
+    : [];
+  const currentSeriesValue = series.length ? series[series.length - 1] : null;
+  const displayCurrent = typeof metric.valueLabel === 'string' && metric.valueLabel.trim()
+    ? metric.valueLabel
+    : formatDashboardSeriesValue(currentSeriesValue, config.unit);
+  return {
+    value: normalizeCopyForRole(displayCurrent || '-', state.role),
+    note: normalizeCopyForRole(metric.note || '-', state.role),
+    state: 'ready'
+  };
+}
+
+function renderDashboardFocusTiles() {
+  DASHBOARD_FOCUS_METRICS.forEach((metricKey) => {
+    const payload = resolveDashboardPayload(getDashboardWindowMonths(metricKey));
+    const vm = resolveDashboardMetricVm(metricKey, payload);
+    const cardEl = document.querySelector(`[data-dashboard-focus-card="${metricKey}"]`);
+    const valueEl = document.getElementById(`dashboard-focus-${metricKey}-value`);
+    const noteEl = document.getElementById(`dashboard-focus-${metricKey}-note`);
+    if (cardEl) {
+      cardEl.setAttribute('data-ui-state', vm.state);
+      cardEl.classList.toggle('is-unset', vm.state !== 'ready');
+      cardEl.classList.toggle('is-blocked', vm.state === 'blocked');
+    }
+    if (valueEl) valueEl.textContent = vm.value;
+    if (noteEl) noteEl.textContent = vm.note;
+  });
+}
+
+function renderDashboardBandVisibility() {
+  Object.entries(DASHBOARD_BAND_METRIC_KEYS).forEach(([bandKey, metricKeys]) => {
+    const bandEl = document.querySelector(`#pane-home .dashboard-kpi-band[data-dashboard-band="${bandKey}"]`);
+    const emptyEl = document.getElementById(`dashboard-band-${bandKey}-empty`);
+    const hasAvailableMetric = metricKeys.some((metricKey) => {
+      const payload = resolveDashboardPayload(getDashboardWindowMonths(metricKey));
+      return resolveDashboardMetricVm(metricKey, payload).state === 'ready';
+    });
+    if (bandEl) bandEl.classList.toggle('is-empty', !hasAvailableMetric);
+    if (emptyEl) {
+      emptyEl.hidden = hasAvailableMetric;
+      emptyEl.textContent = state.recoveryUx && state.recoveryUx.mode === 'degraded'
+        ? t('ui.desc.dashboard.blockedByLocalPreflight', 'ローカル診断が未復旧のため取得を停止中です')
+        : t('ui.desc.home.band.empty', 'このグループはまだ判断材料を算出できません。');
+    }
+  });
+}
+
 function resolveTopbarStatusFromState() {
   const registrationPayload = resolveDashboardPayload(getDashboardWindowMonths('registrations'));
   const registrationMetric = resolveDashboardMetric(registrationPayload, 'registrations');
@@ -5851,6 +5931,8 @@ function renderDashboardKpis() {
     const payload = resolveDashboardPayload(windowMonths);
     renderDashboardMetricCard(metricKey, payload);
   });
+  renderDashboardFocusTiles();
+  renderDashboardBandVisibility();
 }
 
 function renderDashboardJourneyKpi() {

@@ -33,7 +33,8 @@ test('phase674: v2 foundation adds semantic shell and pane surface markers', () 
   assert.match(homePane, /id="home-decision-card"[^>]*data-surface-tier="hero"/);
   assert.match(homePane, /id="home-reflection-reason"[^>]*data-empty-reason="home-reflection"/);
   assert.match(homePane, /id="home-reflection-next"[^>]*data-next-action="home-reflection"/);
-  assert.match(homePane, /class="panel dashboard-panel"[^>]*data-surface-tier="primary"/);
+  assert.match(homePane, /class="panel dashboard-focus-panel"[^>]*data-surface-tier="primary"/);
+  assert.match(homePane, /class="panel dashboard-panel dashboard-panel-detail"[^>]*data-surface-tier="secondary"/);
 
   assert.match(composerPane, /data-pane-mode="notification-workbench"/);
   assert.match(composerPane, /id="composer-inputs"[^>]*data-surface-tier="primary"/);

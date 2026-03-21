@@ -236,71 +236,121 @@
         </div>
 
         <section id="pane-home" class="app-pane is-active" data-pane="home" data-pane-mode="decision-console" data-task-context="today-judgment" data-surface-tier="workspace">
-          <div class="decision-card" id="home-decision-card" data-surface-tier="hero">
-            <div class="decision-card-header">
-              <div class="decision-title" data-dict-key="ui.label.nav.dashboard">ダッシュボード</div>
-              <span id="home-decision-state" class="decision-state state-ready">READY</span>
+          <div class="dashboard-first-view-grid" data-home-layout="first-view">
+            <div class="decision-card" id="home-decision-card" data-surface-tier="hero">
+              <div class="decision-card-header">
+                <div class="decision-title" data-dict-key="ui.label.nav.dashboard">ダッシュボード</div>
+                <span id="home-decision-state" class="decision-state state-ready">READY</span>
+              </div>
+              <div id="home-decision-reason1" class="decision-reason">-</div>
+              <div id="home-decision-reason2" class="decision-reason">-</div>
+              <div class="decision-updated">
+                <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
+                <span id="home-decision-updated">-</span>
+              </div>
+              <div class="decision-actions">
+                <button id="home-action-alerts" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="alerts" data-primary-action="pane-primary">要対応を確認</button>
+              </div>
             </div>
-            <div id="home-decision-reason1" class="decision-reason">-</div>
-            <div id="home-decision-reason2" class="decision-reason">-</div>
-            <div class="decision-updated">
-              <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
-              <span id="home-decision-updated">-</span>
+            <div id="home-reflection-state" class="panel data-reflection-panel" data-reflection-pane="home" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
+              <div class="panel-title">データ反映状態</div>
+              <div class="panel-body">
+                <div class="note"><strong>状態:</strong> <span id="home-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
+                <div class="note"><strong>理由:</strong> <span id="home-reflection-reason" data-empty-reason="home-reflection">最初の取得を待機しています。</span></div>
+                <div class="note"><strong>確認:</strong> <span id="home-reflection-next" data-next-action="home-reflection">最初の取得完了を待ってから、必要に応じて再読込してください。</span></div>
+                <div class="note"><strong>最終成功:</strong> <span id="home-reflection-success-at">-</span></div>
+                <div class="row row-top">
+                  <button id="home-reflection-reload" type="button" class="secondary-btn">再読込</button>
+                  <button id="home-reflection-open-system" type="button" class="secondary-btn">System Healthへ移動</button>
+                  <button id="home-reflection-open-audit" type="button" class="secondary-btn">Trace監査へ移動</button>
+                </div>
+              </div>
             </div>
-            <div class="decision-actions">
-              <button id="home-action-alerts" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="alerts" data-primary-action="pane-primary">要対応を確認</button>
+            <div class="panel dashboard-summary-panel" data-surface-tier="secondary">
+              <div class="panel-title" data-dict-key="ui.label.home.prioritySummary">要対応サマリ</div>
+              <div class="panel-body dashboard-summary-body">
+                <div class="dashboard-summary-grid">
+                  <div class="note">未対応アラート: <strong id="dashboard-summary-open-alerts">-</strong></div>
+                  <div class="note">本日配信予定: <strong id="dashboard-summary-scheduled-today">-</strong></div>
+                  <div class="note">登録者数（直近）: <strong id="dashboard-summary-registered-count">-</strong></div>
+                </div>
+              </div>
             </div>
-          </div>
-          <div id="home-reflection-state" class="panel data-reflection-panel" data-reflection-pane="home" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
-            <div class="panel-title">データ反映状態</div>
-            <div class="panel-body">
-              <div class="note"><strong>状態:</strong> <span id="home-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
-              <div class="note"><strong>理由:</strong> <span id="home-reflection-reason" data-empty-reason="home-reflection">最初の取得を待機しています。</span></div>
-              <div class="note"><strong>確認:</strong> <span id="home-reflection-next" data-next-action="home-reflection">最初の取得完了を待ってから、必要に応じて再読込してください。</span></div>
-              <div class="note"><strong>最終成功:</strong> <span id="home-reflection-success-at">-</span></div>
-              <div class="row row-top">
-                <button id="home-reflection-reload" type="button" class="secondary-btn">再読込</button>
-                <button id="home-reflection-open-system" type="button" class="secondary-btn">System Healthへ移動</button>
-                <button id="home-reflection-open-audit" type="button" class="secondary-btn">Trace監査へ移動</button>
+            <div class="panel dashboard-focus-panel" data-surface-tier="primary">
+              <div class="panel-title" data-dict-key="ui.label.home.todayFocus">今日の判断</div>
+              <div class="panel-body dashboard-focus-body">
+                <p class="dashboard-focus-lead" data-dict-key="ui.desc.home.todayFocus">今すぐ確認すべき6指標を先に見て、必要なら詳細KPIへ進みます。</p>
+                <div class="row dashboard-controls">
+                  <label for="dashboard-window-months" data-dict-key="ui.label.home.window">期間</label>
+                  <select id="dashboard-window-months" class="select-inline">
+                    <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                    <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                    <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                    <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                    <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                  </select>
+                  <button id="dashboard-reload" type="button" data-dict-key="ui.label.home.reload">指標を更新</button>
+                </div>
+                <div class="dashboard-focus-grid">
+                  <article class="dashboard-focus-card" data-dashboard-focus-card="registrations" data-dashboard-band="usage" data-ui-state="unset">
+                    <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.usage">利用状況</div>
+                    <div class="dashboard-focus-title" data-dict-key="ui.metric.dashboard.lineRegistered">登録者数推移</div>
+                    <div id="dashboard-focus-registrations-value" class="dashboard-focus-value">-</div>
+                    <div id="dashboard-focus-registrations-note" class="dashboard-focus-note">-</div>
+                  </article>
+                  <article class="dashboard-focus-card" data-dashboard-focus-card="proActive" data-dashboard-band="usage" data-ui-state="unset">
+                    <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.usage">利用状況</div>
+                    <div class="dashboard-focus-title">有料ユーザー数</div>
+                    <div id="dashboard-focus-proActive-value" class="dashboard-focus-value">-</div>
+                    <div id="dashboard-focus-proActive-note" class="dashboard-focus-note">-</div>
+                  </article>
+                  <article class="dashboard-focus-card" data-dashboard-focus-card="notifications" data-dashboard-band="delivery" data-ui-state="unset">
+                    <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.delivery">配信成果</div>
+                    <div class="dashboard-focus-title" data-dict-key="ui.metric.dashboard.notificationCount">通知件数</div>
+                    <div id="dashboard-focus-notifications-value" class="dashboard-focus-value">-</div>
+                    <div id="dashboard-focus-notifications-note" class="dashboard-focus-note">-</div>
+                  </article>
+                  <article class="dashboard-focus-card" data-dashboard-focus-card="reaction" data-dashboard-band="delivery" data-ui-state="unset">
+                    <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.delivery">配信成果</div>
+                    <div class="dashboard-focus-title" data-dict-key="ui.metric.dashboard.reactionRate">反応率</div>
+                    <div id="dashboard-focus-reaction-value" class="dashboard-focus-value">-</div>
+                    <div id="dashboard-focus-reaction-note" class="dashboard-focus-note">-</div>
+                  </article>
+                  <article class="dashboard-focus-card" data-dashboard-focus-card="llmBlockRate" data-dashboard-band="risk" data-ui-state="unset">
+                    <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.risk">運用リスク</div>
+                    <div class="dashboard-focus-title">LLMブロック率</div>
+                    <div id="dashboard-focus-llmBlockRate-value" class="dashboard-focus-value">-</div>
+                    <div id="dashboard-focus-llmBlockRate-note" class="dashboard-focus-note">-</div>
+                  </article>
+                  <article class="dashboard-focus-card" data-dashboard-focus-card="dependencyBlockRate" data-dashboard-band="risk" data-ui-state="unset">
+                    <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.risk">運用リスク</div>
+                    <div class="dashboard-focus-title">依存ブロック率</div>
+                    <div id="dashboard-focus-dependencyBlockRate-value" class="dashboard-focus-value">-</div>
+                    <div id="dashboard-focus-dependencyBlockRate-note" class="dashboard-focus-note">-</div>
+                  </article>
+                </div>
+                <div class="dashboard-next-links">
+                  <div class="dashboard-next-links-title" data-dict-key="ui.label.home.nextDestinations">行き先</div>
+                  <div class="dashboard-secondary-links" data-dashboard-links="focus">
+                    <button id="dashboard-link-monitor" type="button" class="secondary-btn dashboard-link-btn" data-open-pane="monitor" data-dict-key="ui.label.home.task.monitor">配信結果を確認</button>
+                    <button id="dashboard-link-read-model" type="button" class="secondary-btn dashboard-link-btn" data-open-pane="read-model" data-dict-key="ui.label.home.task.readModel">通知集計を確認</button>
+                    <button id="dashboard-link-system" type="button" class="secondary-btn dashboard-link-btn" data-open-pane="ops-system-health" data-dict-key="ui.label.home.task.systemHealth">System状態へ</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div class="panel dashboard-summary-panel" data-surface-tier="secondary">
-            <div class="panel-title" data-dict-key="ui.label.home.prioritySummary">要対応サマリ</div>
-            <div class="panel-body dashboard-summary-body">
-              <div class="dashboard-summary-grid">
-                <div class="note">未対応アラート: <strong id="dashboard-summary-open-alerts">-</strong></div>
-                <div class="note">本日配信予定: <strong id="dashboard-summary-scheduled-today">-</strong></div>
-                <div class="note">登録者数（直近）: <strong id="dashboard-summary-registered-count">-</strong></div>
-              </div>
-              <div class="dashboard-secondary-links" data-dashboard-links="summary">
-                <button id="dashboard-link-monitor" type="button" class="secondary-btn dashboard-link-btn" data-open-pane="monitor" data-dict-key="ui.label.home.task.monitor">配信結果を確認</button>
-                <button id="dashboard-link-read-model" type="button" class="secondary-btn dashboard-link-btn" data-open-pane="read-model" data-dict-key="ui.label.home.task.readModel">通知集計を確認</button>
-                <button id="dashboard-link-system" type="button" class="secondary-btn dashboard-link-btn" data-open-pane="ops-system-health" data-dict-key="ui.label.home.task.systemHealth">System状態へ</button>
-              </div>
-            </div>
-          </div>
-          <div class="panel dashboard-panel" data-surface-tier="primary">
+          <div class="panel dashboard-panel dashboard-panel-detail" data-surface-tier="secondary">
             <div class="panel-title" data-dict-key="ui.label.home.primaryMetrics">判断指標</div>
             <div class="panel-body">
               <p class="dashboard-panel-lead" data-dict-key="ui.desc.home.primaryMetrics">利用状況、配信成果、運用リスクの順に確認します。</p>
-              <div class="row dashboard-controls hidden">
-                <label for="dashboard-window-months" data-dict-key="ui.label.home.window">期間</label>
-                <select id="dashboard-window-months" class="select-inline">
-                  <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
-                  <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
-                  <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
-                  <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
-                  <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
-                </select>
-                <button id="dashboard-reload" type="button" data-dict-key="ui.label.home.reload">指標を更新</button>
-              </div>
               <section class="dashboard-kpi-band" data-dashboard-band="usage">
                 <div class="dashboard-kpi-band-header">
                   <div class="dashboard-kpi-band-title" data-dict-key="ui.label.home.band.usage">利用状況</div>
                   <p class="dashboard-kpi-band-note" data-dict-key="ui.desc.home.band.usage">登録・会員化・継続利用の動きを確認します。</p>
                 </div>
-                <div class="dashboard-kpi-grid">
+                <div id="dashboard-band-usage-empty" class="dashboard-band-empty" data-empty-reason="dashboard-band-usage" hidden>このグループはまだ判断材料を算出できません。</div>
+                <div class="dashboard-kpi-grid" data-dashboard-band-grid="usage">
                   <div class="dashboard-kpi-card" data-dashboard-card="registrations">
                   <div class="dashboard-kpi-header">
                     <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.lineRegistered">登録者数推移</div>
@@ -388,7 +438,8 @@
                   <div class="dashboard-kpi-band-title" data-dict-key="ui.label.home.band.delivery">配信成果</div>
                   <p class="dashboard-kpi-band-note" data-dict-key="ui.desc.home.band.delivery">配信量、反応、FAQ利用の変化を確認します。</p>
                 </div>
-                <div class="dashboard-kpi-grid">
+                <div id="dashboard-band-delivery-empty" class="dashboard-band-empty" data-empty-reason="dashboard-band-delivery" hidden>このグループはまだ判断材料を算出できません。</div>
+                <div class="dashboard-kpi-grid" data-dashboard-band-grid="delivery">
                   <div class="dashboard-kpi-card" data-dashboard-card="notifications">
                   <div class="dashboard-kpi-header">
                     <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.notificationCount">通知件数</div>
@@ -476,7 +527,8 @@
                   <div class="dashboard-kpi-band-title" data-dict-key="ui.label.home.band.risk">運用リスク</div>
                   <p class="dashboard-kpi-band-note" data-dict-key="ui.desc.home.band.risk">LLM・進行停滞・依存詰まりの兆候を確認します。</p>
                 </div>
-                <div class="dashboard-kpi-grid">
+                <div id="dashboard-band-risk-empty" class="dashboard-band-empty" data-empty-reason="dashboard-band-risk" hidden>このグループはまだ判断材料を算出できません。</div>
+                <div class="dashboard-kpi-grid" data-dashboard-band-grid="risk">
                   <div class="dashboard-kpi-card" data-dashboard-card="llmUsage">
                   <div class="dashboard-kpi-header">
                     <div class="dashboard-kpi-title">LLM利用件数</div>
