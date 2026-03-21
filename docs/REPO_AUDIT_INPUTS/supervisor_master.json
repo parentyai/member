@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-21T13:44:49-04:00",
-  "gitCommit": "a1322f9a504c5308dc1840e0fc9a72984ab996c4",
-  "branch": "codex/admin-ui-v2-pr4-data-workspace",
-  "sourceDigest": "7f9a0c73a5f77649093cc61f09bcb622993acd59e317b963c652645095bf602b",
+  "generatedAt": "2026-03-21T13:50:10-04:00",
+  "gitCommit": "22caedfb479e47c10ea817e2e2ed0d5207f205d0",
+  "branch": "codex/admin-ui-v2-pr5-evidence-system",
+  "sourceDigest": "70f15d0a8eb7d7b62c4ba50e99812c4378c4c371d6f1d5cf08fb1ff514a970e8",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -16,6 +16,7 @@ test('phase674: visual cleanup marks monitor/audit/settings/llm evidence blocks 
   const html = fs.readFileSync('apps/admin/app.html', 'utf8');
   const monitorPane = extractPaneSection(html, 'monitor');
   const auditPane = extractPaneSection(html, 'audit');
+  const maintenancePane = extractPaneSection(html, 'maintenance');
   const llmPane = extractPaneSection(html, 'llm');
   const settingsPane = extractPaneSection(html, 'settings');
 
@@ -24,7 +25,7 @@ test('phase674: visual cleanup marks monitor/audit/settings/llm evidence blocks 
 
   assert.match(auditPane, /<pre id="audit-result"[^>]*data-visual-noise="evidence-placeholder"/m);
   assert.match(auditPane, /<pre id="audit-detail"[^>]*data-visual-noise="evidence-placeholder"/m);
-  assert.match(auditPane, /<details class="section" data-json-collapsible="true">\s*<summary[^>]*>実行結果<\/summary>/m);
+  assert.match(maintenancePane, /<details class="section" data-json-collapsible="true">\s*<summary[^>]*>実行結果<\/summary>/m);
 
   assert.match(llmPane, /<details class="section" open data-json-collapsible="true">\s*<summary[^>]*>Ops説明<\/summary>/m);
   assert.match(llmPane, /<pre id="llm-config-set-result"[^>]*data-visual-noise="evidence-placeholder"/m);
