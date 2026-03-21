@@ -3496,9 +3496,9 @@
               <span id="errors-decision-updated">-</span>
             </div>
             <div class="decision-actions">
-              <button id="errors-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
-              <button id="errors-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
-              <button id="errors-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+              <button id="errors-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.errors.action.monitor">配信結果を確認</button>
+              <button id="errors-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-dict-key="ui.label.errors.action.audit">証跡を確認</button>
+              <button id="errors-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.errors.action.system">設定と回復へ</button>
             </div>
           </div>
           <details id="errors-pane-details" class="decision-details section">
@@ -3506,13 +3506,14 @@
             <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
-                <div class="panel-title" data-dict-key="ui.label.errors.recovery">復旧パネル</div>
+                <div class="panel-title" data-dict-key="ui.label.errors.recovery">確認後の移動</div>
                 <div class="panel-body">
                   <div class="summary-metrics">
                     <div><span class="metric-label" data-dict-key="ui.label.errors.problems">今ある問題</span><span id="errors-problems" class="metric-value">0</span></div>
                     <div><span class="metric-label" data-dict-key="ui.label.errors.recommend">推奨アクション</span><span id="errors-recommend" class="metric-value">-</span></div>
                   </div>
-                  <button id="errors-to-ops" type="button" data-dict-key="ui.label.errors.toOps">Opsで復旧する</button>
+                  <div class="note" data-dict-key="ui.desc.errors.handoff">この画面では異常の内容だけを確認し、補正は配信結果または設定と回復で行います。</div>
+                  <button id="errors-to-ops" type="button" data-dict-key="ui.label.errors.toOps">設定と回復へ進む</button>
                 </div>
               </div>
               <details class="table-section section" open>
@@ -4113,7 +4114,7 @@
                     </div>
                   </div>
                   <div id="audit-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="audit" role="status" aria-live="polite">
-                    証跡参照は全ロールで利用できます。補正操作は管理ロールのみ表示されます。
+                    証跡参照は全ロールで利用できます。回復や補正が必要な場合は設定と回復へ移動してください。
                   </div>
                   <div class="row row-top audit-entry-actions">
                     <button id="audit-open-source" type="button" class="secondary-btn">元の画面へ戻る</button>
@@ -4148,38 +4149,14 @@
                   </details>
                 </div>
               </div>
-              <div class="panel" data-role="admin">
-                <div class="panel-title" data-dict-key="ui.label.structDrift.title">構造ドリフト補正</div>
+              <div class="panel" data-surface-tier="secondary" data-ui="audit-system-handoff">
+                <div class="panel-title" data-dict-key="ui.label.audit.systemHandoff">回復が必要な場合</div>
                 <div class="panel-body">
-                  <div class="note">
-                    <label data-dict-key="ui.label.structDrift.scanLimit">scan limit</label>
-                    <input id="struct-drift-scan-limit" type="number" min="1" max="5000" value="500" class="input-inline input-sm" />
-                    <label data-dict-key="ui.label.structDrift.resumeAfter">resume user id</label>
-                    <input id="struct-drift-resume-after" class="input-inline input-sm" />
+                  <div class="note" data-dict-key="ui.desc.audit.systemHandoff">補正や再実行はこの画面では行いません。証跡を確認したら設定と回復へ移動してください。</div>
+                  <div class="row row-top audit-entry-actions">
+                    <button id="audit-open-maintenance" type="button" class="secondary-btn" data-dict-key="ui.label.audit.openMaintenance">設定と回復を開く</button>
+                    <button id="audit-open-system-health" type="button" class="button-subtle" data-dict-key="ui.label.audit.openSystemHealth">システム健全性を開く</button>
                   </div>
-                  <div class="row row-top">
-                    <button id="struct-drift-run-dry" type="button" data-dict-key="ui.label.structDrift.runDry">Dry Run</button>
-                    <button id="struct-drift-run-apply" type="button" data-dict-key="ui.label.structDrift.runApply">Apply</button>
-                    <button id="struct-drift-runs-reload" type="button" data-dict-key="ui.label.structDrift.runsReload">実行履歴更新</button>
-                  </div>
-                  <div id="struct-drift-summary" class="note" data-dict-key="ui.desc.structDrift.summary">実行履歴: 読み込み待ち</div>
-                  <div class="table-wrap table-section">
-                    <table class="table table-compact retention-runs-table">
-                      <thead>
-                        <tr>
-                          <th data-dict-key="ui.label.structDrift.table.createdAt">実行時刻</th>
-                          <th data-dict-key="ui.label.structDrift.table.mode">モード</th>
-                          <th data-dict-key="ui.label.structDrift.table.changed">更新件数</th>
-                          <th data-dict-key="ui.label.structDrift.table.trace">追跡ID</th>
-                        </tr>
-                      </thead>
-                      <tbody id="struct-drift-runs-rows"></tbody>
-                    </table>
-                  </div>
-                  <details class="section" data-json-collapsible="true">
-                    <summary data-dict-key="ui.label.structDrift.result">実行結果</summary>
-                    <pre id="struct-drift-result" data-visual-noise="evidence-placeholder">-</pre>
-                  </details>
                 </div>
               </div>
             </div>
@@ -4983,6 +4960,41 @@
                     <button id="maintenance-overview-open-system-health" type="button" class="secondary-btn">システム健全性を開く</button>
                     <button id="maintenance-overview-open-feature-catalog" type="button" class="secondary-btn">機能カタログを開く</button>
                   </div>
+                </div>
+              </div>
+              <div id="maintenance-struct-drift-panel" class="panel" data-role="admin" data-ui="maintenance-struct-drift-panel" data-surface-tier="primary">
+                <div class="panel-title" data-dict-key="ui.label.structDrift.title">構造ドリフト補正</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.maintenance.structDrift.boundary">証跡の確認は Evidence で、補正の実行はここで行います。結果確認が必要な場合は監査ログを開いてください。</div>
+                  <div class="note">
+                    <label data-dict-key="ui.label.structDrift.scanLimit">scan limit</label>
+                    <input id="struct-drift-scan-limit" type="number" min="1" max="5000" value="500" class="input-inline input-sm" />
+                    <label data-dict-key="ui.label.structDrift.resumeAfter">resume user id</label>
+                    <input id="struct-drift-resume-after" class="input-inline input-sm" />
+                  </div>
+                  <div class="row row-top">
+                    <button id="struct-drift-run-dry" type="button" data-dict-key="ui.label.structDrift.runDry">Dry Run</button>
+                    <button id="struct-drift-run-apply" type="button" data-primary-action="pane-primary" data-dict-key="ui.label.structDrift.runApply">Apply</button>
+                    <button id="struct-drift-runs-reload" type="button" data-dict-key="ui.label.structDrift.runsReload">実行履歴更新</button>
+                  </div>
+                  <div id="struct-drift-summary" class="note" data-dict-key="ui.desc.structDrift.summary">実行履歴: 読み込み待ち</div>
+                  <div class="table-wrap table-section">
+                    <table class="table table-compact retention-runs-table">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.structDrift.table.createdAt">実行時刻</th>
+                          <th data-dict-key="ui.label.structDrift.table.mode">モード</th>
+                          <th data-dict-key="ui.label.structDrift.table.changed">更新件数</th>
+                          <th data-dict-key="ui.label.structDrift.table.trace">追跡ID</th>
+                        </tr>
+                      </thead>
+                      <tbody id="struct-drift-runs-rows"></tbody>
+                    </table>
+                  </div>
+                  <details class="section" data-json-collapsible="true">
+                    <summary data-dict-key="ui.label.structDrift.result">実行結果</summary>
+                    <pre id="struct-drift-result" data-visual-noise="evidence-placeholder">-</pre>
+                  </details>
                 </div>
               </div>
               <div class="panel">

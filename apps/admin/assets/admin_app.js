@@ -14941,6 +14941,20 @@ function resolveAuditSourceMeta(sourcePane) {
       boundaryCopy: t('ui.desc.audit.boundaryMonitor', '証跡を確認したら配信結果へ戻り、絞り込みや対象確認を続けてください。')
     };
   }
+  if (normalizedPane === 'errors') {
+    return {
+      sourcePane: normalizedPane,
+      sourceLabel,
+      boundaryCopy: t('ui.desc.audit.boundaryErrors', '証跡を確認したら異常対応へ戻り、配信結果または設定と回復へ進んでください。')
+    };
+  }
+  if (normalizedPane === 'maintenance') {
+    return {
+      sourcePane: normalizedPane,
+      sourceLabel,
+      boundaryCopy: t('ui.desc.audit.boundaryMaintenance', '証跡を確認したら設定と回復へ戻り、原因切り分けや補正を続けてください。')
+    };
+  }
   return {
     sourcePane: normalizedPane,
     sourceLabel,
@@ -15070,6 +15084,10 @@ async function loadAudit() {
   if (detail) detail.textContent = JSON.stringify(data || {}, null, 2);
 }
 
+function resolveMaintenanceTraceId(preferredTraceId) {
+  return resolveEvidenceTraceId(preferredTraceId || ensureTraceInput('traceId') || ensureTraceInput('audit-trace')) || newTraceId();
+}
+
 function parseStructDriftScanLimit() {
   const el = document.getElementById('struct-drift-scan-limit');
   const value = Number(el && el.value);
@@ -15139,7 +15157,7 @@ function renderStructDriftResult(result) {
 
 async function loadStructDriftRuns(options) {
   const opts = options || {};
-  const traceId = ensureTraceInput('audit-trace');
+  const traceId = resolveMaintenanceTraceId();
   try {
     const res = await fetch('/api/admin/struct-drift/backfill-runs?limit=20', { headers: buildHeaders({}, traceId) });
     const data = await res.json();
@@ -15155,7 +15173,7 @@ async function loadStructDriftRuns(options) {
 
 async function runStructDriftBackfill(mode) {
   const apply = mode === 'apply';
-  const traceId = ensureTraceInput('audit-trace');
+  const traceId = resolveMaintenanceTraceId();
   const payload = {
     scanLimit: parseStructDriftScanLimit(),
     resumeAfterUserId: readStructDriftResumeAfterUserId(),
@@ -15330,7 +15348,7 @@ function renderSnapshotHealth(items) {
 async function loadSnapshotHealth(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const notify = opts.notify === true;
-  const traceId = ensureTraceInput('audit-trace');
+  const traceId = resolveMaintenanceTraceId();
   const limit = parseSnapshotHealthLimit();
   const staleAfterMinutes = parseSnapshotHealthStaleAfterMinutes();
   const snapshotType = readSnapshotHealthTypeFilter();
@@ -15435,7 +15453,7 @@ function renderRetentionRuns(items) {
 async function loadRetentionRuns(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const notify = opts.notify === true;
-  const traceId = ensureTraceInput('audit-trace');
+  const traceId = resolveMaintenanceTraceId();
   const limit = parseRetentionRunsLimit();
   const queryTraceId = readRetentionRunsTraceFilter();
   const qs = new URLSearchParams();
@@ -15525,7 +15543,7 @@ function renderReadPathFallbackSummary(items) {
 async function loadReadPathFallbackSummary(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const notify = opts.notify === true;
-  const traceId = ensureTraceInput('audit-trace');
+  const traceId = resolveMaintenanceTraceId();
   const limit = parseReadPathFallbackSummaryLimit();
   const windowHours = parseReadPathFallbackSummaryWindowHours();
   const qs = new URLSearchParams();
@@ -15615,7 +15633,7 @@ function renderMissingIndexSurface(payload) {
 async function loadMissingIndexSurface(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const notify = opts.notify === true;
-  const traceId = ensureTraceInput('audit-trace');
+  const traceId = resolveMaintenanceTraceId();
   const limit = parseMissingIndexSurfaceLimit();
   const fileContains = readMissingIndexSurfaceFileFilter();
   const qs = new URLSearchParams();
@@ -15706,7 +15724,7 @@ function renderProductReadiness(payload) {
 async function loadProductReadiness(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const notify = opts.notify === true;
-  const traceId = ensureTraceInput('audit-trace');
+  const traceId = resolveMaintenanceTraceId();
   const windowHours = parseProductReadinessWindowHours();
   const staleAfterMinutes = parseProductReadinessStaleAfterMinutes();
   const qs = new URLSearchParams();
@@ -17569,15 +17587,6 @@ function setupAudit() {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });
-  document.getElementById('struct-drift-runs-reload')?.addEventListener('click', () => {
-    void loadStructDriftRuns({ notify: true });
-  });
-  document.getElementById('struct-drift-run-dry')?.addEventListener('click', () => {
-    void runStructDriftBackfill('dry');
-  });
-  document.getElementById('struct-drift-run-apply')?.addEventListener('click', () => {
-    void runStructDriftBackfill('apply');
-  });
   document.getElementById('audit-open-monitor')?.addEventListener('click', () => {
     const traceId = ensureTraceInput('audit-trace') || newTraceId();
     navigateToMonitorWithTrace(traceId, null);
@@ -17595,8 +17604,13 @@ function setupAudit() {
   document.getElementById('audit-open-composer')?.addEventListener('click', () => {
     activatePane('composer', { historyMode: 'push' });
   });
+  document.getElementById('audit-open-maintenance')?.addEventListener('click', () => {
+    activatePane('maintenance', { historyMode: 'push' });
+  });
+  document.getElementById('audit-open-system-health')?.addEventListener('click', () => {
+    activatePane('ops-system-health', { historyMode: 'push' });
+  });
   renderAuditEntryContext(null);
-  void loadStructDriftRuns({ notify: false });
 }
 
 function setupMonitorControls() {
@@ -17795,7 +17809,7 @@ function setupErrorsControls() {
     loadErrors({ notify: true });
   });
   document.getElementById('errors-to-ops')?.addEventListener('click', () => {
-    activatePane('home');
+    activatePane('maintenance');
   });
   if (document.getElementById('errors-trace')) document.getElementById('errors-trace').value = newTraceId();
 }
@@ -19043,11 +19057,21 @@ function setupMaintenanceControls() {
   document.getElementById('maintenance-product-readiness-reload')?.addEventListener('click', () => {
     void loadProductReadiness({ notify: true });
   });
+  document.getElementById('struct-drift-runs-reload')?.addEventListener('click', () => {
+    void loadStructDriftRuns({ notify: true });
+  });
+  document.getElementById('struct-drift-run-dry')?.addEventListener('click', () => {
+    void runStructDriftBackfill('dry');
+  });
+  document.getElementById('struct-drift-run-apply')?.addEventListener('click', () => {
+    void runStructDriftBackfill('apply');
+  });
   document.getElementById('maintenance-open-audit')?.addEventListener('click', async () => {
-    await openAuditFromSource('maintenance', ensureTraceInput('audit-trace'), { historyMode: 'push' }).catch(() => {
+    await openAuditFromSource('maintenance', resolveMaintenanceTraceId(), { historyMode: 'push' }).catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });
+  void loadStructDriftRuns({ notify: false });
   void loadSnapshotHealth({ notify: false });
   void loadRetentionRuns({ notify: false });
   void loadReadPathFallbackSummary({ notify: false });
@@ -19084,8 +19108,9 @@ function setupDecisionActions() {
     activatePane('monitor');
   });
   document.getElementById('errors-action-activate')?.addEventListener('click', () => {
-    activatePane('errors');
-    document.getElementById('errors-reload')?.click();
+    void openAuditFromSource('errors', ensureTraceInput('errors-trace') || ensureTraceInput('traceId'), { historyMode: 'push' }).catch(() => {
+      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+    });
   });
   document.getElementById('errors-action-disable')?.addEventListener('click', () => {
     activatePane('maintenance');
