@@ -4214,3 +4214,54 @@ pre[data-visual-noise="evidence-placeholder"] {
 [data-ui-v2-foundation="true"] [data-pane-mode="data-workspace"] .monitor-view-switch {
   border-radius: var(--radius-md);
 }
+
+/* PR4 data workspace v2: keep primary list/detail visible and demote legacy aides into secondary details. */
+[data-ui-v2-foundation="true"] .data-workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.95fr);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  align-items: start;
+}
+
+[data-ui-v2-foundation="true"] .data-workspace-main,
+[data-ui-v2-foundation="true"] .data-workspace-rail {
+  min-width: 0;
+}
+
+[data-ui-v2-foundation="true"] .data-workspace-rail {
+  display: grid;
+  gap: var(--space-2);
+}
+
+[data-ui-v2-foundation="true"] .data-workspace-secondary {
+  margin-top: var(--space-3);
+}
+
+[data-ui-v2-foundation="true"] .data-workspace-secondary > summary {
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+[data-ui-v2-foundation="true"] #pane-city-pack .city-pack-v2-detail-panel,
+[data-ui-v2-foundation="true"] #pane-vendors .vendor-unified-relation-panel {
+  margin-top: 0;
+}
+
+[data-ui-v2-foundation="true"] #pane-read-model .users-summary-table,
+[data-ui-v2-foundation="true"] #pane-city-pack .city-pack-unified-table,
+[data-ui-v2-foundation="true"] #pane-vendors .vendors-unified-table {
+  margin-top: var(--space-2);
+}
+
+[data-ui-v2-foundation="true"] #pane-read-model .read-model-legacy,
+[data-ui-v2-foundation="true"] #pane-city-pack .city-pack-legacy-block,
+[data-ui-v2-foundation="true"] #pane-vendors .vendors-legacy-block {
+  opacity: 0.92;
+}
+
+@media (max-width: 1180px) {
+  [data-ui-v2-foundation="true"] .data-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -18862,6 +18862,8 @@ function setupVendorControls() {
     elementId: 'vendors-action-edit',
     paneTarget: 'vendors',
     afterNavigateReadTask: async () => {
+      const supportDetails = document.getElementById('vendors-pane-details');
+      if (supportDetails) supportDetails.open = true;
       showToast('実行操作は Vendors Workbench 内の操作パネルから実施してください', 'warn');
     }
   });
@@ -18869,6 +18871,8 @@ function setupVendorControls() {
     elementId: 'vendors-action-activate',
     paneTarget: 'vendors',
     afterNavigateReadTask: async () => {
+      const supportDetails = document.getElementById('vendors-pane-details');
+      if (supportDetails) supportDetails.open = true;
       showToast('実行操作は Vendors Workbench 内の操作パネルから実施してください', 'warn');
     }
   });
@@ -18876,6 +18880,8 @@ function setupVendorControls() {
     elementId: 'vendors-action-disable',
     paneTarget: 'vendors',
     afterNavigateReadTask: async () => {
+      const supportDetails = document.getElementById('vendors-pane-details');
+      if (supportDetails) supportDetails.open = true;
       showToast('実行操作は Vendors Workbench 内の操作パネルから実施してください', 'warn');
     }
   });
@@ -19112,6 +19118,8 @@ function setupDecisionActions() {
 
   document.getElementById('city-pack-action-edit')?.addEventListener('click', () => {
     activatePane('city-pack');
+    const supportDetails = document.getElementById('city-pack-pane-details');
+    if (supportDetails) supportDetails.open = true;
     document.getElementById('city-pack-request-reload')?.click();
     document.getElementById('city-pack-template-library-reload')?.click();
     document.getElementById('city-pack-education-reload')?.click();
