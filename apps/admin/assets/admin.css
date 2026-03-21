@@ -3931,16 +3931,151 @@ pre[data-visual-noise="evidence-placeholder"] {
   cursor: not-allowed;
 }
 
-#pane-composer .composer-card-actions .composer-hidden-action {
-  display: inline-flex;
+#pane-composer .composer-main-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  grid-template-areas:
+    "editor preview"
+    "editor library";
+  gap: var(--space-4);
 }
 
-#pane-composer .composer-main-layout {
-  grid-template-columns: minmax(0, 1fr);
+#pane-composer .composer-left-stack {
+  display: contents;
+}
+
+#pane-composer #composer-inputs {
+  grid-area: editor;
+}
+
+#pane-composer #composer-card-preview {
+  grid-area: preview;
+  position: sticky;
+  top: 96px;
 }
 
 #pane-composer #composer-saved-panel {
-  order: 3;
+  grid-area: library;
+  order: initial;
+}
+
+#pane-composer .composer-action-rail {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+}
+
+#pane-composer .composer-action-rail.is-empty {
+  justify-content: flex-start;
+}
+
+#pane-composer .composer-action-rail-copy {
+  display: grid;
+  gap: 4px;
+}
+
+#pane-composer .composer-current-action-note {
+  max-width: 42rem;
+  line-height: 1.5;
+}
+
+#pane-composer .composer-card-actions {
+  margin-top: 0;
+}
+
+#pane-composer .composer-card-actions .composer-hidden-action {
+  display: none;
+}
+
+#pane-composer .composer-card-actions > button {
+  display: none;
+}
+
+#pane-composer .composer-card-actions > button.is-current-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding-inline: 18px;
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(42, 86, 199, 0.16);
+}
+
+#pane-composer .composer-saved-panel-note,
+#pane-composer .composer-saved-selection-note,
+#pane-composer .composer-secondary-details-note {
+  font-size: var(--font-12);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+#pane-composer .composer-saved-selection-note {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-0) 88%, white 12%);
+}
+
+#pane-composer .composer-saved-table-wrap {
+  max-height: 360px;
+  overflow: auto;
+}
+
+#pane-composer details[data-workbench-collapsible="true"] {
+  overflow: hidden;
+}
+
+#pane-composer details[data-workbench-collapsible="true"] > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 10px 12px;
+  list-style: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+#pane-composer details[data-workbench-collapsible="true"] > summary::-webkit-details-marker {
+  display: none;
+}
+
+#pane-composer details[data-workbench-collapsible="true"]:not([open]) > *:not(summary) {
+  display: none;
+}
+
+.admin-no-collapse-v1 #pane-composer details[data-workbench-collapsible="true"] > summary {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.admin-no-collapse-v1 #pane-composer details[data-workbench-collapsible="true"] > summary:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+#pane-composer .composer-secondary-details {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+}
+
+#pane-composer .composer-secondary-details[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+#pane-composer .composer-secondary-details .panel-body {
+  display: grid;
+  gap: var(--space-2);
+}
+
+#pane-composer .composer-optional-fields {
+  margin-top: var(--space-2);
 }
 
 #pane-composer #composer-card-preview.is-preview-disabled {
@@ -3952,8 +4087,35 @@ pre[data-visual-noise="evidence-placeholder"] {
     grid-template-columns: 1fr;
   }
 
+  #pane-composer .composer-left-stack {
+    display: grid;
+    gap: var(--space-3);
+  }
+
   .composer-preview-header-row {
     align-items: flex-start;
+  }
+
+  #pane-composer .composer-main-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "preview"
+      "editor"
+      "library";
+  }
+
+  #pane-composer #composer-card-preview {
+    position: relative;
+    top: auto;
+  }
+
+  #pane-composer .composer-action-rail {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #pane-composer .composer-saved-table-wrap {
+    max-height: none;
   }
 }
 

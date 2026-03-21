@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-21T12:41:48-04:00",
-  "gitCommit": "f37f177f1f37f8c4946b79d1605178802d9c6650",
-  "branch": "codex/admin-ui-v2-pr2-dashboard",
-  "sourceDigest": "0b532b5515b57ee4c96828eb7ecef8b18bb699139096eb4c5b3f5e9b15630142",
+  "generatedAt": "2026-03-21T13:22:31-04:00",
+  "gitCommit": "82879b80a4a84073afb0d19490865fe1e8b82c96",
+  "branch": "codex/admin-ui-v2-pr3-workbench",
+  "sourceDigest": "1042bfd1c4fc5723a5525fefdbeacef60cc807ef7c76b16a033e0d7bf380cc39",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
