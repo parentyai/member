@@ -80,6 +80,28 @@ test('phase752: recovery correction prefers docs_required followup intent on con
   assert.equal(packet.followupIntent, 'docs_required');
 });
 
+test('phase752: explicit housing correction does not get hijacked by prior school context', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_HOUSING_CORRECTION',
+    messageText: 'それは違う。学校じゃなくて住まい優先で考え直して。',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'school',
+        followupIntent: 'next_step',
+        replyText: '学校手続きの次は、対象校を1校に絞って必要書類を先に確定するのが最短です。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.recoverySignal, true);
+  assert.equal(packet.contextResume, false);
+  assert.equal(packet.contextResumeDomain, null);
+  assert.equal(packet.normalizedConversationIntent, 'housing');
+});
+
 test('phase752: history carry keeps previous followup intent for ultra-short confirmation turn', () => {
   const packet = buildConversationPacket({
     lineUserId: 'U_PHASE752_PKT_HISTORY',
@@ -102,4 +124,29 @@ test('phase752: history carry keeps previous followup intent for ultra-short con
   assert.equal(packet.followupIntentReason, 'history_followup_carry');
   assert.equal(packet.followupCarryFromHistory, true);
   assert.equal(packet.contextCarryScore >= 0.85, true);
+});
+
+test('phase752: snapshot domain does not hijack general planning followup without prior domain history', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_GENERAL',
+    messageText: 'それなら最初の5分は何をする？',
+    routerReason: 'default_casual',
+    contextSnapshot: {
+      topOpenTasks: [{ key: 'school_registration', status: 'open' }]
+    },
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'general',
+        followupIntent: 'next_step',
+        replyText: '優先する3つは、期限が近いこと、後続に影響すること、今日すぐ動かせることです。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.contextResume, false);
+  assert.equal(packet.contextResumeDomain, null);
+  assert.equal(packet.normalizedConversationIntent, 'general');
+  assert.equal(packet.followupIntent, 'next_step');
 });

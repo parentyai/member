@@ -100,6 +100,7 @@ const {
   regionInvalid,
   regionAlreadySet
 } = require('../domain/regionLineMessages');
+const { parseRegionInput } = require('../domain/regionNormalization');
 const {
   feedbackReceived,
   feedbackUsage
@@ -294,6 +295,14 @@ function parseNextActionCompletedCommand(text) {
   return key || null;
 }
 
+function shouldReplyWithRegionAlreadySet(text) {
+  const raw = normalizeReplyText(text);
+  if (!raw) return false;
+  const parsed = parseRegionInput(raw);
+  if (parsed && parsed.ok === true) return true;
+  return /^(?:地域(?:設定|変更)?|region|city|state)(?:\s|[:：]|$)/i.test(raw);
+}
+
 function trimForLineMessage(value) {
   const text = normalizeReplyText(value);
   if (!text) return '';
@@ -327,6 +336,25 @@ function guardPaidMainReplyText(value, options) {
   const payload = options && typeof options === 'object' ? options : {};
   const fallbackText = normalizeReplyText(payload.fallbackText)
     || '状況を整理しながら進めましょう。まずは優先する手続きを1つ決めるのがおすすめです。';
+  if (payload.preserveReplyText === true) {
+    const guardedText = trimForPaidLineMessage(
+      normalizeReplyText(value)
+      || stripLegacyTemplateTokensForPaid(value)
+      || fallbackText
+    ) || fallbackText;
+    return {
+      replyText: guardedText,
+      legacyTemplateHit: detectLegacyTemplateHit(value),
+      actionCount: countActionBullets(guardedText),
+      pitfallIncluded: detectPitfallIncluded(guardedText),
+      followupQuestionIncluded: detectFollowupQuestionIncluded(guardedText),
+      fallbackTemplateKind: classifyReplyTemplateKind({
+        replyText: guardedText,
+        conciseModeApplied: payload.conciseMode === true
+      }),
+      replyTemplateFingerprint: buildReplyTemplateFingerprint(guardedText)
+    };
+  }
   const guardResult = sanitizePaidMainReply(value, payload);
   const guardedText = trimForPaidLineMessage(
     normalizeReplyText(guardResult && guardResult.text ? guardResult.text : '')
@@ -765,7 +793,8 @@ async function buildPaidDomainConciergeResult(params) {
       : (opportunityDecision && opportunityDecision.suggestedAtoms
         ? opportunityDecision.suggestedAtoms.question
         : ''),
-    conciseMode: domainReply && domainReply.conciseModeApplied === true
+    conciseMode: domainReply && domainReply.conciseModeApplied === true,
+    preserveReplyText: domainReply && domainReply.preserveReplyText === true
   });
   const replyText = guardedReply.replyText;
   const conversationQuality = buildConversationQualityMeta({
@@ -830,6 +859,7 @@ async function buildPaidDomainConciergeResult(params) {
   return {
     ok: true,
     replyText,
+    preserveReplyText: domainReply && domainReply.preserveReplyText === true,
     contextSnapshot,
     opportunityDecision,
     conciergeMeta: domainReply && domainReply.auditMeta ? domainReply.auditMeta : null,
@@ -5295,7 +5325,7 @@ async function handleLineWebhook(options) {
             continue;
           }
           if (region.status === 'already_set') {
-            if (/地域|city|state|region/i.test(text)) {
+            if (shouldReplyWithRegionAlreadySet(text)) {
               await replyFn(replyToken, { type: 'text', text: regionAlreadySet() });
               continue;
             }

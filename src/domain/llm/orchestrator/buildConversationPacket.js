@@ -198,7 +198,11 @@ function buildConversationPacket(params) {
   const recoverySignal = detectRecoverySignal(messageText);
   const contextSnapshot = payload.contextSnapshot && typeof payload.contextSnapshot === 'object' ? payload.contextSnapshot : null;
   const contextSnapshotDomain = inferDomainFromContextSnapshot(contextSnapshot);
-  const recentDomain = recentHistory.recentDomains[0] || contextSnapshotDomain || null;
+  const snapshotResumeDomain = (
+    lowInformationMessage === true
+    || detectedConversationIntent === contextSnapshotDomain
+  ) ? contextSnapshotDomain : null;
+  const recentDomain = recentHistory.recentDomains[0] || snapshotResumeDomain || null;
   const shouldAllowContextResume = intentDecision.mode !== 'greeting'
     && (
       intentDecision.reason !== 'smalltalk_detected'

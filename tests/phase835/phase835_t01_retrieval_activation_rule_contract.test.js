@@ -50,3 +50,39 @@ test('phase835: retrieval activates for broad questions and history follow-up un
   assert.equal(followupResult.retrievalBlockedByStrategy, false);
   assert.match(followupResult.retrievalPermitReason || '', /followup_history_activation/);
 });
+
+test('phase835: service plan direct answer fallback keeps retrieval disabled', () => {
+  const result = resolveRetrievalDecision({
+    messageText: '無料プランと有料プランの違いを、回りくどくなく短く教えて。',
+    normalizedConversationIntent: 'general',
+    genericFallbackSlice: 'broad',
+    followupResolvedFromHistory: false,
+    followupIntent: ''
+  }, {
+    strategy: 'domain_concierge',
+    strategyReason: 'service_plan_direct_answer',
+    fallbackType: 'service_plan_direct_answer'
+  });
+
+  assert.equal(result.retrieveNeeded, false);
+  assert.equal(result.retrievalBlockedByStrategy, true);
+  assert.equal(result.retrievalBlockReason, 'preserve_service_plan_direct_answer');
+});
+
+test('phase835: mixed-domain direct answer fallback keeps retrieval disabled', () => {
+  const result = resolveRetrievalDecision({
+    messageText: '引っ越しと学校の手続きが同時に不安。まず何から確認すべきか順番だけ教えて。',
+    normalizedConversationIntent: 'housing',
+    genericFallbackSlice: 'followup',
+    followupResolvedFromHistory: false,
+    followupIntent: 'next_step'
+  }, {
+    strategy: 'domain_concierge',
+    strategyReason: 'mixed_domain_direct_answer',
+    fallbackType: 'mixed_domain_direct_answer'
+  });
+
+  assert.equal(result.retrieveNeeded, false);
+  assert.equal(result.retrievalBlockedByStrategy, true);
+  assert.equal(result.retrievalBlockReason, 'preserve_mixed_domain_direct_answer');
+});

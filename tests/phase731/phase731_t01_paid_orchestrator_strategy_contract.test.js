@@ -130,3 +130,29 @@ test('phase731: recovery signal under domain keeps domain concierge strategy', (
   assert.equal(plan.strategy, 'domain_concierge');
   assert.equal(plan.fallbackType, 'recovery_domain_resume');
 });
+
+test('phase731: mixed-domain recovery correction prefers mixed direct answer over recovery resume', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE731_RECOVERY_MIXED',
+    messageText: 'それは違う。学校じゃなくて住まい優先で考え直して。',
+    planInfo: { plan: 'pro', status: 'active' },
+    paidIntent: 'situation_analysis',
+    llmFlags: {
+      llmConciergeEnabled: true
+    },
+    recentActionRows: [
+      {
+        createdAt: '2026-03-08T00:00:00.000Z',
+        domainIntent: 'school',
+        followupIntent: 'next_step'
+      }
+    ]
+  });
+  const plan = buildStrategyPlan(packet);
+  assert.equal(packet.recoverySignal, true);
+  assert.equal(packet.contextResume, false);
+  assert.equal(packet.normalizedConversationIntent, 'housing');
+  assert.equal(plan.strategy, 'domain_concierge');
+  assert.equal(plan.fallbackType, 'mixed_domain_direct_answer');
+  assert.equal(plan.retrieveNeeded, false);
+});

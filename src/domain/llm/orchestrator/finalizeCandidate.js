@@ -1,6 +1,9 @@
 'use strict';
 
-const { sanitizePaidMainReply } = require('../conversation/paidReplyGuard');
+const {
+  sanitizePaidMainReply,
+  containsLegacyTemplateTerms
+} = require('../conversation/paidReplyGuard');
 const {
   buildReplyTemplateFingerprint,
   classifyReplyTemplateKind
@@ -45,19 +48,24 @@ function finalizeCandidate(params) {
     || '状況を整理しながら進めます。優先手続きを1つ決めて進めましょう。';
   const readinessClarifyText = normalizeText(payload.readinessClarifyText);
   const atoms = selected.atoms && typeof selected.atoms === 'object' ? selected.atoms : {};
+  const preserveReplyText = selected.preserveReplyText === true;
 
-  const guardResult = sanitizePaidMainReply(selected.replyText, {
-    fallbackText,
-    situationLine: atoms.situationLine || '',
-    nextActions: Array.isArray(atoms.nextActions) ? atoms.nextActions : [],
-    pitfall: atoms.pitfall || '',
-    followupQuestion: atoms.followupQuestion || '',
-    defaultQuestion: verificationOutcome === 'clarify'
-      ? 'まず対象手続きと期限を1つずつ教えてください。'
-      : '',
-    conciseMode: selected.conciseModeApplied === true
-  });
-  const guardedReplyText = trimForPaidLineMessage(normalizeText(guardResult && guardResult.text) || fallbackText) || fallbackText;
+  const guardResult = preserveReplyText
+    ? null
+    : sanitizePaidMainReply(selected.replyText, {
+      fallbackText,
+      situationLine: atoms.situationLine || '',
+      nextActions: Array.isArray(atoms.nextActions) ? atoms.nextActions : [],
+      pitfall: atoms.pitfall || '',
+      followupQuestion: atoms.followupQuestion || '',
+      defaultQuestion: verificationOutcome === 'clarify'
+        ? 'まず対象手続きと期限を1つずつ教えてください。'
+        : '',
+      conciseMode: selected.conciseModeApplied === true
+    });
+  const guardedReplyText = preserveReplyText
+    ? (trimForPaidLineMessage(normalizeText(selected.replyText)) || fallbackText)
+    : (trimForPaidLineMessage(normalizeText(guardResult && guardResult.text) || fallbackText) || fallbackText);
   const readinessApplied = applyAnswerReadinessDecision({
     decision: readinessDecision,
     replyText: guardedReplyText,
@@ -82,9 +90,9 @@ function finalizeCandidate(params) {
   return {
     replyText,
     finalMeta: {
-      legacyTemplateHit: guardResult ? guardResult.legacyTemplateHit === true : false,
+      legacyTemplateHit: guardResult ? guardResult.legacyTemplateHit === true : containsLegacyTemplateTerms(replyText),
       actionCount: guardResult && Number.isFinite(Number(guardResult.actionCount)) ? Number(guardResult.actionCount) : extractActionBullets(replyText).length,
-      pitfallIncluded: guardResult ? guardResult.pitfallIncluded === true : false,
+      pitfallIncluded: guardResult ? guardResult.pitfallIncluded === true : /(詰まりやすい|注意|リスク|気をつけ|ボトルネック)/.test(replyText),
       followupQuestionIncluded: guardResult ? guardResult.followupQuestionIncluded === true : Boolean(extractFollowupQuestion(replyText)),
       committedNextActions: extractActionBullets(replyText),
       committedFollowupQuestion: extractFollowupQuestion(replyText),

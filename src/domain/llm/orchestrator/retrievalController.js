@@ -28,6 +28,7 @@ function resolveRetrievalDecision(packet, strategyPlan) {
   const payload = packet && typeof packet === 'object' ? packet : {};
   const plan = strategyPlan && typeof strategyPlan === 'object' ? strategyPlan : {};
   const strategy = normalizeText(plan.strategy).toLowerCase();
+  const fallbackType = normalizeText(plan.fallbackType).toLowerCase();
   const domainIntent = normalizeText(payload.normalizedConversationIntent).toLowerCase() || 'general';
   const genericFallbackSlice = normalizeText(payload.genericFallbackSlice).toLowerCase() || 'other';
   const followupIntent = normalizeText(payload.followupIntent).toLowerCase();
@@ -39,6 +40,12 @@ function resolveRetrievalDecision(packet, strategyPlan) {
     || strategy === 'clarify'
     || strategy === 'domain_concierge'
     || strategy === 'concierge';
+  const preserveDirectAnswerFallback = fallbackType === 'general_followup_direct_answer'
+    || fallbackType === 'service_plan_direct_answer'
+    || fallbackType === 'utility_transform_direct_answer'
+    || fallbackType === 'followup_direct_answer'
+    || fallbackType === 'history_followup_carry'
+    || fallbackType === 'mixed_domain_direct_answer';
   const blockedStrategies = new Set(['casual', 'clarify', 'domain_concierge', 'concierge']);
   const continuationContext = payload.priorContextUsed === true
     || payload.contextResume === true
@@ -68,6 +75,16 @@ function resolveRetrievalDecision(packet, strategyPlan) {
       retrievalBlockedByStrategy: false,
       retrievalBlockReason: null,
       retrievalPermitReason: 'recommendation_strategy',
+      retrievalReenabledBySlice: null
+    };
+  }
+
+  if (blockedByDefault && preserveDirectAnswerFallback) {
+    return {
+      retrieveNeeded: false,
+      retrievalBlockedByStrategy: true,
+      retrievalBlockReason: `preserve_${fallbackType || strategy}`,
+      retrievalPermitReason: null,
       retrievalReenabledBySlice: null
     };
   }

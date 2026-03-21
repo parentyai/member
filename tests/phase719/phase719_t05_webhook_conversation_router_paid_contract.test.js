@@ -25,7 +25,7 @@ function withEnv(patch) {
   };
 }
 
-function createWebhookBody(text) {
+function createWebhookBody(text, userId) {
   const uniqueId = `phase719_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   return JSON.stringify({
     events: [
@@ -34,7 +34,7 @@ function createWebhookBody(text) {
         timestamp: Date.now(),
         type: 'message',
         replyToken: 'rt_phase719_router',
-        source: { type: 'user', userId: 'U_PHASE719_ROUTER' },
+        source: { type: 'user', userId: userId || 'U_PHASE719_ROUTER' },
         message: { id: `${uniqueId}_message`, type: 'text', text }
       }
     ]
@@ -83,7 +83,7 @@ function loadWebhookWithStubs(options) {
     pushMessage: async () => ({ status: 200 })
   });
   setOverride('../../src/usecases/cityPack/declareCityRegionFromLine', {
-    declareCityRegionFromLine: async () => ({ status: 'none' })
+    declareCityRegionFromLine: async () => (payload.regionResponse || { status: 'none' })
   });
   setOverride('../../src/usecases/cityPack/declareCityPackFeedbackFromLine', {
     declareCityPackFeedbackFromLine: async () => ({ status: 'none' })
@@ -272,11 +272,16 @@ function loadWebhookWithStubs(options) {
   });
   setOverride('../../src/repos/firestore/llmActionLogsRepo', {
     appendLlmActionLog: async (entry) => {
-      actionLogWrites.push(entry);
-      return { id: 'log_1', data: entry };
+      const stored = Object.assign({
+        createdAt: new Date().toISOString()
+      }, entry);
+      actionLogWrites.push(stored);
+      return { id: `log_${actionLogWrites.length}`, data: stored };
     },
     listLlmActionLogsByLineUserId: async () => (
-      Array.isArray(payload.recentActionRows) ? payload.recentActionRows : []
+      payload.useActionLogHistory === true
+        ? actionLogWrites.slice()
+        : (Array.isArray(payload.recentActionRows) ? payload.recentActionRows : [])
     )
   });
   setOverride('../../src/usecases/journey/handleJourneyLineCommand', {
@@ -599,4 +604,211 @@ test('phase719: gate-blocked domain concierge fallback keeps transcript snapshot
   assert.equal(loaded.actionLogWrites[0].transcriptSnapshotAssistantReplyPresent, true);
   assert.equal(loaded.actionLogWrites[0].transcriptSnapshotAssistantReplyLength > 0, true);
   assert.notEqual(loaded.actionLogWrites[0].transcriptSnapshotBuildSkippedReason, 'assistant_reply_missing');
+});
+
+test('phase719: paid conversation sequence avoids generic reset for planning, pricing, and mixed-domain prompts', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    useActionLogHistory: true
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const inputs = [
+    '今の自分の状況から、最初に何を優先すべきか3つだけ教えて。',
+    'それなら最初の5分は何をする？',
+    '今日はかなり疲れてる前提だと、どう言い換える？',
+    '今の進め方で足りていないものがあれば、3つまでで教えて。',
+    '今日・今週・今月の順で短く並べて。',
+    '無料プランと有料プランの違いを、回りくどくなく短く教えて。',
+    '引っ越しと学校の手続きが同時に不安。まず何から確認すべきか順番だけ教えて。'
+  ];
+  const replies = [];
+  const sequenceUserId = 'U_PHASE719_SEQUENCE';
+
+  for (const [index, text] of inputs.entries()) {
+    const body = createWebhookBody(text, sequenceUserId);
+    const turnReplies = [];
+    const result = await loaded.handleLineWebhook({
+      body,
+      signature: signBody(body),
+      requestId: `phase719_paid_sequence_${index + 1}`,
+      logger: () => {},
+      allowWelcome: false,
+      replyFn: async (_replyToken, message) => {
+        turnReplies.push(message);
+      }
+    });
+
+    assert.equal(result.status, 200, `turn_${index + 1}`);
+    assert.equal(turnReplies.length, 1, `turn_${index + 1}`);
+    replies.push(String(turnReplies[0].text || ''));
+  }
+
+  assert.equal(replies.length, inputs.length);
+  assert.notEqual(replies[0], replies[1]);
+  assert.notEqual(replies[1], replies[2]);
+  assert.match(replies[1], /最初の5分|期限|窓口/);
+  assert.match(replies[2], /疲れている前提|今週/);
+  assert.match(replies[3], /優先順位|期限|次の一手/);
+  assert.match(replies[4], /今日:/);
+  assert.match(replies[5], /無料/);
+  assert.match(replies[5], /有料/);
+  assert.equal(replies[5].includes('優先する手続きを3つ以内に絞る'), false);
+  assert.match(replies[6], /学区|学校/);
+  assert.match(replies[6], /住むエリア|住居/);
+  assert.match(replies[6], /住所証明/);
+  assert.match(replies[6], /同じエリア軸/);
+  assert.match(replies[6], /順番は、住むエリアと学区/);
+  assert.equal(replies[6].includes('次は順番は'), false);
+
+  const lastWrite = loaded.actionLogWrites[loaded.actionLogWrites.length - 1];
+  assert.equal(loaded.actionLogWrites.length >= inputs.length, true);
+  assert.equal(lastWrite.transcriptSnapshotAssistantReplyPresent, true);
+  assert.equal(lastWrite.transcriptSnapshotAssistantReplyLength > 0, true);
+});
+
+test('phase719: paid conversation sequence handles kickoff, rewrite, correction, criteria, and template prompts without generic reset', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    useActionLogHistory: true
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const inputs = [
+    'アメリカ赴任の準備って何から始めればいいですか？',
+    'それなら最初の5分は何をする？',
+    '今日はかなり疲れてる前提だと、どう言い換える？',
+    '今の進め方で足りていないものがあれば、3つまでで教えて。',
+    '今日・今週・今月の順で短く並べて。',
+    '無料プランと有料プランの違いを、回りくどくなく短く教えて。',
+    '引っ越しと学校の手続きが同時に不安。まず何から確認すべきか順番だけ教えて。',
+    'SSNと銀行口座の手続き、先にどっちを進めるべきか理由つきで短く教えて。',
+    'さっきの説明を、家族に送れる一文にして。',
+    '今の返答の中で、今日やることだけ1行にして。',
+    'それは違う。学校じゃなくて住まい優先で考え直して。',
+    '不安が強い前提で、やることを1つだけに絞って。',
+    '公式情報を確認すべき場面かどうか、判断基準だけ教えて。',
+    '予約が必要かどうかを相手に失礼なく聞く短文を1つ作って。',
+    'ここまでの会話を踏まえて、次の一手だけを断定せずに提案して。'
+  ];
+  const replies = [];
+  const sequenceUserId = 'U_PHASE719_SEQUENCE_UTILITY';
+
+  for (const [index, text] of inputs.entries()) {
+    const body = createWebhookBody(text, sequenceUserId);
+    const turnReplies = [];
+    const result = await loaded.handleLineWebhook({
+      body,
+      signature: signBody(body),
+      requestId: `phase719_paid_utility_${index + 1}`,
+      logger: () => {},
+      allowWelcome: false,
+      replyFn: async (_replyToken, message) => {
+        turnReplies.push(message);
+      }
+    });
+
+    assert.equal(result.status, 200, `turn_${index + 1}`);
+    assert.equal(turnReplies.length, 1, `turn_${index + 1}`);
+    replies.push(String(turnReplies[0].text || ''));
+  }
+
+  assert.match(replies[0], /期限がある手続き|生活基盤/);
+  assert.equal(replies[0].includes('優先したい手続きを1つだけ教えてください'), false);
+  assert.match(replies[7], /先にSSN/);
+  assert.match(replies[7], /理由/);
+  assert.equal(String(replies[8] || '').split('\n').length, 1);
+  assert.match(replies[8], /大丈夫そう/);
+  assert.equal(String(replies[9] || '').split('\n').length, 1);
+  assert.match(replies[9], /今日は最優先/);
+  assert.match(replies[10], /住まい優先/);
+  assert.match(replies[10], /入居時期|希望エリア/);
+  assert.equal(String(replies[11] || '').split('\n').length, 1);
+  assert.match(replies[11], /期限だけ確認/);
+  assert.match(replies[12], /制度・期限・必要書類・費用/);
+  assert.match(replies[12], /公式窓口/);
+  assert.equal(String(replies[13] || '').split('\n').length, 1);
+  assert.match(replies[13], /事前予約が必要かどうか/);
+  assert.match(replies[14], /次の一手としては/);
+  assert.match(replies[14], /よさそう/);
+
+  replies.slice(8).forEach((reply) => {
+    assert.equal(reply.includes('まずは次の一手から進めましょう'), false);
+    assert.equal(reply.includes('優先したい手続きがあれば1つだけ教えてください'), false);
+  });
+});
+
+test('phase719: region already-set command does not hijack natural language prompts and rewrite followups stay non-generic', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    useActionLogHistory: true,
+    regionResponse: { status: 'already_set', regionKey: 'wa::seattle' }
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const inputs = [
+    '地域によって違うなら、何を確認すべきかだけ教えて。',
+    '今の返し、少し硬い。人に話す感じで2文にして。',
+    '違う、やさしくしたいんじゃなくて、事務的すぎない文面にしたい。'
+  ];
+  const replies = [];
+  const sequenceUserId = 'U_PHASE719_REGION_COLLISION';
+
+  for (const [index, text] of inputs.entries()) {
+    const body = createWebhookBody(text, sequenceUserId);
+    const turnReplies = [];
+    const result = await loaded.handleLineWebhook({
+      body,
+      signature: signBody(body),
+      requestId: `phase719_paid_region_${index + 1}`,
+      logger: () => {},
+      allowWelcome: false,
+      replyFn: async (_replyToken, message) => {
+        turnReplies.push(message);
+      }
+    });
+
+    assert.equal(result.status, 200, `turn_${index + 1}`);
+    assert.equal(turnReplies.length, 1, `turn_${index + 1}`);
+    replies.push(String(turnReplies[0].text || ''));
+  }
+
+  assert.equal(replies[0].includes('地域は既に登録済みです'), false);
+  assert.match(replies[0], /確認|制度|窓口|地域/);
+  assert.equal(String(replies[1] || '').split('\n').length, 2);
+  assert.match(replies[1], /安心|確認ポイント/);
+  assert.equal(String(replies[2] || '').split('\n').length, 1);
+  assert.match(replies[2], /順番を一緒に整理/);
+
+  replies.forEach((reply) => {
+    assert.equal(reply.includes('まずは次の一手から進めましょう'), false);
+    assert.equal(reply.includes('優先したい手続きがあれば1つだけ教えてください'), false);
+  });
 });

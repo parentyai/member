@@ -94,7 +94,11 @@ function resolveGenericFallbackSlice(params) {
   const continuationReason = normalizeText(payload.continuationReason).toLowerCase();
   const cityExplicit = /(ニューヨーク|new york|ロサンゼルス|los angeles|サンフランシスコ|san francisco|シアトル|seattle|ボストン|boston|シカゴ|chicago|オースティン|austin|サンディエゴ|san diego|ワシントン|washington|街|都市|city|州|エリア)/.test(messageText);
 
-  if (followupIntent || priorContextUsed || followupResolvedFromHistory || continuationReason === 'history_followup_carry') {
+  const followupContextActive = priorContextUsed || followupResolvedFromHistory || continuationReason === 'history_followup_carry';
+  if (followupIntent && followupContextActive) {
+    return 'followup';
+  }
+  if (followupContextActive) {
     return 'followup';
   }
   if (cityExplicit) {

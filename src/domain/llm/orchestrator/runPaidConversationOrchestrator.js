@@ -144,6 +144,89 @@ function applyCoreFactsGateToReadiness(readiness, gate) {
   });
 }
 
+function shouldPreserveDirectAnswerFlow(packet, strategyPlan, selected) {
+  const payload = packet && typeof packet === 'object' ? packet : {};
+  const plan = strategyPlan && typeof strategyPlan === 'object' ? strategyPlan : {};
+  const candidate = selected && typeof selected === 'object' ? selected : {};
+  const domainIntent = normalizeText(payload.normalizedConversationIntent).toLowerCase();
+  const strategy = normalizeText(plan.strategy).toLowerCase();
+  const fallbackType = normalizeText(plan.fallbackType).toLowerCase();
+  const selectedKind = normalizeText(candidate.kind).toLowerCase();
+  const generalDirectAnswer = domainIntent === 'general'
+    && (strategy === 'domain_concierge' || strategy === 'concierge')
+    && (
+      normalizeText(payload.followupIntent).toLowerCase() === 'next_step'
+      || fallbackType === 'general_followup_direct_answer'
+      || fallbackType === 'service_plan_direct_answer'
+    )
+    && (selectedKind === 'continuation_candidate' || selectedKind === 'domain_concierge_candidate');
+  const utilityTransformDirectAnswer = fallbackType === 'utility_transform_direct_answer'
+    && strategy === 'domain_concierge'
+    && (selectedKind === 'domain_concierge_candidate' || selectedKind === 'continuation_candidate');
+  const mixedDomainDirectAnswer = fallbackType === 'mixed_domain_direct_answer'
+    && strategy === 'domain_concierge'
+    && (selectedKind === 'domain_concierge_candidate' || selectedKind === 'continuation_candidate');
+  return generalDirectAnswer === true || utilityTransformDirectAnswer === true || mixedDomainDirectAnswer === true;
+}
+
+function resolveMixedDomainCanonicalReply(replyText, packet, strategyPlan) {
+  const original = normalizeText(replyText);
+  if (!original) return original;
+  const payload = packet && typeof packet === 'object' ? packet : {};
+  const plan = strategyPlan && typeof strategyPlan === 'object' ? strategyPlan : {};
+  const fallbackType = normalizeText(plan.fallbackType).toLowerCase();
+  const messageText = normalizeText(payload.messageText);
+  if (fallbackType !== 'mixed_domain_direct_answer' || !messageText) return original;
+  const hasHousingSignal = /(引っ越し|引越し|住まい|住居|部屋|賃貸|housing|move|moving)/i.test(messageText);
+  const hasSchoolSignal = /(学校|学区|入学|転校|school|district)/i.test(messageText);
+  const hasOrderingCue = /(何から|順番|確認|不安|手続き)/i.test(messageText);
+  if (!(hasHousingSignal && hasSchoolSignal && hasOrderingCue)) return original;
+  if (/(学区|学校)/.test(original) && /(住むエリア|住居|住まい)/.test(original)) return original;
+  return [
+    '順番は、住むエリアと学区の関係を先に確認することです。',
+    '次に、住所証明など共通で使う書類をまとめます。',
+    'そのうえで、住居候補と学校候補を同じエリア軸で絞り込みましょう。'
+  ].join('\n');
+}
+
+function enforceMixedDomainSelectedCandidate(selected, packet, strategyPlan) {
+  const current = selected && typeof selected === 'object' ? selected : null;
+  if (!current) return current;
+  const canonicalReply = resolveMixedDomainCanonicalReply(current.replyText, packet, strategyPlan);
+  if (!canonicalReply || canonicalReply === normalizeText(current.replyText)) return current;
+  return Object.assign({}, current, {
+    replyText: canonicalReply,
+    preserveReplyText: true,
+    atoms: Object.assign({}, current.atoms || {}, {
+      situationLine: canonicalReply.split('\n')[0] || canonicalReply,
+      nextActions: [],
+      pitfall: '',
+      followupQuestion: ''
+    })
+  });
+}
+
+function enforceMixedDomainFinalReply(replyText, packet, strategyPlan) {
+  return resolveMixedDomainCanonicalReply(replyText, packet, strategyPlan);
+}
+
+function preserveDirectAnswerReadiness(readiness, packet, strategyPlan, selected) {
+  const base = readiness && typeof readiness === 'object'
+    ? readiness
+    : {
+      decision: 'allow',
+      reasonCodes: [],
+      safeResponseMode: 'answer',
+      qualitySnapshot: {}
+    };
+  if (shouldPreserveDirectAnswerFlow(packet, strategyPlan, selected) !== true || base.decision !== 'clarify') return base;
+  return Object.assign({}, base, {
+    decision: 'allow',
+    safeResponseMode: 'answer',
+    reasonCodes: uniqueReasonCodes([].concat(base.reasonCodes || [], 'general_direct_answer_preserved'))
+  });
+}
+
 function resolveReadinessClarifyText(selected, requiredCoreFacts) {
   const coreFactsClarify = normalizeText(requiredCoreFacts && requiredCoreFacts.clarifyText);
   if (coreFactsClarify) return coreFactsClarify;
@@ -570,8 +653,12 @@ function buildDomainCandidate(result, packet) {
       interventionBudget: Number.isFinite(Number(result.interventionBudget)) ? Number(result.interventionBudget) : 1
     },
     followupIntent: typeof result.followupIntent === 'string' ? result.followupIntent : null,
-    directAnswerCandidate: typeof result.followupIntent === 'string' && result.followupIntent.trim().length > 0,
+    directAnswerCandidate: (
+      (typeof result.followupIntent === 'string' && result.followupIntent.trim().length > 0)
+      || result.preserveReplyText === true
+    ),
     conciseModeApplied: result.conciseModeApplied === true,
+    preserveReplyText: result.preserveReplyText === true,
     raw: result,
     atoms: result.atoms && typeof result.atoms === 'object' ? result.atoms : {}
   };
@@ -595,7 +682,10 @@ function shouldBuildContinuationCandidate(packet, strategyPlan) {
     || payload.followupResolvedFromHistory === true
     || Boolean(payload.followupIntent)
     || normalizeText(plan.fallbackType).toLowerCase() === 'followup_grounding_probe'
-  ) && normalizeText(payload.normalizedConversationIntent).toLowerCase() !== 'general';
+    || normalizeText(plan.fallbackType).toLowerCase() === 'general_followup_direct_answer'
+    || normalizeText(plan.fallbackType).toLowerCase() === 'utility_transform_direct_answer'
+    || normalizeText(plan.fallbackType).toLowerCase() === 'service_plan_direct_answer'
+  );
 }
 
 async function buildCandidateSet(packet, strategyPlan, deps, options) {
@@ -937,6 +1027,12 @@ async function runPaidConversationOrchestrator(params) {
   if (knowledgeCanAnswer && (effectiveEvidenceSufficiency === 'clarify' || effectiveEvidenceSufficiency === 'answer_with_hedge')) {
     effectiveEvidenceSufficiency = selectedForReadiness.retrievalQuality === 'good' ? 'answer' : 'answer_with_hedge';
   }
+  if (
+    shouldPreserveDirectAnswerFlow(packet, strategyPlan, loopResolved.selected)
+    && effectiveEvidenceSufficiency === 'clarify'
+  ) {
+    effectiveEvidenceSufficiency = 'answer';
+  }
   const verified = verifyCandidate({
     packet,
     selected: loopResolved.selected,
@@ -1042,18 +1138,30 @@ async function runPaidConversationOrchestrator(params) {
   });
   const withCoreFactsGate = applyCoreFactsGateToReadiness(readinessResult, requiredCoreFacts);
   const effectiveReadiness = applyActionGatewayToReadiness(withCoreFactsGate, actionGatewayDecision, actionGatewayEnabled);
-  const readinessClarifyText = effectiveReadiness.decision === 'clarify'
+  const preservedReadiness = preserveDirectAnswerReadiness(
+    effectiveReadiness,
+    packet,
+    strategyPlan,
+    verified.selected
+  );
+  const readinessClarifyText = preservedReadiness.decision === 'clarify'
     ? resolveReadinessClarifyText(verified.selected, requiredCoreFacts)
     : '';
+  const finalizationCandidate = enforceMixedDomainSelectedCandidate(
+    verified.selected,
+    packet,
+    strategyPlan
+  );
   const finalized = finalizeCandidate({
-    selected: verified.selected,
+    selected: finalizationCandidate,
     verificationOutcome: verified.verificationOutcome,
     contradictionFlags: verified.contradictionFlags,
-    readinessDecision: effectiveReadiness.decision,
-    readinessSafeResponseMode: effectiveReadiness.safeResponseMode,
+    readinessDecision: preservedReadiness.decision,
+    readinessSafeResponseMode: preservedReadiness.safeResponseMode,
     readinessClarifyText,
     fallbackText: '状況を整理しながら進めます。優先する手続きを1つ決めましょう。'
   });
+  const finalReplyText = enforceMixedDomainFinalReply(finalized.replyText, packet, strategyPlan);
   const retrievalBlockedByStrategy = retrievalDecision.retrievalBlockedByStrategy === true;
   const retrievalBlockReason = strategyPlan.retrieveNeeded === true
     ? null
@@ -1061,7 +1169,7 @@ async function runPaidConversationOrchestrator(params) {
   const knowledgeCandidateCountBySource = buildKnowledgeCandidateCountBySource(candidateSet);
   const fallbackPriorityReason = resolveFallbackPriorityReason(packet, loopResolved.selected, candidateSet.candidates);
 
-  const selected = verified.selected && typeof verified.selected === 'object' ? verified.selected : {};
+  const selected = finalizationCandidate && typeof finalizationCandidate === 'object' ? finalizationCandidate : {};
   const knowledgeUsageMeta = buildKnowledgeUsageMeta(selected);
   const assistantQuality = groundedResult && groundedResult.assistantQuality
     ? groundedResult.assistantQuality
@@ -1092,7 +1200,7 @@ async function runPaidConversationOrchestrator(params) {
     || (Boolean(followupIntent) && selectedKind !== 'clarify_candidate');
   const conciseModeApplied = selected && selected.conciseModeApplied === true
     ? true
-    : isConciseReplyText(finalized.replyText);
+    : isConciseReplyText(finalReplyText);
   const misunderstandingRecovered = packet.recoverySignal === true
     && (
       directAnswerApplied
@@ -1106,7 +1214,7 @@ async function runPaidConversationOrchestrator(params) {
     handled: true,
     packet,
     strategyPlan,
-    replyText: finalized.replyText,
+    replyText: finalReplyText,
     blockedReason,
     assistantQuality,
     conversationMode: strategyPlan.conversationMode,
@@ -1191,9 +1299,9 @@ async function runPaidConversationOrchestrator(params) {
       sourceReadinessReasons: readinessSourceReasons,
       misunderstandingRecovered,
       officialOnlySatisfied: readinessOfficialOnlySatisfied,
-      readinessDecision: effectiveReadiness.decision,
-      readinessReasonCodes: effectiveReadiness.reasonCodes,
-      readinessSafeResponseMode: effectiveReadiness.safeResponseMode,
+      readinessDecision: preservedReadiness.decision,
+      readinessReasonCodes: preservedReadiness.reasonCodes,
+      readinessSafeResponseMode: preservedReadiness.safeResponseMode,
       answerReadinessVersion: readinessGate.answerReadinessVersion,
       answerReadinessLogOnlyV2: readinessGate.answerReadinessLogOnlyV2 === true,
       answerReadinessEnforcedV2: readinessGate.answerReadinessEnforcedV2 === true,
