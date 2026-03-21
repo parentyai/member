@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-21T22:27:03.634Z",
-  "gitCommit": "7e1670a8ebbbf304faa3593180d068a689030615",
+  "generatedAt": "2026-03-21T22:37:01.800Z",
+  "gitCommit": "e22177a308bb4096a5dece8064f017ccd15f3cd7",
   "branch": "codex/quality-patrol-prA-T001",
-  "sourceDigest": "4dba19910d81657c6d41d6d4e6dd7b0b322192a13fb05fe2c484dcf95acb4196",
+  "sourceDigest": "8c820f7186c1d38fa5b9d278bd22bb1c2f0ecbd39bc41613a2ce0427d5d2adaa",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "edc15c3b256654e099706fb5d819f72d0896c3bb6de238d046610b7af767a467",
+      "sha256": "25c0f2b3487d44aeef31725aa1f1052764c52fdaf5c65af8e96eeb7a82237069",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "6d36796a03c4374614a33ec364831400e0c8c3038bc36d0c6abb4770b5f0cf8b",
+      "sha256": "9239849c1f7eb6209762fb46a17b00d0efed2a75f263afe28eab064ed7402d43",
       "bytes": 487
     },
     {
@@ -171,7 +171,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "69f1e120cc8ede4826ac411c7e1ef6a05a7026ff6d68506081652c3c72c0fff7",
+      "sha256": "54a465496673b32a7eb9851a311111b4de5feb769463aa8ae642b17fcedcab73",
       "bytes": 2415
     },
     {
