@@ -146,6 +146,7 @@ function isOpsRealtimeSnapshotEnabled() {
 const state = {
   dict: {},
   role: 'operator',
+  blockedPaneNotice: null,
   localPreflight: null,
   recoveryUx: {
     mode: 'normal',
@@ -3282,6 +3283,16 @@ function resolveRoleScopeLabel(role) {
   return '運用';
 }
 
+function resolvePaneHeaderLabel(paneKey, fallbackValue) {
+  const normalizedPane = String(paneKey || '').trim();
+  if (!normalizedPane) return fallbackValue || '-';
+  const paneMeta = PANE_HEADER_MAP[normalizedPane];
+  if (paneMeta && paneMeta.titleKey) {
+    return t(paneMeta.titleKey, fallbackValue || normalizedPane);
+  }
+  return fallbackValue || normalizedPane;
+}
+
 function resolveLlmRolloutStageLabel(stage) {
   const normalized = String(stage || '').trim().toLowerCase();
   if (!normalized) return null;
@@ -3297,6 +3308,87 @@ function setRoleVisibilityReasonText(elementId, message) {
   const el = document.getElementById(elementId);
   if (!el) return;
   el.textContent = normalizeCopyForRole(String(message || '-'), state.role);
+}
+
+function renderBlockedPaneNotice() {
+  const el = document.getElementById('home-blocked-pane-notice');
+  const causeEl = document.getElementById('home-blocked-pane-cause');
+  const actionEl = document.getElementById('home-blocked-pane-action');
+  const notice = state.blockedPaneNotice && typeof state.blockedPaneNotice === 'object'
+    ? state.blockedPaneNotice
+    : null;
+  const visible = Boolean(
+    el
+    && notice
+    && state.activePane === 'home'
+    && String(notice.requestedPane || '').trim()
+  );
+  if (!el || !causeEl || !actionEl || !visible) {
+    if (el) {
+      el.classList.remove('is-visible', 'is-danger', 'is-warn', 'is-ok');
+      el.classList.add('is-hidden');
+      el.setAttribute('data-blocked-pane-state', 'hidden');
+      el.setAttribute('data-ui-state', 'unset');
+      el.setAttribute('data-ui-message-level', 'system');
+    }
+    if (causeEl) causeEl.textContent = '-';
+    if (actionEl) actionEl.textContent = '-';
+    return;
+  }
+  const requestedPane = String(notice.requestedPane || '').trim();
+  const recommendedPane = String(notice.recommendedPane || 'home').trim() || 'home';
+  const roleLabel = resolveRoleScopeLabel(notice.role || state.role);
+  const guardCode = normalizeGuardErrorCode(notice.error || '');
+  const requestedPaneLabel = resolvePaneHeaderLabel(requestedPane, requestedPane);
+  const recommendedPaneLabel = resolvePaneHeaderLabel(recommendedPane, recommendedPane);
+  const causeText = guardCode === 'ROLLOUT_DISABLED'
+    ? `${requestedPaneLabel} は段階公開の対象外です。`
+    : `${requestedPaneLabel} は現在のRole（${roleLabel}）では表示できません。`;
+  const actionText = `${t('ui.desc.home.blockedPane.continue', '現在のRoleで開ける画面に切り替えました。')} ${recommendedPaneLabel} を表示しています。${t('ui.desc.home.blockedPane.next', '左ナビから許可済み画面へ移動するか、Roleを切り替えてください。')}`;
+  causeEl.textContent = normalizeCopyForRole(causeText, state.role);
+  actionEl.textContent = normalizeCopyForRole(actionText, state.role);
+  el.classList.remove('is-hidden');
+  el.classList.add('is-visible');
+  applyBannerState(el, 'warn', 'system');
+  el.setAttribute('data-blocked-pane-state', 'visible');
+}
+
+function setBlockedPaneNotice(rawNotice) {
+  if (!rawNotice || typeof rawNotice !== 'object') {
+    state.blockedPaneNotice = null;
+    renderBlockedPaneNotice();
+    return;
+  }
+  state.blockedPaneNotice = {
+    error: rawNotice.error || rawNotice.reason || rawNotice.code || 'ROLE_FORBIDDEN',
+    requestedPane: rawNotice.requestedPane ? String(rawNotice.requestedPane) : '',
+    recommendedPane: rawNotice.recommendedPane ? String(rawNotice.recommendedPane) : 'home',
+    role: normalizeRoleValue(rawNotice.role || state.role)
+  };
+  renderBlockedPaneNotice();
+}
+
+function reconcileBlockedPaneNotice(role) {
+  const notice = state.blockedPaneNotice && typeof state.blockedPaneNotice === 'object'
+    ? state.blockedPaneNotice
+    : null;
+  if (!notice) return;
+  const requestedPane = String(notice.requestedPane || '').trim();
+  if (!requestedPane) {
+    setBlockedPaneNotice(null);
+    return;
+  }
+  const nextRole = normalizeRoleValue(role || state.role);
+  const recommendedPane = resolveAllowedPaneForRole(nextRole, requestedPane, 'home');
+  if (recommendedPane === requestedPane) {
+    setBlockedPaneNotice(null);
+    return;
+  }
+  state.blockedPaneNotice = Object.assign({}, notice, {
+    role: nextRole,
+    recommendedPane
+  });
+  renderBlockedPaneNotice();
 }
 
 function renderPaneVisibilityReasons() {
@@ -3540,6 +3632,7 @@ function setRole(role, options) {
   const visibleEntries = resolveVisibleNavEntries(nextRole);
   applyNavGroupVisibilityPolicy(nextRole, visibleEntries);
   applyNavItemVisibilityPolicy(nextRole, visibleEntries);
+  reconcileBlockedPaneNotice(nextRole);
   applyMonitorWorkspaceView(state.monitorWorkspaceView, { persist: true });
   applyLlmWorkspaceView(state.llmWorkspaceView, { persist: true });
   const activePane = document.querySelector('.app-pane.is-active');
@@ -3563,10 +3656,17 @@ function setRole(role, options) {
       requestedPane: paneKey,
       role: nextRole
     });
+    setBlockedPaneNotice({
+      error: opts.guardReason || 'ROLE_FORBIDDEN',
+      recommendedPane: allowedPane,
+      requestedPane: paneKey,
+      role: nextRole
+    });
     activatePane(allowedPane, { historyMode: 'replace', guardReason: 'ROLE_FORBIDDEN' });
     renderPaneVisibilityReasons();
     return;
   }
+  setBlockedPaneNotice(null);
   if (opts.syncHistory !== false) {
     updateHistoryWithPaneRole(paneKey || 'home', nextRole, opts.historyMode || 'replace');
   }
@@ -3656,6 +3756,7 @@ function updatePageHeader(paneKey) {
     secondaryAction.setAttribute('data-open-pane', actionMeta.secondary.paneTarget);
     secondaryAction.classList.remove('hidden');
   }
+  renderBlockedPaneNotice();
 }
 
 function isJsonCollapsibleDetail(el) {
@@ -5476,6 +5577,18 @@ function activatePane(target, options) {
       requestedPane: normalizedTarget,
       role: state.role
     });
+    if (nextPane === 'home' && normalizedTarget && normalizedTarget !== nextPane) {
+      setBlockedPaneNotice({
+        error: guardReason,
+        recommendedPane: nextPane,
+        requestedPane: normalizedTarget,
+        role: state.role
+      });
+    } else {
+      setBlockedPaneNotice(null);
+    }
+  } else {
+    setBlockedPaneNotice(null);
   }
   updatePageHeader(nextPane);
   if (nextPane === 'ops-feature-catalog' && isOpsRealtimeSnapshotEnabled() && (!Array.isArray(state.opsFeatureRows) || state.opsFeatureRows.length === 0)) {
