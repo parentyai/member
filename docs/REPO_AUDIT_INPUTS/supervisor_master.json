@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-20T23:21:04-04:00",
-  "gitCommit": "dbdb8e41abc50ffd6e369c3a14b07761b9732992",
-  "branch": "codex/admin-next-outcome-T078",
-  "sourceDigest": "b69295698b27ab14773ce65f2a15da12c893d4f34d31a68aa505901bf80e4550",
+  "generatedAt": "2026-03-20T23:29:27-04:00",
+  "gitCommit": "b83a363c2754af852c1b118607dce4c7e7c63aa3",
+  "branch": "HEAD",
+  "sourceDigest": "e0c827190bc4c270dac4c0af3ff389d1698514c076a354c594b5f798aaa32acf",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
