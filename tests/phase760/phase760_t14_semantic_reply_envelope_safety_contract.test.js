@@ -5,7 +5,7 @@ const { test } = require('node:test');
 
 const { __testOnly } = require('../../src/routes/webhookLine');
 
-test('phase760: semantic reply envelope applies group privacy, citation finalization, and quick reply policy', () => {
+test('phase760: semantic reply envelope suppresses auto quick replies for concierge while keeping safety metadata', () => {
   const envelope = __testOnly.buildSemanticReplyEnvelope({
     replyText: '結論です。\n1. SSNの書類を確認します。',
     domainIntent: 'ssn',
@@ -41,7 +41,25 @@ test('phase760: semantic reply envelope applies group privacy, citation finaliza
   assert.equal(envelope.semanticResponseObject.policy_trace.escalation_required, true);
   assert.ok(envelope.semanticResponseObject.warnings.includes('group_privacy_guard_active'));
   assert.ok(envelope.semanticResponseObject.warnings.includes('citation_disclaimer_required'));
+  assert.equal(envelope.lineSurfacePlan.surface, 'text');
+  assert.equal(envelope.lineMessage.type, 'text');
+  assert.equal(envelope.lineMessage.quickReply, undefined);
+});
+
+test('phase760: semantic reply envelope keeps explicit quick replies even in concierge mode', () => {
+  const envelope = __testOnly.buildSemanticReplyEnvelope({
+    replyText: '結論です。',
+    domainIntent: 'general',
+    conversationMode: 'concierge',
+    nextSteps: ['必要書類を確認する'],
+    quickReplies: [
+      { label: '必要書類', text: '必要書類を教えて' },
+      { label: '予約', text: '予約が必要か教えて' }
+    ]
+  });
+
   assert.equal(envelope.lineSurfacePlan.surface, 'quick_reply');
   assert.equal(envelope.lineMessage.type, 'text');
   assert.ok(envelope.lineMessage.quickReply);
+  assert.equal(envelope.lineMessage.quickReply.items.length, 2);
 });
