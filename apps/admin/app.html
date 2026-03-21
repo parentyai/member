@@ -811,6 +811,18 @@
                   <div id="composer-inputs" class="panel composer-form-panel composer-form-panel-compact" data-surface-tier="primary">
                     <div class="panel-title" data-dict-key="ui.label.composer.inputs">通知作成</div>
                     <div class="panel-body">
+                      <div class="composer-action-rail" data-ui="composer-action-rail">
+                        <div class="composer-action-rail-copy">
+                          <div class="composer-overview-title" data-dict-key="ui.label.composer.currentAction">この段階の主操作</div>
+                          <div id="composer-current-action-note" class="note composer-current-action-note">-</div>
+                        </div>
+                        <div class="composer-card-actions composer-primary-actions">
+                          <button id="composer-card-draft" type="button" class="composer-hidden-action" data-dict-key="ui.label.composer.create">下書き作成</button>
+                          <button id="composer-card-approve" type="button" class="composer-hidden-action" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
+                          <button id="composer-card-plan" type="button" data-dict-key="ui.label.composer.plan">送信計画</button>
+                          <button id="composer-card-execute" type="button" data-dict-key="ui.label.composer.execute">送信実行</button>
+                        </div>
+                      </div>
                       <div class="input-grid">
                       <div>
                         <label for="notificationType" data-dict-key="ui.label.composer.type" data-dict-tip="ui.help.composer.type">通知タイプ</label>
@@ -887,18 +899,6 @@
                           <option value="COMPLETION_CONFIRMATION" data-dict-key="ui.value.composer.category.completion">完了確認</option>
                         </select>
                       </div>
-                    </div>
-                    <div class="composer-action-rail" data-ui="composer-action-rail">
-                      <div class="composer-action-rail-copy">
-                        <div class="composer-overview-title" data-dict-key="ui.label.composer.currentAction">この段階の主操作</div>
-                        <div id="composer-current-action-note" class="note composer-current-action-note">-</div>
-                      </div>
-                    <div class="composer-card-actions composer-primary-actions">
-                      <button id="composer-card-draft" type="button" class="composer-hidden-action" data-dict-key="ui.label.composer.create">下書き作成</button>
-                      <button id="composer-card-approve" type="button" class="composer-hidden-action" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
-                      <button id="composer-card-plan" type="button" data-dict-key="ui.label.composer.plan">送信計画</button>
-                      <button id="composer-card-execute" type="button" data-dict-key="ui.label.composer.execute">送信実行</button>
-                    </div>
                     </div>
                     <div id="composer-type-hint" class="note" data-dict-key="ui.desc.composer.typeHint.step">ステップ通知: シナリオとステップを指定して対象を絞り込みます。</div>
                     <div id="composer-category-wizard" class="composer-category-wizard">
@@ -3513,12 +3513,12 @@
                     <div><span class="metric-label" data-dict-key="ui.label.errors.recommend">推奨アクション</span><span id="errors-recommend" class="metric-value">-</span></div>
                   </div>
                   <div class="note" data-dict-key="ui.desc.errors.handoff">この画面では異常の内容だけを確認し、補正は配信結果または設定と回復で行います。</div>
-                  <button id="errors-to-ops" type="button" data-dict-key="ui.label.errors.toOps">設定と回復へ進む</button>
+                  <button id="errors-to-ops" type="button" data-primary-action="pane-primary" data-dict-key="ui.label.errors.toOps">設定と回復へ進む</button>
                 </div>
               </div>
-              <details class="table-section section" open>
+              <details class="table-section section" data-json-collapsible="true">
                 <summary data-dict-key="ui.label.errors.summary">まとめ</summary>
-                <pre id="errors-summary">-</pre>
+                <pre id="errors-summary" data-visual-noise="evidence-placeholder">-</pre>
               </details>
 	              <details class="table-section section">
 	                <summary data-dict-key="ui.label.errors.warnLinks">危険リンク一覧</summary>
@@ -4022,10 +4022,10 @@
                   </table>
                 </div>
                 <div class="note">Summary</div>
-                <pre id="vendor-shadow-summary">-</pre>
-                <details>
+                <div id="vendor-shadow-summary" class="note vendor-shadow-summary">-</div>
+                <details data-json-collapsible="true">
                   <summary>RAW JSON</summary>
-                  <pre id="vendor-shadow-raw">-</pre>
+                  <pre id="vendor-shadow-raw" data-visual-noise="evidence-placeholder">-</pre>
                 </details>
               </div>
             </div>
@@ -4053,9 +4053,9 @@
                   <div class="panel-title" data-dict-key="ui.label.vendors.detail">詳細</div>
                   <div class="panel-body">
                     <div id="vendor-detail" class="note">行を選択すると詳細を表示します。</div>
-                    <details>
+                    <details data-json-collapsible="true">
                       <summary data-dict-key="ui.label.vendors.raw">RAW JSON</summary>
-                      <pre id="vendor-raw">-</pre>
+                      <pre id="vendor-raw" data-visual-noise="evidence-placeholder">-</pre>
                     </details>
                   </div>
                 </div>

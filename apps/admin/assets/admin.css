@@ -4394,6 +4394,11 @@ pre[data-visual-noise="evidence-placeholder"] {
   box-shadow: 0 8px 20px rgba(42, 86, 199, 0.18);
 }
 
+[data-ui-v2-foundation="true"] #pane-vendors .vendor-shadow-summary {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
 @media (max-width: 1280px) {
   [data-ui-v2-foundation="true"] #pane-llm .llm-workspace-grid {
     grid-template-columns: 1fr;
