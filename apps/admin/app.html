@@ -773,7 +773,7 @@
                 </div>
               </div>
 
-              <div class="composer-main-layout">
+              <div class="composer-main-layout" data-ui="composer-workbench-layout">
                 <div class="composer-left-stack">
                   <div id="composer-card-preview" class="composer-preview-top panel composer-preview-panel" data-surface-tier="secondary">
                     <div class="panel-title" data-dict-key="ui.label.composer.livePreview">ライブプレビュー</div>
@@ -839,26 +839,34 @@
                         <input id="ctaText2" data-dict-placeholder="ui.desc.composer.cta2Placeholder" placeholder="" />
                         <div id="composer-cta2-notice" class="note inline-notice" data-ui-message-level="inline">CTA2はプレビュー専用です。保存・送信には使われません。</div>
                       </div>
-                      <div>
-                        <label for="secondaryCtaText1" data-dict-key="ui.label.composer.ctaSecondary1" data-dict-tip="ui.help.composer.ctaSecondary">ボタン文言(副1)</label>
-                        <input id="secondaryCtaText1" data-dict-placeholder="ui.desc.composer.ctaSecondaryPlaceholder" placeholder="" />
-                      </div>
-                      <div>
-                        <label for="secondaryLinkRegistryId1" data-dict-key="ui.label.composer.linkSecondary1" data-dict-tip="ui.help.composer.linkSecondary">リンクID(副1)</label>
-                        <select id="secondaryLinkRegistryId1">
-                          <option value="">Link Registryから選択</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label for="secondaryCtaText2" data-dict-key="ui.label.composer.ctaSecondary2" data-dict-tip="ui.help.composer.ctaSecondary">ボタン文言(副2)</label>
-                        <input id="secondaryCtaText2" data-dict-placeholder="ui.desc.composer.ctaSecondaryPlaceholder" placeholder="" />
-                      </div>
-                      <div>
-                        <label for="secondaryLinkRegistryId2" data-dict-key="ui.label.composer.linkSecondary2" data-dict-tip="ui.help.composer.linkSecondary">リンクID(副2)</label>
-                        <select id="secondaryLinkRegistryId2">
-                          <option value="">Link Registryから選択</option>
-                        </select>
-                      </div>
+                      <details id="composer-secondary-cta-fields" class="panel composer-secondary-details composer-optional-fields" data-surface-tier="secondary" data-workbench-collapsible="true">
+                        <summary data-dict-key="ui.label.composer.secondaryOptions">補助ボタンと追加導線</summary>
+                        <div class="panel-body">
+                          <div class="composer-secondary-details-note" data-dict-key="ui.desc.composer.secondaryOptions">複数の導線が必要な通知だけ設定します。通常は主ボタンだけで進められます。</div>
+                          <div class="input-grid">
+                            <div>
+                              <label for="secondaryCtaText1" data-dict-key="ui.label.composer.ctaSecondary1" data-dict-tip="ui.help.composer.ctaSecondary">ボタン文言(副1)</label>
+                              <input id="secondaryCtaText1" data-dict-placeholder="ui.desc.composer.ctaSecondaryPlaceholder" placeholder="" />
+                            </div>
+                            <div>
+                              <label for="secondaryLinkRegistryId1" data-dict-key="ui.label.composer.linkSecondary1" data-dict-tip="ui.help.composer.linkSecondary">リンクID(副1)</label>
+                              <select id="secondaryLinkRegistryId1">
+                                <option value="">Link Registryから選択</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label for="secondaryCtaText2" data-dict-key="ui.label.composer.ctaSecondary2" data-dict-tip="ui.help.composer.ctaSecondary">ボタン文言(副2)</label>
+                              <input id="secondaryCtaText2" data-dict-placeholder="ui.desc.composer.ctaSecondaryPlaceholder" placeholder="" />
+                            </div>
+                            <div>
+                              <label for="secondaryLinkRegistryId2" data-dict-key="ui.label.composer.linkSecondary2" data-dict-tip="ui.help.composer.linkSecondary">リンクID(副2)</label>
+                              <select id="secondaryLinkRegistryId2">
+                                <option value="">Link Registryから選択</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </details>
                       <div>
                         <label for="linkRegistryId" data-dict-key="ui.label.composer.link" data-dict-tip="ui.help.composer.link">リンクID</label>
                         <select id="linkRegistryId">
@@ -880,11 +888,17 @@
                         </select>
                       </div>
                     </div>
+                    <div class="composer-action-rail" data-ui="composer-action-rail">
+                      <div class="composer-action-rail-copy">
+                        <div class="composer-overview-title" data-dict-key="ui.label.composer.currentAction">この段階の主操作</div>
+                        <div id="composer-current-action-note" class="note composer-current-action-note">-</div>
+                      </div>
                     <div class="composer-card-actions composer-primary-actions">
                       <button id="composer-card-draft" type="button" class="composer-hidden-action" data-dict-key="ui.label.composer.create">下書き作成</button>
                       <button id="composer-card-approve" type="button" class="composer-hidden-action" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
                       <button id="composer-card-plan" type="button" data-dict-key="ui.label.composer.plan">送信計画</button>
                       <button id="composer-card-execute" type="button" data-dict-key="ui.label.composer.execute">送信実行</button>
+                    </div>
                     </div>
                     <div id="composer-type-hint" class="note" data-dict-key="ui.desc.composer.typeHint.step">ステップ通知: シナリオとステップを指定して対象を絞り込みます。</div>
                     <div id="composer-category-wizard" class="composer-category-wizard">
@@ -989,9 +1003,11 @@
                   </div>
                 </div>
 
-                <div id="composer-saved-panel" class="panel composer-saved-panel" data-surface-tier="secondary">
+                <div id="composer-saved-panel" class="panel composer-saved-panel" data-surface-tier="secondary" data-detail-rail="composer-saved-library">
                   <div class="panel-title" data-dict-key="ui.label.composer.saved">通知一覧</div>
                   <div class="panel-body">
+                    <div class="composer-saved-panel-note" data-dict-key="ui.desc.composer.saved.panel">既存通知の確認・複製・編集はここで行います。主操作は左の編集面で進めます。</div>
+                    <div id="composer-saved-selection-note" class="note composer-saved-selection-note">新規作成中です。既存通知を読み込む場合は一覧から選びます。</div>
                     <div class="input-grid">
                       <div class="row">
                         <div class="flex-1">
@@ -1068,26 +1084,29 @@
                       <button id="composer-saved-bulk-approve" type="button" class="button-subtle" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
                       <button id="composer-saved-bulk-delete" type="button" class="button-subtle" data-dict-key="ui.label.composer.saved.bulkDelete">削除</button>
                     </div>
-                    <table class="table-compact composer-saved-table">
-                      <thead>
-                        <tr>
-                          <th class="composer-saved-select-col"><input id="composer-saved-select-all" type="checkbox" aria-label="select all" /></th>
-                          <th><button type="button" class="table-sort-btn" data-composer-sort-key="createdAt" data-dict-key="ui.label.composer.saved.col.createdAt">作成日</button></th>
-                          <th><button type="button" class="table-sort-btn" data-composer-sort-key="title" data-dict-key="ui.label.composer.saved.col.title">タイトル</button></th>
-                          <th><button type="button" class="table-sort-btn" data-composer-sort-key="status" data-dict-key="ui.label.composer.saved.col.status">状態</button></th>
-                          <th><button type="button" class="table-sort-btn" data-composer-sort-key="notificationCategory" data-dict-key="ui.label.composer.saved.col.category">カテゴリ</button></th>
-                          <th><button type="button" class="table-sort-btn" data-composer-sort-key="scenarioKey" data-dict-key="ui.label.composer.saved.col.scenario">シナリオ</button></th>
-                          <th><button type="button" class="table-sort-btn" data-composer-sort-key="stepKey" data-dict-key="ui.label.composer.saved.col.step">ステップ</button></th>
-                          <th><button type="button" class="table-sort-btn" data-composer-sort-key="targetCount" data-dict-key="ui.label.composer.saved.col.targetCount" data-dict-tip="ui.help.readModel.target">送信対象数</button></th>
-                          <th><button type="button" class="table-sort-btn" data-composer-sort-key="ctr" data-dict-key="ui.label.composer.saved.col.ctr" data-dict-tip="ui.help.readModel.ctr">CTR</button></th>
-                          <th data-dict-key="ui.label.composer.saved.col.actions">操作</th>
-                        </tr>
-                      </thead>
-                      <tbody id="composer-saved-rows"></tbody>
-                    </table>
-                    <div id="composer-scenario-step-matrix" class="panel">
-                      <div class="panel-title" data-dict-key="ui.label.developer.matrix">ステップ通知マップ</div>
+                    <div id="composer-saved-table-wrap" class="composer-saved-table-wrap">
+                      <table class="table-compact composer-saved-table">
+                        <thead>
+                          <tr>
+                            <th class="composer-saved-select-col"><input id="composer-saved-select-all" type="checkbox" aria-label="select all" /></th>
+                            <th><button type="button" class="table-sort-btn" data-composer-sort-key="createdAt" data-dict-key="ui.label.composer.saved.col.createdAt">作成日</button></th>
+                            <th><button type="button" class="table-sort-btn" data-composer-sort-key="title" data-dict-key="ui.label.composer.saved.col.title">タイトル</button></th>
+                            <th><button type="button" class="table-sort-btn" data-composer-sort-key="status" data-dict-key="ui.label.composer.saved.col.status">状態</button></th>
+                            <th><button type="button" class="table-sort-btn" data-composer-sort-key="notificationCategory" data-dict-key="ui.label.composer.saved.col.category">カテゴリ</button></th>
+                            <th><button type="button" class="table-sort-btn" data-composer-sort-key="scenarioKey" data-dict-key="ui.label.composer.saved.col.scenario">シナリオ</button></th>
+                            <th><button type="button" class="table-sort-btn" data-composer-sort-key="stepKey" data-dict-key="ui.label.composer.saved.col.step">ステップ</button></th>
+                            <th><button type="button" class="table-sort-btn" data-composer-sort-key="targetCount" data-dict-key="ui.label.composer.saved.col.targetCount" data-dict-tip="ui.help.readModel.target">送信対象数</button></th>
+                            <th><button type="button" class="table-sort-btn" data-composer-sort-key="ctr" data-dict-key="ui.label.composer.saved.col.ctr" data-dict-tip="ui.help.readModel.ctr">CTR</button></th>
+                            <th data-dict-key="ui.label.composer.saved.col.actions">操作</th>
+                          </tr>
+                        </thead>
+                        <tbody id="composer-saved-rows"></tbody>
+                      </table>
+                    </div>
+                    <details id="composer-scenario-step-matrix" class="panel composer-secondary-details" data-surface-tier="secondary" data-workbench-collapsible="true">
+                      <summary data-dict-key="ui.label.composer.saved.matrix">シナリオ / ステップ俯瞰</summary>
                       <div class="panel-body">
+                        <div class="composer-secondary-details-note" data-dict-key="ui.desc.composer.saved.matrix">全体配置の確認だけに使います。編集と実行は主画面で行います。</div>
                         <div id="composer-seed-archive-toggle-wrap" class="note" hidden>
                           <label class="checkbox"><input id="composer-include-archived-seed" type="checkbox" /> seed archive を表示（developer）</label>
                         </div>
@@ -1099,7 +1118,7 @@
                         </div>
                         <div id="composer-matrix-note" class="cell-muted" data-dict-key="ui.desc.developer.matrixNotAvailable">実データ不足のため情報なしを表示します。</div>
                       </div>
-                    </div>
+                    </details>
                   </div>
                 </div>
               </div>

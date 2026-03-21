@@ -3621,12 +3621,20 @@ function expandPaneDetails(paneKey) {
       el.classList.add('json-collapsed');
       return;
     }
+    if (isWorkbenchCollapsibleDetail(el)) {
+      if (!el.hasAttribute('open')) el.open = false;
+      return;
+    }
     el.open = true;
   });
 }
 
 function expandAllDetails() {
   document.querySelectorAll('details').forEach((el) => {
+    if (isWorkbenchCollapsibleDetail(el)) {
+      if (!el.hasAttribute('open')) el.open = false;
+      return;
+    }
     el.open = true;
   });
 }
@@ -3645,6 +3653,14 @@ function enforceNoCollapseUi() {
         summaryEl.removeAttribute('aria-disabled');
         summaryEl.removeAttribute('tabindex');
       }
+      return;
+    }
+    if (isWorkbenchCollapsibleDetail(el)) {
+      if (summaryEl) {
+        summaryEl.removeAttribute('aria-disabled');
+        summaryEl.removeAttribute('tabindex');
+      }
+      if (!el.hasAttribute('open')) el.open = false;
       return;
     }
     el.open = true;
@@ -4353,6 +4369,10 @@ function setupQualityPatrolControls() {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });
+}
+
+function isWorkbenchCollapsibleDetail(el) {
+  return Boolean(el && typeof el.getAttribute === 'function' && el.getAttribute('data-workbench-collapsible') === 'true');
 }
 
 function renderRepoMapFaqRows(rows) {
@@ -15769,6 +15789,14 @@ function buildComposerSecondaryCtas() {
   }));
 }
 
+function syncComposerOptionalSections() {
+  const secondaryDetails = document.getElementById('composer-secondary-cta-fields');
+  if (secondaryDetails) {
+    const secondaryState = collectComposerSecondaryCtaState();
+    if (secondaryState.items.length > 0 || secondaryState.incompleteCount > 0) secondaryDetails.open = true;
+  }
+}
+
 function collectComposerSelectedLinkIds() {
   const selected = {
     linkRegistryId: document.getElementById('linkRegistryId')?.value?.trim() || ''
@@ -15858,6 +15886,38 @@ function applyComposerActionGateState(gateState) {
     el.disabled = !enabled;
   });
   document.getElementById('composer-card-preview')?.classList.toggle('is-preview-disabled', !gate.canPreview);
+}
+
+function resolveComposerCurrentPrimaryAction(gateState) {
+  const gate = gateState && typeof gateState === 'object' ? gateState : {};
+  const mappedStatus = mapComposerStatusLabel(state.currentComposerStatus);
+  if (mappedStatus === 'executed') return '';
+  if (gate.validationError || !gate.hasNotificationId) return 'composer-card-draft';
+  if (mappedStatus === 'draft') return 'composer-card-approve';
+  if (!gate.hasPlanToken) return 'composer-card-plan';
+  return 'composer-card-execute';
+}
+
+function renderComposerCurrentActionRail(gateState) {
+  const rail = document.querySelector('#pane-composer .composer-action-rail');
+  const noteEl = document.getElementById('composer-current-action-note');
+  const nextStepText = String(document.getElementById('composer-next-step')?.textContent || '').trim();
+  if (noteEl) noteEl.textContent = nextStepText || '-';
+  const activeId = resolveComposerCurrentPrimaryAction(gateState);
+  ['composer-card-draft', 'composer-card-approve', 'composer-card-plan', 'composer-card-execute'].forEach((id) => {
+    const button = document.getElementById(id);
+    if (!button) return;
+    const isActive = Boolean(activeId && id === activeId);
+    button.hidden = !isActive;
+    button.classList.toggle('is-current-primary', isActive);
+    if (isActive) button.setAttribute('data-primary-action', 'pane-primary');
+    else button.removeAttribute('data-primary-action');
+  });
+  if (rail) {
+    rail.classList.toggle('is-empty', !activeId);
+    if (activeId) rail.setAttribute('data-current-action-id', activeId);
+    else rail.removeAttribute('data-current-action-id');
+  }
 }
 
 function renderComposerCategoryWizard(payload, gateState) {
@@ -16329,7 +16389,9 @@ function updateComposerSummary() {
   renderComposerFixGuidance(gateState, issues);
   renderComposerNextStep(gateState);
   applyComposerActionGateState(gateState);
+  renderComposerCurrentActionRail(gateState);
   renderComposerCategoryWizard(payload, gateState);
+  syncComposerOptionalSections();
 }
 
 function setComposerStatus(tone, label) {
@@ -16358,6 +16420,10 @@ function updateSafetyBadge(result) {
   state.composerActionGateState = gateState;
   renderComposerStateBar(gateState);
   renderComposerFixGuidance(gateState, issues);
+  renderComposerNextStep(gateState);
+  applyComposerActionGateState(gateState);
+  renderComposerCurrentActionRail(gateState);
+  syncComposerOptionalSections();
 }
 
 function buildDraftPayload() {
@@ -16718,6 +16784,10 @@ function loadComposerFormFromRow(row, duplicateMode) {
   }
   captureComposerDraftSnapshot(selectedComposerType());
   updateComposerSummary();
+  renderComposerSavedSelectionNote();
+  if (window.matchMedia('(max-width: 1100px)').matches) {
+    document.getElementById('composer-inputs')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
   void loadComposerLinkPreview();
 }
 
@@ -16751,6 +16821,7 @@ function renderComposerSavedRows() {
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
+    renderComposerSavedSelectionNote();
     updateComposerSavedBulkControls();
     return;
   }
@@ -16820,7 +16891,25 @@ function renderComposerSavedRows() {
     });
     tbody.appendChild(tr);
   });
+  renderComposerSavedSelectionNote();
   updateComposerSavedBulkControls();
+}
+
+function renderComposerSavedSelectionNote() {
+  const noteEl = document.getElementById('composer-saved-selection-note');
+  if (!noteEl) return;
+  const selectedId = typeof state.composerSelectedNotificationId === 'string' ? state.composerSelectedNotificationId.trim() : '';
+  if (!selectedId) {
+    noteEl.textContent = t('ui.desc.composer.saved.selectionIdle', '新規作成中です。既存通知を読み込む場合は一覧から選びます。');
+    return;
+  }
+  const items = Array.isArray(state.composerSavedItems) ? state.composerSavedItems : [];
+  const selectedItem = items.find((item) => item && typeof item.id === 'string' && item.id === selectedId);
+  if (!selectedItem) {
+    noteEl.textContent = `${t('ui.label.composer.saved.edit', '編集')}: ${selectedId}`;
+    return;
+  }
+  noteEl.textContent = `${t('ui.label.composer.saved.edit', '編集')}: ${formatComposerTitleForDisplay(selectedItem.title || selectedId)} / ${composerStatusLabel(selectedItem.status)}`;
 }
 
 function resolveComposerSavedFilteredIdSet() {
