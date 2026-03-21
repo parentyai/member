@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="/admin/assets/admin.css" />
   </head>
   <body class="app-body">
-    <div id="app-shell" class="app-shell" data-role="operator" data-ui="admin-shell">
-      <aside class="app-nav" data-ui="left-nav">
+    <div id="app-shell" class="app-shell" data-role="operator" data-ui="admin-shell" data-ui-v2-foundation="true" data-surface-tier="shell" data-pane-mode="decision-console" data-task-context="today-judgment">
+      <aside class="app-nav" data-ui="left-nav" data-surface-tier="navigation">
         <div class="nav-title" data-dict-key="ui.label.nav.title">運用ナビ</div>
 
         <div class="nav-group nav-group-dashboard" data-nav-group="dashboard" data-nav-surface="primary">
@@ -129,8 +129,8 @@
         </div>
       </aside>
 
-      <main class="app-content" data-ui="content-root">
-        <header class="app-topbar" data-ui="topbar">
+      <main class="app-content" data-ui="content-root" data-surface-tier="content">
+        <header class="app-topbar" data-ui="topbar" data-surface-tier="chrome">
           <div class="top-metric top-metric-wide">
             <div class="top-label" data-dict-key="ui.label.top.summary">現在の状況</div>
             <div id="topbar-summary-line" class="top-summary-line">
@@ -179,20 +179,21 @@
           </div>
         </header>
 
-        <section class="page-header" data-ui="page-header">
+        <section class="page-header" data-ui="page-header" data-surface-tier="context" data-pane-mode="decision-console" data-task-context="today-judgment">
           <div>
             <h1 id="page-title" data-dict-key="ui.label.app.title">通知運用ダッシュボード（Linear UI）</h1>
             <p id="page-subtitle" class="page-subtitle" data-dict-key="ui.desc.page.home">通知配信の判断指標を期間別に確認します。</p>
+            <div id="page-task-context" class="page-task-context" data-task-context="today-judgment">今日の判断を進める</div>
           </div>
           <div class="page-header-actions">
             <div id="page-last-updated" class="page-last-updated">最終更新: -</div>
-            <button id="page-action-primary" type="button" class="secondary-btn hidden" data-control="page-primary-cta"></button>
-            <button id="page-action-secondary" type="button" class="secondary-btn hidden" data-control="page-secondary-cta"></button>
+            <button id="page-action-primary" type="button" class="secondary-btn hidden" data-control="page-primary-cta" data-primary-action="page-primary"></button>
+            <button id="page-action-secondary" type="button" class="secondary-btn hidden" data-control="page-secondary-cta" data-primary-action="page-secondary"></button>
             <button id="header-consult-link" type="button" class="secondary-btn hidden" data-dict-key="ui.label.header.consult">相談窓口</button>
             <div id="header-readonly-note" class="note topbar-readonly-note">Topbarは参照ショートカット専用です（実行操作はWorkbench内のみ）。</div>
           </div>
         </section>
-        <div id="managed-action-evidence" class="managed-action-evidence is-hidden" data-ui="audit-evidence-block" aria-live="polite">
+        <div id="managed-action-evidence" class="managed-action-evidence is-hidden" data-ui="audit-evidence-block" data-surface-tier="secondary" aria-live="polite">
           <span class="managed-action-evidence-label">Evidence</span>
           <span id="managed-action-evidence-text">-</span>
           <button id="managed-action-open-audit" type="button" class="secondary-btn" data-control="open-audit-from-evidence">Open Audit</button>
@@ -233,8 +234,8 @@
           <div class="admin-guard-line"><strong>対象:</strong> <span id="ui-fixture-success-target">-</span></div>
         </div>
 
-        <section id="pane-home" class="app-pane is-active" data-pane="home">
-          <div class="decision-card" id="home-decision-card">
+        <section id="pane-home" class="app-pane is-active" data-pane="home" data-pane-mode="decision-console" data-task-context="today-judgment" data-surface-tier="workspace">
+          <div class="decision-card" id="home-decision-card" data-surface-tier="hero">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.nav.dashboard">ダッシュボード</div>
               <span id="home-decision-state" class="decision-state state-ready">READY</span>
@@ -246,15 +247,15 @@
               <span id="home-decision-updated">-</span>
             </div>
             <div class="decision-actions">
-              <button id="home-action-alerts" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="alerts">要対応を確認</button>
+              <button id="home-action-alerts" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="alerts" data-primary-action="pane-primary">要対応を確認</button>
             </div>
           </div>
-          <div id="home-reflection-state" class="panel data-reflection-panel" data-reflection-pane="home" data-ui="data-reflection-state" data-ui-state="unset" role="status" aria-live="polite">
+          <div id="home-reflection-state" class="panel data-reflection-panel" data-reflection-pane="home" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
             <div class="panel-title">データ反映状態</div>
             <div class="panel-body">
               <div class="note"><strong>状態:</strong> <span id="home-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
-              <div class="note"><strong>理由:</strong> <span id="home-reflection-reason">最初の取得を待機しています。</span></div>
-              <div class="note"><strong>確認:</strong> <span id="home-reflection-next">最初の取得完了を待ってから、必要に応じて再読込してください。</span></div>
+              <div class="note"><strong>理由:</strong> <span id="home-reflection-reason" data-empty-reason="home-reflection">最初の取得を待機しています。</span></div>
+              <div class="note"><strong>確認:</strong> <span id="home-reflection-next" data-next-action="home-reflection">最初の取得完了を待ってから、必要に応じて再読込してください。</span></div>
               <div class="note"><strong>最終成功:</strong> <span id="home-reflection-success-at">-</span></div>
               <div class="row row-top">
                 <button id="home-reflection-reload" type="button" class="secondary-btn">再読込</button>
@@ -263,7 +264,7 @@
               </div>
             </div>
           </div>
-          <div class="panel dashboard-summary-panel">
+          <div class="panel dashboard-summary-panel" data-surface-tier="secondary">
             <div class="panel-title" data-dict-key="ui.label.home.prioritySummary">要対応サマリ</div>
             <div class="panel-body dashboard-summary-body">
               <div class="dashboard-summary-grid">
@@ -278,7 +279,7 @@
               </div>
             </div>
           </div>
-          <div class="panel dashboard-panel">
+          <div class="panel dashboard-panel" data-surface-tier="primary">
             <div class="panel-title" data-dict-key="ui.label.home.primaryMetrics">判断指標</div>
             <div class="panel-body">
               <p class="dashboard-panel-lead" data-dict-key="ui.desc.home.primaryMetrics">利用状況、配信成果、運用リスクの順に確認します。</p>
@@ -561,7 +562,7 @@
           </div>
         </section>
 
-        <section id="pane-ops-feature-catalog" class="app-pane" data-pane="ops-feature-catalog">
+        <section id="pane-ops-feature-catalog" class="app-pane" data-pane="ops-feature-catalog" data-pane-mode="system-diagnostics" data-task-context="feature-catalog-health" data-surface-tier="workspace">
           <div class="panel">
             <div class="panel-title">Feature Catalog Status</div>
             <div class="panel-body">
@@ -588,7 +589,7 @@
           </div>
         </section>
 
-        <section id="pane-ops-system-health" class="app-pane" data-pane="ops-system-health">
+        <section id="pane-ops-system-health" class="app-pane" data-pane="ops-system-health" data-pane-mode="system-diagnostics" data-task-context="system-health" data-surface-tier="workspace">
           <div class="panel">
             <div class="panel-title">Ops System Health</div>
             <div class="panel-body">
@@ -614,7 +615,7 @@
           </div>
         </section>
 
-        <section id="pane-alerts" class="app-pane" data-pane="alerts">
+        <section id="pane-alerts" class="app-pane" data-pane="alerts" data-pane-mode="evidence-review" data-task-context="alert-triage" data-surface-tier="workspace">
           <div class="panel">
             <div class="panel-title" data-dict-key="ui.label.alerts.title">要対応一覧</div>
             <div class="panel-body">
@@ -643,8 +644,8 @@
           </div>
         </section>
 
-        <section id="pane-composer" class="app-pane" data-pane="composer">
-          <div class="decision-card" id="composer-decision-card">
+        <section id="pane-composer" class="app-pane" data-pane="composer" data-pane-mode="notification-workbench" data-task-context="notification-execution" data-surface-tier="workspace">
+          <div class="decision-card" id="composer-decision-card" data-surface-tier="hero">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.composer.summary">通知サマリー</div>
               <span id="composer-decision-state" class="decision-state state-ready">READY</span>
@@ -656,12 +657,12 @@
               <span id="composer-decision-updated">-</span>
             </div>
             <div class="decision-actions">
-              <button id="composer-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
+              <button id="composer-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit" data-primary-action="pane-primary">作成・編集</button>
               <button id="composer-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
               <button id="composer-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <details id="composer-pane-details" class="decision-details section" data-workbench-zone="true" open>
+          <details id="composer-pane-details" class="decision-details section" data-workbench-zone="true" data-surface-tier="primary" open>
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="composer-workspace">
               <div class="panel composer-header">
@@ -721,12 +722,12 @@
 
               <div class="composer-main-layout">
                 <div class="composer-left-stack">
-                  <div id="composer-card-preview" class="composer-preview-top panel composer-preview-panel">
+                  <div id="composer-card-preview" class="composer-preview-top panel composer-preview-panel" data-surface-tier="secondary">
                     <div class="panel-title" data-dict-key="ui.label.composer.livePreview">ライブプレビュー</div>
                     <div class="panel-body">
                       <div class="composer-preview-header-row">
                         <div class="note">プレビュー / 検証 / 修正ガイド</div>
-                        <button id="composer-preview-trigger" type="button" class="button-subtle composer-preview-trigger" data-composer-preview-trigger="true" data-dict-key="ui.label.composer.preview">プレビュー</button>
+                        <button id="composer-preview-trigger" type="button" class="button-subtle composer-preview-trigger" data-composer-preview-trigger="true" data-dict-key="ui.label.composer.preview" data-primary-action="preview-secondary">プレビュー</button>
                       </div>
                       <div class="composer-preview-fixed-wrap">
                         <div class="line-preview-phone">
@@ -754,7 +755,7 @@
                     </div>
                   </div>
 
-                  <div id="composer-inputs" class="panel composer-form-panel composer-form-panel-compact">
+                  <div id="composer-inputs" class="panel composer-form-panel composer-form-panel-compact" data-surface-tier="primary">
                     <div class="panel-title" data-dict-key="ui.label.composer.inputs">通知作成</div>
                     <div class="panel-body">
                       <div class="input-grid">
@@ -935,7 +936,7 @@
                   </div>
                 </div>
 
-                <div id="composer-saved-panel" class="panel composer-saved-panel">
+                <div id="composer-saved-panel" class="panel composer-saved-panel" data-surface-tier="secondary">
                   <div class="panel-title" data-dict-key="ui.label.composer.saved">通知一覧</div>
                   <div class="panel-body">
                     <div class="input-grid">
@@ -1069,8 +1070,8 @@
           </details>
         </section>
 
-        <section id="pane-monitor" class="app-pane" data-pane="monitor">
-          <div class="decision-card" id="monitor-decision-card">
+        <section id="pane-monitor" class="app-pane" data-pane="monitor" data-pane-mode="data-workspace" data-task-context="delivery-monitoring" data-surface-tier="workspace">
+          <div class="decision-card" id="monitor-decision-card" data-surface-tier="hero">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.nav.monitor">配信結果</div>
               <span id="monitor-decision-state" class="decision-state state-ready">READY</span>
@@ -1082,17 +1083,17 @@
               <span id="monitor-decision-updated">-</span>
             </div>
             <div class="decision-actions">
-              <button id="monitor-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
+              <button id="monitor-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit" data-primary-action="pane-primary">作成・編集</button>
               <button id="monitor-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
               <button id="monitor-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <div id="monitor-reflection-state" class="panel data-reflection-panel" data-reflection-pane="monitor" data-ui="data-reflection-state" data-ui-state="unset" role="status" aria-live="polite">
+          <div id="monitor-reflection-state" class="panel data-reflection-panel" data-reflection-pane="monitor" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
             <div class="panel-title">データ反映状態</div>
             <div class="panel-body">
               <div class="note"><strong>状態:</strong> <span id="monitor-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
-              <div class="note"><strong>理由:</strong> <span id="monitor-reflection-reason">最初の取得を待機しています。</span></div>
-              <div class="note"><strong>確認:</strong> <span id="monitor-reflection-next">履歴一覧か分析カードのどちらを確認するか決めてから再読込してください。</span></div>
+              <div class="note"><strong>理由:</strong> <span id="monitor-reflection-reason" data-empty-reason="monitor-reflection">最初の取得を待機しています。</span></div>
+              <div class="note"><strong>確認:</strong> <span id="monitor-reflection-next" data-next-action="monitor-reflection">履歴一覧か分析カードのどちらを確認するか決めてから再読込してください。</span></div>
               <div class="note"><strong>最終成功:</strong> <span id="monitor-reflection-success-at">-</span></div>
               <div class="row row-top">
                 <button id="monitor-reflection-reload" type="button" class="secondary-btn">再読込</button>
@@ -1104,7 +1105,7 @@
           <div id="monitor-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="monitor" role="status" aria-live="polite">
             監視情報は全ロールで参照できます。設定ビューは管理ロールのみ表示されます。
           </div>
-          <details id="monitor-pane-details" class="decision-details section">
+          <details id="monitor-pane-details" class="decision-details section" data-surface-tier="primary">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="monitor-view-switch" data-ui="monitor-view-switch">
               <div class="monitor-view-actions">
@@ -2210,7 +2211,7 @@
 	                </div>
 	              </details>
             </div>
-            <div class="pane-detail" data-monitor-surface="monitoring">
+            <div class="pane-detail" data-monitor-surface="monitoring" data-detail-rail="detail">
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.monitor.detail">詳細</div>
                 <div class="panel-body">
@@ -2269,7 +2270,7 @@
           </details>
         </section>
 
-        <section id="pane-emergency-layer" class="app-pane" data-pane="emergency-layer">
+        <section id="pane-emergency-layer" class="app-pane" data-pane="emergency-layer" data-pane-mode="notification-workbench" data-task-context="emergency-operations" data-surface-tier="workspace">
           <div class="decision-card" id="emergency-layer-decision-card">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.page.emergencyLayer">Emergency Layer</div>
@@ -2439,8 +2440,8 @@
           </details>
         </section>
 
-        <section id="pane-city-pack" class="app-pane" data-pane="city-pack">
-          <div class="decision-card" id="city-pack-decision-card">
+        <section id="pane-city-pack" class="app-pane" data-pane="city-pack" data-pane-mode="data-workspace" data-task-context="city-pack-operations" data-surface-tier="workspace">
+          <div class="decision-card" id="city-pack-decision-card" data-surface-tier="hero">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.nav.cityPack">City Pack監査</div>
               <span id="city-pack-decision-state" class="decision-state state-ready">READY</span>
@@ -2452,17 +2453,17 @@
               <span id="city-pack-decision-updated">-</span>
             </div>
             <div class="decision-actions">
-              <button id="city-pack-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
+              <button id="city-pack-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit" data-primary-action="pane-primary">作成・編集</button>
               <button id="city-pack-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
               <button id="city-pack-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <div id="city-pack-reflection-state" class="panel data-reflection-panel" data-reflection-pane="city-pack" data-ui="data-reflection-state" data-ui-state="unset" role="status" aria-live="polite">
+          <div id="city-pack-reflection-state" class="panel data-reflection-panel" data-reflection-pane="city-pack" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
             <div class="panel-title">データ反映状態</div>
             <div class="panel-body">
               <div class="note"><strong>状態:</strong> <span id="city-pack-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
-              <div class="note"><strong>理由:</strong> <span id="city-pack-reflection-reason">最初の取得を待機しています。</span></div>
-              <div class="note"><strong>確認:</strong> <span id="city-pack-reflection-next">受信箱か保存済みCity Packのどちらを確認するか決めてから再読込してください。</span></div>
+              <div class="note"><strong>理由:</strong> <span id="city-pack-reflection-reason" data-empty-reason="city-pack-reflection">最初の取得を待機しています。</span></div>
+              <div class="note"><strong>確認:</strong> <span id="city-pack-reflection-next" data-next-action="city-pack-reflection">受信箱か保存済みCity Packのどちらを確認するか決めてから再読込してください。</span></div>
               <div class="note"><strong>最終成功:</strong> <span id="city-pack-reflection-success-at">-</span></div>
               <div class="row row-top">
                 <button id="city-pack-reflection-reload" type="button" class="secondary-btn">再読込</button>
@@ -2471,7 +2472,7 @@
               </div>
             </div>
           </div>
-          <details id="city-pack-pane-details" class="decision-details section" data-workbench-zone="true">
+          <details id="city-pack-pane-details" class="decision-details section" data-workbench-zone="true" data-surface-tier="primary">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="panel city-pack-manage-panel">
               <div class="panel-title" data-dict-key="ui.label.cityPack.contentManager">City Pack作成・編集</div>
@@ -2687,7 +2688,7 @@
                 </div>
               </div>
             </div>
-            <div id="city-pack-v2-detail-panel" class="panel city-pack-v2-detail-panel city-pack-v2-only is-hidden-by-flag" data-city-pack-workspace-surface="detail">
+            <div id="city-pack-v2-detail-panel" class="panel city-pack-v2-detail-panel city-pack-v2-only is-hidden-by-flag" data-city-pack-workspace-surface="detail" data-detail-rail="relation">
               <div class="panel-title">Selection Detail</div>
               <div class="panel-body city-pack-v2-detail-body">
                 <div class="city-pack-v2-detail-header">
@@ -3404,7 +3405,7 @@
           </details>
         </section>
 
-        <section id="pane-errors" class="app-pane" data-pane="errors">
+        <section id="pane-errors" class="app-pane" data-pane="errors" data-pane-mode="evidence-review" data-task-context="error-recovery" data-surface-tier="workspace">
           <div class="decision-card" id="errors-decision-card">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.nav.errors">異常対応</div>
@@ -3508,7 +3509,7 @@
           </details>
         </section>
 
-        <section id="pane-read-model" class="app-pane" data-pane="read-model">
+        <section id="pane-read-model" class="app-pane" data-pane="read-model" data-pane-mode="data-workspace" data-task-context="read-model-analysis" data-surface-tier="workspace">
           <div class="decision-card" id="read-model-decision-card">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.nav.readModel">通知集計</div>
@@ -3526,12 +3527,12 @@
               <button id="read-model-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <div id="read-model-reflection-state" class="panel data-reflection-panel" data-reflection-pane="read-model" data-ui="data-reflection-state" data-ui-state="unset" role="status" aria-live="polite">
+          <div id="read-model-reflection-state" class="panel data-reflection-panel" data-reflection-pane="read-model" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
             <div class="panel-title">データ反映状態</div>
             <div class="panel-body">
               <div class="note"><strong>状態:</strong> <span id="read-model-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
-              <div class="note"><strong>理由:</strong> <span id="read-model-reflection-reason">最初の取得を待機しています。</span></div>
-              <div class="note"><strong>確認:</strong> <span id="read-model-reflection-next">一覧の絞り込み条件を確認してから再読込してください。</span></div>
+              <div class="note"><strong>理由:</strong> <span id="read-model-reflection-reason" data-empty-reason="read-model-reflection">最初の取得を待機しています。</span></div>
+              <div class="note"><strong>確認:</strong> <span id="read-model-reflection-next" data-next-action="read-model-reflection">一覧の絞り込み条件を確認してから再読込してください。</span></div>
               <div class="note"><strong>最終成功:</strong> <span id="read-model-reflection-success-at">-</span></div>
               <div class="row row-top">
                 <button id="read-model-reflection-reload" type="button" class="secondary-btn">再読込</button>
@@ -3785,8 +3786,8 @@
           </details>
         </section>
 
-        <section id="pane-vendors" class="app-pane" data-pane="vendors">
-          <div class="decision-card" id="vendors-decision-card">
+        <section id="pane-vendors" class="app-pane" data-pane="vendors" data-pane-mode="data-workspace" data-task-context="vendor-relations" data-surface-tier="workspace">
+          <div class="decision-card" id="vendors-decision-card" data-surface-tier="hero">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.nav.vendors">Vendor Hub</div>
               <span id="vendors-decision-state" class="decision-state state-ready">READY</span>
@@ -3798,17 +3799,17 @@
               <span id="vendors-decision-updated">-</span>
             </div>
             <div class="decision-actions">
-              <button id="vendors-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
+              <button id="vendors-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit" data-primary-action="pane-primary">作成・編集</button>
               <button id="vendors-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
               <button id="vendors-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <div id="vendors-reflection-state" class="panel data-reflection-panel" data-reflection-pane="vendors" data-ui="data-reflection-state" data-ui-state="unset" role="status" aria-live="polite">
+          <div id="vendors-reflection-state" class="panel data-reflection-panel" data-reflection-pane="vendors" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
             <div class="panel-title">データ反映状態</div>
             <div class="panel-body">
               <div class="note"><strong>状態:</strong> <span id="vendors-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
-              <div class="note"><strong>理由:</strong> <span id="vendors-reflection-reason">最初の取得を待機しています。</span></div>
-              <div class="note"><strong>確認:</strong> <span id="vendors-reflection-next">関係一覧かドリルダウン対象を決めてから再読込してください。</span></div>
+              <div class="note"><strong>理由:</strong> <span id="vendors-reflection-reason" data-empty-reason="vendors-reflection">最初の取得を待機しています。</span></div>
+              <div class="note"><strong>確認:</strong> <span id="vendors-reflection-next" data-next-action="vendors-reflection">関係一覧かドリルダウン対象を決めてから再読込してください。</span></div>
               <div class="note"><strong>最終成功:</strong> <span id="vendors-reflection-success-at">-</span></div>
               <div class="row row-top">
                 <button id="vendors-reflection-reload" type="button" class="secondary-btn">再読込</button>
@@ -3817,7 +3818,7 @@
               </div>
             </div>
           </div>
-          <details id="vendors-pane-details" class="decision-details section" data-workbench-zone="true">
+          <details id="vendors-pane-details" class="decision-details section" data-workbench-zone="true" data-surface-tier="primary">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="panel unified-admin-panel vendors-unified-panel">
               <div class="panel-title">Vendor一覧</div>
@@ -3889,7 +3890,7 @@
                     <tbody id="vendor-unified-rows"></tbody>
                   </table>
                 </div>
-                <div id="vendor-unified-relation-panel" class="panel section vendor-unified-relation-panel" data-ui="vendor-relation-view">
+                <div id="vendor-unified-relation-panel" class="panel section vendor-unified-relation-panel" data-ui="vendor-relation-view" data-detail-rail="relation">
                   <div class="panel-title">Vendor関係ビュー</div>
                   <div id="vendor-unified-relation-summary" class="note">Vendor行を選択すると、City Packとの関係を表示します。</div>
                   <div id="vendor-unified-relation-links" class="city-pack-v2-relation-links"></div>
@@ -4008,7 +4009,7 @@
           </details>
         </section>
 
-        <section id="pane-audit" class="app-pane" data-pane="audit">
+        <section id="pane-audit" class="app-pane" data-pane="audit" data-pane-mode="evidence-review" data-task-context="trace-review" data-surface-tier="workspace">
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel" data-ui="evidence-scope-panel">
@@ -4107,7 +4108,7 @@
           </div>
         </section>
 
-        <section id="pane-quality-patrol" class="app-pane" data-pane="quality-patrol">
+        <section id="pane-quality-patrol" class="app-pane" data-pane="quality-patrol" data-pane-mode="evidence-review" data-task-context="quality-review" data-surface-tier="workspace">
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -4426,7 +4427,7 @@
           </div>
         </section>
 
-        <section id="pane-llm" class="app-pane" data-pane="llm" data-role="admin" data-role-allow="admin,developer">
+        <section id="pane-llm" class="app-pane" data-pane="llm" data-role="admin" data-role-allow="admin,developer" data-pane-mode="llm-workspace" data-task-context="llm-operations" data-surface-tier="workspace">
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -4809,7 +4810,7 @@
           </div>
         </section>
 
-        <section id="pane-settings" class="app-pane" data-pane="settings">
+        <section id="pane-settings" class="app-pane" data-pane="settings" data-pane-mode="system-configuration" data-task-context="operations-settings" data-surface-tier="workspace">
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -4877,7 +4878,7 @@
           </div>
         </section>
 
-        <section id="pane-maintenance" class="app-pane" data-pane="maintenance" data-role="admin" data-role-allow="admin,developer">
+        <section id="pane-maintenance" class="app-pane" data-pane="maintenance" data-role="admin" data-role-allow="admin,developer" data-pane-mode="system-recovery" data-task-context="system-recovery" data-surface-tier="workspace">
           <div class="pane-grid">
             <div class="pane-main">
               <div id="maintenance-overview-panel" class="panel">

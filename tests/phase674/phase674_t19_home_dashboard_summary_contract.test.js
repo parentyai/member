@@ -25,7 +25,8 @@ test('phase674: local preflight banner supports summary-first detail toggle cont
 test('phase674: page header keeps dashboard entry as read-only deep links', () => {
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
   const css = fs.readFileSync('apps/admin/assets/admin.css', 'utf8');
-  const homeMapStart = js.indexOf('home: Object.freeze({');
+  const actionMapStart = js.indexOf('const PAGE_HEADER_ACTION_MAP = Object.freeze({');
+  const homeMapStart = js.indexOf('home: Object.freeze({', actionMapStart);
   const homeMapEnd = js.indexOf("'city-pack': Object.freeze({", homeMapStart);
   const homeMap = homeMapStart >= 0 && homeMapEnd > homeMapStart
     ? js.slice(homeMapStart, homeMapEnd)

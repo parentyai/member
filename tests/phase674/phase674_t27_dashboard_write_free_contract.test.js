@@ -48,7 +48,7 @@ test('phase674: dashboard keeps write actions out and exposes decision deep link
   assert.ok(!homePane.includes('data-legacy-dashboard-details="true"'));
   assert.ok(!homePane.includes('id="dashboard-journey-kpi-result"'));
 
-  const homeActionMap = extractBlock(js, 'home: Object.freeze({', "'city-pack': Object.freeze({");
+  const homeActionMap = extractBlock(js, 'const PAGE_HEADER_ACTION_MAP = Object.freeze({', 'const NAV_POLICY = Object.freeze({');
   assert.ok(homeActionMap.includes("paneTarget: 'alerts'"));
   assert.ok(homeActionMap.includes("paneTarget: 'monitor'"));
   assert.ok(!homeActionMap.includes("paneTarget: 'composer'"));
