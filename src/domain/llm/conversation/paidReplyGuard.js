@@ -20,6 +20,8 @@ function sanitizeLine(value) {
     .replace(/。{2,}/g, '。')
     .replace(/？{2,}/g, '？')
     .replace(/！{2,}/g, '！')
+    .replace(/。([？！])/g, '$1')
+    .replace(/([？！])。/g, '$1')
     .replace(/\s+/g, ' ')
     .trim();
 }

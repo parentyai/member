@@ -492,6 +492,21 @@ test('phase734: source-aware transforms keep priority and deadline facts instead
   assert.match(familyLine.replyText, /優先順位|期限/);
   assert.equal(familyLine.replyText.includes('教えてもらえると助かります'), false);
 
+  const humanTone = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: '今の返しを、事務的すぎない2文にして。',
+    requestContract: {
+      requestShape: 'rewrite',
+      depthIntent: 'transform',
+      outputForm: 'two_sentences',
+      primaryDomainIntent: 'general',
+      sourceReplyText: '今は優先順位と期限を先に整理すると、進めやすそうです。\nこの2つが決まると、進め方がかなり安定します。'
+    }
+  });
+  assert.match(humanTone.replyText, /優先順位|期限/);
+  assert.match(humanTone.replyText, /進め方|次の一手/);
+  assert.equal(humanTone.replyText.includes('この言い方なら、少しやわらかく伝えやすいです'), false);
+
   const deepen = generatePaidDomainConciergeReply({
     domainIntent: 'general',
     messageText: 'どうやって？',
@@ -510,8 +525,35 @@ test('phase734: source-aware transforms keep priority and deadline facts instead
 
   const citySchool = generatePaidDomainConciergeReply({
     domainIntent: 'school',
-    messageText: 'ニューヨークで学校手続き'
+    messageText: 'ニューヨークで学校手続き',
+    requestContract: {
+      requestShape: 'answer',
+      depthIntent: 'answer',
+      outputForm: 'default',
+      knowledgeScope: 'city',
+      primaryDomainIntent: 'school',
+      locationHint: {
+        kind: 'city',
+        cityKey: 'new-york',
+        regionKey: 'NY::new-york',
+        state: 'NY'
+      }
+    }
   });
-  assert.match(citySchool.replyText, /学校|学区|対象校/);
+  assert.match(citySchool.replyText, /窓口|必要書類|受付期限/);
   assert.equal(citySchool.replyText.includes('住むエリアと学区の関係'), false);
+
+  const nonDogmaticNext = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: 'ここまでを踏まえて、次の一手だけをやわらかく提案して。',
+    requestContract: {
+      requestShape: 'followup_continue',
+      depthIntent: 'followup_continue',
+      outputForm: 'non_dogmatic',
+      primaryDomainIntent: 'general',
+      sourceReplyText: '確認するのは、対象地域の窓口、必要書類、受付期限の3点です。\n制度名が分かるなら、その3点だけ見れば判断しやすくなります。'
+    }
+  });
+  assert.match(nonDogmaticNext.replyText, /まずは|必要書類|受付期限/);
+  assert.equal(nonDogmaticNext.replyText.includes('地域差がありそうなら'), false);
 });

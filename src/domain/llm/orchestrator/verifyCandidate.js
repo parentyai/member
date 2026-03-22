@@ -6,7 +6,9 @@ const {
   buildConversationalRewriteFromSource,
   buildLessBureaucraticRewriteFromSource,
   buildEchoContinuationFromSource,
-  buildDeepenReplyFromSource
+  buildDeepenReplyFromSource,
+  buildCityScopedAnswerLines,
+  buildNextStepProposalFromSource
 } = require('../../../usecases/assistant/generatePaidDomainConciergeReply');
 const { extractLocationHintFromText } = require('../../regionNormalization');
 
@@ -135,6 +137,9 @@ function buildConstrainedFallbackReply(packet) {
     return buildMessageTemplateFallback(sourceReplyText, primaryDomainIntent);
   }
   if (requestShape === 'rewrite' && outputForm === 'non_dogmatic') {
+    if (/(次の一手だけ|次の一手を|次に何を)/i.test(messageText) && sourceReplyText) {
+      return ensureSentence(buildNextStepProposalFromSource(sourceReplyText, primaryDomainIntent));
+    }
     return ensureSentence(buildNonDogmaticRewriteFromSource(sourceReplyText, primaryDomainIntent));
   }
   if (requestShape === 'rewrite' && outputForm === 'two_sentences') {
@@ -328,6 +333,15 @@ function buildClarifyReply(packet) {
   const payload = packet && typeof packet === 'object' ? packet : {};
   const domainIntent = normalizeText(payload.normalizedConversationIntent).toLowerCase() || 'general';
   const followupIntent = normalizeText(payload.followupIntent).toLowerCase();
+  const cityScopedLines = buildCityScopedAnswerLines({
+    locationHint: payload.locationHint && typeof payload.locationHint === 'object'
+      ? payload.locationHint
+      : {},
+    knowledgeScope: payload.knowledgeScope || 'general'
+  }, domainIntent);
+  if (Array.isArray(cityScopedLines) && cityScopedLines.length > 0) {
+    return cityScopedLines[0];
+  }
   const byIntent = CLARIFY_FOLLOWUP_BY_DOMAIN[domainIntent];
   if (byIntent && byIntent[followupIntent]) {
     return byIntent[followupIntent];

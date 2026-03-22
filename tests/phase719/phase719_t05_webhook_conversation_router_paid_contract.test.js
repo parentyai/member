@@ -666,7 +666,11 @@ test('phase719: paid conversation sequence avoids generic reset for planning, pr
     });
 
     assert.equal(result.status, 200, `turn_${index + 1}`);
-    assert.equal(turnReplies.length, 1, `turn_${index + 1}`);
+    assert.equal(
+      turnReplies.length,
+      1,
+      `turn_${index + 1}:${text}:${JSON.stringify({ result, turnReplies })}`
+    );
     replies.push(String(turnReplies[0].text || ''));
   }
 
@@ -781,8 +785,7 @@ test('phase719: region already-set command does not hijack natural language prom
     ENABLE_PAID_ORCHESTRATOR_V2: 'true'
   });
   const loaded = loadWebhookWithStubs({
-    useActionLogHistory: true,
-    regionResponse: { status: 'already_set', regionKey: 'wa::seattle' }
+    useActionLogHistory: true
   });
 
   t.after(() => {
@@ -845,8 +848,7 @@ test('phase719: live transcript regression sequence keeps reverse correction, me
     ENABLE_PAID_ORCHESTRATOR_V2: 'true'
   });
   const loaded = loadWebhookWithStubs({
-    useActionLogHistory: true,
-    regionResponse: { status: 'already_set', regionKey: 'wa::seattle' }
+    useActionLogHistory: true
   });
 
   t.after(() => {
@@ -1162,23 +1164,33 @@ test('phase719: latest live transcript suite keeps source-aware transforms, deep
 
   assert.match(replies[4], /優先順位|期限/);
   assert.equal(replies[4].includes('優先する1件だけ決める'), false);
+  assert.equal(replies[4].includes('補足: 情報は更新されるため、最終確認をお願いします。'), false);
   assert.equal(String(replies[5] || '').split('\n').length, 1);
   assert.equal(replies[5].includes('教えてもらえると助かります'), false);
+  assert.equal(replies[5].includes('補足: 情報は更新されるため、最終確認をお願いします。'), false);
   assert.match(replies[6], /(もし|かもしれません|進めやすそう)/);
   assert.equal(replies[6].includes('優先するものを1つだけ決める'), false);
+  assert.equal(replies[6].includes('補足: 情報は更新されるため、最終確認をお願いします。'), false);
   assert.equal(String(replies[7] || '').split('\n').length, 2);
   assert.equal(replies[7].includes('一緒に整理できます'), false);
+  assert.equal(replies[7].includes('この言い方なら、少しやわらかく伝えやすいです'), false);
+  assert.equal(replies[7].includes('補足: 情報は更新されるため、最終確認をお願いします。'), false);
   assert.match(replies[8], /具体的には|確認する順番/);
   assert.equal(replies[8].includes('いま一番困っている手続きを1つだけ教えてください'), false);
-  assert.match(replies[11], /学校/);
+  assert.match(replies[11], /窓口|必要書類|受付期限|市区/);
+  assert.equal(replies[11].includes('対象校を1校に絞って'), false);
   assert.equal(replies[11].includes('？'), false);
   assert.match(replies[12], /対象地域|窓口|必要書類|受付期限/);
   assert.equal(replies[12].includes('対象校を1校に絞って'), false);
+  assert.equal(replies[12].includes('？'), false);
+  assert.match(replies[13], /まずは|必要書類|受付期限|進めやすそう/);
+  assert.equal(replies[13].includes('地域差がありそうなら'), false);
   assert.equal(replies[13].includes('優先するものを1つだけ決める'), false);
 
   replies.forEach((reply, index) => {
     assert.equal(reply.includes('いまの状況を整理します。'), false, `turn_${index + 1}_generic_reset`);
     assert.equal(reply.includes('いま一番困っている手続きを1つだけ教えてください'), false, `turn_${index + 1}_generic_followup`);
+    assert.equal(reply.includes('補足: 情報は更新されるため、最終確認をお願いします。'), false, `turn_${index + 1}_hedge_suffix`);
     assertNoInternalConciergeLabels(reply);
   });
 });
