@@ -83,3 +83,18 @@ test('phase720: paid reply guard suppresses repeated followup question when repe
   assert.equal(result.text.includes('対象を絞って案内したいので'), true);
   assert.equal(result.followupQuestionIncluded, true);
 });
+
+test('phase720: paid reply guard normalizes mixed punctuation drift', () => {
+  const result = sanitizePaidMainReply([
+    '学校手続きですね。',
+    '次は学区と対象校の条件を確認する。',
+    '学年と希望エリアが分かれば、次の一手を具体化できます。？'
+  ].join('\n'), {
+    conciseMode: false,
+    defaultQuestion: ''
+  });
+
+  assert.equal(result.text.includes('。？'), false);
+  assert.equal(result.text.includes('？。'), false);
+  assert.match(result.text, /次の一手を具体化できます？/);
+});

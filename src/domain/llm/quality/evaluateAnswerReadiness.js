@@ -276,11 +276,12 @@ function evaluateAnswerReadiness(params) {
   ) {
     applyDecision('hedged', 'city_specificity_not_satisfied', 'low_risk_city_specificity_guard');
   }
-  if (optionalCityPackHedge && decision === 'allow') {
+  if (cityScopedRequest && optionalCityPackHedge && decision === 'allow') {
     applyDecision('hedged', 'city_pack_optional_source_stale', 'city_pack_optional_source_guard');
   }
   if (
     decision === 'allow'
+    && cityScopedRequest
     && hasCityPackSignals
     && (
       cityPackAuthorityScore > 0 && cityPackAuthorityScore < thresholds.minAuthorityHedge

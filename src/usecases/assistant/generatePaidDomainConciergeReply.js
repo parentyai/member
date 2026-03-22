@@ -115,7 +115,9 @@ function sanitizeReplyLine(value) {
     .replace(FORBIDDEN_REPLY_PATTERN, '')
     .replace(/。{2,}/g, '。')
     .replace(/？{2,}/g, '？')
-    .replace(/！{2,}/g, '！');
+    .replace(/！{2,}/g, '！')
+    .replace(/。([？！])/g, '$1')
+    .replace(/([？！])。/g, '$1');
 }
 
 function normalizeActions(value, limit) {
@@ -211,6 +213,19 @@ function softenLine(value) {
   const line = ensureSentence(value);
   if (!line) return '';
   if (/もしよければ|差し支えなければ|よさそう|無理が少ない|かもしれません|助かります|してみます/.test(line)) return line;
+  const trimmed = line.replace(/[。！？!?]+$/g, '');
+  if (/(いただけますか|もらえますか|お願いできますか|よろしいでしょうか)$/.test(trimmed)) {
+    const converted = trimmed
+      .replace(/教えていただけますか$/u, '教えていただけると助かります')
+      .replace(/教えてもらえますか$/u, '教えてもらえると助かります')
+      .replace(/確認いただけますか$/u, '確認いただけると助かります')
+      .replace(/確認していただけますか$/u, '確認していただけると助かります')
+      .replace(/お願いできますか$/u, 'お願いできると助かります');
+    if (converted !== trimmed) {
+      return ensureSentence(converted);
+    }
+    return line;
+  }
   return ensureSentence(`もしよければ、${line.replace(/[。！？!?]+$/g, '')}と無理が少ないです`);
 }
 
@@ -245,12 +260,21 @@ function applyContractOutputForm(lines, requestContract) {
   return shaped.slice(0, 3);
 }
 
-function extractFirstSourceLine(sourceReplyText) {
-  const lines = normalizeText(sourceReplyText)
+function extractSourceLines(sourceReplyText) {
+  return normalizeText(sourceReplyText)
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+function extractFirstSourceLine(sourceReplyText) {
+  const lines = extractSourceLines(sourceReplyText);
   return lines[0] || '';
+}
+
+function extractSecondSourceLine(sourceReplyText) {
+  const lines = extractSourceLines(sourceReplyText);
+  return lines[1] || '';
 }
 
 function isRegionSpecificSourceReply(sourceReplyText) {
@@ -308,7 +332,7 @@ function buildMessageTemplateFromSource(sourceReplyText, domainIntent) {
 
 function buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent) {
   const sourceLine = extractFirstSourceLine(sourceReplyText);
-  if (/優先順位の固定と期限の見える化/.test(sourceLine)) {
+  if (/優先順位.*期限/.test(sourceLine) || /優先順位の固定と期限の見える化/.test(sourceLine)) {
     return '今は優先順位と期限を先に整理すると、進めやすそうです';
   }
   if (/事前予約が必要かどうか/.test(sourceLine)) {
@@ -348,10 +372,11 @@ function buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent) {
 
 function buildConversationalRewriteFromSource(sourceReplyText) {
   const sourceLine = extractFirstSourceLine(sourceReplyText);
-  if (/優先順位の固定と期限の見える化/.test(sourceLine)) {
+  const secondSourceLine = extractSecondSourceLine(sourceReplyText);
+  if (/優先順位.*期限/.test(sourceLine) || /優先順位の固定と期限の見える化/.test(sourceLine)) {
     return [
       '今は、優先順位と期限を先に整理するところからで大丈夫です',
-      'そこが見えるだけでも、かなり進めやすくなります'
+      '順番と締切が見えるだけでも、次の一手を決めやすくなります'
     ];
   }
   if (isRegionSpecificSourceReply(sourceReplyText)) {
@@ -385,12 +410,20 @@ function buildConversationalRewriteFromSource(sourceReplyText) {
     ];
   }
   if (sourceLine) {
+    const softenedSecondLine = secondSourceLine
+      ? ensureSentence(
+        secondSourceLine
+          .replace(/だよ[。！？!?]*$/u, 'です')
+          .replace(/だね[。！？!?]*$/u, 'ですね')
+          .replace(/[。！？!?]+$/u, '')
+      )
+      : '';
     return [
       sourceLine
         .replace(/だよ[。！？!?]*$/u, 'です')
         .replace(/だね[。！？!?]*$/u, 'ですね')
         .replace(/[。！？!?]+$/u, ''),
-      'この言い方なら、少しやわらかく伝えやすいです'
+      softenedSecondLine || 'この流れが見えるだけでも、次に進む順番を決めやすくなります'
     ];
   }
   return [
@@ -477,6 +510,12 @@ function buildDeepenReplyFromSource(sourceReplyText, domainIntent, messageText) 
   const sourceLine = extractFirstSourceLine(sourceReplyText);
   const normalizedMessage = normalizeText(messageText);
   if (!source) return [];
+  if (/優先順位.*期限/.test(sourceLine) || /進め方がかなり安定/.test(source)) {
+    return [
+      '具体的には、いま抱えている手続きを一覧にして、期限があるものから先に印を付けるところまでで十分です',
+      'そのあとで、今日動く1件だけ決めると、無理なく進めやすくなります'
+    ];
+  }
   if (/対象地域の窓口|必要書類|受付期限/.test(source) || /確認するのは/.test(sourceLine)) {
     return [
       '具体的には、窓口名、必要書類、受付期限の3点だけを同じ画面で確認すると判断しやすいです',
@@ -513,6 +552,46 @@ function buildDeepenReplyFromSource(sourceReplyText, domainIntent, messageText) 
   ];
 }
 
+function buildNextStepProposalFromSource(sourceReplyText, domainIntent) {
+  const source = normalizeText(sourceReplyText);
+  const sourceLine = extractFirstSourceLine(sourceReplyText);
+  if (/対象地域の窓口|必要書類|受付期限/.test(source) || /確認するのは/.test(sourceLine)) {
+    return 'まずは対象地域の窓口ページで、必要書類と受付期限だけ見ておくと次に動きやすそうです';
+  }
+  if (/優先順位.*期限/.test(sourceLine) || /進め方がかなり安定/.test(source)) {
+    return 'まずは優先順位と期限を書き出して、今日動く1件だけ決めてみると進めやすそうです';
+  }
+  const echoContinuationLines = buildEchoContinuationFromSource(sourceReplyText);
+  if (echoContinuationLines.length > 0) {
+    return softenLine(echoContinuationLines[0]);
+  }
+  if (sourceLine) {
+    return softenLine(sourceLine);
+  }
+  return withDomainAnchor('まずは次の一手を1つだけ決めてみると進めやすそうです', domainIntent);
+}
+
+function buildCityScopedAnswerLines(requestContract, domainIntent) {
+  const contract = requestContract && typeof requestContract === 'object' ? requestContract : {};
+  const locationHint = contract.locationHint && typeof contract.locationHint === 'object'
+    ? contract.locationHint
+    : {};
+  const kind = normalizeText(locationHint.kind).toLowerCase();
+  if (domainIntent === 'school' && (kind === 'city' || kind === 'regionkey')) {
+    return [
+      '都市が分かっているなら、まず現地の教育窓口で対象校の条件、必要書類、受付期限の3点だけ確認すると進めやすいです',
+      'その3点が見えると、次に何を優先するかかなり決めやすくなります'
+    ];
+  }
+  if (domainIntent === 'school' && kind === 'state') {
+    return [
+      '州だけ分かっている段階なら、まず対象の市区ごとの教育窓口、必要書類、受付期限の3点を確認すると進めやすいです',
+      '市区が決まると、次の一手をかなり具体化できます'
+    ];
+  }
+  return [];
+}
+
 function buildContractReply(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const messageText = normalizeText(payload.messageText);
@@ -522,6 +601,11 @@ function buildContractReply(params) {
   const requestShape = normalizeText(requestContract.requestShape).toLowerCase() || 'answer';
   const depthIntent = normalizeText(requestContract.depthIntent).toLowerCase() || 'answer';
   const outputForm = normalizeText(requestContract.outputForm).toLowerCase() || 'default';
+  const knowledgeScope = normalizeText(requestContract.knowledgeScope).toLowerCase() || 'none';
+  const locationHint = requestContract.locationHint && typeof requestContract.locationHint === 'object'
+    ? requestContract.locationHint
+    : {};
+  const locationHintKind = normalizeText(locationHint.kind).toLowerCase();
   const domainIntent = resolveDomainIntent(requestContract.primaryDomainIntent || payload.domainIntent, payload.contextResumeDomain);
   const domainSignals = Array.isArray(requestContract.domainSignals) ? requestContract.domainSignals : [];
   const sourceReplyText = normalizeText(requestContract.sourceReplyText || payload.sourceReplyText);
@@ -530,18 +614,24 @@ function buildContractReply(params) {
   if (depthIntent === 'deepen' && sourceReplyText) {
     lines.push(...buildDeepenReplyFromSource(sourceReplyText, domainIntent, messageText));
   } else if (requestShape === 'followup_continue' && sourceReplyText) {
-    const echoContinuationLines = buildEchoContinuationFromSource(sourceReplyText);
-    const followupLine = payload.followupIntent
-      ? resolveFollowupDirectAnswer({
-        followupIntent: payload.followupIntent,
-        domainIntent,
-        repeatedFollowupStreak: payload.repeatedFollowupStreak || 0,
-        directAnswers: (DOMAIN_SPECS[domainIntent] || DOMAIN_SPECS.general).directAnswers || {}
-      })
-      : '';
-    lines.push(...(echoContinuationLines.length
-      ? echoContinuationLines
-      : [followupLine || withDomainAnchor('その続きなら、次の一手を1つだけ決めると進めやすいです', domainIntent)]));
+    if (/(次の一手だけ|次の一手を|次に何を)/i.test(messageText)) {
+      lines.push(buildNextStepProposalFromSource(sourceReplyText, domainIntent));
+    } else {
+      const echoContinuationLines = buildEchoContinuationFromSource(sourceReplyText);
+      const followupLine = payload.followupIntent
+        ? resolveFollowupDirectAnswer({
+          followupIntent: payload.followupIntent,
+          domainIntent,
+          repeatedFollowupStreak: payload.repeatedFollowupStreak || 0,
+          directAnswers: (DOMAIN_SPECS[domainIntent] || DOMAIN_SPECS.general).directAnswers || {}
+        })
+        : '';
+      lines.push(...(echoContinuationLines.length
+        ? echoContinuationLines
+        : [followupLine || withDomainAnchor('その続きなら、次の一手を1つだけ決めると進めやすいです', domainIntent)]));
+    }
+  } else if (requestShape === 'answer' && ['city', 'regionkey', 'state'].includes(locationHintKind)) {
+    lines.push(...buildCityScopedAnswerLines(requestContract, domainIntent));
   } else if (requestShape === 'compare') {
     if (/(無料プラン|有料プラン|プランの違い|プラン比較)/i.test(messageText)) {
       lines.push('短く言うと、無料はFAQ検索中心で、有料は状況整理や次の一手の提案まで対応します');
@@ -581,7 +671,11 @@ function buildContractReply(params) {
     if (outputForm === 'two_sentences') {
       lines.push(...buildConversationalRewriteFromSource(sourceReplyText));
     } else if (outputForm === 'non_dogmatic') {
-      lines.push(buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent));
+      if (/(次の一手だけ|次の一手を|次に何を)/i.test(messageText) && sourceReplyText) {
+        lines.push(buildNextStepProposalFromSource(sourceReplyText, domainIntent));
+      } else {
+        lines.push(buildNonDogmaticRewriteFromSource(sourceReplyText, domainIntent));
+      }
     } else if (outputForm === 'softer' || /(事務的すぎない|事務的じゃない)/i.test(messageText)) {
       lines.push(buildLessBureaucraticRewriteFromSource(sourceReplyText, domainIntent));
     } else {
@@ -1182,5 +1276,7 @@ module.exports = {
   buildConversationalRewriteFromSource,
   buildLessBureaucraticRewriteFromSource,
   buildEchoContinuationFromSource,
-  buildDeepenReplyFromSource
+  buildDeepenReplyFromSource,
+  buildCityScopedAnswerLines,
+  buildNextStepProposalFromSource
 };
