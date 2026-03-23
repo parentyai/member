@@ -48,7 +48,7 @@ function resolveActionLine(payload) {
     return '外出・通学前に警報と交通状況を確認し、危険時は行動を切り替えてください。';
   }
   if (providerKey === 'usgs_earthquakes') {
-    return '安全確保を優先し、余震や交通影響を公式情報で確認してください。';
+    return '安全確保を優先し、交通影響と避難情報を確認してください。';
   }
   return 'まず公式情報で対象地域と影響範囲を確認してください。';
 }

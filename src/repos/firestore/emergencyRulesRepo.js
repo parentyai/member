@@ -5,7 +5,7 @@ const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { toMillis } = require('../../usecases/emergency/utils');
 
 const COLLECTION = 'emergency_rules';
-const ALLOWED_SEVERITY = new Set(['ANY', 'INFO', 'WARN', 'CRITICAL']);
+const ALLOWED_SEVERITY = new Set(['ANY', 'INFO', 'INFO+', 'WARN', 'WARN+', 'CRITICAL', 'CRITICAL+']);
 const ALLOWED_PRIORITY = new Set(['emergency', 'standard']);
 
 function normalizeString(value) {
@@ -95,6 +95,9 @@ function normalizeRule(ruleId, data, existing) {
     enabled: normalizeBoolean(payload.enabled, current.enabled === true),
     priority: normalizePriority(payload.priority, current.priority || 'emergency'),
     maxRecipients: normalizeMaxRecipients(payload.maxRecipients, current.maxRecipients || 500),
+    displayLabel: normalizeString(payload.displayLabel) || normalizeString(current.displayLabel),
+    policySummary: normalizeString(payload.policySummary) || normalizeString(current.policySummary),
+    operatorAction: normalizeString(payload.operatorAction) || normalizeString(current.operatorAction),
     traceId: normalizeString(payload.traceId) || normalizeString(current.traceId),
     createdBy: normalizeString(current.createdBy) || normalizeString(payload.createdBy),
     updatedBy: normalizeString(payload.updatedBy) || normalizeString(current.updatedBy)

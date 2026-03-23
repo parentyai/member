@@ -18236,7 +18236,19 @@ function renderEmergencyRulePreview(result) {
   }
   const matchCount = Number(result.matchCount || 0);
   const blockedCount = Number(result.blockedCount || 0);
-  summaryEl.textContent = `ruleId=${result.ruleId || '-'} / match=${matchCount} / blocked=${blockedCount}`;
+  const rule = result.rule && typeof result.rule === 'object' ? result.rule : null;
+  const policyParts = [
+    rule && rule.displayLabel ? String(rule.displayLabel) : null,
+    rule && rule.policySummary ? String(rule.policySummary) : null,
+    rule && rule.operatorAction ? String(rule.operatorAction) : null
+  ].filter(Boolean);
+  const summaryParts = [
+    `ruleId=${result.ruleId || '-'}`,
+    `match=${matchCount}`,
+    `blocked=${blockedCount}`
+  ];
+  if (policyParts.length) summaryParts.push(`policy=${policyParts.join(' / ')}`);
+  summaryEl.textContent = summaryParts.join(' / ');
   jsonEl.textContent = JSON.stringify(result, null, 2);
 }
 
@@ -18299,7 +18311,7 @@ function renderEmergencyRuleRows(items) {
   if (!rows.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 9;
+    td.colSpan = 10;
     td.textContent = 'ルールなし';
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -18309,6 +18321,11 @@ function renderEmergencyRuleRows(items) {
   rows.forEach((row) => {
     const tr = document.createElement('tr');
     const ruleId = row && (row.ruleId || row.id) ? String(row.ruleId || row.id) : '';
+    const policyText = [
+      row && row.displayLabel ? String(row.displayLabel) : null,
+      row && row.policySummary ? String(row.policySummary) : null,
+      row && row.operatorAction ? String(row.operatorAction) : null
+    ].filter(Boolean).join(' / ') || '-';
     if (state.emergencySelectedRuleId && state.emergencySelectedRuleId === ruleId) {
       tr.classList.add('is-selected');
     }
@@ -18318,6 +18335,7 @@ function renderEmergencyRuleRows(items) {
       row && row.eventType ? String(row.eventType) : '-',
       row && row.severity ? String(row.severity) : '-',
       formatEmergencyRuleRegion(row),
+      policyText,
       row && row.autoSend === true ? 'true' : 'false',
       row && row.enabled === true ? 'true' : 'false',
       Number.isFinite(Number(row && row.maxRecipients)) ? String(Number(row.maxRecipients)) : '-'
