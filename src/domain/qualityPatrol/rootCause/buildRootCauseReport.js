@@ -50,9 +50,15 @@ function hasObservationLead(candidates) {
 }
 
 function analyzeStatus(issue, candidates, context) {
+  const historicalOnly = issue && issue.historicalOnly === true;
   if (!Array.isArray(candidates) || candidates.length === 0) return ROOT_CAUSE_ANALYSIS_STATUS.insufficientEvidence;
-  if (issue && issue.issueType === 'observation_blocker') return ROOT_CAUSE_ANALYSIS_STATUS.blocked;
-  if (hasObservationLead(candidates) && Array.isArray(context.observationBlockers) && context.observationBlockers.length > 0) {
+  if (issue && issue.issueType === 'observation_blocker' && historicalOnly !== true) return ROOT_CAUSE_ANALYSIS_STATUS.blocked;
+  if (
+    historicalOnly !== true
+    && hasObservationLead(candidates)
+    && Array.isArray(context.observationBlockers)
+    && context.observationBlockers.length > 0
+  ) {
     return ROOT_CAUSE_ANALYSIS_STATUS.blocked;
   }
   if (candidates.every((item) => item.causeType === ROOT_CAUSE_TYPE.evidenceInsufficient)) {
