@@ -40,3 +40,19 @@ test('phase749: readiness enforce replaces clarify/refuse and appends hedge safe
   assert.equal(hedged.enforced, true);
   assert.equal(hedged.replyText.includes('最終確認'), true);
 });
+
+test('phase749: hedged transform replies keep source-shaped text without supplement suffix', () => {
+  const hedged = applyAnswerReadinessDecision({
+    decision: 'hedged',
+    replyText: '今は優先順位と期限を先に整理すると、進めやすそうです。',
+    requestShape: 'rewrite',
+    outputForm: 'non_dogmatic',
+    transformSource: 'prior_assistant',
+    knowledgeScope: 'general'
+  });
+
+  assert.equal(hedged.decision, 'hedged');
+  assert.equal(hedged.enforced, true);
+  assert.equal(hedged.replyText.includes('補足:'), false);
+  assert.equal(hedged.replyText.includes('最終確認'), false);
+});

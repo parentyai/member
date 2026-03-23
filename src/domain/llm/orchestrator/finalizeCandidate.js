@@ -5,6 +5,10 @@ const {
   containsLegacyTemplateTerms
 } = require('../conversation/paidReplyGuard');
 const {
+  buildDeepenReplyFromSource,
+  buildCityScopedAnswerLines
+} = require('../../../usecases/assistant/generatePaidDomainConciergeReply');
+const {
   buildReplyTemplateFingerprint,
   classifyReplyTemplateKind
 } = require('../conversation/replyTemplateTelemetry');
@@ -35,6 +39,43 @@ function extractFollowupQuestion(text) {
   const lines = normalizeText(text).split('\n').map((line) => line.trim()).filter(Boolean);
   const questionLine = lines.find((line) => /[?？]$/.test(line) || line.includes('ですか'));
   return questionLine || null;
+}
+
+function recoverReplyTextFromContract(replyText, requestContract) {
+  const contract = requestContract && typeof requestContract === 'object' ? requestContract : {};
+  const normalizedReply = normalizeText(replyText);
+  const sourceReplyText = normalizeText(contract.sourceReplyText);
+  const depthIntent = normalizeText(contract.depthIntent).toLowerCase();
+  const requestShape = normalizeText(contract.requestShape).toLowerCase();
+  const primaryDomainIntent = normalizeText(contract.primaryDomainIntent).toLowerCase() || 'general';
+  const outputForm = normalizeText(contract.outputForm).toLowerCase() || 'default';
+  const locationHint = contract.locationHint && typeof contract.locationHint === 'object' ? contract.locationHint : {};
+  const locationHintKind = normalizeText(locationHint.kind).toLowerCase();
+
+  if (
+    depthIntent === 'deepen'
+    && sourceReplyText
+    && /いまの状況を整理します|いま一番困っている|今すぐ進める手続きを1つ決める/.test(normalizedReply)
+  ) {
+    const deepenLines = buildDeepenReplyFromSource(sourceReplyText, primaryDomainIntent, contract.messageText || '');
+    if (Array.isArray(deepenLines) && deepenLines.length > 0) {
+      return deepenLines.slice(0, outputForm === 'two_sentences' ? 2 : 2).map((line) => normalizeText(line)).filter(Boolean).join('\n');
+    }
+  }
+
+  if (
+    requestShape === 'answer'
+    && primaryDomainIntent === 'school'
+    && ['city', 'regionkey', 'state'].includes(locationHintKind)
+    && /学校手続きですね|学区と対象校の条件を確認|次の一手を具体化できます[？?]?$/.test(normalizedReply)
+  ) {
+    const cityScopedLines = buildCityScopedAnswerLines(contract, primaryDomainIntent);
+    if (Array.isArray(cityScopedLines) && cityScopedLines.length > 0) {
+      return cityScopedLines.slice(0, 2).map((line) => normalizeText(line)).filter(Boolean).join('\n');
+    }
+  }
+
+  return normalizedReply;
 }
 
 function finalizeCandidate(params) {
@@ -81,11 +122,16 @@ function finalizeCandidate(params) {
   const guardedReplyText = preserveReplyText
     ? (trimForPaidLineMessage(normalizeText(selected.replyText)) || fallbackText)
     : (trimForPaidLineMessage(normalizeText(guardResult && guardResult.text) || fallbackText) || fallbackText);
+  const recoveredReplyText = recoverReplyTextFromContract(guardedReplyText, requestContract) || guardedReplyText;
   const readinessApplied = applyAnswerReadinessDecision({
     decision: readinessDecision,
-    replyText: guardedReplyText,
+    replyText: recoveredReplyText,
     clarifyText: readinessClarifyText || 'まず対象手続きと期限を1つずつ教えてください。そこから次の一手を絞ります。',
-    refuseText: 'この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを整理します。'
+    refuseText: 'この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを整理します。',
+    requestShape: normalizeText(requestContract.requestShape).toLowerCase(),
+    outputForm: normalizeText(requestContract.outputForm).toLowerCase(),
+    transformSource: normalizeText(requestContract.transformSource).toLowerCase(),
+    knowledgeScope: normalizeText(requestContract.knowledgeScope).toLowerCase()
   });
   const replyText = trimForPaidLineMessage(readinessApplied.replyText) || fallbackText;
   const fallbackTemplateKind = guardResult && typeof guardResult.templateKind === 'string'
