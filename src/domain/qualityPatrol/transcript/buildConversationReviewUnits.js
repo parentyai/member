@@ -318,6 +318,8 @@ function buildReviewUnit(anchor, traceBundle, options) {
   const traceId = pickString(anchor.traceId, snapshot && snapshot.traceId, latestAction && latestAction.traceId, faqAnswerLogs[0] && faqAnswerLogs[0].traceId);
   const traceHydrationLimited = payload.traceHydrationLimited === true;
   const hasTraceEvidence = Boolean(traceBundle && traceBundle.ok === true && traceSummary && traceSummary.completeness > 0);
+  const expectsFaqEvidence = telemetrySignals.savedFaqUsedInAnswer === true
+    || telemetrySignals.selectedCandidateKind === 'saved_faq_candidate';
   const blockers = buildObservationBlockers({
     userMessageAvailable: snapshot ? snapshot.userMessageAvailable === true : false,
     assistantReplyAvailable: snapshot ? snapshot.assistantReplyAvailable === true : false,
@@ -325,9 +327,7 @@ function buildReviewUnit(anchor, traceBundle, options) {
     needsPriorContextSummary: telemetrySignals.priorContextUsed === true || telemetrySignals.followupResolvedFromHistory === true,
     hasTraceEvidence,
     hasActionLogEvidence: llmActions.length > 0,
-    expectsFaqEvidence: telemetrySignals.savedFaqUsedInAnswer === true
-      || telemetrySignals.savedFaqCandidateAvailable === true
-      || telemetrySignals.selectedCandidateKind === 'saved_faq_candidate',
+    expectsFaqEvidence,
     hasFaqEvidence: faqAnswerLogs.length > 0,
     traceHydrationLimited
   });
@@ -372,9 +372,7 @@ function buildReviewUnit(anchor, traceBundle, options) {
         : (traceHydrationLimited ? 'limited_by_trace_hydration' : 'missing_source'),
       faq: faqAnswerLogs.length > 0
         ? 'joined'
-        : (telemetrySignals.savedFaqUsedInAnswer === true
-          || telemetrySignals.savedFaqCandidateAvailable === true
-          || telemetrySignals.selectedCandidateKind === 'saved_faq_candidate'
+        : (expectsFaqEvidence
           ? 'missing_source'
           : 'not_expected')
     },

@@ -580,6 +580,7 @@ test('phase719: non-empty outbound paid reply keeps transcript snapshot assistan
   assert.equal(replies.length, 1);
   assert.equal(Boolean(replies[0].text && replies[0].text.trim()), true);
   assert.equal(loaded.actionLogWrites.length > 0, true);
+  assert.equal(loaded.actionLogWrites[0].transcriptSnapshotUserMessageAvailable, true);
   assert.equal(loaded.actionLogWrites[0].transcriptSnapshotAssistantReplyPresent, true);
   assert.equal(loaded.actionLogWrites[0].transcriptSnapshotAssistantReplyLength > 0, true);
   assert.notEqual(loaded.actionLogWrites[0].transcriptSnapshotBuildSkippedReason, 'assistant_reply_missing');
@@ -618,6 +619,7 @@ test('phase719: gate-blocked domain concierge fallback keeps transcript snapshot
   assert.equal(replies.length, 1);
   assert.equal(Boolean(replies[0].text && replies[0].text.trim()), true);
   assert.equal(loaded.actionLogWrites.length > 0, true);
+  assert.equal(loaded.actionLogWrites[0].transcriptSnapshotUserMessageAvailable, true);
   assert.equal(loaded.actionLogWrites[0].transcriptSnapshotAssistantReplyPresent, true);
   assert.equal(loaded.actionLogWrites[0].transcriptSnapshotAssistantReplyLength > 0, true);
   assert.notEqual(loaded.actionLogWrites[0].transcriptSnapshotBuildSkippedReason, 'assistant_reply_missing');
