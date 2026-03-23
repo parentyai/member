@@ -17,6 +17,19 @@ function trimForLineMessage(value) {
   return text.length > 420 ? `${text.slice(0, 420)}…` : text;
 }
 
+function shouldSuppressHedgeSuffix(payload) {
+  if (payload && payload.suppressHedgeSuffix === true) return true;
+  const requestShape = normalizeText(payload && payload.requestShape).toLowerCase();
+  const outputForm = normalizeText(payload && payload.outputForm).toLowerCase();
+  const transformSource = normalizeText(payload && payload.transformSource).toLowerCase();
+  const knowledgeScope = normalizeText(payload && payload.knowledgeScope).toLowerCase();
+  const transformLike = transformSource === 'prior_assistant'
+    || ['rewrite', 'message_template', 'summarize'].includes(requestShape)
+    || ['one_line', 'two_sentences', 'message_only', 'polite_template', 'non_dogmatic', 'softer'].includes(outputForm);
+  const cityOrProcedureScoped = knowledgeScope === 'city' || knowledgeScope === 'exact_procedure';
+  return transformLike && !cityOrProcedureScoped;
+}
+
 function applyAnswerReadinessDecision(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const decision = normalizeDecision(payload.decision);
@@ -46,6 +59,13 @@ function applyAnswerReadinessDecision(params) {
 
   if (decision === 'hedged') {
     const base = replyText || clarifyText;
+    if (shouldSuppressHedgeSuffix(payload)) {
+      return {
+        decision,
+        replyText: trimForLineMessage(base),
+        enforced: true
+      };
+    }
     const withHedge = base.includes('最終確認')
       ? base
       : `${base}\n\n${hedgeSuffix}`;

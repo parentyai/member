@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 
 const { runPaidConversationOrchestrator } = require('../../src/domain/llm/orchestrator/runPaidConversationOrchestrator');
+const { finalizeCandidate } = require('../../src/domain/llm/orchestrator/finalizeCandidate');
 const { generatePaidCasualReply } = require('../../src/usecases/assistant/generatePaidCasualReply');
 const { generatePaidDomainConciergeReply } = require('../../src/usecases/assistant/generatePaidDomainConciergeReply');
 
@@ -556,4 +557,56 @@ test('phase734: source-aware transforms keep priority and deadline facts instead
   });
   assert.match(nonDogmaticNext.replyText, /まずは|必要書類|受付期限/);
   assert.equal(nonDogmaticNext.replyText.includes('地域差がありそうなら'), false);
+});
+
+test('phase734: finalizer recovers deepen reply from source when selected text resets generically', () => {
+  const finalized = finalizeCandidate({
+    selected: {
+      kind: 'grounded_candidate',
+      replyText: 'いまの状況を整理します。\n次は今すぐ進める手続きを1つ決める。\nいま一番困っている手続きを1つだけ教えてください？'
+    },
+    requestContract: {
+      requestShape: 'answer',
+      depthIntent: 'deepen',
+      outputForm: 'default',
+      primaryDomainIntent: 'general',
+      knowledgeScope: 'general',
+      messageText: 'どうやって？',
+      sourceReplyText: '今は、優先順位と期限を先に整理するところからで大丈夫です。\n順番と締切が見えるだけでも、次の一手を決めやすくなります。'
+    },
+    readinessDecision: 'allow',
+    verificationOutcome: 'passed'
+  });
+
+  assert.match(finalized.replyText, /具体的には/);
+  assert.match(finalized.replyText, /期限|必要書類|予約要否/);
+  assert.equal(finalized.replyText.includes('いま一番困っている手続きを1つだけ教えてください'), false);
+});
+
+test('phase734: finalizer recovers city-school answer from location hint when generic school fallback leaks through', () => {
+  const finalized = finalizeCandidate({
+    selected: {
+      kind: 'grounded_candidate',
+      replyText: '学校手続きですね。\n次は学区と対象校の条件を確認する。\n学年と希望エリアが分かれば、次の一手を具体化できます？'
+    },
+    requestContract: {
+      requestShape: 'answer',
+      depthIntent: 'answer',
+      outputForm: 'default',
+      primaryDomainIntent: 'school',
+      knowledgeScope: 'city',
+      locationHint: {
+        kind: 'city',
+        cityKey: 'new-york',
+        state: 'NY',
+        regionKey: 'NY::new-york'
+      }
+    },
+    readinessDecision: 'allow',
+    verificationOutcome: 'passed'
+  });
+
+  assert.match(finalized.replyText, /教育窓口|対象校の条件|必要書類|受付期限/);
+  assert.equal(finalized.replyText.includes('学校手続きですね'), false);
+  assert.equal(finalized.replyText.includes('具体化できます？'), false);
 });
