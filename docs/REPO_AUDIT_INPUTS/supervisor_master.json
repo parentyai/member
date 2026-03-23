@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-23T06:29:55-04:00",
-  "gitCommit": "6d1d319e2304345be7075e10a05df0394e1cdd06",
+  "generatedAt": "2026-03-23T06:45:28-04:00",
+  "gitCommit": "85cb5dbb321302899844004890175d48ebc1280e",
   "branch": "codex/rebuild-city-emergency",
-  "sourceDigest": "031c5062d92f028383e383cc5f1fdeb35a521f891a6a69269eb84c69d3f7ec23",
+  "sourceDigest": "bdd4c82a103ac24e3ccc0771da2240ec92f6a05de723432c14a5f1c9af950e63",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
