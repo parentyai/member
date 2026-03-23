@@ -3,12 +3,24 @@
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { toMillis, stableKey } = require('../../usecases/emergency/utils');
+const { normalizeState } = require('../../domain/regionNormalization');
 
 const COLLECTION = 'emergency_bulletins';
 const ALLOWED_STATUS = new Set(['draft', 'approved', 'sent', 'rejected']);
 
 function normalizeString(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function canonicalizeRegionKey(value) {
+  const raw = normalizeString(value);
+  if (!raw) return null;
+  const parts = raw.split('::');
+  if (parts.length !== 2) return raw;
+  const state = normalizeState(parts[0]) || String(parts[0]).trim().toUpperCase();
+  const scope = String(parts[1]).trim().toLowerCase();
+  if (!state || !scope) return raw;
+  return `${state}::${scope}`;
 }
 
 function normalizeStatus(value) {
@@ -38,7 +50,7 @@ async function createBulletin(data) {
   const id = resolveId(payload);
   await getDb().collection(COLLECTION).doc(id).set({
     status: normalizeStatus(payload.status),
-    regionKey: normalizeString(payload.regionKey),
+    regionKey: canonicalizeRegionKey(payload.regionKey),
     category: normalizeString(payload.category),
     severity: normalizeSeverity(payload.severity),
     linkRegistryId: normalizeString(payload.linkRegistryId),
@@ -92,6 +104,9 @@ async function updateBulletin(bulletinId, patch) {
   if (Object.prototype.hasOwnProperty.call(payload, 'status')) {
     payload.status = normalizeStatus(payload.status);
   }
+  if (Object.prototype.hasOwnProperty.call(payload, 'regionKey')) {
+    payload.regionKey = canonicalizeRegionKey(payload.regionKey);
+  }
   payload.updatedAt = serverTimestamp();
   await getDb().collection(COLLECTION).doc(id).set(payload, { merge: true });
   return { id };
@@ -106,7 +121,7 @@ async function listBulletins(params) {
   const limit = Number.isFinite(Number(opts.limit)) ? Math.min(Math.max(Math.floor(Number(opts.limit)), 1), 300) : 50;
   let query = getDb().collection(COLLECTION);
   const statusFilter = opts.status ? normalizeStatus(opts.status) : null;
-  const regionFilter = opts.regionKey ? String(opts.regionKey).trim().toLowerCase() : null;
+  const regionFilter = canonicalizeRegionKey(opts.regionKey);
 
   // Keep a single where filter to avoid introducing new composite index requirements.
   if (statusFilter) query = query.where('status', '==', statusFilter);
@@ -117,7 +132,7 @@ async function listBulletins(params) {
   if (statusFilter) rows = rows.filter((row) => normalizeStatus(row && row.status) === statusFilter);
   if (regionFilter) {
     rows = rows.filter((row) => {
-      const regionKey = row && typeof row.regionKey === 'string' ? row.regionKey.trim().toLowerCase() : '';
+      const regionKey = canonicalizeRegionKey(row && row.regionKey);
       return regionKey === regionFilter;
     });
   }
@@ -133,6 +148,7 @@ async function listBulletinsByTraceId(traceId, limit) {
 }
 
 module.exports = {
+  canonicalizeRegionKey,
   createBulletin,
   ensureDraftByDiff,
   resolveDraftIdFromDiff,
