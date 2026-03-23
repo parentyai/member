@@ -21,7 +21,7 @@ function normalizeLimit(value, fallback, max) {
 async function buildConversationReviewUnitsFromSources(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const limit = normalizeLimit(payload.limit, 100, 500);
-  const traceLimit = normalizeLimit(payload.traceLimit, 50, 200);
+  const traceLimit = normalizeLimit(payload.traceLimit, Math.min(limit, 200), 200);
   const snapshotsRepo = deps && deps.conversationReviewSnapshotsRepo ? deps.conversationReviewSnapshotsRepo : conversationReviewSnapshotsRepo;
   const actionRepo = deps && deps.llmActionLogsRepo ? deps.llmActionLogsRepo : llmActionLogsRepo;
   const faqRepo = deps && deps.faqAnswerLogsRepo ? deps.faqAnswerLogsRepo : faqAnswerLogsRepo;
