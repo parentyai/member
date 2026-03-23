@@ -168,6 +168,16 @@ test('phase847: latest review-unit extraction aligns snapshot and faq reads to t
         faqCalls.push(params);
         return [
           {
+            id: 'faq_align_skip_no_trace',
+            traceId: null,
+            createdAt: '2026-03-14T14:00:02.000Z'
+          },
+          {
+            id: 'faq_align_skip_unmatched',
+            traceId: 'trace_align_unmatched',
+            createdAt: '2026-03-14T14:00:02.500Z'
+          },
+          {
             id: 'faq_align_1',
             traceId: 'trace_align_1',
             createdAt: '2026-03-14T14:00:01.000Z'
@@ -190,16 +200,82 @@ test('phase847: latest review-unit extraction aligns snapshot and faq reads to t
   assert.deepEqual(snapshotCalls, [{
     fromAt: '2026-03-14T13:59:30.000Z',
     toAt: '2026-03-14T14:00:00.000Z',
-    limit: 2
+    limit: 12
   }]);
   assert.deepEqual(faqCalls, [{
     fromAt: '2026-03-14T13:59:30.000Z',
     toAt: '2026-03-14T14:00:00.000Z',
-    limit: 2
+    limit: 4
   }]);
   assert.deepEqual(result.sourceWindow, {
     fromAt: '2026-03-14T13:59:30.000Z',
     toAt: '2026-03-14T14:00:00.000Z'
   });
   assert.equal(result.joinDiagnostics.faqOnlyRowsSkipped, 0);
+  const alignedUnit = result.reviewUnits.find((unit) => unit.traceId === 'trace_align_1');
+  assert.ok(alignedUnit);
+  assert.equal(alignedUnit.evidenceJoinStatus.faq, 'joined');
+  assert.ok(alignedUnit.evidenceRefs.some((row) => row.source === 'faq_answer_logs' && row.refId === 'faq_align_1'));
+});
+
+test('phase847: latest review-unit extraction widens snapshot reads to avoid action-only drift from duplicate snapshot writes', async () => {
+  const snapshotCalls = [];
+  const result = await buildConversationReviewUnitsFromSources({
+    limit: 100,
+    traceLimit: 100
+  }, {
+    conversationReviewSnapshotsRepo: {
+      listConversationReviewSnapshotsByCreatedAtRange: async (params) => {
+        snapshotCalls.push(params);
+        if (params.limit < 500) return [];
+        return [
+          {
+            id: 'snapshot_wide_1',
+            traceId: 'trace_wide_95',
+            lineUserKey: 'userkey_wide_95',
+            userMessageAvailable: true,
+            assistantReplyAvailable: true,
+            priorContextSummaryAvailable: true,
+            userMessageMasked: 'wide question',
+            assistantReplyMasked: 'wide reply',
+            priorContextSummaryMasked: 'resume_domain:general',
+            createdAt: '2026-03-14T12:58:25.000Z'
+          }
+        ];
+      }
+    },
+    llmActionLogsRepo: {
+      listLlmActionLogsByCreatedAtRange: async () => Array.from({ length: 95 }, (_, index) => ({
+        id: `action_wide_${index + 1}`,
+        traceId: `trace_wide_${index + 1}`,
+        lineUserId: `U_WIDE_${index + 1}`,
+        strategyReason: `wide_anchor_${index + 1}`,
+        priorContextUsed: index === 94,
+        followupResolvedFromHistory: index === 94,
+        createdAt: new Date(Date.UTC(2026, 2, 14, 14, 0, 0) - index * 1000).toISOString()
+      }))
+    },
+    faqAnswerLogsRepo: {
+      listFaqAnswerLogsByCreatedAtRange: async () => []
+    },
+    getTraceBundle: async ({ traceId }) => ({
+      ok: true,
+      traceId,
+      traceJoinSummary: {
+        completeness: 1,
+        joinedDomains: ['llmActions', 'conversation_review_snapshots'],
+        missingDomains: [],
+        criticalMissingDomains: []
+      }
+    })
+  });
+
+  assert.equal(snapshotCalls.length, 1);
+  assert.equal(snapshotCalls[0].limit, 500);
+  assert.equal(result.readLimits.snapshotReadLimit, 500);
+  const widenedUnit = result.reviewUnits.find((unit) => unit.traceId === 'trace_wide_95');
+  assert.ok(widenedUnit);
+  assert.equal(widenedUnit.anchorKind, 'snapshot_action');
+  assert.equal(widenedUnit.priorContextSummary.available, true);
+  assert.ok(!(widenedUnit.observationBlockers || []).some((row) => row.code === 'missing_prior_context_summary'));
 });

@@ -11,6 +11,9 @@ const {
 const {
   buildTranscriptCoverageDiagnostics
 } = require('../../domain/qualityPatrol/transcript/buildTranscriptCoverageDiagnostics');
+const {
+  buildLineUserKey
+} = require('../../domain/qualityPatrol/transcriptMasking/buildMaskedConversationReviewSnapshot');
 
 function normalizeLimit(value, fallback, max) {
   const numeric = Number(value);
@@ -30,6 +33,10 @@ function toIso(value) {
     if (date instanceof Date && Number.isFinite(date.getTime())) return date.toISOString();
   }
   return null;
+}
+
+function normalizeText(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
 function deriveSourceWindow(payload, llmActionLogs) {
@@ -60,6 +67,86 @@ function deriveSourceWindow(payload, llmActionLogs) {
   };
 }
 
+function resolveCollectionReadLimits(payload, llmActionLogs, reviewLimit) {
+  const actionCount = Array.isArray(llmActionLogs) ? llmActionLogs.length : 0;
+  const requestedSourceLimit = normalizeLimit(payload && payload.sourceReadLimit, 0, 500);
+  if (requestedSourceLimit > 0) {
+    return {
+      snapshotReadLimit: requestedSourceLimit,
+      faqReadLimit: requestedSourceLimit
+    };
+  }
+  const sourceBaseline = actionCount > 0 ? actionCount : reviewLimit;
+  return {
+    snapshotReadLimit: Math.min(Math.max(sourceBaseline * 6, reviewLimit), 500),
+    faqReadLimit: Math.min(Math.max(sourceBaseline * 2, reviewLimit), 500)
+  };
+}
+
+function buildConversationJoinKeys(llmActionLogs) {
+  const traceIds = new Set();
+  const lineUserKeys = new Set();
+  (Array.isArray(llmActionLogs) ? llmActionLogs : []).forEach((row) => {
+    const traceId = normalizeText(row && row.traceId);
+    if (traceId) traceIds.add(traceId);
+    const lineUserKey = buildLineUserKey(row && row.lineUserId);
+    if (lineUserKey) lineUserKeys.add(lineUserKey);
+  });
+  return {
+    traceIds,
+    lineUserKeys
+  };
+}
+
+function filterSnapshotsForConversationWindow(snapshots, llmActionLogs) {
+  const rows = Array.isArray(snapshots) ? snapshots : [];
+  const joinKeys = buildConversationJoinKeys(llmActionLogs);
+  if (joinKeys.traceIds.size <= 0 && joinKeys.lineUserKeys.size <= 0) return rows;
+  return rows.filter((row) => {
+    const traceId = normalizeText(row && row.traceId);
+    if (traceId && joinKeys.traceIds.has(traceId)) return true;
+    const lineUserKey = normalizeText(row && row.lineUserKey);
+    if (lineUserKey && joinKeys.lineUserKeys.has(lineUserKey)) return true;
+    return false;
+  });
+}
+
+function filterFaqAnswerLogsForConversationWindow(faqAnswerLogs, llmActionLogs) {
+  const rows = Array.isArray(faqAnswerLogs) ? faqAnswerLogs : [];
+  const joinKeys = buildConversationJoinKeys(llmActionLogs);
+  if (joinKeys.traceIds.size <= 0) return rows;
+  return rows.filter((row) => {
+    const traceId = normalizeText(row && row.traceId);
+    return Boolean(traceId && joinKeys.traceIds.has(traceId));
+  });
+}
+
+async function hydrateMissingSnapshotsByTraceId(snapshotsRepo, snapshots, llmActionLogs, reviewLimit) {
+  if (!snapshotsRepo || typeof snapshotsRepo.listConversationReviewSnapshotsByTraceId !== 'function') return [];
+  const traceIds = Array.from(buildConversationJoinKeys(llmActionLogs).traceIds);
+  if (traceIds.length <= 0) return [];
+  const hydratedTraceIds = new Set(
+    (Array.isArray(snapshots) ? snapshots : [])
+      .map((row) => normalizeText(row && row.traceId))
+      .filter(Boolean)
+  );
+  const missingTraceIds = traceIds.filter((traceId) => !hydratedTraceIds.has(traceId)).slice(0, Math.min(reviewLimit, 25));
+  if (missingTraceIds.length <= 0) return [];
+  const rows = await Promise.all(
+    missingTraceIds.map((traceId) => snapshotsRepo.listConversationReviewSnapshotsByTraceId({
+      traceId,
+      limit: 4
+    }))
+  );
+  const deduped = new Map();
+  rows.flat().forEach((row) => {
+    const rowId = normalizeText(row && row.id);
+    if (!rowId) return;
+    if (!deduped.has(rowId)) deduped.set(rowId, row);
+  });
+  return Array.from(deduped.values());
+}
+
 async function buildConversationReviewUnitsFromSources(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const limit = normalizeLimit(payload.limit, 100, 500);
@@ -75,19 +162,24 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
     limit
   });
   const sourceWindow = deriveSourceWindow(payload, llmActionLogs);
+  const readLimits = resolveCollectionReadLimits(payload, llmActionLogs, limit);
 
-  const [snapshots, faqAnswerLogs] = await Promise.all([
+  const [rawSnapshots, rawFaqAnswerLogs] = await Promise.all([
     snapshotsRepo.listConversationReviewSnapshotsByCreatedAtRange({
       fromAt: sourceWindow.fromAt,
       toAt: sourceWindow.toAt,
-      limit
+      limit: readLimits.snapshotReadLimit
     }),
     faqRepo.listFaqAnswerLogsByCreatedAtRange({
       fromAt: sourceWindow.fromAt,
       toAt: sourceWindow.toAt,
-      limit
+      limit: readLimits.faqReadLimit
     })
   ]);
+  const snapshots = filterSnapshotsForConversationWindow(rawSnapshots, llmActionLogs);
+  const hydratedSnapshots = await hydrateMissingSnapshotsByTraceId(snapshotsRepo, snapshots, llmActionLogs, limit);
+  const mergedSnapshots = filterSnapshotsForConversationWindow(snapshots.concat(hydratedSnapshots), llmActionLogs);
+  const faqAnswerLogs = filterFaqAnswerLogsForConversationWindow(rawFaqAnswerLogs, llmActionLogs);
 
   const joinDiagnostics = {
     faqOnlyRowsSkipped: 0,
@@ -95,7 +187,7 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
     reviewUnitAnchorKindCounts: {}
   };
   const anchorBuild = buildConversationReviewAnchors({
-    snapshots,
+    snapshots: mergedSnapshots,
     llmActionLogs,
     faqAnswerLogs,
     joinDiagnosticsTarget: joinDiagnostics
@@ -129,11 +221,13 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
     transcriptCoverage,
     sourceCollections: ['conversation_review_snapshots', 'llm_action_logs', 'faq_answer_logs', 'trace_bundle'],
     counts: {
-      snapshots: snapshots.length,
+      snapshots: mergedSnapshots.length,
+      snapshotsHydratedByTraceId: hydratedSnapshots.length,
       llmActionLogs: llmActionLogs.length,
       faqAnswerLogs: faqAnswerLogs.length,
       traceBundles: traceIds.length
     },
+    readLimits,
     joinDiagnostics
   };
 }
