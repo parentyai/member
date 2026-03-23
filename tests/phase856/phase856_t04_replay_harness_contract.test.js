@@ -116,3 +116,72 @@ test('phase856: replay harness writes deterministic per-event replay result shap
   assert.equal(result.recentSummary.operatorTraceRefs, 2);
   assert.equal(result.writePath.rawPersistenceAdded, false);
 });
+
+test('phase856: replay harness prefers direct requestId lookup before line-user polling', async () => {
+  const directRows = new Map();
+  let directLookups = 0;
+  let lineUserPolls = 0;
+
+  const result = await replaySameTrafficSet({
+    userId: 'U3037952f2f6531a3d8b24fd13ca3c680',
+    messages: ['a', 'b', 'c', 'd', 'e'],
+    output: '/tmp/phase856_replay_direct_lookup_contract.json',
+    prefix: 'phase856_replay_direct',
+    pollAttempts: 2,
+    pollIntervalMs: 1
+  }, {
+    handleLineWebhook: async ({ requestId, traceId, replyFn }) => {
+      directRows.set(requestId, {
+        requestId,
+        traceId: `${traceId}_persisted`,
+        transcriptSnapshotOutcome: 'written',
+        transcriptSnapshotAssistantReplyPresent: true,
+        transcriptSnapshotAssistantReplyLength: 18,
+        transcriptSnapshotSanitizedReplyLength: 18,
+        transcriptSnapshotBuildAttempted: true
+      });
+      await replyFn('reply', { type: 'text', text: 'stub reply' });
+      return { status: 200 };
+    },
+    getLlmActionLogByRequestId: async ({ requestId }) => {
+      directLookups += 1;
+      return directRows.get(requestId) || null;
+    },
+    listLlmActionLogsByLineUserId: async () => {
+      lineUserPolls += 1;
+      return [];
+    },
+    listConversationReviewSnapshotsByTraceId: async ({ traceId }) => (
+      traceId.endsWith('_persisted') ? [{ id: `${traceId}_0` }] : []
+    ),
+    buildConversationReviewUnitsFromSources: async ({ fromAt, toAt }) => ({
+      reviewUnits: Array.from({ length: 5 }, (_, index) => ({ reviewUnitId: `ru_${index}` })),
+      sourceWindow: { fromAt, toAt },
+      transcriptCoverage: {
+        observedCount: 5,
+        transcriptWriteOutcomeCounts: {
+          written: 5,
+          skipped_unreviewable_transcript: 0
+        },
+        snapshotInputDiagnostics: {
+          assistant_reply_missing: 0
+        }
+      },
+      joinDiagnostics: {
+        faqOnlyRowsSkipped: 0,
+        traceHydrationLimitedCount: 0
+      }
+    }),
+    queryLatestPatrolInsights: async () => ({
+      traceRefs: [],
+      observationBlockers: []
+    }),
+    sleep: noopSleep
+  });
+
+  assert.equal(result.events.length, 5);
+  assert.ok(directLookups >= 5);
+  assert.equal(lineUserPolls, 0);
+  assert.equal(result.events[0].pollAttemptsUsed, 1);
+  assert.equal(result.events[0].snapshotRowsByPersistedTraceKey, 1);
+});

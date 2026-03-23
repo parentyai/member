@@ -915,6 +915,22 @@ async function listLlmActionLogsByTraceId(params) {
     .slice(0, limit);
 }
 
+async function getLlmActionLogByRequestId(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const requestId = normalizeString(payload.requestId, '');
+  if (!requestId) return null;
+  const limit = Number.isFinite(Number(payload.limit)) ? Math.max(1, Math.min(20, Math.floor(Number(payload.limit)))) : 5;
+  const db = getDb();
+  const snap = await db.collection(COLLECTION).where('requestId', '==', requestId).limit(limit).get();
+  return snap.docs
+    .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .sort((a, b) => {
+      const left = toDate(a && (a.createdAt || a.updatedAt));
+      const right = toDate(b && (b.createdAt || b.updatedAt));
+      return (right ? right.getTime() : 0) - (left ? left.getTime() : 0);
+    })[0] || null;
+}
+
 async function patchLlmActionLog(id, patch) {
   const docId = normalizeString(id, '');
   if (!docId) throw new Error('id required');
@@ -932,6 +948,7 @@ module.exports = {
   listPendingLlmActionLogs,
   listLlmActionLogsByLineUserId,
   listLlmActionLogsByTraceId,
+  getLlmActionLogByRequestId,
   patchLlmActionLog,
   toDate,
   normalizeRewardSignals

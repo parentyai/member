@@ -122,6 +122,28 @@ function hasJoinLimitedSignal(payload) {
   return traceHydrationLimitedCount > 0 || limitedReviewUnit || (faqSkipped > 0 && missingTraceLike);
 }
 
+function hasTranscriptCoverageGap(payload) {
+  const coverage = payload.transcriptCoverage && typeof payload.transcriptCoverage === 'object'
+    ? payload.transcriptCoverage
+    : {};
+  const status = toCode(coverage.transcriptCoverageStatus);
+  if (!status || status === 'unavailable') {
+    return Number.isFinite(Number(coverage.observedCount)) ? Number(coverage.observedCount) <= 0 : true;
+  }
+  if (status !== 'ready') return true;
+  const outcomeCounts = coverage.transcriptWriteOutcomeCounts && typeof coverage.transcriptWriteOutcomeCounts === 'object'
+    ? coverage.transcriptWriteOutcomeCounts
+    : {};
+  const problematicOutcomes = [
+    'skipped_flag_disabled',
+    'skipped_missing_line_user_key',
+    'skipped_unreviewable_transcript',
+    'failed_repo_write',
+    'failed_unknown'
+  ];
+  return problematicOutcomes.some((key) => Number(outcomeCounts[key] || 0) > 0);
+}
+
 function buildObservationGapRow(payload, audience, rows) {
   const human = shouldHideInternalDetail(audience);
   return {
@@ -347,7 +369,7 @@ function buildObservationBlockerRows(params) {
     rows.push(buildObservationGapRow(payload, audience, rawBlockers));
   }
 
-  if (transcriptRows.length > 0) {
+  if (transcriptRows.length > 0 && hasTranscriptCoverageGap(payload)) {
     rows.push(buildTranscriptCoverageRow(payload, audience, transcriptRows));
   }
 

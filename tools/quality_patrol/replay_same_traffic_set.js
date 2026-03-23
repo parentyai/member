@@ -131,8 +131,17 @@ function parseReplayArgs(argv) {
 
 async function findPersistedActionLog(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
+  const getByRequestId = typeof deps.getLlmActionLogByRequestId === 'function'
+    ? deps.getLlmActionLogByRequestId
+    : null;
   const listByLineUserId = deps.listLlmActionLogsByLineUserId;
   for (let attempt = 0; attempt < payload.pollAttempts; attempt += 1) {
+    if (getByRequestId) {
+      const direct = await getByRequestId({ requestId: payload.requestId });
+      if (direct) {
+        return { row: direct, attempts: attempt + 1 };
+      }
+    }
     const rows = await listByLineUserId({
       lineUserId: payload.lineUserId,
       limit: payload.limit || 250,
@@ -205,6 +214,7 @@ async function replaySameTrafficSet(input, overrides) {
   const options = Object.assign({}, parseReplayArgs(['node', 'tools/quality_patrol/replay_same_traffic_set.js']), input || {});
   const deps = Object.assign({
     handleLineWebhook,
+    getLlmActionLogByRequestId: llmActionLogsRepo.getLlmActionLogByRequestId,
     listLlmActionLogsByLineUserId: llmActionLogsRepo.listLlmActionLogsByLineUserId,
     listConversationReviewSnapshotsByTraceId: conversationReviewSnapshotsRepo.listConversationReviewSnapshotsByTraceId,
     buildConversationReviewUnitsFromSources,
