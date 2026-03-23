@@ -3180,6 +3180,8 @@ async function tryHandlePaidOrchestratorV2(params) {
   });
   await appendLlmGateDecisionBestEffort({
     lineUserId: payload.lineUserId,
+    messageText: payload.text,
+    replyText: orchestratedReplyText,
     plan: payload.planInfo.plan,
     status: payload.planInfo.status,
     intent: payload.paidIntent,
@@ -3684,6 +3686,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText: fallback && fallback.replyText ? fallback.replyText : '',
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -3846,6 +3850,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText,
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -3923,6 +3929,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText: fallback && fallback.replyText ? fallback.replyText : '',
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -4016,6 +4024,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText: fallback && fallback.replyText ? fallback.replyText : '',
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -4115,6 +4125,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText: fallback && fallback.replyText ? fallback.replyText : '',
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -4349,6 +4361,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText,
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -4425,6 +4439,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText: domainConcierge && domainConcierge.replyText ? domainConcierge.replyText : '',
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -4622,6 +4638,8 @@ async function handleAssistantMessage(params) {
       });
       await appendLlmGateDecisionBestEffort({
         lineUserId,
+        messageText: text,
+        replyText: fallback && fallback.replyText ? fallback.replyText : '',
         plan: planInfo.plan,
         status: planInfo.status,
         intent: paidIntent,
@@ -4941,6 +4959,8 @@ async function handleAssistantMessage(params) {
   });
   await appendLlmGateDecisionBestEffort({
     lineUserId,
+    messageText: text,
+    replyText,
     plan: planInfo.plan,
     status: planInfo.status,
     intent: paidIntent,

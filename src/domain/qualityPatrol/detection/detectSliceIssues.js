@@ -3,6 +3,17 @@
 const { ISSUE_RATE_METRIC_KEYS } = require('./constants');
 const { buildIssueCandidate } = require('./buildIssueCandidate');
 
+function isHistoricalOnlyObservationDebt(payload) {
+  const readiness = payload && payload.decayAwareReadiness && typeof payload.decayAwareReadiness === 'object'
+    ? payload.decayAwareReadiness
+    : {};
+  const currentRuntimeHealth = readiness.currentRuntimeHealth && typeof readiness.currentRuntimeHealth === 'object'
+    ? readiness.currentRuntimeHealth
+    : {};
+  return readiness.overallReadinessStatus === 'historical_backlog_dominant'
+    && currentRuntimeHealth.status === 'healthy';
+}
+
 function toRows(metricKey, envelope) {
   const metric = envelope && typeof envelope === 'object' ? envelope : null;
   if (!metric) return [];
@@ -49,6 +60,7 @@ function detectSliceIssues(params) {
   const metrics = payload.issueCandidateMetrics && typeof payload.issueCandidateMetrics === 'object'
     ? payload.issueCandidateMetrics
     : {};
+  const historicalOnly = isHistoricalOnlyObservationDebt(payload);
   const issues = [];
 
   ISSUE_RATE_METRIC_KEYS.forEach((metricKey) => {
@@ -67,7 +79,8 @@ function detectSliceIssues(params) {
         blockedCount: row.metric.blockedCount,
         summary: buildIssueSummary(metricKey, slice, row.metric),
         sourceCollections: row.metric.sourceCollections,
-        observationBlockers: row.metric.observationBlockers,
+        observationBlockers: historicalOnly ? [] : row.metric.observationBlockers,
+        historicalOnly,
         supportingSignals: []
           .concat(row.metric.falseCount > 0 ? ['issue_candidate_rate_false_count_present'] : []),
         supportingEvidence: buildEvidence(metricKey, slice, row.metric),

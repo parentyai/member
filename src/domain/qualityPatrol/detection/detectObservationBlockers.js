@@ -3,14 +3,28 @@
 const { AVAILABILITY_METRIC_KEYS, BLOCKER_METRIC_KEYS } = require('./constants');
 const { buildIssueCandidate } = require('./buildIssueCandidate');
 
+function isHistoricalOnlyObservationDebt(payload) {
+  const readiness = payload && payload.decayAwareReadiness && typeof payload.decayAwareReadiness === 'object'
+    ? payload.decayAwareReadiness
+    : {};
+  const currentRuntimeHealth = readiness.currentRuntimeHealth && typeof readiness.currentRuntimeHealth === 'object'
+    ? readiness.currentRuntimeHealth
+    : {};
+  return readiness.overallReadinessStatus === 'historical_backlog_dominant'
+    && currentRuntimeHealth.status === 'healthy';
+}
+
 function toRows(metricKey, envelope) {
   const metric = envelope && typeof envelope === 'object' ? envelope : null;
   if (!metric) return [];
-  const rows = [{
-    slice: 'global',
-    scope: 'global',
-    metric
-  }];
+  const rows = [];
+  if (!(metric.status === 'unavailable' && metric.sampleCount <= 0 && metric.blockedCount <= 0 && metric.unavailableCount <= 0)) {
+    rows.push({
+      slice: 'global',
+      scope: 'global',
+      metric
+    });
+  }
   const bySlice = Array.isArray(metric.bySlice) ? metric.bySlice : [];
   bySlice.forEach((row) => {
     if (!row || typeof row !== 'object') return;
@@ -62,6 +76,7 @@ function shouldCreateObservationIssue(metricRow) {
 function detectObservationBlockers(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const metrics = payload.metrics && typeof payload.metrics === 'object' ? payload.metrics : {};
+  const historicalOnly = isHistoricalOnlyObservationDebt(payload);
   const issues = [];
 
   AVAILABILITY_METRIC_KEYS.concat(BLOCKER_METRIC_KEYS).forEach((metricKey) => {
@@ -76,7 +91,9 @@ function detectObservationBlockers(params) {
         slice,
         scope: row.scope,
         metricStatus: row.metric.status,
-        status: BLOCKER_METRIC_KEYS.includes(metricKey) ? 'blocked' : undefined,
+        status: historicalOnly
+          ? 'watching'
+          : (BLOCKER_METRIC_KEYS.includes(metricKey) ? 'blocked' : undefined),
         value: row.metric.value,
         sampleCount: row.metric.sampleCount,
         missingCount: row.metric.missingCount,
@@ -84,6 +101,7 @@ function detectObservationBlockers(params) {
         summary: buildBlockerSummary(metricKey, row.metric, slice),
         sourceCollections: row.metric.sourceCollections,
         observationBlockers: row.metric.observationBlockers,
+        historicalOnly,
         supportingSignals: []
           .concat(row.metric.status === 'blocked' ? ['metric_blocked'] : [])
           .concat(row.metric.status === 'unavailable' ? ['metric_unavailable'] : [])

@@ -145,6 +145,7 @@ function buildIssueCandidate(params) {
     provenance: DETECTION_PROVENANCE,
     sourceCollections,
     observationBlockers,
+    historicalOnly: payload.historicalOnly === true,
     supportingSignals,
     supportingEvidence,
     thresholds,

@@ -45,6 +45,7 @@ function loadWebhookWithStubs(options) {
   const payload = options && typeof options === 'object' ? options : {};
   const auditCalls = [];
   const actionLogWrites = [];
+  const snapshotWrites = [];
   let retrievalCalled = 0;
   let paidFaqCalled = 0;
   let budgetCalled = 0;
@@ -100,6 +101,34 @@ function loadWebhookWithStubs(options) {
   setOverride('../../src/usecases/audit/appendAuditLog', {
     appendAuditLog: async (entry) => {
       auditCalls.push(entry);
+    }
+  });
+  setOverride('../../src/usecases/qualityPatrol/appendConversationReviewSnapshot', {
+    appendConversationReviewSnapshot: async (entry) => {
+      const stored = Object.assign({}, entry);
+      snapshotWrites.push(stored);
+      const userMessageText = typeof stored.userMessageText === 'string' ? stored.userMessageText.trim() : '';
+      const assistantReplyText = typeof stored.assistantReplyText === 'string' ? stored.assistantReplyText.trim() : '';
+      const priorContextSummaryText = typeof stored.priorContextSummaryText === 'string'
+        ? stored.priorContextSummaryText.trim()
+        : '';
+      return {
+        ok: true,
+        written: true,
+        skipped: false,
+        failed: false,
+        outcome: 'written',
+        reason: null,
+        transcriptSnapshotLineUserKeyAvailable: typeof stored.lineUserId === 'string' && stored.lineUserId.trim().length > 0,
+        transcriptSnapshotUserMessageAvailable: userMessageText.length > 0,
+        transcriptSnapshotAssistantReplyAvailable: assistantReplyText.length > 0,
+        transcriptSnapshotPriorContextSummaryAvailable: priorContextSummaryText.length > 0,
+        transcriptSnapshotAssistantReplyPresent: assistantReplyText.length > 0,
+        transcriptSnapshotAssistantReplyLength: assistantReplyText.length,
+        transcriptSnapshotSanitizedReplyLength: assistantReplyText.length,
+        transcriptSnapshotBuildAttempted: true,
+        transcriptSnapshotBuildSkippedReason: assistantReplyText.length > 0 ? null : 'assistant_reply_missing'
+      };
     }
   });
   setOverride('../../src/repos/firestore/systemFlagsRepo', {
@@ -316,6 +345,7 @@ function loadWebhookWithStubs(options) {
     handleLineWebhook: loaded.handleLineWebhook,
     auditCalls,
     actionLogWrites,
+    snapshotWrites,
     counters: {
       get retrievalCalled() { return retrievalCalled; },
       get paidFaqCalled() { return paidFaqCalled; },
@@ -623,6 +653,11 @@ test('phase719: gate-blocked domain concierge fallback keeps transcript snapshot
   assert.equal(loaded.actionLogWrites[0].transcriptSnapshotAssistantReplyPresent, true);
   assert.equal(loaded.actionLogWrites[0].transcriptSnapshotAssistantReplyLength > 0, true);
   assert.notEqual(loaded.actionLogWrites[0].transcriptSnapshotBuildSkippedReason, 'assistant_reply_missing');
+  assert.equal(loaded.snapshotWrites.length >= 2, true);
+  loaded.snapshotWrites.forEach((row) => {
+    assert.equal(row.userMessageText, '部屋探ししたい');
+    assert.equal(Boolean(row.assistantReplyText && row.assistantReplyText.trim()), true);
+  });
 });
 
 test('phase719: paid conversation sequence avoids generic reset for planning, pricing, and mixed-domain prompts', { concurrency: false }, async (t) => {

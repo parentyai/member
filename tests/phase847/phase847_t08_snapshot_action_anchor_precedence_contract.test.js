@@ -59,3 +59,59 @@ test('phase847: snapshot/action anchors take precedence while faq evidence stays
   assert.ok(unit.evidenceRefs.some((row) => row.source === 'llm_action_logs'));
   assert.ok(unit.evidenceRefs.some((row) => row.source === 'faq_answer_logs'));
 });
+
+test('phase847: review unit prefers reviewable duplicate snapshot over a newer incomplete snapshot on the same trace', () => {
+  const units = buildConversationReviewUnits({
+    snapshots: [{
+      id: 'snapshot_reviewable',
+      lineUserKey: 'userkey_phase847_duplicate_reviewable',
+      traceId: 'trace_duplicate_reviewable',
+      userMessageMasked: '今日いちばん優先することを教えてください。',
+      assistantReplyMasked: 'まず一歩目だけ決めましょう。',
+      priorContextSummaryMasked: '',
+      userMessageAvailable: true,
+      assistantReplyAvailable: true,
+      priorContextSummaryAvailable: false,
+      createdAt: '2026-03-23T14:00:00.000Z'
+    }, {
+      id: 'snapshot_incomplete_newer',
+      lineUserKey: 'userkey_phase847_duplicate_reviewable',
+      traceId: 'trace_duplicate_reviewable',
+      userMessageMasked: null,
+      assistantReplyMasked: 'まず一歩目だけ決めましょう。',
+      priorContextSummaryMasked: '',
+      userMessageAvailable: false,
+      assistantReplyAvailable: true,
+      priorContextSummaryAvailable: false,
+      createdAt: '2026-03-23T14:00:05.000Z'
+    }],
+    llmActionLogs: [{
+      id: 'action_duplicate_reviewable',
+      traceId: 'trace_duplicate_reviewable',
+      lineUserId: 'U_PHASE847_DUPLICATE_REVIEWABLE',
+      strategyReason: 'domain_concierge_fallback',
+      selectedCandidateKind: 'domain_concierge_candidate',
+      createdAt: '2026-03-23T14:00:06.000Z'
+    }],
+    faqAnswerLogs: [],
+    traceBundles: {
+      trace_duplicate_reviewable: {
+        ok: true,
+        traceId: 'trace_duplicate_reviewable',
+        traceJoinSummary: {
+          completeness: 1,
+          joinedDomains: ['llmActions'],
+          missingDomains: [],
+          criticalMissingDomains: []
+        }
+      }
+    }
+  });
+
+  assert.equal(units.length, 1);
+  const unit = units[0];
+  assert.equal(unit.userMessage.available, true);
+  assert.equal(unit.assistantReply.available, true);
+  assert.equal(unit.observationBlockers.some((item) => item.code === 'missing_user_message'), false);
+  assert.equal(unit.observationBlockers.some((item) => item.code === 'transcript_not_reviewable'), false);
+});

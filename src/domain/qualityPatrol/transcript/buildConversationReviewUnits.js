@@ -76,6 +76,27 @@ function compareCreatedDesc(left, right) {
   return (rightAt ? new Date(rightAt).getTime() : 0) - (leftAt ? new Date(leftAt).getTime() : 0);
 }
 
+function snapshotCoverageScore(row) {
+  const source = row && typeof row === 'object' ? row : null;
+  if (!source) return 0;
+  return [
+    source.userMessageAvailable === true ? 1 : 0,
+    source.assistantReplyAvailable === true ? 1 : 0,
+    source.priorContextSummaryAvailable === true ? 1 : 0
+  ].reduce((sum, value) => sum + value, 0);
+}
+
+function shouldPreferSnapshot(current, candidate) {
+  if (!current) return true;
+  const currentReviewable = current.userMessageAvailable === true && current.assistantReplyAvailable === true;
+  const candidateReviewable = candidate.userMessageAvailable === true && candidate.assistantReplyAvailable === true;
+  if (currentReviewable !== candidateReviewable) return candidateReviewable;
+  const currentScore = snapshotCoverageScore(current);
+  const candidateScore = snapshotCoverageScore(candidate);
+  if (currentScore !== candidateScore) return candidateScore > currentScore;
+  return compareCreatedDesc(current, candidate) > 0;
+}
+
 function buildAnchorKey(kind, row, index) {
   const traceId = normalizeText(row && row.traceId);
   if (traceId) return `trace:${traceId}`;
@@ -253,7 +274,7 @@ function buildConversationReviewAnchors(params) {
     const anchor = ensureAnchor(anchors, key);
     anchor.traceId = normalizeText(row && row.traceId) || anchor.traceId;
     const candidate = Object.assign({ id: row && row.id ? row.id : null }, row);
-    if (!anchor.snapshot || compareCreatedDesc(anchor.snapshot, candidate) > 0) {
+    if (shouldPreferSnapshot(anchor.snapshot, candidate)) {
       anchor.snapshot = candidate;
     }
   });
