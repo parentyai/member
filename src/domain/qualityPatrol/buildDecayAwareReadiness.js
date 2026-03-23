@@ -217,6 +217,7 @@ function resolveRecentWindowStatus(snapshot) {
     && row.assistant_reply_missing <= 0
     && row.faqOnlyRowsSkipped <= 0
     && row.traceHydrationLimitedCount <= 0
+    && row.blockerCount <= 0
   ) {
     return 'healthy';
   }
