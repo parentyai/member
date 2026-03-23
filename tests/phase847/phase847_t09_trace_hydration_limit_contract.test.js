@@ -119,3 +119,87 @@ test('phase847: default trace hydration limit follows review limit to avoid arti
   assert.equal(result.reviewUnits.length, 3);
   assert.ok(result.reviewUnits.every((unit) => unit.evidenceJoinStatus.trace === 'joined'));
 });
+
+test('phase847: latest review-unit extraction aligns snapshot and faq reads to the action-log window', async () => {
+  const snapshotCalls = [];
+  const faqCalls = [];
+  const result = await buildConversationReviewUnitsFromSources({
+    limit: 2,
+    traceLimit: 2
+  }, {
+    conversationReviewSnapshotsRepo: {
+      listConversationReviewSnapshotsByCreatedAtRange: async (params) => {
+        snapshotCalls.push(params);
+        return [
+          {
+            id: 'snapshot_align_1',
+            traceId: 'trace_align_1',
+            lineUserKey: 'userkey_align_1',
+            userMessageAvailable: true,
+            assistantReplyAvailable: true,
+            priorContextSummaryAvailable: false,
+            userMessageMasked: 'aligned question',
+            assistantReplyMasked: 'aligned reply',
+            createdAt: '2026-03-14T14:00:00.000Z'
+          }
+        ];
+      }
+    },
+    llmActionLogsRepo: {
+      listLlmActionLogsByCreatedAtRange: async () => ([
+        {
+          id: 'action_align_1',
+          traceId: 'trace_align_1',
+          lineUserId: 'U_ALIGN_1',
+          strategyReason: 'align_anchor_1',
+          createdAt: '2026-03-14T14:00:00.000Z'
+        },
+        {
+          id: 'action_align_2',
+          traceId: 'trace_align_2',
+          lineUserId: 'U_ALIGN_2',
+          strategyReason: 'align_anchor_2',
+          createdAt: '2026-03-14T13:59:30.000Z'
+        }
+      ])
+    },
+    faqAnswerLogsRepo: {
+      listFaqAnswerLogsByCreatedAtRange: async (params) => {
+        faqCalls.push(params);
+        return [
+          {
+            id: 'faq_align_1',
+            traceId: 'trace_align_1',
+            createdAt: '2026-03-14T14:00:01.000Z'
+          }
+        ];
+      }
+    },
+    getTraceBundle: async ({ traceId }) => ({
+      ok: true,
+      traceId,
+      traceJoinSummary: {
+        completeness: 1,
+        joinedDomains: ['llmActions'],
+        missingDomains: [],
+        criticalMissingDomains: []
+      }
+    })
+  });
+
+  assert.deepEqual(snapshotCalls, [{
+    fromAt: '2026-03-14T13:59:30.000Z',
+    toAt: '2026-03-14T14:00:00.000Z',
+    limit: 2
+  }]);
+  assert.deepEqual(faqCalls, [{
+    fromAt: '2026-03-14T13:59:30.000Z',
+    toAt: '2026-03-14T14:00:00.000Z',
+    limit: 2
+  }]);
+  assert.deepEqual(result.sourceWindow, {
+    fromAt: '2026-03-14T13:59:30.000Z',
+    toAt: '2026-03-14T14:00:00.000Z'
+  });
+  assert.equal(result.joinDiagnostics.faqOnlyRowsSkipped, 0);
+});

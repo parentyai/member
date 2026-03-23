@@ -54,6 +54,19 @@ function buildSourceWindowFromRows(rows) {
   };
 }
 
+function deriveSourceWindow(payload, rows) {
+  const explicitWindow = hasWindow({
+    fromAt: payload && payload.fromAt ? payload.fromAt : null,
+    toAt: payload && payload.toAt ? payload.toAt : null
+  })
+    ? {
+      fromAt: payload.fromAt || null,
+      toAt: payload.toAt || null
+    }
+    : null;
+  return explicitWindow || buildSourceWindowFromRows(rows);
+}
+
 function filterRowsByWindow(rows, range) {
   if (!hasWindow(range)) return Array.isArray(rows) ? rows.slice() : [];
   const fromMs = range.fromAt ? new Date(range.fromAt).getTime() : null;
@@ -127,25 +140,18 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
   const snapshotsRepo = deps && deps.conversationReviewSnapshotsRepo ? deps.conversationReviewSnapshotsRepo : conversationReviewSnapshotsRepo;
   const actionRepo = deps && deps.llmActionLogsRepo ? deps.llmActionLogsRepo : llmActionLogsRepo;
   const getTraceBundleUsecase = deps && deps.getTraceBundle ? deps.getTraceBundle : getTraceBundle;
-  const explicitSourceWindow = hasWindow({
-    fromAt: payload.fromAt || null,
-    toAt: payload.toAt || null
-  })
-    ? {
-      fromAt: payload.fromAt || null,
-      toAt: payload.toAt || null
-    }
-    : null;
 
-  const [initialSnapshots, llmActionLogs] = await Promise.all([
+  const llmActionLogs = await actionRepo.listLlmActionLogsByCreatedAtRange({
+    fromAt: payload.fromAt,
+    toAt: payload.toAt,
+    limit
+  });
+  const sourceWindow = deriveSourceWindow(payload, llmActionLogs);
+
+  const [initialSnapshots] = await Promise.all([
     snapshotsRepo.listConversationReviewSnapshotsByCreatedAtRange({
-      fromAt: payload.fromAt,
-      toAt: payload.toAt,
-      limit
-    }),
-    actionRepo.listLlmActionLogsByCreatedAtRange({
-      fromAt: payload.fromAt,
-      toAt: payload.toAt,
+      fromAt: sourceWindow.fromAt,
+      toAt: sourceWindow.toAt,
       limit
     })
   ]);
@@ -158,7 +164,7 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
         traceId,
         limit: snapshotTraceBackfillLimit
       });
-      return filterRowsByWindow(rows, explicitSourceWindow);
+      return filterRowsByWindow(rows, sourceWindow);
     } catch (_err) {
       return [];
     }
@@ -193,7 +199,7 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
   const faqAnswerLogs = attachFaqEvidenceFromTraceBundles({
     anchors: anchorBuild.anchors,
     traceBundles,
-    sourceWindow: explicitSourceWindow
+    sourceWindow
   });
   const transcriptCoverage = buildTranscriptCoverageDiagnostics({ llmActionLogs });
   const reviewUnits = buildConversationReviewUnits({
@@ -204,7 +210,7 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
 
   return {
     ok: true,
-    sourceWindow: explicitSourceWindow || buildSourceWindowFromRows(snapshots.concat(llmActionLogs)),
+    sourceWindow,
     reviewUnits,
     llmActionLogs,
     transcriptCoverage,
