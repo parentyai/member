@@ -18,6 +18,48 @@ function normalizeLimit(value, fallback, max) {
   return Math.max(1, Math.min(max, Math.floor(numeric)));
 }
 
+function toIso(value) {
+  if (!value) return null;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = new Date(value);
+    if (Number.isFinite(parsed.getTime())) return parsed.toISOString();
+  }
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
+  if (value && typeof value.toDate === 'function') {
+    const date = value.toDate();
+    if (date instanceof Date && Number.isFinite(date.getTime())) return date.toISOString();
+  }
+  return null;
+}
+
+function deriveSourceWindow(payload, llmActionLogs) {
+  const requestedFromAt = toIso(payload && payload.fromAt);
+  const requestedToAt = toIso(payload && payload.toAt);
+  if (requestedFromAt || requestedToAt) {
+    return {
+      fromAt: requestedFromAt,
+      toAt: requestedToAt
+    };
+  }
+
+  const times = (Array.isArray(llmActionLogs) ? llmActionLogs : [])
+    .map((row) => toIso(row && row.createdAt))
+    .filter(Boolean)
+    .sort();
+
+  if (times.length <= 0) {
+    return {
+      fromAt: null,
+      toAt: null
+    };
+  }
+
+  return {
+    fromAt: times[0],
+    toAt: times[times.length - 1]
+  };
+}
+
 async function buildConversationReviewUnitsFromSources(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const limit = normalizeLimit(payload.limit, 100, 500);
@@ -27,20 +69,22 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
   const faqRepo = deps && deps.faqAnswerLogsRepo ? deps.faqAnswerLogsRepo : faqAnswerLogsRepo;
   const getTraceBundleUsecase = deps && deps.getTraceBundle ? deps.getTraceBundle : getTraceBundle;
 
-  const [snapshots, llmActionLogs, faqAnswerLogs] = await Promise.all([
+  const llmActionLogs = await actionRepo.listLlmActionLogsByCreatedAtRange({
+    fromAt: payload.fromAt,
+    toAt: payload.toAt,
+    limit
+  });
+  const sourceWindow = deriveSourceWindow(payload, llmActionLogs);
+
+  const [snapshots, faqAnswerLogs] = await Promise.all([
     snapshotsRepo.listConversationReviewSnapshotsByCreatedAtRange({
-      fromAt: payload.fromAt,
-      toAt: payload.toAt,
-      limit
-    }),
-    actionRepo.listLlmActionLogsByCreatedAtRange({
-      fromAt: payload.fromAt,
-      toAt: payload.toAt,
+      fromAt: sourceWindow.fromAt,
+      toAt: sourceWindow.toAt,
       limit
     }),
     faqRepo.listFaqAnswerLogsByCreatedAtRange({
-      fromAt: payload.fromAt,
-      toAt: payload.toAt,
+      fromAt: sourceWindow.fromAt,
+      toAt: sourceWindow.toAt,
       limit
     })
   ]);
@@ -79,10 +123,7 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
 
   return {
     ok: true,
-    sourceWindow: {
-      fromAt: payload.fromAt || null,
-      toAt: payload.toAt || null
-    },
+    sourceWindow,
     reviewUnits,
     llmActionLogs,
     transcriptCoverage,
