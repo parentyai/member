@@ -25,7 +25,6 @@ const { resolveEmergencyRecipientsForFanout } = require('../src/usecases/emergen
 const { previewEmergencyRule } = require('../src/usecases/emergency/previewEmergencyRule');
 const { DEFAULT_PROVIDER_SETTINGS } = require('../src/usecases/emergency/constants');
 
-const DB = getDb();
 const PRESERVE_USER_ID = 'U3037952f2f6531a3d8b24fd13ca3c680';
 const REGION_KEY = 'NY::new-york';
 const REGION_KEY_LOWER = 'ny::new-york';
@@ -307,6 +306,13 @@ const EMERGENCY_RULE_SPECS = Object.freeze([
   }
 ]);
 
+function collectEmergencySyncProviderKeys(ruleSpecs) {
+  const rows = Array.isArray(ruleSpecs) && ruleSpecs.length ? ruleSpecs : EMERGENCY_RULE_SPECS;
+  return Array.from(new Set(rows
+    .map((spec) => (spec && typeof spec.providerKey === 'string' ? spec.providerKey.trim().toLowerCase() : ''))
+    .filter(Boolean)));
+}
+
 const PROVIDER_STATUS_OVERRIDES = Object.freeze({
   airnow_aqi: 'disabled',
   fema_ipaws: 'disabled'
@@ -333,6 +339,10 @@ function writeJson(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
+function getBootstrapDb() {
+  return getDb();
+}
+
 function isoAfterDays(days) {
   const next = new Date();
   next.setUTCDate(next.getUTCDate() + days);
@@ -340,7 +350,7 @@ function isoAfterDays(days) {
 }
 
 async function countCollection(name) {
-  const snap = await DB.collection(name).count().get();
+  const snap = await getBootstrapDb().collection(name).count().get();
   return snap.data().count || 0;
 }
 
@@ -507,7 +517,7 @@ async function upsertStableLink(id, payload, dryRun, actions) {
   });
   actions.push({ type: 'upsert_link_registry', id, url: normalized.url, title: normalized.title });
   if (dryRun) return { id, existed: Boolean(existing) };
-  await DB.collection('link_registry').doc(id).set(normalized, { merge: true });
+  await getBootstrapDb().collection('link_registry').doc(id).set(normalized, { merge: true });
   return { id, existed: Boolean(existing) };
 }
 
@@ -727,13 +737,19 @@ async function bootstrapEmergency(ctx) {
     providerKey: spec.providerKey,
     severity: spec.severity
   })));
-  actions.push({ type: 'run_emergency_sync', forceRefresh: true, skipSummarize: true });
+  actions.push({
+    type: 'run_emergency_sync',
+    forceRefresh: true,
+    skipSummarize: true,
+    providerKeys: collectEmergencySyncProviderKeys(EMERGENCY_RULE_SPECS)
+  });
 
   if (dryRun) {
     summary.emergency = {
       providerLinkIds,
       ruleId: RULE_ID,
       rules: EMERGENCY_RULE_SPECS,
+      providerKeys: collectEmergencySyncProviderKeys(EMERGENCY_RULE_SPECS),
       dryRun: true
     };
     return;
@@ -772,13 +788,14 @@ async function bootstrapEmergency(ctx) {
     if (spec.ruleId === RULE_ID) rule = upserted;
   }
 
-  const syncResult = await runEmergencySync({
+  const syncResult = await runEmergencySyncInChunks({
     traceId,
     runId: `${runId}_emergency`,
     actor: ACTOR,
     forceRefresh: true,
     skipSummarize: true,
-    dryRun: false
+    dryRun: false,
+    ruleSpecs: EMERGENCY_RULE_SPECS
   });
 
   let bulletins = await emergencyBulletinsRepo.listBulletins({ limit: 20 });
@@ -861,10 +878,13 @@ async function bootstrapEmergency(ctx) {
     ruleId: RULE_ID,
     rule,
     rules: EMERGENCY_RULE_SPECS,
+    providerKeys: collectEmergencySyncProviderKeys(EMERGENCY_RULE_SPECS),
+    syncChunkCount: syncResult.syncChunkCount,
+    syncChunks: syncResult.syncChunks,
     providerCount: providers.length,
     syncResult: {
       ok: syncResult.ok,
-      providerCount: syncResult.providerCount,
+      providerCount: Array.isArray(syncResult.providerResults) ? syncResult.providerResults.length : 0,
       autoDispatchPlanCount: Array.isArray(syncResult.autoDispatchPlan) ? syncResult.autoDispatchPlan.length : 0,
       providerKeys: Array.isArray(syncResult.providerResults) ? syncResult.providerResults.map((item) => item.providerKey) : []
     },
@@ -874,6 +894,61 @@ async function bootstrapEmergency(ctx) {
     nyBulletinIds: nyBulletins.map((item) => item.id),
     recipientPreview,
     rulePreview
+  };
+}
+
+async function runEmergencySyncInChunks(params, deps) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const runner = deps && typeof deps.runEmergencySync === 'function'
+    ? deps.runEmergencySync
+    : runEmergencySync;
+  const providerKeys = collectEmergencySyncProviderKeys(payload.ruleSpecs);
+  const syncChunks = [];
+  const providerResults = [];
+  const autoDispatchPlan = [];
+  const autoDispatchResults = [];
+
+  for (const providerKey of providerKeys) {
+    const chunkRunIdBase = typeof payload.runId === 'string' && payload.runId.trim()
+      ? payload.runId.trim()
+      : `bootstrap_emergency_chunk_${Date.now()}`;
+    const result = await runner({
+      traceId: payload.traceId,
+      runId: `${chunkRunIdBase}__${providerKey}`,
+      actor: payload.actor,
+      providerKey,
+      forceRefresh: payload.forceRefresh === true,
+      skipSummarize: payload.skipSummarize === true,
+      maxRecipientsPerRun: payload.maxRecipientsPerRun
+    }, deps);
+
+    syncChunks.push({
+      providerKey,
+      ok: result && result.ok === true,
+      providerCount: result && Number.isFinite(Number(result.providerCount)) ? Number(result.providerCount) : 0,
+      autoDispatchPlanCount: Array.isArray(result && result.autoDispatchPlan) ? result.autoDispatchPlan.length : 0,
+      autoDispatchAttemptedCount: Array.isArray(result && result.autoDispatchResults) ? result.autoDispatchResults.length : 0,
+      reason: result && result.reason ? result.reason : null,
+      runId: result && result.runId ? result.runId : null
+    });
+
+    if (!result || result.ok !== true) {
+      throw new Error(`emergency sync chunk failed for provider=${providerKey} reason=${result && result.reason ? result.reason : 'unknown'}`);
+    }
+
+    if (Array.isArray(result.providerResults)) providerResults.push(...result.providerResults);
+    if (Array.isArray(result.autoDispatchPlan)) autoDispatchPlan.push(...result.autoDispatchPlan);
+    if (Array.isArray(result.autoDispatchResults)) autoDispatchResults.push(...result.autoDispatchResults);
+  }
+
+  return {
+    ok: true,
+    providerKeys,
+    syncChunkCount: syncChunks.length,
+    syncChunks,
+    providerResults,
+    autoDispatchPlan,
+    autoDispatchResults
   };
 }
 
@@ -945,7 +1020,19 @@ async function main() {
   }, null, 2));
 }
 
-main().catch((err) => {
-  console.error(err && err.stack ? err.stack : err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err && err.stack ? err.stack : err);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  collectEmergencySyncProviderKeys,
+  runEmergencySyncInChunks,
+  buildEmergencyMessageDraftForBootstrap,
+  buildEmergencySummaryForBootstrap,
+  buildEmergencyTitleForBootstrap,
+  buildCityPackMetadata,
+  main
+};

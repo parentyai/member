@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-23T06:45:28-04:00",
-  "gitCommit": "85cb5dbb321302899844004890175d48ebc1280e",
-  "branch": "codex/rebuild-city-emergency",
-  "sourceDigest": "bdd4c82a103ac24e3ccc0771da2240ec92f6a05de723432c14a5f1c9af950e63",
+  "generatedAt": "2026-03-23T19:13:15-04:00",
+  "gitCommit": "4a0837261a2cb2396a49ee71d8293f7cd8c1c7e8",
+  "branch": "codex/city-emergency-bootstrap-chunking",
+  "sourceDigest": "1f11701d6701b6d30c78ac3f26ce002fe096f9376022c337d0136abc6c4d783b",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
