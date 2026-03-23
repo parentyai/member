@@ -29,12 +29,15 @@ test('phase669: emergency rules repo upsert/list and engine match are determinis
   const specific = await emergencyRulesRepo.upsertRule('emr_specific', {
     providerKey: 'nws_alerts',
     eventType: 'weather.new',
-    severity: 'CRITICAL',
+    severity: 'WARN+',
     region: { regionKey: 'TX::statewide' },
     autoSend: true,
     enabled: true,
     priority: 'emergency',
-    maxRecipients: 250
+    maxRecipients: 250,
+    displayLabel: 'TX 気象警報確認',
+    policySummary: '警報級以上を優先確認して送る。',
+    operatorAction: '交通影響を確認してから承認'
   }, 'phase669_test');
 
   const broad = await emergencyRulesRepo.upsertRule('emr_broad', {
@@ -62,6 +65,10 @@ test('phase669: emergency rules repo upsert/list and engine match are determinis
   };
   const matched = matchEmergencyRule(specific, ruleInput);
   assert.equal(matched.ok, true);
+  assert.equal(specific.displayLabel, 'TX 気象警報確認');
+  assert.equal(specific.policySummary, '警報級以上を優先確認して送る。');
+  assert.equal(specific.operatorAction, '交通影響を確認してから承認');
+  assert.equal(specific.severity, 'WARN+');
 
   const unsupported = matchEmergencyRule(Object.assign({}, specific, {
     region: { county: 'Travis' }

@@ -35,9 +35,11 @@ const CONFIRM_TOKEN = 'REBUILD_CITY_EMERGENCY';
 const ACTOR = 'admin_bootstrap_city_emergency';
 const REQUEST_ID = 'bootstrap_cpr_ny_new_york';
 const RULE_ID = 'emr_bootstrap_ny_new_york';
+const WEATHER_RULE_ID = 'emr_bootstrap_ny_weather_watch';
+const EARTHQUAKE_RULE_ID = 'emr_bootstrap_ny_earthquake_watch';
 const SLOT_SCHEMA_VERSION = 'v1_fixed_8_slots';
 const CITY_PACK_NAME = 'NYC生活スタートパック';
-const CITY_PACK_DESCRIPTION = 'ニューヨークで暮らし始める家庭が、学校・医療・交通・生活インフラ・緊急対応の公式導線をすぐ開けるように整理した地域パックです。';
+const CITY_PACK_DESCRIPTION = 'ニューヨークで暮らし始める家庭が、学校・医療・交通・生活インフラ・緊急対応の公式導線を、最初の判断順に並べてすぐ開けるように整理した地域パックです。';
 
 const CITY_SOURCE_SPECS = Object.freeze([
   {
@@ -236,38 +238,74 @@ const EMERGENCY_LINK_SPECS = Object.freeze({
 
 const CITY_SLOT_CONTENT = Object.freeze({
   emergency: {
-    description: '災害・回収情報・急な行動変更が必要な時の一次確認先です。まず公式発表と市の案内を確認します。',
+    description: '災害・回収情報・急な行動変更が必要な時の一次確認先です。まず市の危機管理と公式速報を確認します。',
     ctaText: '緊急情報を確認'
   },
   admin: {
-    description: '住所・行政手続き・家族向け公的案内の入口です。どこから始めるか迷った時に開きます。',
+    description: '住所・行政手続き・家族向け公的案内の入口です。引っ越し直後に最初に開く行政導線として使います。',
     ctaText: '行政窓口を開く'
   },
   utilities: {
-    description: '停電・水道・ごみ・生活インフラの相談導線です。生活トラブルは 311 を起点に整理します。',
+    description: '停電・水道・ごみ・生活インフラの相談導線です。暮らしのトラブルは 311 を起点に切り分けます。',
     ctaText: '生活インフラを確認'
   },
   school: {
-    description: '公立学校の学期日程と休校確認の入口です。登校判断や学校都合の確認に使います。',
+    description: '公立学校の日程・休校・年度切替の入口です。家庭の朝判断で最初に確認する学校導線です。',
     ctaText: '学校日程を確認'
   },
   transport: {
-    description: '地下鉄・バス・鉄道の運行状況を確認します。通学・通勤前の確認導線です。',
+    description: '地下鉄・バス・鉄道の運行状況を確認します。通学・通勤前に止まっていないかを確認する導線です。',
     ctaText: '交通状況を確認'
   },
   health_entry: {
-    description: '公的な保健・医療情報の入口です。受診先検索や健康情報の確認に使います。',
+    description: '公的な保健・医療情報の入口です。受診先検索、保健情報、予防接種確認の起点に使います。',
     ctaText: '医療情報を確認'
   },
   helpdesk: {
-    description: 'どこに相談すべきか迷った時の一次窓口です。暮らしの困りごとを 311 から整理できます。',
+    description: 'どこに相談すべきか迷った時の一次窓口です。困りごとを部局別に振り分ける前の総合入口です。',
     ctaText: '相談窓口を開く'
   },
   culture: {
-    description: '公園と公共施設の案内です。地域サービスや子どもの居場所確認に使います。',
+    description: '公園と公共施設の案内です。子どもの居場所や地域サービスの確認導線として使います。',
     ctaText: '地域施設を見る'
   }
 });
+
+const EMERGENCY_RULE_SPECS = Object.freeze([
+  {
+    ruleId: RULE_ID,
+    providerKey: 'openfda_recalls',
+    eventType: null,
+    severity: 'CRITICAL',
+    priority: 'standard',
+    maxRecipients: 20,
+    displayLabel: 'NYC リコール確認',
+    policySummary: '商品回収は誤配信コストが高いため、対象商品と購入有無を手動確認してから送ります。',
+    operatorAction: '商品名・購入有無・対象ロットを確認してから承認'
+  },
+  {
+    ruleId: WEATHER_RULE_ID,
+    providerKey: 'nws_alerts',
+    eventType: null,
+    severity: 'WARN+',
+    priority: 'emergency',
+    maxRecipients: 200,
+    displayLabel: 'NYC 気象警報確認',
+    policySummary: '気象警報は通学・移動判断に直結するため、警報級以上を優先確認して送ります。',
+    operatorAction: '警報種別と交通・学校影響を確認してから承認'
+  },
+  {
+    ruleId: EARTHQUAKE_RULE_ID,
+    providerKey: 'usgs_earthquakes',
+    eventType: null,
+    severity: 'WARN+',
+    priority: 'emergency',
+    maxRecipients: 100,
+    displayLabel: 'NYC 地震情報確認',
+    policySummary: '有感地震や交通影響が想定される地震だけを優先確認して送ります。',
+    operatorAction: '揺れの規模・交通影響・避難指示の有無を確認してから承認'
+  }
+]);
 
 const PROVIDER_STATUS_OVERRIDES = Object.freeze({
   airnow_aqi: 'disabled',
@@ -354,13 +392,24 @@ function buildCityPackMetadata(runId) {
     bindingLevel: 'REFERENCE',
     authorityTier: 'T1_OFFICIAL_OPERATION',
     contentProfile: 'family_relocation_v1',
+    editorialPolicy: {
+      audience: 'family_relocation',
+      promise: '迷った時に最初に開く公式導線だけを残す',
+      tone: 'next_action_first'
+    },
     sourceQualityPolicy: {
       officialOnlyRequired: true,
       schoolSlotMustBePublic: true,
       reviewCadenceDays: 30,
       maxSourceAgeDays: 180,
       fallbackPolicy: 'official_link_required'
-    }
+    },
+    sourceQualityChecklist: [
+      '公式機関または公式委託導線だけを残す',
+      'school slot は公立学校または教育委員会の案内に限定する',
+      '原則30日以内に確認し、180日超の古い source は差し替える',
+      '各 slot は最初の一手が1行で分かる文面にする'
+    ]
   };
 }
 
@@ -388,6 +437,9 @@ function buildEmergencyMessageDraftForBootstrap(bulletin) {
   if (category === 'weather' || providerKey === 'nws_alerts') {
     return `【至急確認 / 気象警報】 ${headline}\n対象地域: ${regionLabel}\n外出・通学前に警報と交通状況を確認し、危険時は行動を切り替えてください。`;
   }
+  if (providerKey === 'usgs_earthquakes') {
+    return `【至急確認 / 地震情報】 ${headline}\n対象地域: ${regionLabel}\n安全確保を優先し、交通影響と避難情報を確認してください。`;
+  }
   return `【確認 / 緊急情報】 ${headline}\n対象地域: ${regionLabel}\nまず公式情報で対象地域と影響範囲を確認してください。`;
 }
 
@@ -400,6 +452,9 @@ function buildEmergencySummaryForBootstrap(bulletin) {
   if (category === 'weather' || providerKey === 'nws_alerts') {
     return '移動・通学・避難判断に影響する可能性があります。';
   }
+  if (providerKey === 'usgs_earthquakes') {
+    return '揺れの規模と交通・避難影響を確認してください。';
+  }
   return '対象地域と影響範囲を確認してください。';
 }
 
@@ -411,6 +466,9 @@ function buildEmergencyTitleForBootstrap(bulletin) {
   }
   if (category === 'weather' || providerKey === 'nws_alerts') {
     return 'NYC 気象警報確認';
+  }
+  if (providerKey === 'usgs_earthquakes') {
+    return 'NYC 地震情報確認';
   }
   return 'NYC 緊急情報確認';
 }
@@ -662,13 +720,20 @@ async function bootstrapEmergency(ctx) {
   }
 
   actions.push({ type: 'ensure_emergency_providers' });
-  actions.push({ type: 'upsert_emergency_rule', ruleId: RULE_ID, regionKey: REGION_KEY, providerKey: 'openfda_recalls' });
+  actions.push(...EMERGENCY_RULE_SPECS.map((spec) => ({
+    type: 'upsert_emergency_rule',
+    ruleId: spec.ruleId,
+    regionKey: REGION_KEY,
+    providerKey: spec.providerKey,
+    severity: spec.severity
+  })));
   actions.push({ type: 'run_emergency_sync', forceRefresh: true, skipSummarize: true });
 
   if (dryRun) {
     summary.emergency = {
       providerLinkIds,
       ruleId: RULE_ID,
+      rules: EMERGENCY_RULE_SPECS,
       dryRun: true
     };
     return;
@@ -686,19 +751,26 @@ async function bootstrapEmergency(ctx) {
     });
   }
 
-  const rule = await emergencyRulesRepo.upsertRule(RULE_ID, {
-    providerKey: 'openfda_recalls',
-    eventType: null,
-    severity: 'CRITICAL',
-    region: { regionKey: REGION_KEY },
-    membersOnly: false,
-    role: null,
-    autoSend: false,
-    enabled: true,
-    priority: 'standard',
-    maxRecipients: 20,
-    traceId
-  }, ACTOR);
+  let rule = null;
+  for (const spec of EMERGENCY_RULE_SPECS) {
+    const upserted = await emergencyRulesRepo.upsertRule(spec.ruleId, {
+      providerKey: spec.providerKey,
+      eventType: spec.eventType,
+      severity: spec.severity,
+      region: { regionKey: REGION_KEY },
+      membersOnly: false,
+      role: null,
+      autoSend: false,
+      enabled: true,
+      priority: spec.priority,
+      maxRecipients: spec.maxRecipients,
+      displayLabel: spec.displayLabel,
+      policySummary: spec.policySummary,
+      operatorAction: spec.operatorAction,
+      traceId
+    }, ACTOR);
+    if (spec.ruleId === RULE_ID) rule = upserted;
+  }
 
   const syncResult = await runEmergencySync({
     traceId,
@@ -788,6 +860,7 @@ async function bootstrapEmergency(ctx) {
     providerLinkIds,
     ruleId: RULE_ID,
     rule,
+    rules: EMERGENCY_RULE_SPECS,
     providerCount: providers.length,
     syncResult: {
       ok: syncResult.ok,

@@ -30,3 +30,16 @@ test('phase674: emergency message copy gives weather-specific action line', () =
   assert.match(text, /対象地域: CA statewide/);
   assert.match(text, /外出・通学前に警報と交通状況/);
 });
+
+test('phase674: emergency message copy gives earthquake-specific action line', () => {
+  const text = buildEmergencyMessageDraft({
+    providerKey: 'usgs_earthquakes',
+    severity: 'CRITICAL',
+    category: 'earthquake',
+    regionKey: 'NY::new-york',
+    headline: 'Magnitude 4.2 event'
+  });
+  assert.match(text, /至急確認 \/ 地震情報/);
+  assert.match(text, /対象地域: New York, NY/);
+  assert.match(text, /交通影響と避難情報/);
+});
