@@ -53,14 +53,19 @@ function isHistoricalOnlyObservationPlan(entry) {
     && OBSERVATION_PROPOSAL_TYPES.includes(entry.mapped.proposalType);
 }
 
-function resolvePlanningStatus(reports, proposals) {
+function resolvePlanningStatus(reports, activeReports, proposals) {
   const sourceReports = Array.isArray(reports) ? reports : [];
+  const activeSourceReports = Array.isArray(activeReports) ? activeReports : [];
   if (!sourceReports.length) return 'insufficient_evidence';
+  if ((!Array.isArray(proposals) || proposals.length === 0)
+    && activeSourceReports.length === 0) {
+    return 'planned';
+  }
   if (!Array.isArray(proposals) || proposals.length === 0) return 'insufficient_evidence';
   const allObservation = proposals.every((item) => OBSERVATION_PROPOSAL_TYPES.includes(item.proposalType));
-  const allBlocked = sourceReports.every((item) => item.analysisStatus === 'blocked');
-  const allInsufficient = sourceReports.every((item) => item.analysisStatus === 'insufficient_evidence');
-  if (allBlocked || allObservation && sourceReports.some((item) => item.analysisStatus === 'blocked')) return 'blocked';
+  const allBlocked = activeSourceReports.every((item) => item.analysisStatus === 'blocked');
+  const allInsufficient = activeSourceReports.every((item) => item.analysisStatus === 'insufficient_evidence');
+  if (allBlocked || allObservation && activeSourceReports.some((item) => item.analysisStatus === 'blocked')) return 'blocked';
   if (allInsufficient) return 'insufficient_evidence';
   return 'planned';
 }
@@ -104,7 +109,7 @@ function buildImprovementPlan(params) {
     },
     recommendedPr,
     observationBlockers,
-    planningStatus: resolvePlanningStatus(activeReports, recommendedPr),
+    planningStatus: resolvePlanningStatus(rootCauseReports, activeReports, recommendedPr),
     provenance: IMPROVEMENT_PLANNER_PROVENANCE
   };
 }
