@@ -93,10 +93,13 @@ function buildIssueCandidate(params) {
     slice,
     value: payload.value
   });
-  const status = payload.status || resolveDetectionStatus({
+  const resolvedStatus = payload.status || resolveDetectionStatus({
     metricStatus,
     missingCount: payload.missingCount
   });
+  const status = payload.historicalOnly === true && resolvedStatus === 'open'
+    ? 'watching'
+    : resolvedStatus;
   const confidence = payload.confidence || resolveDetectionConfidence({
     metricStatus,
     sampleCount: payload.sampleCount,

@@ -130,6 +130,7 @@ test('phase850: historical backlog observation debt downgrades blockers and supp
   assert.ok(specificityIssue);
   assert.deepEqual(specificityIssue.observationBlockers, []);
   assert.equal(specificityIssue.historicalOnly, true);
+  assert.equal(specificityIssue.status, 'watching');
 
   assert.equal(
     result.issueCandidates.some((item) => item.metricKey === 'priorContextSummaryAvailableRate'),
