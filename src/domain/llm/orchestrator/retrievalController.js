@@ -24,6 +24,29 @@ function detectBroadGroundingSignals(messageText) {
   };
 }
 
+function resolveLocationHint(payload) {
+  if (payload && payload.locationHint && typeof payload.locationHint === 'object') {
+    return payload.locationHint;
+  }
+  if (payload && payload.requestContract && typeof payload.requestContract === 'object'
+    && payload.requestContract.locationHint && typeof payload.requestContract.locationHint === 'object') {
+    return payload.requestContract.locationHint;
+  }
+  return {};
+}
+
+function isCityScopedRequest(payload) {
+  const requestPayload = payload && typeof payload === 'object' ? payload : {};
+  const requestContract = requestPayload.requestContract && typeof requestPayload.requestContract === 'object'
+    ? requestPayload.requestContract
+    : {};
+  const knowledgeScope = normalizeText(requestPayload.knowledgeScope || requestContract.knowledgeScope).toLowerCase();
+  const locationHint = resolveLocationHint(requestPayload);
+  const locationHintKind = normalizeText(locationHint.kind).toLowerCase();
+  const requestedCityKey = normalizeText(requestPayload.requestedCityKey || locationHint.cityKey).toLowerCase();
+  return knowledgeScope === 'city' || locationHintKind === 'city' || Boolean(requestedCityKey);
+}
+
 function resolveRetrievalDecision(packet, strategyPlan) {
   const payload = packet && typeof packet === 'object' ? packet : {};
   const plan = strategyPlan && typeof strategyPlan === 'object' ? strategyPlan : {};
@@ -77,6 +100,15 @@ function resolveRetrievalDecision(packet, strategyPlan) {
     && continuationContext
     && domainIntent !== 'general';
   const highRiskDomain = isHighRiskDomain(domainIntent);
+  const cityScopedFollowupOverride = blockedByDefault
+    && isCityScopedRequest(payload)
+    && continuationContext
+    && (requestShape === 'answer' || requestShape === 'followup_continue')
+    && (
+      fallbackType === 'general_followup_direct_answer'
+      || fallbackType === 'followup_direct_answer'
+      || fallbackType === 'history_followup_carry'
+    );
   const permitReason = [];
 
   if (strategy === 'recommendation') {
@@ -89,7 +121,7 @@ function resolveRetrievalDecision(packet, strategyPlan) {
     };
   }
 
-  if (blockedByDefault && preserveDirectAnswerFallback) {
+  if (blockedByDefault && preserveDirectAnswerFallback && cityScopedFollowupOverride !== true) {
     return {
       retrieveNeeded: false,
       retrievalBlockedByStrategy: true,
@@ -99,7 +131,7 @@ function resolveRetrievalDecision(packet, strategyPlan) {
     };
   }
 
-  if (blockedByDefault && requestShapeDirectAnswer) {
+  if (blockedByDefault && requestShapeDirectAnswer && cityScopedFollowupOverride !== true) {
     return {
       retrieveNeeded: false,
       retrievalBlockedByStrategy: true,
