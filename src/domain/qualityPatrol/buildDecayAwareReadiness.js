@@ -224,18 +224,39 @@ function resolveRecentWindowStatus(snapshot) {
   return 'unhealthy';
 }
 
+function computeHistoricalDebtCounts(fullWindow, recentWindow) {
+  const full = fullWindow && typeof fullWindow === 'object' ? fullWindow : emptyWindow();
+  const recent = recentWindow && typeof recentWindow === 'object' ? recentWindow : emptyWindow();
+  const blockerCount = Math.max(0, full.blockerCount - recent.blockerCount);
+  const transcriptDebtCount = Math.max(0, full.skipped_unreviewable_transcript - recent.skipped_unreviewable_transcript)
+    + Math.max(0, full.assistant_reply_missing - recent.assistant_reply_missing);
+  const joinDebtCount = Math.max(0, full.faqOnlyRowsSkipped - recent.faqOnlyRowsSkipped)
+    + Math.max(0, full.traceHydrationLimitedCount - recent.traceHydrationLimitedCount);
+  return {
+    debtCounts: {
+      skipped_unreviewable_transcript: Math.max(0, full.skipped_unreviewable_transcript - recent.skipped_unreviewable_transcript),
+      assistant_reply_missing: Math.max(0, full.assistant_reply_missing - recent.assistant_reply_missing),
+      faq_only_rows_skipped: Math.max(0, full.faqOnlyRowsSkipped - recent.faqOnlyRowsSkipped),
+      action_trace_join_limited: Math.max(0, full.traceHydrationLimitedCount - recent.traceHydrationLimitedCount),
+      blocker_count: blockerCount
+    },
+    transcriptDebtCount,
+    joinDebtCount,
+    blockerCount,
+    observationOnlyBlockerCount: transcriptDebtCount <= 0 && joinDebtCount <= 0 ? blockerCount : 0
+  };
+}
+
 function resolveHistoricalBacklogStatus(fullWindow, recentWindow, deltaFromPreviousFullWindow) {
   const recentStatus = resolveRecentWindowStatus(recentWindow);
   const full = fullWindow && typeof fullWindow === 'object' ? fullWindow : emptyWindow();
-  const hasTranscriptOrJoinDebt = full.skipped_unreviewable_transcript > 0
-    || full.assistant_reply_missing > 0
-    || full.faqOnlyRowsSkipped > 0
-    || full.traceHydrationLimitedCount > 0;
+  const debt = computeHistoricalDebtCounts(fullWindow, recentWindow);
+  const hasTranscriptOrJoinDebt = debt.transcriptDebtCount > 0 || debt.joinDebtCount > 0;
   const hasAnyBlockers = Number(full.blockerCount || 0) > 0 || uniqueStrings(full.blockerCodes).length > 0;
   const hasHistoricalDebt = hasTranscriptOrJoinDebt || hasAnyBlockers;
   if (!hasHistoricalDebt) return 'cleared';
   if (recentStatus !== 'healthy') return 'current_runtime_overlap';
-  if (!hasTranscriptOrJoinDebt && hasOnlyObservationOnlyBlockers(full)) return 'decaying';
+  if (!hasTranscriptOrJoinDebt && hasOnlyObservationOnlyBlockers(full)) return 'cleared';
   if (deltaFromPreviousFullWindow && deltaFromPreviousFullWindow.status === 'improving') return 'decaying';
   return 'stagnating';
 }
@@ -251,18 +272,10 @@ function resolveOverallReadinessStatus(fullWindow, recentWindow, deltaFromPrevio
 
 function buildHistoricalDebt(fullWindow, recentWindow, deltaFromPreviousFullWindow) {
   const full = fullWindow && typeof fullWindow === 'object' ? fullWindow : emptyWindow();
-  const recent = recentWindow && typeof recentWindow === 'object' ? recentWindow : emptyWindow();
-  const debtCounts = {
-    skipped_unreviewable_transcript: Math.max(0, full.skipped_unreviewable_transcript - recent.skipped_unreviewable_transcript),
-    assistant_reply_missing: Math.max(0, full.assistant_reply_missing - recent.assistant_reply_missing),
-    faq_only_rows_skipped: Math.max(0, full.faqOnlyRowsSkipped - recent.faqOnlyRowsSkipped),
-    action_trace_join_limited: Math.max(0, full.traceHydrationLimitedCount - recent.traceHydrationLimitedCount),
-    blocker_count: Math.max(0, full.blockerCount - recent.blockerCount)
-  };
-  const transcriptDebtCount = Math.max(0, full.skipped_unreviewable_transcript - recent.skipped_unreviewable_transcript)
-    + Math.max(0, full.assistant_reply_missing - recent.assistant_reply_missing);
-  const joinDebtCount = Math.max(0, full.faqOnlyRowsSkipped - recent.faqOnlyRowsSkipped)
-    + Math.max(0, full.traceHydrationLimitedCount - recent.traceHydrationLimitedCount);
+  const debt = computeHistoricalDebtCounts(fullWindow, recentWindow);
+  const debtCounts = debt.debtCounts;
+  const transcriptDebtCount = debt.transcriptDebtCount;
+  const joinDebtCount = debt.joinDebtCount;
   return {
     status: transcriptDebtCount > 0 || joinDebtCount > 0 ? 'present' : 'cleared',
     trend: deltaFromPreviousFullWindow && deltaFromPreviousFullWindow.available
@@ -275,11 +288,14 @@ function buildHistoricalDebt(fullWindow, recentWindow, deltaFromPreviousFullWind
     observedCount: Number(full.observedCount || 0),
     reviewUnitCount: Number(full.reviewUnitCount || 0),
     debtCounts,
-    totalDebtCount: Object.values(debtCounts).reduce((sum, value) => sum + Number(value || 0), 0),
+    totalDebtCount: transcriptDebtCount + joinDebtCount,
     transcriptDebtCount,
     joinDebtCount,
-    dominantDebt: transcriptDebtCount >= joinDebtCount ? 'transcript_coverage' : 'join_limit',
-    blockerCount: Math.max(0, full.blockerCount - recent.blockerCount)
+    dominantDebt: transcriptDebtCount <= 0 && joinDebtCount <= 0
+      ? 'observation_only'
+      : (transcriptDebtCount >= joinDebtCount ? 'transcript_coverage' : 'join_limit'),
+    blockerCount: debt.blockerCount,
+    observationOnlyBlockerCount: debt.observationOnlyBlockerCount
   };
 }
 
@@ -343,7 +359,8 @@ function createEmptyDecayAwareReadiness() {
       transcriptDebtCount: 0,
       joinDebtCount: 0,
       dominantDebt: 'transcript_coverage',
-      blockerCount: 0
+      blockerCount: 0,
+      observationOnlyBlockerCount: 0
     },
     currentRuntimeHealth: {
       status: 'unavailable',

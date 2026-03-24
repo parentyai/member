@@ -160,20 +160,15 @@ test('phase845: backlog decay is separated from stagnation', () => {
   assert.equal(result.deltaFromPreviousFullWindow.status, 'improving');
 });
 
-test('phase845: observation-only blocker residue does not force historical backlog dominant when transcript and join debt are cleared', () => {
+test('phase845: observation-only historical blockers do not block readiness once transcript and join debt are cleared', () => {
   const result = buildDecayAwareReadiness({
-    recentWindow: buildWindow({
-      blockerCount: 2,
-      blockerCodes: ['missing_user_message', 'transcript_not_reviewable']
-    }),
+    recentWindow: buildWindow(),
     fullWindow: buildWindow({
-      observedCount: 97,
-      written: 97,
-      reviewUnitCount: 100,
-      blockerCount: 5,
+      observedCount: 60,
+      written: 60,
+      reviewUnitCount: 117,
+      blockerCount: 3,
       blockerCodes: [
-        'insufficient_knowledge_signals',
-        'missing_assistant_reply',
         'missing_faq_evidence',
         'missing_user_message',
         'transcript_not_reviewable'
@@ -184,19 +179,22 @@ test('phase845: observation-only blocker residue does not force historical backl
         fromAt: '2026-03-15T11:00:00.000Z',
         toAt: '2026-03-15T12:00:00.000Z'
       },
-      observedCount: 1,
-      written: 1,
-      reviewUnitCount: 1,
+      observedCount: 55,
+      written: 55,
+      reviewUnitCount: 112,
       blockerCount: 0,
       blockerCodes: []
     })
   });
 
   assert.equal(result.recentWindowStatus, 'healthy');
+  assert.equal(result.historicalBacklogStatus, 'cleared');
+  assert.equal(result.overallReadinessStatus, 'readiness_candidate');
   assert.equal(result.historicalDebt.status, 'cleared');
-  assert.equal(result.historicalBacklogStatus, 'decaying');
-  assert.equal(result.overallReadinessStatus, 'observation_continue_backlog_decay');
-  assert.equal(result.deltaFromPreviousFullWindow.status, 'worsening');
+  assert.equal(result.historicalDebt.totalDebtCount, 0);
+  assert.equal(result.historicalDebt.blockerCount, 3);
+  assert.equal(result.historicalDebt.observationOnlyBlockerCount, 3);
+  assert.equal(result.historicalDebt.dominantDebt, 'observation_only');
 });
 
 test('phase845: source-missing blocker residue still keeps historical backlog dominant', () => {
