@@ -45,6 +45,14 @@ function mergePlans(plans) {
   });
 }
 
+function isHistoricalOnlyObservationPlan(entry) {
+  return entry
+    && entry.report
+    && entry.report.historicalOnly === true
+    && entry.mapped
+    && OBSERVATION_PROPOSAL_TYPES.includes(entry.mapped.proposalType);
+}
+
 function resolvePlanningStatus(reports, proposals) {
   const sourceReports = Array.isArray(reports) ? reports : [];
   if (!sourceReports.length) return 'insufficient_evidence';
@@ -61,12 +69,28 @@ function buildImprovementPlan(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const rootCauseReports = Array.isArray(payload.rootCauseReports) ? payload.rootCauseReports : [];
   const generatedAt = toIso(payload.generatedAt);
-  const observationBlockers = rootCauseReports.flatMap((item) => Array.isArray(item && item.observationBlockers) ? item.observationBlockers : []);
-  const recommendedPr = mergePlans(rootCauseReports.flatMap((report) => {
+  const reportEntries = rootCauseReports.map((report) => {
     const topCause = Array.isArray(report && report.causeCandidates) ? report.causeCandidates[0] : null;
-    if (!topCause) return [];
+    if (!topCause) return {
+      report,
+      topCause: null,
+      mapped: null
+    };
     const mapped = mapCauseToProposal(report, topCause);
-    if (!mapped) return [];
+    return {
+      report,
+      topCause,
+      mapped
+    };
+  });
+  const activeEntries = reportEntries.filter((entry) => !isHistoricalOnlyObservationPlan(entry));
+  const activeReports = activeEntries.map((entry) => entry.report);
+  const observationBlockers = activeReports.flatMap((item) => Array.isArray(item && item.observationBlockers) ? item.observationBlockers : []);
+  const recommendedPr = mergePlans(activeEntries.flatMap((entry) => {
+    const report = entry && entry.report;
+    const topCause = entry && entry.topCause;
+    const mapped = entry && entry.mapped;
+    if (!topCause || !mapped) return [];
     return [buildRecommendedPr({ report, cause: topCause, mapped })];
   }));
 
@@ -80,7 +104,7 @@ function buildImprovementPlan(params) {
     },
     recommendedPr,
     observationBlockers,
-    planningStatus: resolvePlanningStatus(rootCauseReports, recommendedPr),
+    planningStatus: resolvePlanningStatus(activeReports, recommendedPr),
     provenance: IMPROVEMENT_PLANNER_PROVENANCE
   };
 }

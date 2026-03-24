@@ -100,6 +100,7 @@ function buildRootCauseSummary(issue, candidates, analysisStatus) {
 function buildRootCauseReport(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const issue = payload.issue && typeof payload.issue === 'object' ? payload.issue : {};
+  const historicalOnly = issue && issue.historicalOnly === true;
   const context = collectCauseEvidence(payload);
   const observationCandidates = detectObservationCauses(context);
   let runtimeCandidates = [];
@@ -136,6 +137,7 @@ function buildRootCauseReport(params) {
     issueKey: issue.issueKey || null,
     issueType: issue.issueType || null,
     slice: issue.slice || 'global',
+    historicalOnly,
     rootCauseSummary: buildRootCauseSummary(issue, normalizedCandidates, analysisStatus),
     causeCandidates: normalizedCandidates,
     observationBlockers: context.observationBlockers,

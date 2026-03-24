@@ -50,6 +50,7 @@ function collectRawBlockers(payload) {
   const rows = [];
 
   (Array.isArray(payload.rootCauseReports) ? payload.rootCauseReports : []).forEach((report) => {
+    if (report && report.historicalOnly === true) return;
     const slice = normalizeSlice(report && report.slice);
     (Array.isArray(report && report.observationBlockers) ? report.observationBlockers : []).forEach((blocker) => {
       rows.push({
@@ -73,6 +74,7 @@ function collectRawBlockers(payload) {
   });
 
   (Array.isArray(payload.issues) ? payload.issues : []).forEach((issue) => {
+    if (issue && issue.historicalOnly === true) return;
     const slice = normalizeSlice(issue && issue.slice);
     (Array.isArray(issue && issue.observationBlockers) ? issue.observationBlockers : []).forEach((blocker) => {
       rows.push({

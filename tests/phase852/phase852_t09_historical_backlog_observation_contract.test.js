@@ -56,5 +56,6 @@ test('phase852: historical-only observation issues stay analyzable even when old
   });
 
   assert.equal(result.analysisStatus, 'analyzed');
+  assert.equal(result.historicalOnly, true);
   assert.equal(result.causeCandidates[0].causeType, 'observation_gap');
 });
