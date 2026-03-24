@@ -86,3 +86,69 @@ test('phase835: mixed-domain direct answer fallback keeps retrieval disabled', (
   assert.equal(result.retrievalBlockedByStrategy, true);
   assert.equal(result.retrievalBlockReason, 'preserve_mixed_domain_direct_answer');
 });
+
+test('phase835: city-scoped history follow-up re-enables retrieval despite preserved direct-answer fallback', () => {
+  const result = resolveRetrievalDecision({
+    messageText: '学校手続きnyで',
+    normalizedConversationIntent: 'school',
+    genericFallbackSlice: 'city',
+    followupResolvedFromHistory: true,
+    followupIntent: 'next_step',
+    priorContextUsed: true,
+    requestShape: 'followup_continue',
+    knowledgeScope: 'city',
+    locationHint: {
+      kind: 'city',
+      cityKey: 'new-york',
+      state: 'NY',
+      regionKey: 'NY::new-york'
+    },
+    requestContract: {
+      requestShape: 'followup_continue',
+      knowledgeScope: 'city',
+      locationHint: {
+        kind: 'city',
+        cityKey: 'new-york',
+        state: 'NY',
+        regionKey: 'NY::new-york'
+      }
+    }
+  }, {
+    strategy: 'domain_concierge',
+    strategyReason: 'history_followup_carry',
+    fallbackType: 'history_followup_carry'
+  });
+
+  assert.equal(result.retrieveNeeded, true);
+  assert.equal(result.retrievalBlockedByStrategy, false);
+  assert.match(result.retrievalPermitReason || '', /city_grounding_probe/);
+  assert.match(result.retrievalPermitReason || '', /followup_history_activation/);
+});
+
+test('phase835: city-scoped general follow-up re-enables retrieval under general direct answer fallback', () => {
+  const result = resolveRetrievalDecision({
+    messageText: 'ニューヨークで学校手続きの次は？',
+    normalizedConversationIntent: 'general',
+    genericFallbackSlice: 'city',
+    followupResolvedFromHistory: false,
+    followupIntent: 'next_step',
+    priorContextUsed: true,
+    requestShape: 'followup_continue',
+    knowledgeScope: 'city',
+    locationHint: {
+      kind: 'city',
+      cityKey: 'new-york',
+      state: 'NY',
+      regionKey: 'NY::new-york'
+    }
+  }, {
+    strategy: 'domain_concierge',
+    strategyReason: 'general_followup_direct_answer',
+    fallbackType: 'general_followup_direct_answer'
+  });
+
+  assert.equal(result.retrieveNeeded, true);
+  assert.equal(result.retrievalBlockedByStrategy, false);
+  assert.match(result.retrievalPermitReason || '', /city_grounding_probe/);
+  assert.equal(result.retrievalReenabledBySlice, 'city');
+});
