@@ -8,9 +8,11 @@ const {
   DEFAULT_PATHS,
   buildDecisionSummary,
   formatDecisionSummary,
+  synchronizeArtifactWithVerify,
   runQualityPatrolCycle
 } = require('../../tools/quality_patrol/run_quality_patrol_cycle');
 const { tempJsonPath, cleanupPaths } = require('../phase855/phase855_helpers');
+const { readJson } = require('../../tools/llm_quality/lib');
 
 function buildPaths() {
   return {
@@ -153,4 +155,106 @@ test('phase856: cycle runner decision logging keeps compressed runtime/backlog s
   assert.ok(DEFAULT_PATHS.operator.endsWith('quality_patrol_cycle_operator.json'));
   assert.ok(DEFAULT_PATHS.human.endsWith('quality_patrol_cycle_human.json'));
   assert.ok(DEFAULT_PATHS.verify.endsWith('quality_patrol_cycle_verify.json'));
+});
+
+test('phase856: cycle runner synchronizes latest surfaces to verified go decision', async () => {
+  const paths = buildPaths();
+  const mergeCommit = '9cfabf866ff861a6db16c492756521a244e0429b';
+  const mergeAt = '2026-03-15T17:48:17Z';
+  const blockedArtifact = {
+    summary: {
+      overallStatus: 'blocked',
+      topFindings: [
+        'blocker-first: 2 observation blockers are still preventing confident conclusions.',
+        'newly-detected: proposals=1 issues=8'
+      ],
+      topPriorityCount: 1,
+      observationBlockerCount: 2
+    },
+    planningStatus: 'blocked',
+    observationBlockers: [{ code: 'observation_gap' }],
+    recommendedPr: [{ proposalType: 'blocked_by_observation_gap' }],
+    issues: new Array(8).fill(null).map((_, index) => ({ issueKey: `issue_${index}` })),
+    backlogSeparation: {
+      contractVersion: 'quality_patrol_backlog_separation_v1',
+      audience: 'operator'
+    }
+  };
+
+  const result = await runQualityPatrolCycle({
+    mergeCommit,
+    mergeAt,
+    paths
+  }, {
+    resolveGitMergeFacts: () => ({ mergeCommit, mergeAt }),
+    replaySameTrafficSet: async (options) => ({ replayCount: 5, outputPath: options.output }),
+    runMetrics: async () => ({ outputPath: paths.metrics, artifact: { summary: { overallStatus: 'healthy' } } }),
+    runPatrol: async (argv) => {
+      const mode = argv[argv.indexOf('--mode') + 1];
+      const audienceIndex = argv.indexOf('--audience');
+      const audience = audienceIndex === -1 ? 'operator' : argv[audienceIndex + 1];
+      const outputPath = mode === 'latest'
+        ? paths.latest
+        : (audience === 'human' ? paths.human : paths.operator);
+      return {
+        outputPath,
+        artifact: Object.assign({}, blockedArtifact, {
+          backlogSeparation: {
+            contractVersion: 'quality_patrol_backlog_separation_v1',
+            audience
+          }
+        })
+      };
+    },
+    runVerify: async () => ({
+      outputPath: paths.verify,
+      artifact: {
+        currentRuntime: { status: 'healthy', window: { fromAt: '2026-03-15T18:00:00Z', toAt: '2026-03-15T18:05:00Z' } },
+        historicalDebt: { status: 'cleared', totalDebtCount: 0, observationOnlyBlockerCount: 3 },
+        backlogSeparationGate: { decision: 'GO', prDStatus: 'eligible', reasonCode: 'readiness_candidate' }
+      }
+    })
+  });
+
+  assert.equal(result.latest.artifact.planningStatus, 'planned');
+  assert.deepEqual(result.latest.artifact.observationBlockers, []);
+  assert.deepEqual(result.latest.artifact.recommendedPr, []);
+  assert.equal(result.latest.artifact.summary.overallStatus, 'warning');
+  assert.equal(result.latest.artifact.summary.observationBlockerCount, 0);
+  assert.equal(result.operator.artifact.backlogSeparation.backlogSeparationGate.decision, 'GO');
+  assert.equal(result.human.artifact.backlogSeparation.backlogSeparationGate.prDStatus, 'eligible');
+
+  const latestFile = readJson(paths.latest);
+  const operatorFile = readJson(paths.operator);
+  const humanFile = readJson(paths.human);
+  assert.equal(latestFile.planningStatus, 'planned');
+  assert.deepEqual(operatorFile.observationBlockers, []);
+  assert.deepEqual(humanFile.recommendedPr, []);
+
+  cleanupPaths(paths.replay, paths.metrics, paths.latest, paths.operator, paths.human, paths.verify);
+});
+
+test('phase856: standalone synchronize helper leaves non-go surfaces unchanged', () => {
+  const artifact = {
+    summary: {
+      overallStatus: 'blocked',
+      topFindings: ['blocker-first: 2 observation blockers are still preventing confident conclusions.'],
+      topPriorityCount: 1,
+      observationBlockerCount: 2
+    },
+    planningStatus: 'blocked',
+    observationBlockers: [{ code: 'observation_gap' }],
+    recommendedPr: [{ proposalType: 'blocked_by_observation_gap' }],
+    issues: [{ issueKey: 'issue_1' }]
+  };
+  const synced = synchronizeArtifactWithVerify(artifact, {
+    currentRuntime: { status: 'healthy' },
+    historicalDebt: { totalDebtCount: 2 },
+    backlogSeparationGate: { decision: 'NO_GO', prDStatus: 'deferred' }
+  }, 'operator');
+
+  assert.equal(synced.planningStatus, 'blocked');
+  assert.equal(synced.observationBlockers.length, 1);
+  assert.equal(synced.recommendedPr.length, 1);
+  assert.equal(synced.summary.overallStatus, 'blocked');
 });

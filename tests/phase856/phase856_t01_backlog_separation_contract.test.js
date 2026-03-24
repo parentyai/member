@@ -159,3 +159,38 @@ test('phase856: sparse previous full window does not incorrectly resolve go', ()
   assert.equal(result.backlogSeparationGate.decision, 'NO_GO');
   assert.equal(result.backlogSeparationGate.reasonCode, 'historical_backlog_dominant');
 });
+
+test('phase856: observation-only historical blockers stay visible without blocking go', () => {
+  const result = buildSeparation({
+    fullWindow: buildWindow({
+      observedCount: 60,
+      written: 60,
+      reviewUnitCount: 117,
+      blockerCount: 3,
+      blockerCodes: [
+        'missing_faq_evidence',
+        'missing_user_message',
+        'transcript_not_reviewable'
+      ]
+    }),
+    previousFullWindow: buildWindow({
+      sourceWindow: {
+        fromAt: '2026-03-14T11:00:00.000Z',
+        toAt: '2026-03-15T12:00:00.000Z'
+      },
+      observedCount: 55,
+      written: 55,
+      reviewUnitCount: 112,
+      blockerCount: 0,
+      blockerCodes: []
+    })
+  });
+
+  assert.equal(result.currentRuntime.status, 'healthy');
+  assert.equal(result.historicalDebt.status, 'cleared');
+  assert.equal(result.historicalDebt.totalDebtCount, 0);
+  assert.equal(result.historicalDebt.observationOnlyBlockerCount, 3);
+  assert.equal(result.backlogSeparationGate.decision, 'GO');
+  assert.equal(result.backlogSeparationGate.reasonCode, 'readiness_candidate');
+  assert.equal(result.backlogSeparationGate.prDStatus, 'eligible');
+});

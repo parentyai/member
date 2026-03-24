@@ -66,7 +66,12 @@ function buildOperatorBacklogSeparation(decayAwareReadiness, decayAwareOpsGate) 
     action_trace_join_limited: computeDebtCount(fullWindow, recentWindow, 'traceHydrationLimitedCount'),
     blocker_count: computeDebtCount(fullWindow, recentWindow, 'blockerCount')
   };
-  const totalDebtCount = Object.values(debtCounts).reduce((sum, value) => sum + normalizeCount(value), 0);
+  const totalDebtCount = normalizeCount(
+    historicalDebt.totalDebtCount != null
+      ? historicalDebt.totalDebtCount
+      : Object.values(debtCounts).reduce((sum, value) => sum + normalizeCount(value), 0)
+  );
+  const observationOnlyBlockerCount = normalizeCount(historicalDebt.observationOnlyBlockerCount);
 
   return {
     contractVersion: 'quality_patrol_backlog_separation_v1',
@@ -91,7 +96,8 @@ function buildOperatorBacklogSeparation(decayAwareReadiness, decayAwareOpsGate) 
       transcriptDebtCount: normalizeCount(historicalDebt.transcriptDebtCount),
       joinDebtCount: normalizeCount(historicalDebt.joinDebtCount),
       dominantDebt: typeof historicalDebt.dominantDebt === 'string' ? historicalDebt.dominantDebt : 'transcript_coverage',
-      blockerCount: normalizeCount(historicalDebt.blockerCount || debtCounts.blocker_count)
+      blockerCount: normalizeCount(historicalDebt.blockerCount || debtCounts.blocker_count),
+      observationOnlyBlockerCount
     },
     backlogSeparationGate: {
       decision: typeof gate.decision === 'string' ? gate.decision : 'NO_GO',
@@ -125,7 +131,8 @@ function buildHumanBacklogSeparation(operatorView) {
       window: cloneWindow(operatorView.historicalDebt.window),
       observedCount: normalizeCount(operatorView.historicalDebt.observedCount),
       reviewUnitCount: normalizeCount(operatorView.historicalDebt.reviewUnitCount),
-      debtCount: normalizeCount(operatorView.historicalDebt.totalDebtCount)
+      debtCount: normalizeCount(operatorView.historicalDebt.totalDebtCount),
+      observationOnlyBlockerCount: normalizeCount(operatorView.historicalDebt.observationOnlyBlockerCount)
     },
     backlogSeparationGate: {
       decision: operatorView.backlogSeparationGate.decision,
