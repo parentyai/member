@@ -161,6 +161,16 @@ function appendGitHubStepSummary(text) {
   fs.appendFileSync(summaryPath, `${text}\n`);
 }
 
+function buildReplayWindowArgs(replayResult) {
+  const recentWindow = replayResult && replayResult.recentWindow && typeof replayResult.recentWindow === 'object'
+    ? replayResult.recentWindow
+    : {};
+  const fromAt = normalizeString(recentWindow.fromAt, null);
+  const toAt = normalizeString(recentWindow.toAt, null);
+  if (!fromAt || !toAt) return [];
+  return ['--fromAt', fromAt, '--toAt', toAt];
+}
+
 async function runQualityPatrolCycle(input, deps) {
   const options = Object.assign({}, parseCycleArgs(['node', 'tools/quality_patrol/run_quality_patrol_cycle.js']), input || {});
   options.paths = Object.assign({}, DEFAULT_PATHS, (input && input.paths) || options.paths || {});
@@ -179,10 +189,12 @@ async function runQualityPatrolCycle(input, deps) {
     prefix: options.prefix,
     output: options.paths.replay
   });
+  const replayWindowArgs = buildReplayWindowArgs(replayResult);
 
   const metricsResult = await resolvedDeps.runMetrics([
     'node',
     'tools/run_quality_patrol_metrics.js',
+    ...replayWindowArgs,
     '--output',
     options.paths.metrics
   ]);
@@ -192,6 +204,7 @@ async function runQualityPatrolCycle(input, deps) {
     'tools/run_quality_patrol.js',
     '--mode',
     'latest',
+    ...replayWindowArgs,
     '--output',
     options.paths.latest
   ]);
@@ -201,6 +214,7 @@ async function runQualityPatrolCycle(input, deps) {
     'tools/run_quality_patrol.js',
     '--mode',
     'newly-detected-improvements',
+    ...replayWindowArgs,
     '--output',
     options.paths.operator
   ]);
@@ -212,6 +226,7 @@ async function runQualityPatrolCycle(input, deps) {
     'newly-detected-improvements',
     '--audience',
     'human',
+    ...replayWindowArgs,
     '--output',
     options.paths.human
   ]);
@@ -294,6 +309,7 @@ module.exports = {
   resolveGitMergeFacts,
   buildDecisionSummary,
   formatDecisionSummary,
+  buildReplayWindowArgs,
   synchronizeArtifactWithVerify,
   runQualityPatrolCycle
 };
