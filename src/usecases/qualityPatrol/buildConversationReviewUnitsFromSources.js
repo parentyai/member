@@ -15,6 +15,11 @@ const {
   buildLineUserKey
 } = require('../../domain/qualityPatrol/transcriptMasking/buildMaskedConversationReviewSnapshot');
 
+const SYNTHETIC_PATROL_REPLAY_PREFIXES = Object.freeze([
+  'quality_patrol_cycle_',
+  'quality_patrol_replay_'
+]);
+
 function normalizeLimit(value, fallback, max) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return fallback;
@@ -37,6 +42,23 @@ function toIso(value) {
 
 function normalizeText(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function hasExplicitSourceWindow(payload) {
+  return Boolean(toIso(payload && payload.fromAt) || toIso(payload && payload.toAt));
+}
+
+function isSyntheticPatrolReplayRow(row) {
+  const traceId = normalizeText(row && row.traceId) || '';
+  const requestId = normalizeText(row && row.requestId) || '';
+  return SYNTHETIC_PATROL_REPLAY_PREFIXES.some((prefix) => traceId.startsWith(prefix) || requestId.startsWith(prefix));
+}
+
+function filterSyntheticPatrolReplayRows(payload, llmActionLogs) {
+  const rows = Array.isArray(llmActionLogs) ? llmActionLogs : [];
+  if (payload && payload.includeSyntheticReplay === true) return rows;
+  if (hasExplicitSourceWindow(payload)) return rows;
+  return rows.filter((row) => !isSyntheticPatrolReplayRow(row));
 }
 
 function deriveSourceWindow(payload, llmActionLogs) {
@@ -151,20 +173,48 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const limit = normalizeLimit(payload.limit, 100, 500);
   const traceLimit = normalizeLimit(payload.traceLimit, Math.min(limit, 200), 200);
+  const explicitSourceWindow = hasExplicitSourceWindow(payload);
   const snapshotsRepo = deps && deps.conversationReviewSnapshotsRepo ? deps.conversationReviewSnapshotsRepo : conversationReviewSnapshotsRepo;
   const actionRepo = deps && deps.llmActionLogsRepo ? deps.llmActionLogsRepo : llmActionLogsRepo;
   const faqRepo = deps && deps.faqAnswerLogsRepo ? deps.faqAnswerLogsRepo : faqAnswerLogsRepo;
   const getTraceBundleUsecase = deps && deps.getTraceBundle ? deps.getTraceBundle : getTraceBundle;
 
-  const llmActionLogs = await actionRepo.listLlmActionLogsByCreatedAtRange({
+  const rawLlmActionLogs = await actionRepo.listLlmActionLogsByCreatedAtRange({
     fromAt: payload.fromAt,
     toAt: payload.toAt,
     limit
   });
+  const llmActionLogs = filterSyntheticPatrolReplayRows(payload, rawLlmActionLogs);
   const sourceWindow = deriveSourceWindow(payload, llmActionLogs);
   const readLimits = resolveCollectionReadLimits(payload, llmActionLogs, limit);
+  const transcriptCoverage = buildTranscriptCoverageDiagnostics({ llmActionLogs });
+  const joinDiagnostics = {
+    faqOnlyRowsSkipped: 0,
+    traceHydrationLimitedCount: 0,
+    reviewUnitAnchorKindCounts: {}
+  };
 
-  const [rawSnapshots, rawFaqAnswerLogs] = await Promise.all([
+  if (llmActionLogs.length <= 0 && !explicitSourceWindow) {
+    return {
+      ok: true,
+      sourceWindow,
+      reviewUnits: [],
+      llmActionLogs,
+      transcriptCoverage,
+      sourceCollections: ['conversation_review_snapshots', 'llm_action_logs', 'faq_answer_logs', 'trace_bundle'],
+      counts: {
+        snapshots: 0,
+        snapshotsHydratedByTraceId: 0,
+        llmActionLogs: 0,
+        faqAnswerLogs: 0,
+        traceBundles: 0
+      },
+      readLimits,
+      joinDiagnostics
+    };
+  }
+
+  const [fetchedSnapshots, fetchedFaqAnswerLogs] = await Promise.all([
     snapshotsRepo.listConversationReviewSnapshotsByCreatedAtRange({
       fromAt: sourceWindow.fromAt,
       toAt: sourceWindow.toAt,
@@ -176,16 +226,12 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
       limit: readLimits.faqReadLimit
     })
   ]);
+  const rawSnapshots = filterSyntheticPatrolReplayRows(payload, fetchedSnapshots);
+  const rawFaqAnswerLogs = filterSyntheticPatrolReplayRows(payload, fetchedFaqAnswerLogs);
   const snapshots = filterSnapshotsForConversationWindow(rawSnapshots, llmActionLogs);
   const hydratedSnapshots = await hydrateMissingSnapshotsByTraceId(snapshotsRepo, snapshots, llmActionLogs, limit);
   const mergedSnapshots = filterSnapshotsForConversationWindow(snapshots.concat(hydratedSnapshots), llmActionLogs);
   const faqAnswerLogs = filterFaqAnswerLogsForConversationWindow(rawFaqAnswerLogs, llmActionLogs);
-
-  const joinDiagnostics = {
-    faqOnlyRowsSkipped: 0,
-    traceHydrationLimitedCount: 0,
-    reviewUnitAnchorKindCounts: {}
-  };
   const anchorBuild = buildConversationReviewAnchors({
     snapshots: mergedSnapshots,
     llmActionLogs,
@@ -206,7 +252,6 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
   }));
 
   const traceBundles = Object.fromEntries(bundles);
-  const transcriptCoverage = buildTranscriptCoverageDiagnostics({ llmActionLogs });
   const reviewUnits = buildConversationReviewUnits({
     anchors: anchorBuild.anchors,
     traceBundles,

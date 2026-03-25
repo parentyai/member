@@ -279,3 +279,145 @@ test('phase847: latest review-unit extraction widens snapshot reads to avoid act
   assert.equal(widenedUnit.priorContextSummary.available, true);
   assert.ok(!(widenedUnit.observationBlockers || []).some((row) => row.code === 'missing_prior_context_summary'));
 });
+
+test('phase847: latest review-unit extraction ignores synthetic patrol replay rows unless an explicit window is requested', async () => {
+  const syntheticRow = {
+    id: 'action_cycle_1',
+    requestId: 'quality_patrol_cycle_123_0',
+    traceId: 'quality_patrol_cycle_123_0',
+    lineUserId: 'U_CYCLE_1',
+    strategyReason: 'cycle_anchor',
+    createdAt: '2026-03-24T23:30:16.847Z'
+  };
+  const organicRow = {
+    id: 'action_live_1',
+    requestId: 'line_webhook_live_1',
+    traceId: 'trace_live_1',
+    lineUserId: 'U_LIVE_1',
+    strategyReason: 'live_anchor',
+    createdAt: '2026-03-24T23:29:16.847Z'
+  };
+  const deps = {
+    conversationReviewSnapshotsRepo: {
+      listConversationReviewSnapshotsByCreatedAtRange: async () => []
+    },
+    llmActionLogsRepo: {
+      listLlmActionLogsByCreatedAtRange: async () => ([syntheticRow, organicRow])
+    },
+    faqAnswerLogsRepo: {
+      listFaqAnswerLogsByCreatedAtRange: async () => []
+    },
+    getTraceBundle: async ({ traceId }) => ({
+      ok: true,
+      traceId,
+      traceJoinSummary: {
+        completeness: 1,
+        joinedDomains: ['llmActions'],
+        missingDomains: [],
+        criticalMissingDomains: []
+      }
+    })
+  };
+
+  const latestResult = await buildConversationReviewUnitsFromSources({
+    limit: 10,
+    traceLimit: 10
+  }, deps);
+  assert.deepEqual(latestResult.reviewUnits.map((unit) => unit.traceId), ['trace_live_1']);
+
+  const explicitWindowResult = await buildConversationReviewUnitsFromSources({
+    fromAt: '2026-03-24T23:29:00.000Z',
+    toAt: '2026-03-24T23:31:00.000Z',
+    limit: 10,
+    traceLimit: 10
+  }, deps);
+  assert.deepEqual(explicitWindowResult.reviewUnits.map((unit) => unit.traceId), ['quality_patrol_cycle_123_0', 'trace_live_1']);
+});
+
+test('phase847: explicit review window preserves snapshot evidence even when action logs are absent', async () => {
+  const result = await buildConversationReviewUnitsFromSources({
+    fromAt: '2026-03-24T23:29:00.000Z',
+    toAt: '2026-03-24T23:31:00.000Z',
+    limit: 10,
+    traceLimit: 10
+  }, {
+    conversationReviewSnapshotsRepo: {
+      listConversationReviewSnapshotsByCreatedAtRange: async () => ([
+        {
+          id: 'snapshot_cycle_1',
+          traceId: 'quality_patrol_cycle_123_0',
+          userMessageAvailable: false,
+          assistantReplyAvailable: false,
+          createdAt: '2026-03-24T23:30:16.847Z'
+        },
+        {
+          id: 'snapshot_live_1',
+          traceId: 'trace_live_snapshot_1',
+          userMessageAvailable: true,
+          assistantReplyAvailable: true,
+          userMessageMasked: 'live question',
+          assistantReplyMasked: 'live reply',
+          createdAt: '2026-03-24T23:29:16.847Z'
+        }
+      ])
+    },
+    llmActionLogsRepo: {
+      listLlmActionLogsByCreatedAtRange: async () => ([])
+    },
+    faqAnswerLogsRepo: {
+      listFaqAnswerLogsByCreatedAtRange: async () => ([
+        {
+          id: 'faq_cycle_1',
+          traceId: 'quality_patrol_cycle_123_0',
+          createdAt: '2026-03-24T23:30:16.847Z'
+        }
+      ])
+    },
+    getTraceBundle: async ({ traceId }) => ({
+      ok: true,
+      traceId,
+      traceJoinSummary: {
+        completeness: 1,
+        joinedDomains: ['conversation_review_snapshots'],
+        missingDomains: [],
+        criticalMissingDomains: []
+      }
+    })
+  });
+
+  assert.deepEqual(result.reviewUnits.map((unit) => unit.traceId), ['quality_patrol_cycle_123_0', 'trace_live_snapshot_1']);
+  assert.equal(result.joinDiagnostics.faqOnlyRowsSkipped, 0);
+});
+
+test('phase847: latest review-unit extraction short-circuits when no canonical action window exists', async () => {
+  let snapshotReads = 0;
+  let faqReads = 0;
+  const result = await buildConversationReviewUnitsFromSources({
+    limit: 100,
+    traceLimit: 100
+  }, {
+    conversationReviewSnapshotsRepo: {
+      listConversationReviewSnapshotsByCreatedAtRange: async () => {
+        snapshotReads += 1;
+        return [];
+      }
+    },
+    llmActionLogsRepo: {
+      listLlmActionLogsByCreatedAtRange: async () => ([])
+    },
+    faqAnswerLogsRepo: {
+      listFaqAnswerLogsByCreatedAtRange: async () => {
+        faqReads += 1;
+        return [];
+      }
+    },
+    getTraceBundle: async () => null
+  });
+
+  assert.equal(result.reviewUnits.length, 0);
+  assert.equal(result.counts.llmActionLogs, 0);
+  assert.equal(result.counts.snapshots, 0);
+  assert.equal(result.counts.faqAnswerLogs, 0);
+  assert.equal(snapshotReads, 0);
+  assert.equal(faqReads, 0);
+});

@@ -7,6 +7,7 @@ const {
   CYCLE_VERSION,
   DEFAULT_PATHS,
   buildDecisionSummary,
+  buildReplayWindowArgs,
   formatDecisionSummary,
   synchronizeArtifactWithVerify,
   runQualityPatrolCycle
@@ -155,6 +156,77 @@ test('phase856: cycle runner decision logging keeps compressed runtime/backlog s
   assert.ok(DEFAULT_PATHS.operator.endsWith('quality_patrol_cycle_operator.json'));
   assert.ok(DEFAULT_PATHS.human.endsWith('quality_patrol_cycle_human.json'));
   assert.ok(DEFAULT_PATHS.verify.endsWith('quality_patrol_cycle_verify.json'));
+});
+
+test('phase856: cycle runner forwards replay recent window into metrics and patrol stages', async () => {
+  const paths = buildPaths();
+  const calls = [];
+
+  await runQualityPatrolCycle({
+    paths
+  }, {
+    resolveGitMergeFacts: () => ({ mergeCommit: 'merge_cycle_window', mergeAt: '2026-03-24T23:30:00.000Z' }),
+    replaySameTrafficSet: async (options) => ({
+      replayCount: 5,
+      outputPath: options.output,
+      recentWindow: {
+        fromAt: '2026-03-24T23:29:00.000Z',
+        toAt: '2026-03-24T23:31:00.000Z'
+      }
+    }),
+    runMetrics: async (argv) => {
+      calls.push({ step: 'metrics', argv });
+      return { outputPath: paths.metrics, artifact: { summary: { overallStatus: 'healthy' } } };
+    },
+    runPatrol: async (argv) => {
+      calls.push({ step: 'patrol', argv });
+      return { outputPath: paths.latest, artifact: { summary: { overallStatus: 'warning' }, issues: [] } };
+    },
+    runVerify: async () => ({
+      outputPath: paths.verify,
+      artifact: {
+        currentRuntime: { status: 'healthy' },
+        historicalDebt: { status: 'cleared', totalDebtCount: 0 },
+        backlogSeparationGate: { decision: 'GO', prDStatus: 'eligible' }
+      }
+    })
+  });
+
+  assert.deepEqual(calls[0].argv, [
+    'node',
+    'tools/run_quality_patrol_metrics.js',
+    '--fromAt',
+    '2026-03-24T23:29:00.000Z',
+    '--toAt',
+    '2026-03-24T23:31:00.000Z',
+    '--output',
+    paths.metrics
+  ]);
+  assert.deepEqual(calls[1].argv.slice(0, 8), [
+    'node',
+    'tools/run_quality_patrol.js',
+    '--mode',
+    'latest',
+    '--fromAt',
+    '2026-03-24T23:29:00.000Z',
+    '--toAt',
+    '2026-03-24T23:31:00.000Z'
+  ]);
+
+  cleanupPaths(paths.replay, paths.metrics, paths.latest, paths.operator, paths.human, paths.verify);
+});
+
+test('phase856: replay window args stay empty when replay result has no explicit recent window', () => {
+  assert.deepEqual(buildReplayWindowArgs({}), []);
+  assert.deepEqual(buildReplayWindowArgs({
+    recentWindow: { fromAt: '2026-03-24T23:29:00.000Z' }
+  }), []);
+  assert.deepEqual(buildReplayWindowArgs({
+    recentWindow: {
+      fromAt: '2026-03-24T23:29:00.000Z',
+      toAt: '2026-03-24T23:31:00.000Z'
+    }
+  }), ['--fromAt', '2026-03-24T23:29:00.000Z', '--toAt', '2026-03-24T23:31:00.000Z']);
 });
 
 test('phase856: cycle runner synchronizes latest surfaces to verified go decision', async () => {
