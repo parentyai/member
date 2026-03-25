@@ -50,5 +50,9 @@ test('phase853: operator and human audiences explain insufficient evidence diffe
 
   assert.ok(operator.summary.topFindings[0].includes('organic current runtime evidence'));
   assert.ok(human.summary.topFindings[0].includes('直近の自然な会話証跡'));
+  assert.equal(operator.evidenceAvailability.status, 'organic_current_runtime_unavailable');
+  assert.equal(human.evidenceAvailability.status, 'organic_current_runtime_unavailable');
+  assert.ok(operator.evidenceAvailability.summary.includes('organic current runtime evidence'));
+  assert.ok(human.evidenceAvailability.summary.includes('直近の自然な会話証跡'));
   assert.notEqual(operator.summary.topFindings[0], human.summary.topFindings[0]);
 });
