@@ -16,5 +16,7 @@ test('phase854: admin app exposes quality patrol pane shell and controls', () =>
   assert.ok(html.includes('id="quality-patrol-recommended-pr"'));
   assert.ok(html.includes('id="quality-patrol-issues"'));
   assert.ok(html.includes('id="quality-patrol-evidence"'));
+  assert.ok(html.includes('id="quality-patrol-evidence-availability-status"'));
+  assert.ok(html.includes('id="quality-patrol-evidence-availability-summary"'));
   assert.ok(html.includes('id="quality-patrol-trace-refs"'));
 });

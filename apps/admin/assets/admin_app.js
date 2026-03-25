@@ -4260,6 +4260,9 @@ function summarizeQualityPatrolAffectedSlices(values) {
 function renderQualityPatrolSummary(result) {
   const payload = result && typeof result === 'object' ? result : {};
   const summary = payload.summary && typeof payload.summary === 'object' ? payload.summary : {};
+  const evidenceAvailability = payload.evidenceAvailability && typeof payload.evidenceAvailability === 'object'
+    ? payload.evidenceAvailability
+    : {};
   setTextContent(
     'quality-patrol-generated-at',
     `generatedAt: ${payload.generatedAt ? formatDateLabel(payload.generatedAt) : '-'}`
@@ -4284,8 +4287,23 @@ function renderQualityPatrolSummary(result) {
     resolveQualityPatrolTone(payload.observationStatus),
     { baseClass: 'badge' }
   );
+  applyBadgeState(
+    document.getElementById('quality-patrol-evidence-availability-status'),
+    buildQualityPatrolStatusLabel(evidenceAvailability.status || 'unavailable'),
+    resolveQualityPatrolTone(evidenceAvailability.status || evidenceAvailability.currentRuntimeStatus || 'unavailable'),
+    { baseClass: 'badge' }
+  );
   setTextContent('quality-patrol-top-priority-count', String(Number(summary.topPriorityCount || 0)));
   setTextContent('quality-patrol-observation-blocker-count', String(Number(summary.observationBlockerCount || 0)));
+  setTextContent(
+    'quality-patrol-evidence-availability-summary',
+    asText(
+      evidenceAvailability.summary,
+      payload.observationStatus === 'insufficient_evidence'
+        ? '直近の自然な会話証跡がまだ足りないため、改善提案は保留です。'
+        : '現在の evidence 状態を表示します。'
+    )
+  );
   renderStringList(
     'quality-patrol-top-findings',
     Array.isArray(summary.topFindings) ? summary.topFindings : [],
@@ -4607,6 +4625,12 @@ function renderQualityPatrolResult(result) {
     mode: state.qualityPatrolMode,
     audience: state.qualityPatrolAudience,
     summary: { overallStatus: 'unavailable', topFindings: [], topPriorityCount: 0, observationBlockerCount: 0 },
+    evidenceAvailability: {
+      status: 'unavailable',
+      currentRuntimeStatus: 'unavailable',
+      currentRuntimeObservedCount: 0,
+      summary: '現在の evidence 状態を表示します。'
+    },
     observationStatus: 'unavailable',
     recommendedPr: [],
     issues: [],
