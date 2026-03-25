@@ -34,4 +34,6 @@ test('phase853: query keeps unavailable separate from insufficient evidence', ()
   assert.equal(unavailable.observationStatus, 'unavailable');
   assert.equal(insufficient.summary.overallStatus, 'insufficient_evidence');
   assert.equal(insufficient.observationStatus, 'insufficient_evidence');
+  assert.ok(insufficient.summary.topFindings[0].includes('organic current runtime evidence'));
+  assert.equal(unavailable.summary.topFindings.length, 0);
 });
