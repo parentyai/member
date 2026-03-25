@@ -30,3 +30,25 @@ test('phase853: operator and human audiences receive different evidence density'
   assert.equal('whyNotOthers' in human.recommendedPr[0], false);
   assert.notEqual(operator.summary.topFindings[0], human.summary.topFindings[0]);
 });
+
+test('phase853: operator and human audiences explain insufficient evidence differently', () => {
+  const payload = {
+    mode: 'latest',
+    reviewUnits: [],
+    metrics: {},
+    kpiSummary: { overallStatus: 'unavailable' },
+    issues: [],
+    rootCauseReports: [],
+    recommendedPr: [],
+    planningStatus: 'insufficient_evidence',
+    existingIssues: [],
+    existingBacklog: []
+  };
+
+  const operator = buildPatrolQueryResponse(Object.assign({}, payload, { audience: 'operator' }));
+  const human = buildPatrolQueryResponse(Object.assign({}, payload, { audience: 'human' }));
+
+  assert.ok(operator.summary.topFindings[0].includes('organic current runtime evidence'));
+  assert.ok(human.summary.topFindings[0].includes('直近の自然な会話証跡'));
+  assert.notEqual(operator.summary.topFindings[0], human.summary.topFindings[0]);
+});
