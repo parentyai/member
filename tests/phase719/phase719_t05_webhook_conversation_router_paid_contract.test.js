@@ -322,6 +322,11 @@ function loadWebhookWithStubs(options) {
   setOverride('../../src/repos/firestore/taskNodesRepo', {
     listTaskNodesByLineUserId: async () => []
   });
+  if (Object.prototype.hasOwnProperty.call(payload, 'orchestratorResult')) {
+    setOverride('../../src/domain/llm/orchestrator/runPaidConversationOrchestrator', {
+      runPaidConversationOrchestrator: async () => payload.orchestratorResult
+    });
+  }
 
   overrides.forEach((entry, modulePath) => {
     require.cache[modulePath] = entry.replacement;
@@ -1230,4 +1235,82 @@ test('phase719: latest live transcript suite keeps source-aware transforms, deep
     assert.equal(reply.includes('補足: 情報は更新されるため、最終確認をお願いします。'), false, `turn_${index + 1}_hedge_suffix`);
     assertNoInternalConciergeLabels(reply);
   });
+});
+
+test('phase719: city-scoped paid domain prompt bypasses legacy domain concierge when orchestrator misses', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    orchestratorResult: null
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const body = createWebhookBody('ニューヨークの学校');
+  const replies = [];
+  const result = await loaded.handleLineWebhook({
+    body,
+    signature: signBody(body),
+    requestId: 'phase719_city_paid_domain_prefers_orchestrator_path',
+    logger: () => {},
+    allowWelcome: false,
+    replyFn: async (_replyToken, message) => {
+      replies.push(message);
+    }
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(replies.length, 1);
+  assert.equal(loaded.counters.paidFaqCalled, 1);
+  assert.equal(loaded.actionLogWrites.length > 0, true);
+  const lastWrite = loaded.actionLogWrites[loaded.actionLogWrites.length - 1];
+  assert.notEqual(lastWrite.selectedCandidateKind, 'domain_concierge_candidate');
+  assert.notEqual(lastWrite.retrievalBlockedByStrategy, true);
+  assert.equal(lastWrite.routerReason, 'school_intent_detected');
+});
+
+test('phase719: non-city paid domain prompt keeps legacy domain concierge when orchestrator misses', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    orchestratorResult: null
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const body = createWebhookBody('学校手続きどうする？');
+  const replies = [];
+  const result = await loaded.handleLineWebhook({
+    body,
+    signature: signBody(body),
+    requestId: 'phase719_non_city_paid_domain_keeps_legacy_concierge',
+    logger: () => {},
+    allowWelcome: false,
+    replyFn: async (_replyToken, message) => {
+      replies.push(message);
+    }
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(replies.length, 1);
+  assert.equal(loaded.counters.paidFaqCalled, 0);
+  assert.equal(loaded.actionLogWrites.length > 0, true);
+  const lastWrite = loaded.actionLogWrites[loaded.actionLogWrites.length - 1];
+  assert.equal(lastWrite.selectedCandidateKind, 'domain_concierge_candidate');
+  assert.equal(lastWrite.retrievalBlockedByStrategy, true);
+  assert.equal(lastWrite.routerReason, 'school_intent_detected');
 });

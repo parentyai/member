@@ -100,7 +100,7 @@ const {
   regionInvalid,
   regionAlreadySet
 } = require('../domain/regionLineMessages');
-const { parseRegionInput } = require('../domain/regionNormalization');
+const { parseRegionInput, extractLocationHintFromText } = require('../domain/regionNormalization');
 const {
   feedbackReceived,
   feedbackUsage
@@ -1168,6 +1168,18 @@ function normalizeFollowupIntent(value) {
     return normalized;
   }
   return null;
+}
+
+function shouldPreferPaidOrchestratorForExplicitDomain(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  if (payload.paidOrchestratorEnabled !== true) return false;
+  const domainIntent = normalizeDomainIntent(payload.domainIntent);
+  if (!PAID_CONCIERGE_DOMAIN_INTENTS.has(domainIntent)) return false;
+  const locationHint = extractLocationHintFromText(payload.messageText || '');
+  return locationHint
+    && locationHint.kind === 'city'
+    && typeof locationHint.cityKey === 'string'
+    && locationHint.cityKey.trim().length > 0;
 }
 
 function resolveInterventionSuppressedBy(opportunityReasonKeys) {
@@ -3749,6 +3761,11 @@ async function handleAssistantMessage(params) {
     ? routerDecision.reason
     : null);
   const paidOrchestratorEnabled = resolvePaidOrchestratorEnabled();
+  const preferPaidOrchestratorForExplicitDomain = shouldPreferPaidOrchestratorForExplicitDomain({
+    paidOrchestratorEnabled,
+    domainIntent: normalizedConversationIntent,
+    messageText: text
+  });
   const shouldRouteToPaidCasual = conversationRouterEnabled && (routerMode === 'greeting' || routerMode === 'casual');
 
   if (paidOrchestratorEnabled && shouldRouteToPaidCasual) {
@@ -4408,7 +4425,7 @@ async function handleAssistantMessage(params) {
     };
   }
 
-  if (isPaidDomainIntent) {
+  if (isPaidDomainIntent && preferPaidOrchestratorForExplicitDomain !== true) {
     const domainConcierge = await replyWithPaidDomainConcierge(Object.assign({}, payload, {
       blockedReason: null,
       contextSnapshot,
