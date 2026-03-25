@@ -57,4 +57,6 @@ test('phase854: quality patrol admin pane reuses the existing query route contra
   const payload = JSON.parse(ok.body);
   assert.equal(payload.ok, true);
   assert.equal(payload.queryVersion, 'quality_patrol_query_v1');
+  assert.ok(payload.evidenceAvailability);
+  assert.equal(typeof payload.evidenceAvailability.status, 'string');
 });
