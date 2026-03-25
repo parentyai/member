@@ -29,6 +29,8 @@ test('phase853: query response returns fixed shape for latest mode', () => {
   assert.equal(result.audience, 'operator');
   assert.equal(result.summary.overallStatus, 'fail');
   assert.ok(Array.isArray(result.summary.topFindings));
+  assert.ok(result.evidenceAvailability);
+  assert.equal(typeof result.evidenceAvailability.status, 'string');
   assert.ok(Array.isArray(result.issues));
   assert.ok(Array.isArray(result.observationBlockers));
   assert.ok(Array.isArray(result.evidence));

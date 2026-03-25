@@ -22,6 +22,51 @@ function resolveObservationStatus(params) {
   return 'ready';
 }
 
+function buildEvidenceAvailability(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const audience = resolveAudienceView(payload.audience);
+  const summary = payload.summary && typeof payload.summary === 'object' ? payload.summary : {};
+  const backlogSeparation = payload.backlogSeparation && typeof payload.backlogSeparation === 'object'
+    ? payload.backlogSeparation
+    : {};
+  const currentRuntime = backlogSeparation.currentRuntime && typeof backlogSeparation.currentRuntime === 'object'
+    ? backlogSeparation.currentRuntime
+    : {};
+  const observedCount = Number(currentRuntime.observedCount || 0);
+  const overallStatus = typeof summary.overallStatus === 'string' ? summary.overallStatus : 'unavailable';
+
+  if (overallStatus === 'insufficient_evidence' && observedCount <= 0) {
+    return {
+      status: 'organic_current_runtime_unavailable',
+      currentRuntimeStatus: typeof currentRuntime.status === 'string' ? currentRuntime.status : 'unavailable',
+      currentRuntimeObservedCount: observedCount,
+      summary: audience === 'human'
+        ? '直近の自然な会話証跡がまだないため、改善提案は保留です。'
+        : 'organic current runtime evidence is unavailable; waiting for fresh reviewable traffic before proposing changes.'
+    };
+  }
+
+  if (overallStatus === 'insufficient_evidence') {
+    return {
+      status: 'insufficient_evidence',
+      currentRuntimeStatus: typeof currentRuntime.status === 'string' ? currentRuntime.status : 'unavailable',
+      currentRuntimeObservedCount: observedCount,
+      summary: audience === 'human'
+        ? '改善判断に必要な証跡がまだ足りません。'
+        : 'evidence is still insufficient for a confident recommendation.'
+    };
+  }
+
+  return {
+    status: 'available',
+    currentRuntimeStatus: typeof currentRuntime.status === 'string' ? currentRuntime.status : 'unavailable',
+    currentRuntimeObservedCount: observedCount,
+    summary: audience === 'human'
+      ? '現在の証跡は参照可能です。'
+      : 'current runtime evidence is available.'
+  };
+}
+
 function buildPatrolQueryResponse(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const audience = resolveAudienceView(payload.audience);
@@ -92,12 +137,18 @@ function buildPatrolQueryResponse(params) {
     topPriorityCount,
     observationBlockerCount: observationBlockers.length
   });
+  const evidenceAvailability = buildEvidenceAvailability({
+    audience,
+    summary,
+    backlogSeparation
+  });
 
   return {
     queryVersion: QUERY_VERSION,
     generatedAt: payload.generatedAt || new Date().toISOString(),
     audience,
     summary,
+    evidenceAvailability,
     issues,
     observationBlockers,
     evidence,
