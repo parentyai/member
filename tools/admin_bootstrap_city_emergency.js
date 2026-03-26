@@ -339,6 +339,48 @@ function writeJson(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
+function collectDetachedCityPackDrafts(cityPacks, requests) {
+  const packs = Array.isArray(cityPacks) ? cityPacks : [];
+  const reqs = Array.isArray(requests) ? requests : [];
+  const referencedDraftIds = new Set();
+  const requestIds = new Set();
+
+  reqs.forEach((request) => {
+    if (request && typeof request.id === 'string' && request.id.trim()) requestIds.add(request.id.trim());
+    const draftIds = Array.isArray(request && request.draftCityPackIds) ? request.draftCityPackIds : [];
+    draftIds.forEach((id) => {
+      if (typeof id === 'string' && id.trim()) referencedDraftIds.add(id.trim());
+    });
+  });
+
+  return packs
+    .filter((pack) => pack && pack.status === 'draft')
+    .filter((pack) => {
+      const packId = typeof pack.id === 'string' ? pack.id.trim() : '';
+      const requestId = typeof pack.requestId === 'string' ? pack.requestId.trim() : '';
+      if (!packId) return false;
+      if (referencedDraftIds.has(packId)) return false;
+      if (requestId && requestIds.has(requestId)) return false;
+      return true;
+    })
+    .map((pack) => ({
+      id: pack.id,
+      name: typeof pack.name === 'string' ? pack.name : null,
+      requestId: typeof pack.requestId === 'string' ? pack.requestId : null,
+      packClass: typeof pack.packClass === 'string' ? pack.packClass : null,
+      language: typeof pack.language === 'string' ? pack.language : null,
+      status: pack.status
+    }));
+}
+
+async function listDetachedCityPackDrafts(deps) {
+  const cityPackRepo = deps && deps.cityPacksRepo ? deps.cityPacksRepo : cityPacksRepo;
+  const requestRepo = deps && deps.cityPackRequestsRepo ? deps.cityPackRequestsRepo : cityPackRequestsRepo;
+  const packs = await cityPackRepo.listCityPacks({ limit: 200 });
+  const requests = await requestRepo.listRequests({ limit: 200 });
+  return collectDetachedCityPackDrafts(packs, requests);
+}
+
 function getBootstrapDb() {
   return getDb();
 }
@@ -694,6 +736,7 @@ async function bootstrapCityPack(ctx) {
   const composed = await composeCityAndNationwidePacks({ regionKey: REGION_KEY_LOWER, language: 'ja', limit: 10 });
   const updatedRequest = await cityPackRequestsRepo.getRequest(REQUEST_ID);
   const pref = await userCityPackPreferencesRepo.getUserCityPackPreference(PRESERVE_USER_ID);
+  const detachedDrafts = await listDetachedCityPackDrafts();
 
   summary.cityPack = {
     requestId: REQUEST_ID,
@@ -704,7 +747,9 @@ async function bootstrapCityPack(ctx) {
     requestStatus: updatedRequest && updatedRequest.status,
     composeSummary: composed && composed.summary ? composed.summary : null,
     composeItemIds: Array.isArray(composed && composed.items) ? composed.items.map((item) => item.cityPackId) : [],
-    modulesSubscribed: pref && pref.modulesSubscribed ? pref.modulesSubscribed : []
+    modulesSubscribed: pref && pref.modulesSubscribed ? pref.modulesSubscribed : [],
+    detachedDraftCount: detachedDrafts.length,
+    detachedDrafts
   };
 }
 
@@ -1010,7 +1055,8 @@ async function main() {
     cityPack: summary.cityPack && {
       cityPackId: summary.cityPack.cityPackId || null,
       requestId: summary.cityPack.requestId || null,
-      composeSummary: summary.cityPack.composeSummary || null
+      composeSummary: summary.cityPack.composeSummary || null,
+      detachedDraftCount: Number(summary.cityPack.detachedDraftCount) || 0
     },
     emergency: summary.emergency && {
       providerCount: summary.emergency.providerCount || 0,
@@ -1028,6 +1074,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  collectDetachedCityPackDrafts,
+  listDetachedCityPackDrafts,
   collectEmergencySyncProviderKeys,
   runEmergencySyncInChunks,
   buildEmergencyMessageDraftForBootstrap,
