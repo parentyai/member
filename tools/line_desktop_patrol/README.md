@@ -2,7 +2,7 @@
 
 Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 
-## PR8 scope
+## PR9 scope
 - policy schema and example config
 - trace / proposal schema
 - Python sidecar package skeleton
@@ -12,6 +12,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - guard-enforced loop runner with local runtime state
 - optional screenshot-only observation in the dry-run harness
 - standalone bounded AX summary dump command
+- optional AX summary observation in the dry-run harness
 - read-only evaluator bridge into existing `qualityPatrol`
 - append-only local proposal queue
 - per-proposal Codex packet contract
@@ -41,10 +42,11 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - `src/member_line_patrol/`
 
 ## Notes
-- PR8 still keeps send disabled and dry-run only.
+- PR9 still keeps send disabled and dry-run only.
 - the guarded loop writes `artifacts/line_desktop_patrol/runtime/state.json` and respects blocked hours, hourly caps, failure streak, and the repo-side kill switch before invoking the dry-run harness.
 - when `store_screenshots=true`, the dry-run harness may capture `runs/<run_id>/after.png` on macOS and record it in `screenshot_after`.
-- the AX summary command is standalone in PR8 and degrades to `ax_timeout` or `host_not_macos` instead of hanging the run.
+- when `store_ax_tree=true`, the dry-run harness may capture `runs/<run_id>/after.ax.json` on macOS and record it in `ax_tree_after`.
+- the sample policy keeps `store_screenshots=false` and `store_ax_tree=false`, so both observations remain opt-in.
 - the evaluator bridge is read-only and reuses existing `tools/quality_patrol` logic.
 - the evaluator default main artifact path is `artifacts/line_desktop_patrol/evals/<run_id>/desktop_patrol_eval.json`.
 - proposal queue output is local-only at `artifacts/line_desktop_patrol/proposals/queue.jsonl` unless an explicit temp path is supplied.

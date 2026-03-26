@@ -44,6 +44,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - AX summary dump は `osascript` を timeout 付きで実行し、permission/prompt で詰まる host でも `ax_timeout` / `host_not_macos` / `osascript_unavailable` に degrade する
 - PR8 では standalone command のみで、dry-run harness / guarded loop / evaluator への配線はまだ行わない
 
+## PR9 Additions
+- `member_line_patrol.dry_run_harness` は `policy.store_ax_tree=true` のときだけ AX summary dump を試行し、成功時は `ax_tree_after` に local artifact path を記録する
+- sample policy は `store_screenshots=false` と `store_ax_tree=false` を維持し、default dry-run command が新しい observation を勝手に実行しないようにする
+- AX dump failure は screenshot observation と同様に trace evidence へ degrade し、desktop send / visible-message read / evaluator write path はまだ行わない
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -136,4 +141,10 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - no desktop send
 - no visible message read
 - no automatic AX dump during the default dry-run command
+- no AX artifact promotion into evaluator or admin read models
+
+## Non-goals in PR9
+- no desktop send
+- no visible message read
+- no automatic AX dump in the default sample policy
 - no AX artifact promotion into evaluator or admin read models

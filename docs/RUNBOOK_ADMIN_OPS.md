@@ -16,6 +16,7 @@
 - PR6 以降の local guarded loop は `blocked_hours` / `max_runs_per_hour` / `failure_streak_threshold` も尊重し、skip/stop のたびに local trace と latest summary を更新する。
 - PR7 以降は local override で `store_screenshots=true` を明示したときだけ screenshot observation を試行し、既定サンプル設定のままでは capture しない。
 - PR8 以降は standalone AX summary dump を実行できるが、timeout-safe degraded path が既定で、運用UIや Firestore へはまだ配線しない。
+- PR9 以降は local override で `store_ax_tree=true` を明示したときだけ dry-run harness が AX observation を試行し、既定サンプル設定のままでは capture しない。
 
 ## Feature Flag Governance（Phase PR5）
 - canonical registry:

@@ -62,6 +62,15 @@ class FakeAdapter:
             "output_path": str(output_path),
         }
 
+    def plan_dump_ax_tree(self, output_path, target_process_name="LINE", timeout_seconds=2.0):
+        return {
+            "status": "planned",
+            "target_process_name": target_process_name,
+            "command": {"argv": ["osascript", "-e", "fake ax dump"]},
+            "output_path": str(output_path),
+            "timeout_seconds": timeout_seconds,
+        }
+
     def execute_capture_screenshot(self, output_path):
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -40,7 +40,7 @@
   "ui_drift_threshold": 0.15,
   "require_target_confirmation": true,
   "store_screenshots": false,
-  "store_ax_tree": true,
+  "store_ax_tree": false,
   "proposal_mode": "local_queue",
   "auto_apply_level": "none"
 }

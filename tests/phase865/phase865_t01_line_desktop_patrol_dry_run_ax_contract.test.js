@@ -11,10 +11,10 @@ const {
   runPythonCode,
   writePolicy,
   writeRuntimeStateFixture
-} = require('./_line_desktop_patrol_screenshot_test_helper');
+} = require('../phase863/_line_desktop_patrol_screenshot_test_helper');
 
-test('phase863: dry-run harness degrades to skipped observation when screenshot capture is unavailable', (t) => {
-  const tempRoot = makeTempRoot('phase863-dry-run-screenshot-skip-');
+test('phase865: dry-run harness records ax_tree_after when AX dump succeeds', (t) => {
+  const tempRoot = makeTempRoot('phase865-dry-run-ax-');
   t.after(() => fs.rmSync(tempRoot, { recursive: true, force: true }));
 
   const policyPath = path.join(tempRoot, 'policy.json');
@@ -24,29 +24,31 @@ test('phase863: dry-run harness degrades to skipped observation when screenshot 
   writePolicy(policyPath, {
     enabled: true,
     blocked_hours: [],
-    store_screenshots: true
+    store_screenshots: false,
+    store_ax_tree: true
   });
   writeRuntimeStateFixture(runtimeStatePath);
 
   const code = `
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 from member_line_patrol import dry_run_harness as harness
 
 class FakeAdapter:
     def probe_host(self):
         return {
-            "platform": "Linux",
-            "platform_release": "6.0",
-            "is_macos": False,
+            "platform": "Darwin",
+            "platform_release": "24.0",
+            "is_macos": True,
             "line_app_name": "LINE",
             "line_bundle_id": "jp.naver.line.mac",
-            "line_bundle_path": None,
-            "line_bundle_present": False,
+            "line_bundle_path": "/Applications/LINE.app",
+            "line_bundle_present": True,
             "tools": {
                 "open": {"available": True, "path": "/usr/bin/open"},
-                "osascript": {"available": False, "path": None},
-                "screencapture": {"available": False, "path": None},
+                "osascript": {"available": True, "path": "/usr/bin/osascript"},
+                "screencapture": {"available": True, "path": "/usr/sbin/screencapture"},
                 "python3": {"available": True, "path": "/usr/bin/python3"},
             },
         }
@@ -70,12 +72,26 @@ class FakeAdapter:
             "timeout_seconds": timeout_seconds,
         }
 
-    def execute_capture_screenshot(self, output_path):
+    def execute_dump_ax_tree(self, output_path, target_process_name="LINE", timeout_seconds=2.0):
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "process_name": target_process_name,
+            "frontmost": True,
+            "window_count": 1,
+            "window_name": "Codex Self Test",
+            "ui_elements_enabled": True,
+        }
+        output_path.write_text(json.dumps(payload), encoding="utf-8")
         return {
-            "status": "skipped",
-            "reason": "host_not_macos",
+            "status": "executed",
             "probe": self.probe_host(),
-            "plan": self.plan_capture_screenshot(output_path),
+            "plan": self.plan_dump_ax_tree(output_path, target_process_name=target_process_name, timeout_seconds=timeout_seconds),
+            "result": {"status": "ok", "returncode": 0, "stdout": None, "stderr": None},
+            "output_path": str(output_path),
+            "file_exists": True,
+            "file_size": output_path.stat().st_size,
+            "payload_summary": payload,
         }
 
 harness.MacOSLineDesktopAdapter = FakeAdapter
@@ -84,7 +100,7 @@ result = harness.run_dry_run_harness(
     scenario_path=${JSON.stringify(path.join(path.resolve(__dirname, '..', '..'), 'tools', 'line_desktop_patrol', 'scenarios', 'smoke_dry_run.example.json'))},
     output_root=${JSON.stringify(outputRoot)},
     route_key="line-desktop-patrol",
-    current_time=datetime(2026, 3, 25, 12, 30, tzinfo=timezone.utc),
+    current_time=datetime(2026, 3, 26, 12, 30, tzinfo=timezone.utc),
     runtime_state_path=${JSON.stringify(runtimeStatePath)},
 )
 print(json.dumps(result))
@@ -94,8 +110,9 @@ print(json.dumps(result))
   const trace = readJson(result.tracePath);
 
   assert.equal(result.ok, true);
-  assert.equal(trace.failure_reason, 'dry_run_only_skip');
-  assert.equal(trace.screenshot_after, null);
-  assert.equal(trace.observation_status, 'screenshot_capture_skipped_pr7');
-  assert.equal(trace.observation_artifacts.capture_screenshot.reason, 'host_not_macos');
+  assert.equal(trace.observation_status, 'ax_dump_completed_pr9');
+  assert.ok(typeof trace.ax_tree_after === 'string' && trace.ax_tree_after.endsWith('/after.ax.json'));
+  assert.ok(fs.existsSync(trace.ax_tree_after));
+  assert.equal(trace.observation_artifacts.dump_ax_tree.result.status, 'ok');
+  assert.equal(trace.observation_artifacts.capture_screenshot.reason, 'store_screenshots_disabled');
 });
