@@ -43,6 +43,13 @@ TOOL_SPECS = (
         status="observation_ready",
     ),
     ToolSpec(
+        name="dump_ax_tree",
+        description="Dump a bounded LINE Desktop accessibility summary with timeout-safe degradation and no send path.",
+        mutating=True,
+        exposure="public",
+        status="ax_summary_ready",
+    ),
+    ToolSpec(
         name="run_dry_run_scenario",
         description="Run a local-only dry-run harness and persist a trace artifact without desktop send side effects.",
         mutating=True,
@@ -104,6 +111,7 @@ def build_server_manifest() -> dict:
             "PR4 adds local proposal queue + Codex packet generation without enabling any repo-side write path.",
             "PR6 adds a local guarded loop state file and stop/skip enforcement before the dry-run harness runs.",
             "PR7 adds optional screenshot capture observation when local policy.store_screenshots=true.",
+            "PR8 adds a standalone bounded AX summary dump command with timeout-safe degradation.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }
