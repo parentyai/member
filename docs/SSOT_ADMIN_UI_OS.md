@@ -211,6 +211,12 @@ ServicePhase（1〜4）は SSOT として保持される（`docs/SSOT_SERVICE_PH
   - trace join / operator resolution metrics
 - 既存の `LLM Route & Trace`、`LLM Runtime Status`、`Quality Scorecard`、`Slice-first Board` は維持する。
 
+## Quality Patrol Local Desktop Summary（PR5 add-only）
+- `/admin/app?pane=quality-patrol` は既存 pane / route を維持したまま、`LINE Desktop Patrol (local)` の read-only panel を detail 側へ追加する。
+- `GET /api/admin/quality-patrol` は既存 contract を維持しつつ nested `desktopPatrolSummary` を add-only で返す。
+- operator audience では local artifact path を確認できるが、human audience では redacted displayPath のみ表示する。
+- browser から queue mutation / backlog promotion / retention mutation を行わない。
+
 ### ServicePhase 1: 運用OS v1（基礎）
 MUST:
 - Composer（配信作成）: draft → preview → approve → plan → execute

@@ -4236,6 +4236,17 @@ function summarizeQualityPatrolFiles(files, audience) {
   return rows.map((item) => item.split('/').filter(Boolean).slice(-2).join('/')).join(', ');
 }
 
+function summarizeQualityPatrolArtifactRefs(rows) {
+  const items = Array.isArray(rows)
+    ? rows.filter((item) => item && typeof item === 'object' && (item.displayPath || item.path))
+    : [];
+  if (!items.length) return '-';
+  return items.map((item) => {
+    const label = item.kind ? `${item.kind}: ` : '';
+    return `${label}${asText(item.displayPath || item.path, '-')}`;
+  }).join(' | ');
+}
+
 function summarizeQualityPatrolBlockedBy(values) {
   const rows = Array.isArray(values) ? values.filter(Boolean).map((item) => String(item).trim()).filter(Boolean) : [];
   return rows.length ? rows.join(', ') : 'なし';
@@ -4286,6 +4297,103 @@ function renderQualityPatrolSummary(result) {
     'quality-patrol-load-state',
     `${buildQualityPatrolModeLabel(payload.mode || state.qualityPatrolMode)} / ${buildQualityPatrolAudienceLabel(payload.audience || state.qualityPatrolAudience)} / ${buildQualityPatrolStatusLabel(payload.observationStatus)}`
   );
+}
+
+function renderQualityPatrolDesktopSummary(result) {
+  const payload = result && result.desktopPatrolSummary && typeof result.desktopPatrolSummary === 'object'
+    ? result.desktopPatrolSummary
+    : {};
+  const latestRun = payload.latestRun && typeof payload.latestRun === 'object' ? payload.latestRun : null;
+  const queue = payload.queue && typeof payload.queue === 'object' ? payload.queue : {};
+  const evaluation = payload.evaluation && typeof payload.evaluation === 'object' ? payload.evaluation : {};
+  const artifactRefs = Array.isArray(payload.artifactRefs) ? payload.artifactRefs : [];
+  const latestProposalIds = Array.isArray(payload.latestProposalIds) ? payload.latestProposalIds : [];
+  const statusTone = resolveQualityPatrolTone(payload.status);
+  const stageTone = payload.stage === 'queued' || payload.stage === 'evaluated'
+    ? 'success'
+    : payload.stage === 'trace_only'
+      ? 'warn'
+      : payload.stage === 'not_observed'
+        ? 'disabled'
+        : resolveQualityPatrolTone(payload.stage);
+
+  applyBadgeState(
+    document.getElementById('quality-patrol-desktop-status'),
+    buildQualityPatrolStatusLabel(payload.status),
+    statusTone,
+    { baseClass: 'badge' }
+  );
+  applyBadgeState(
+    document.getElementById('quality-patrol-desktop-stage'),
+    buildQualityPatrolStatusLabel(payload.stage),
+    stageTone,
+    { baseClass: 'badge' }
+  );
+  applyBadgeState(
+    document.getElementById('quality-patrol-desktop-planning-status'),
+    buildQualityPatrolStatusLabel(evaluation.planningStatus),
+    resolveQualityPatrolTone(evaluation.planningStatus),
+    { baseClass: 'badge' }
+  );
+  setTextContent('quality-patrol-desktop-queue-count', String(Number(queue.totalCount || 0)));
+  setTextContent(
+    'quality-patrol-desktop-summary',
+    payload.summary || 'ローカル sidecar の desktop patrol 状態はまだ観測されていません。'
+  );
+
+  const container = document.getElementById('quality-patrol-desktop-latest');
+  if (!container) return;
+  clearElementChildren(container);
+
+  if (!latestRun && !artifactRefs.length && !Number(queue.totalCount || 0)) {
+    renderQualityPatrolPlaceholder(
+      'quality-patrol-desktop-latest',
+      payload.status === 'error'
+        ? 'local desktop patrol artifact の読込に失敗しました。'
+        : 'local desktop patrol artifact はまだありません。'
+    );
+    return;
+  }
+
+  if (latestRun) {
+    container.appendChild(createQualityPatrolItem({
+      title: latestRun.runId || 'latest run',
+      summary: `scenario=${asText(latestRun.scenarioId, '-')} / target=${asText(latestRun.targetId, '-')}`,
+      badges: [
+        { label: payload.stage || 'not_observed', tone: stageTone },
+        latestRun.failureReason ? { label: 'failure_reason', tone: 'warn' } : null
+      ].filter(Boolean),
+      meta: [
+        latestRun.finishedAt ? `finishedAt=${formatDateLabel(latestRun.finishedAt)}` : 'finishedAt=-',
+        payload.generatedAt ? `summaryAt=${formatDateLabel(payload.generatedAt)}` : null
+      ],
+      details: [
+        `failureReason: ${asText(latestRun.failureReason, 'none')}`,
+        `proposalIds: ${latestProposalIds.length ? latestProposalIds.join(', ') : '-'}`
+      ]
+    }));
+  }
+
+  if (Number(queue.totalCount || 0) > 0 || queue.latestProposalId) {
+    container.appendChild(createQualityPatrolItem({
+      title: 'Proposal queue',
+      summary: `${Number(queue.totalCount || 0)} proposal(s) queued`,
+      badges: [{ label: 'local_queue', tone: 'info' }],
+      meta: [
+        `latestProposalId=${asText(queue.latestProposalId, '-')}`,
+        `packetCount=${Number(queue.packetCount || 0)}`
+      ]
+    }));
+  }
+
+  if (artifactRefs.length) {
+    container.appendChild(createQualityPatrolItem({
+      title: 'Artifacts',
+      summary: summarizeQualityPatrolArtifactRefs(artifactRefs),
+      badges: [{ label: resolveQualityPatrolAudience(result && result.audience) === 'operator' ? 'operator_paths' : 'path_redacted', tone: 'unset' }],
+      meta: [`artifactCount=${artifactRefs.length}`]
+    }));
+  }
 }
 
 function renderQualityPatrolObservationBlockers(result) {
@@ -4477,9 +4585,20 @@ function renderQualityPatrolResult(result) {
     issues: [],
     observationBlockers: [],
     evidence: [],
-    traceRefs: []
+    traceRefs: [],
+    desktopPatrolSummary: {
+      status: 'unavailable',
+      stage: 'not_observed',
+      summary: 'local desktop patrol artifact はまだありません。',
+      queue: { totalCount: 0, latestProposalId: null, packetCount: 0 },
+      evaluation: { planningStatus: 'unavailable', analysisStatus: 'unavailable', observationStatus: 'unavailable' },
+      latestRun: null,
+      latestProposalIds: [],
+      artifactRefs: []
+    }
   };
   renderQualityPatrolSummary(payload);
+  renderQualityPatrolDesktopSummary(payload);
   renderQualityPatrolObservationBlockers(payload);
   renderQualityPatrolRecommendedPr(payload);
   renderQualityPatrolIssues(payload);
@@ -4492,6 +4611,12 @@ function renderQualityPatrolLoadingState() {
     'quality-patrol-load-state',
     `${buildQualityPatrolModeLabel(state.qualityPatrolMode)} / ${buildQualityPatrolAudienceLabel(state.qualityPatrolAudience)} / LOADING`
   );
+  applyBadgeState(document.getElementById('quality-patrol-desktop-status'), 'LOADING', 'unset', { baseClass: 'badge' });
+  applyBadgeState(document.getElementById('quality-patrol-desktop-stage'), 'LOADING', 'unset', { baseClass: 'badge' });
+  applyBadgeState(document.getElementById('quality-patrol-desktop-planning-status'), 'LOADING', 'unset', { baseClass: 'badge' });
+  setTextContent('quality-patrol-desktop-queue-count', '-');
+  setTextContent('quality-patrol-desktop-summary', 'LINE Desktop Patrol を読み込み中です。');
+  renderQualityPatrolPlaceholder('quality-patrol-desktop-latest', 'LINE Desktop Patrol を読み込み中です。', 'loading-state');
   renderQualityPatrolPlaceholder('quality-patrol-observation-blockers', 'Quality Patrol を読み込み中です。', 'loading-state');
   renderQualityPatrolPlaceholder('quality-patrol-recommended-pr', 'Quality Patrol を読み込み中です。', 'loading-state');
   renderQualityPatrolPlaceholder('quality-patrol-issues', 'Quality Patrol を読み込み中です。', 'loading-state');
@@ -4502,6 +4627,12 @@ function renderQualityPatrolLoadingState() {
 function renderQualityPatrolErrorState(errorPayload) {
   const error = errorPayload && typeof errorPayload === 'object' ? errorPayload : {};
   const message = error && error.error ? `Quality Patrol の取得に失敗しました: ${error.error}` : 'Quality Patrol の取得に失敗しました。';
+  applyBadgeState(document.getElementById('quality-patrol-desktop-status'), 'ERROR', 'error', { baseClass: 'badge' });
+  applyBadgeState(document.getElementById('quality-patrol-desktop-stage'), 'ERROR', 'error', { baseClass: 'badge' });
+  applyBadgeState(document.getElementById('quality-patrol-desktop-planning-status'), 'ERROR', 'error', { baseClass: 'badge' });
+  setTextContent('quality-patrol-desktop-queue-count', '-');
+  setTextContent('quality-patrol-desktop-summary', message);
+  renderQualityPatrolPlaceholder('quality-patrol-desktop-latest', message, 'error-state');
   renderQualityPatrolPlaceholder('quality-patrol-observation-blockers', message, 'error-state');
   renderQualityPatrolPlaceholder('quality-patrol-recommended-pr', message, 'error-state');
   renderQualityPatrolPlaceholder('quality-patrol-issues', message, 'error-state');
