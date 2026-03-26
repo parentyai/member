@@ -5165,6 +5165,7 @@ async function handleAssistantMessage(params) {
     eventSource: payload.eventSource,
     pathType: 'slow',
     uUnits: ['U-05', 'U-06', 'U-09', 'U-11', 'U-12', 'U-13', 'U-14', 'U-15', 'U-16', 'U-17'],
+    disableAutoQuickReplies: normalizedConversationIntent !== 'general',
     nextSteps: paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : [],
     followupQuestion: paid && paid.output && Array.isArray(paid.output.gaps) ? paid.output.gaps[0] : '',
     warnings: []

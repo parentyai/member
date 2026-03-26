@@ -26,3 +26,26 @@ test('phase835: followup history prefers continuation, then knowledge, then conc
   assert.ok(continuation > concierge);
   assert.ok(concierge > clarify);
 });
+
+test('phase835: city-scoped direct answer prefers concierge over generic faq and knowledge when exact city grounding is unavailable', () => {
+  const packet = {
+    normalizedConversationIntent: 'school',
+    requestShape: 'answer',
+    knowledgeScope: 'city',
+    locationHint: {
+      kind: 'city',
+      cityKey: 'new-york'
+    }
+  };
+
+  const cityPack = resolveCandidatePriority(packet, { kind: 'city_pack_backed_candidate' });
+  const cityGrounded = resolveCandidatePriority(packet, { kind: 'city_grounded_candidate' });
+  const savedFaq = resolveCandidatePriority(packet, { kind: 'saved_faq_candidate' });
+  const knowledge = resolveCandidatePriority(packet, { kind: 'knowledge_backed_candidate' });
+  const concierge = resolveCandidatePriority(packet, { kind: 'domain_concierge_candidate' });
+
+  assert.ok(cityPack > cityGrounded);
+  assert.ok(cityGrounded > concierge);
+  assert.ok(concierge > savedFaq);
+  assert.ok(concierge > knowledge);
+});
