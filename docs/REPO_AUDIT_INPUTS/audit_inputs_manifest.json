@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-26T02:34:44.591Z",
-  "gitCommit": "c6130cf064fdd0f3227ac73445385f658bb69404",
-  "branch": "HEAD",
-  "sourceDigest": "a0237538ddb46064e09670cae4b03a51a37091558c827a8590310de28a3b5379",
+  "generatedAt": "2026-03-26T02:41:49.073Z",
+  "gitCommit": "6639479c67133aa8f5c05d6a96ff480e3d560fc3",
+  "branch": "codex/city-pack-audit-hint",
+  "sourceDigest": "980e718cdb51f82d2ba1d61583461aa77ab5d2cc78c8cb2b05599f0774d3f3d2",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "03d066c1ade4f459b67d07e3534663d4c38edcfd518dbf0823107ec340fa6d22",
+      "sha256": "0e19be8f5b60e9f48100efba5ddd567e72464f3563cc1bfda726f063e8e0316b",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "795c369152fcdd9501f6a531ba74cc7a2a7aeb8f3d8c545d1646ab6177a7efab",
+      "sha256": "dbbff748f473a5f04b4104bab22efaa5ef9bf82f891da702be4d3b438476db6e",
       "bytes": 487
     },
     {
@@ -146,12 +146,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "ea080435afcfcb35162e693f467b5bad5d9b70f493e7ee39305a1255ad0b9c82",
+      "sha256": "473eeeec2352dcc1958370eeee1ae963649babef9a4dedfd2bed9d8599a3fe24",
       "bytes": 453884
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "60748b9e2cf008482d19de33c71a09f2201eee4049a220a1c516c260cf587ad4",
+      "sha256": "55a82b37464463b16a17c4467f412c30ef77c9e164e37a9dc844c46d274a7c70",
       "bytes": 740
     },
     {
@@ -166,13 +166,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "ff90c9f7f84be0926612702eb0e64f19c748a99c3589d21235a1c4cd45e5abd1",
+      "sha256": "6eb3a15faa0737a7ccf7ffde285ec8cc49bd4f655fae72c370f4a65e192665e9",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "d25a32e2288c48d9be91e98c22aa9187a52f11412f5927d210b410c8ec8721b8",
-      "bytes": 2390
+      "sha256": "f9d079bc8b1725b1f5016c219372b20b5ea4e6c80232f76ac2c19c9cd1bb67ba",
+      "bytes": 2412
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",
