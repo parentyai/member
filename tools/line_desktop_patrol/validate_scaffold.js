@@ -83,6 +83,7 @@ function runValidation() {
   assert(packageJson.scripts['test:phase859'], 'package.json must define test:phase859');
   assert(packageJson.scripts['test:phase860'], 'package.json must define test:phase860');
   assert(packageJson.scripts['test:phase862'], 'package.json must define test:phase862');
+  assert(packageJson.scripts['test:phase863'], 'package.json must define test:phase863');
 
   return {
     ok: true,

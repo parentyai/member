@@ -4,7 +4,7 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 
 ## Preconditions
 - test accounts / whitelist targets only
-- PR6 still has no desktop send path
+- PR7 still has no desktop send path
 - global kill switch remains the final stop for any future side-effectful execute mode
 
 ## Validate the scaffold
@@ -40,6 +40,9 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - writes `artifacts/line_desktop_patrol/runtime/state.json`
   - refreshes `tmp/line_desktop_patrol_latest.json`
   - emits a guard trace with `failure_reason` like `policy_disabled_stop`, `kill_switch_stop`, `blocked_hours_skip`, `max_runs_per_hour_skip`, or `failure_streak_stop` before any dry-run trace is attempted
+- screenshot observation:
+  - when `store_screenshots=true`, `line-desktop-patrol:dry-run` may capture `artifacts/line_desktop_patrol/runs/<run_id>/after.png`
+  - on non-macOS hosts or when `screencapture` is unavailable, the trace records a skipped observation instead of failing the run
 - evaluate command:
   - reads one local trace file
   - converts the trace into one review unit
@@ -95,6 +98,12 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - guarded loop does not enable desktop send, AX dump, screenshot capture, or proposal auto-apply
 - latest summary and loop state are filesystem-only and can be discarded by removing local artifacts
 
+## PR7 guardrails
+- screenshot capture stays opt-in via `store_screenshots=true`
+- the sample policy remains `store_screenshots=false`
+- screenshot capture does not imply AX dump, visible-message read, or send enablement
+- screenshot capture failures degrade to trace evidence and do not write to Firestore
+
 ## Optional operator check
 1. Generate one local trace/eval/queue sequence with the existing dry-run + evaluate + enqueue commands.
 2. Open `/admin/app?pane=quality-patrol&role=operator`.
@@ -105,3 +114,9 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 1. Run `npm run line-desktop-patrol:loop` with `policy.example.json` and confirm the result stops with `policy_disabled_stop`.
 2. Re-run with a temporary policy override where `enabled=true` during a blocked-hour fixture or a kill-switch fixture and confirm the expected stop reason is written to trace + latest summary.
 3. Inspect `artifacts/line_desktop_patrol/runtime/state.json` and confirm `failure_streak` is preserved for guard stops and reset for `dry_run_only_skip`.
+
+## Optional PR7 screenshot check
+1. Copy `tools/line_desktop_patrol/config/policy.example.json` to a local override and set `enabled=true`, `blocked_hours=[]`, `store_screenshots=true`.
+2. Run `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.dry_run_harness --policy <override> --scenario tools/line_desktop_patrol/scenarios/smoke_dry_run.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol --allow-disabled-policy`.
+3. On macOS with Screen Recording permission, confirm `runs/<run_id>/after.png` exists and `trace.json` points `screenshot_after` to that file.
+4. On non-macOS or without `screencapture`, confirm the trace keeps `screenshot_after=null` and records a skipped screenshot observation instead of failing the run.

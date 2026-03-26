@@ -266,6 +266,7 @@ Typical fields:
 Notes:
 - PR6 guarded loop uses `artifacts/line_desktop_patrol/runtime/state.json` only for local rate limiting / stop-state continuity.
 - guard decisions still emit per-run trace artifacts so operator evidence stays append-only even when the loop skips execution.
+- PR7 allows `screenshot_after` to point at `artifacts/line_desktop_patrol/runs/<run_id>/after.png` when a local override enables `store_screenshots=true`.
 
 Notes:
 - PR2 adds local dry-run trace emission through `member_line_patrol.dry_run_harness`.

@@ -117,16 +117,45 @@ def run_dry_run_harness(
     if "dry_run" not in target.allowed_send_modes:
         raise ValueError(f"target {target.alias} does not allow dry_run mode")
     planned_prepare = adapter.plan_prepare_line_app(target.alias)
+    planned_screenshot = adapter.plan_capture_screenshot(
+        Path(output_root) / "runs" / "planned" / "planned_after.png"
+    )
     state_transitions.append(_transition("PRECHECK", "completed"))
 
     state_transitions.append(_transition("OPEN_TARGET", "planned", "bounded LINE open/focus plan only"))
     state_transitions.append(_transition("SEND_OR_DRYRUN", "skipped", "dry_run_only_skip"))
-    state_transitions.append(_transition("OBSERVE", "skipped", "ax_and_visible_message_read_not_implemented_in_pr2"))
+    screenshot_after = None
+    screenshot_capture = {
+        "status": "skipped",
+        "reason": "store_screenshots_disabled",
+        "plan": planned_screenshot,
+    }
+    observation_status = "planned_only_pr2"
+    if policy.store_screenshots:
+        state_transitions.append(_transition("OBSERVE", "started", "capture_screenshot_if_macos"))
+        screenshot_output_path = Path(output_root) / "runs" / "pending" / "after.png"
+        screenshot_capture = adapter.execute_capture_screenshot(screenshot_output_path)
+        if screenshot_capture.get("status") == "executed" and screenshot_capture.get("result", {}).get("status") == "ok" and screenshot_capture.get("file_exists"):
+            screenshot_after = str(Path(screenshot_capture["output_path"]))
+            observation_status = "screenshot_capture_completed_pr7"
+            state_transitions.append(_transition("OBSERVE", "completed", "screenshot_capture_completed_pr7"))
+        else:
+            reason = screenshot_capture.get("reason") or screenshot_capture.get("result", {}).get("status") or "screenshot_capture_not_completed"
+            observation_status = "screenshot_capture_skipped_pr7"
+            state_transitions.append(_transition("OBSERVE", "skipped", reason))
+    else:
+        state_transitions.append(_transition("OBSERVE", "skipped", "ax_and_visible_message_read_not_implemented_in_pr2"))
 
     finished_at = _resolve_now(current_time)
     run_id = f"ldp_{started_at.strftime('%Y%m%dT%H%M%SZ')}_{uuid.uuid4().hex[:12]}"
     session_id = f"session_{uuid.uuid4().hex[:12]}"
     trace_store = TraceStore(output_root)
+    if screenshot_after is not None:
+        final_screenshot_path = Path(output_root) / "runs" / run_id / "after.png"
+        final_screenshot_path.parent.mkdir(parents=True, exist_ok=True)
+        Path(screenshot_after).replace(final_screenshot_path)
+        screenshot_after = str(final_screenshot_path)
+        screenshot_capture["output_path"] = screenshot_after
 
     trace = {
         "run_id": run_id,
@@ -141,7 +170,7 @@ def run_dry_run_harness(
         "visible_before": [],
         "visible_after": [],
         "screenshot_before": None,
-        "screenshot_after": None,
+        "screenshot_after": screenshot_after,
         "ax_tree_before": None,
         "ax_tree_after": None,
         "model_config": {
@@ -162,9 +191,10 @@ def run_dry_run_harness(
         "runtime_state": runtime_state,
         "planned_actions": {
             "prepare_line_app": planned_prepare,
-            "capture_screenshot": adapter.plan_capture_screenshot(
-                Path(output_root) / "runs" / run_id / "planned_after.png"
-            ),
+            "capture_screenshot": planned_screenshot,
+        },
+        "observation_artifacts": {
+            "capture_screenshot": screenshot_capture,
         },
         "scenario_expectations": {
             "expected_behavior": list(scenario.expected_behavior),
@@ -172,7 +202,7 @@ def run_dry_run_harness(
             "forbidden_patterns": list(scenario.forbidden_patterns),
         },
         "state_transitions": state_transitions,
-        "observation_status": "planned_only_pr2",
+        "observation_status": observation_status,
     }
     trace_path = trace_store.write_trace(trace)
     state_transitions.append(_transition("UPDATE_STATE", "completed"))
