@@ -41,6 +41,7 @@ const { generatePaidDomainConciergeReply, FORBIDDEN_REPLY_PATTERN } = require('.
 const { generatePaidHousingConciergeReply } = require('../usecases/assistant/generatePaidHousingConciergeReply');
 const { runPaidConversationOrchestrator } = require('../domain/llm/orchestrator/runPaidConversationOrchestrator');
 const { buildRequestContract } = require('../domain/llm/orchestrator/buildRequestContract');
+const { buildConversationPacket } = require('../domain/llm/orchestrator/buildConversationPacket');
 const {
   upsertRecentTurn,
   listRecentTurns
@@ -1204,6 +1205,99 @@ function buildBlockedFallbackRequestContract(params) {
     intentReason: typeof payload.routerReason === 'string' ? payload.routerReason : '',
     intentMode: typeof payload.routerMode === 'string' ? payload.routerMode : ''
   });
+}
+
+async function buildBlockedFallbackContext(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const messageText = typeof payload.messageText === 'string' ? payload.messageText : '';
+  if (!messageText.trim()) return null;
+
+  const explicitRequestContract = buildBlockedFallbackRequestContract(payload);
+  if (explicitRequestContract) {
+    return {
+      domainIntent: normalizeDomainIntent(payload.domainIntent),
+      requestContract: explicitRequestContract,
+      contextResumeDomain: null,
+      followupIntent: null,
+      recentFollowupIntents: [],
+      recentResponseHints: [],
+      recoverySignal: false,
+      routerReason: typeof payload.routerReason === 'string' ? payload.routerReason : null
+    };
+  }
+
+  const lineUserId = normalizeReplyText(payload.lineUserId);
+  if (!lineUserId) return null;
+
+  const recentTurns = resolvePaidInterventionCooldownTurns();
+  const recentActionRows = await loadRecentActionRowsBestEffort(lineUserId, recentTurns);
+  if (!Array.isArray(recentActionRows) || recentActionRows.length === 0) return null;
+
+  const packet = buildConversationPacket({
+    lineUserId,
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null,
+    messageText,
+    explicitPaidIntent: payload.explicitPaidIntent || null,
+    paidIntent: payload.paidIntent || 'faq_search',
+    planInfo: payload.planInfo && typeof payload.planInfo === 'object'
+      ? payload.planInfo
+      : { plan: 'pro', status: 'active' },
+    routerMode: typeof payload.routerMode === 'string' ? payload.routerMode : 'question',
+    routerReason: typeof payload.routerReason === 'string' ? payload.routerReason : null,
+    contextSnapshot: payload.contextSnapshot && typeof payload.contextSnapshot === 'object'
+      ? payload.contextSnapshot
+      : null,
+    llmFlags: {
+      llmConciergeEnabled: payload.llmConciergeEnabled === true,
+      llmWebSearchEnabled: payload.llmWebSearchEnabled !== false,
+      llmStyleEngineEnabled: payload.llmStyleEngineEnabled !== false,
+      llmBanditEnabled: payload.llmBanditEnabled === true,
+      qualityEnabled: payload.qualityEnabled !== false,
+      snapshotStrictMode: payload.snapshotStrictMode === true,
+      actionGatewayEnabled: payload.actionGatewayEnabled === true
+    },
+    maxNextActionsCap: Number.isFinite(Number(payload.maxNextActionsCap)) ? Number(payload.maxNextActionsCap) : null,
+    recentEngagement: payload.recentEngagement && typeof payload.recentEngagement === 'object'
+      ? payload.recentEngagement
+      : { recentTurns: 0, recentInterventions: 0, recentClicks: false, recentTaskDone: false },
+    opportunityDecision: payload.opportunityDecision && typeof payload.opportunityDecision === 'object'
+      ? payload.opportunityDecision
+      : {
+        conversationMode: 'concierge',
+        opportunityType: 'none',
+        opportunityReasonKeys: [],
+        interventionBudget: 1,
+        suggestedAtoms: { nextActions: [], pitfall: '', question: '' }
+      },
+    recentActionRows
+  });
+
+  const domainIntent = normalizeDomainIntent(
+    packet.normalizedConversationIntent
+      || (packet.requestContract && packet.requestContract.primaryDomainIntent)
+      || payload.domainIntent
+  );
+  const followupIntent = normalizeFollowupIntent(packet.followupIntent);
+  const hasContextualPaidDomain = domainIntent !== 'general'
+    && (
+      packet.priorContextUsed === true
+      || packet.contextResume === true
+      || (typeof packet.contextResumeDomain === 'string' && packet.contextResumeDomain.trim().length > 0)
+      || (typeof packet.sourceDomainIntent === 'string' && packet.sourceDomainIntent.trim().length > 0)
+    );
+  if (!hasContextualPaidDomain && !followupIntent) return null;
+
+  return {
+    domainIntent,
+    requestContract: packet.requestContract,
+    contextResumeDomain: packet.contextResumeDomain || null,
+    followupIntent,
+    recentFollowupIntents: Array.isArray(packet.recentFollowupIntents) ? packet.recentFollowupIntents.slice(0, 6) : [],
+    recentResponseHints: Array.isArray(packet.recentResponseHints) ? packet.recentResponseHints.slice(0, 6) : [],
+    recoverySignal: packet.recoverySignal === true,
+    routerReason: packet.routerReason || (typeof payload.routerReason === 'string' ? payload.routerReason : null)
+  };
 }
 
 function buildRequestContractTelemetryFields(requestContract) {
@@ -3844,6 +3938,9 @@ async function handleAssistantMessage(params) {
     messageText: text
   });
   const shouldRouteToPaidCasual = conversationRouterEnabled && (routerMode === 'greeting' || routerMode === 'casual');
+  const snapshotStrictMode = resolveSnapshotOnlyContextEnabled();
+  const qualityEnabled = resolvePaidFaqQualityEnabled();
+  const actionGatewayEnabled = resolveV1ActionGatewayEnabled();
 
   if (paidOrchestratorEnabled && shouldRouteToPaidCasual) {
     const earlyOrchestrated = await tryHandlePaidOrchestratorV2({
@@ -3996,13 +4093,33 @@ async function handleAssistantMessage(params) {
 
   if (!budget.allowed) {
     const blockedReason = budget.blockedReason || 'plan_gate_blocked';
-    const fallbackRequestContract = buildBlockedFallbackRequestContract({
+    const fallbackContext = await buildBlockedFallbackContext({
+      lineUserId,
       preferPaidOrchestratorForExplicitDomain,
       messageText: text,
       domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
       routerReason,
-      routerMode
+      routerMode,
+      explicitPaidIntent,
+      paidIntent,
+      planInfo,
+      llmConciergeEnabled,
+      llmWebSearchEnabled,
+      llmStyleEngineEnabled,
+      llmBanditEnabled,
+      qualityEnabled,
+      snapshotStrictMode,
+      actionGatewayEnabled,
+      traceId,
+      requestId
     });
+    const fallbackRequestContract = fallbackContext ? fallbackContext.requestContract : null;
+    const fallbackDomainIntent = fallbackContext
+      ? fallbackContext.domainIntent
+      : (isPaidDomainIntent ? normalizedConversationIntent : 'general');
+    const fallbackRouterReason = fallbackContext && fallbackContext.routerReason
+      ? fallbackContext.routerReason
+      : routerReason;
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
       kbTopScore: 0,
@@ -4012,8 +4129,13 @@ async function handleAssistantMessage(params) {
     });
     const fallback = await replyWithPaidDomainConcierge(Object.assign({}, payload, {
       blockedReason,
-      domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+      domainIntent: fallbackDomainIntent,
       requestContract: fallbackRequestContract,
+      contextResumeDomain: fallbackContext ? fallbackContext.contextResumeDomain : null,
+      followupIntent: fallbackContext ? fallbackContext.followupIntent : null,
+      recentFollowupIntents: fallbackContext ? fallbackContext.recentFollowupIntents : [],
+      recentResponseHints: fallbackContext ? fallbackContext.recentResponseHints : [],
+      recoverySignal: fallbackContext ? fallbackContext.recoverySignal === true : false,
       forceConcierge: true
     }));
     const fallbackTelemetry = buildFallbackIntegrationTelemetryFields(fallback, fallbackRequestContract);
@@ -4048,7 +4170,7 @@ async function handleAssistantMessage(params) {
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality,
       conversationMode: 'concierge',
-      routerReason: routerReason || 'paid_fallback_concierge',
+      routerReason: fallbackRouterReason || 'paid_fallback_concierge',
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
       interventionBudget: 1,
@@ -4057,7 +4179,8 @@ async function handleAssistantMessage(params) {
       repetitionPrevented: false,
       directAnswerApplied: fallbackTelemetry.directAnswerApplied,
       clarifySuppressed: fallbackTelemetry.clarifySuppressed,
-      domainIntent: normalizedConversationIntent,
+      domainIntent: fallbackDomainIntent,
+      contextResumeDomain: fallbackContext ? fallbackContext.contextResumeDomain : null,
       requestShape: fallbackTelemetry.requestShape,
       depthIntent: fallbackTelemetry.depthIntent,
       transformSource: fallbackTelemetry.transformSource,
@@ -4077,7 +4200,7 @@ async function handleAssistantMessage(params) {
       scopeDisclosureRequired: fallbackTelemetry.scopeDisclosureRequired,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
-        domainIntent: normalizedConversationIntent,
+        domainIntent: fallbackDomainIntent,
         fallbackType: 'budget_blocked_fallback',
         opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : []
       })
@@ -4092,7 +4215,7 @@ async function handleAssistantMessage(params) {
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       llmBanditEnabled,
       conversationMode: 'concierge',
-      routerReason: routerReason || 'paid_fallback_concierge',
+      routerReason: fallbackRouterReason || 'paid_fallback_concierge',
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
       interventionBudget: 1,
@@ -4101,7 +4224,8 @@ async function handleAssistantMessage(params) {
       repetitionPrevented: false,
       directAnswerApplied: fallbackTelemetry.directAnswerApplied,
       clarifySuppressed: fallbackTelemetry.clarifySuppressed,
-      domainIntent: normalizedConversationIntent,
+      domainIntent: fallbackDomainIntent,
+      contextResumeDomain: fallbackContext ? fallbackContext.contextResumeDomain : null,
       requestShape: fallbackTelemetry.requestShape,
       depthIntent: fallbackTelemetry.depthIntent,
       transformSource: fallbackTelemetry.transformSource,
@@ -4121,7 +4245,7 @@ async function handleAssistantMessage(params) {
       scopeDisclosureRequired: fallbackTelemetry.scopeDisclosureRequired,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
-        domainIntent: normalizedConversationIntent,
+        domainIntent: fallbackDomainIntent,
         fallbackType: 'budget_blocked_fallback',
         opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : []
       })
@@ -4276,7 +4400,6 @@ async function handleAssistantMessage(params) {
     };
   }
 
-  const snapshotStrictMode = resolveSnapshotOnlyContextEnabled();
   const snapshotResult = await getUserContextSnapshot({
     lineUserId,
     maxAgeHours: 24 * 14
@@ -4424,8 +4547,6 @@ async function handleAssistantMessage(params) {
     };
   }
 
-  const qualityEnabled = resolvePaidFaqQualityEnabled();
-  const actionGatewayEnabled = resolveV1ActionGatewayEnabled();
   const contextSnapshot = snapshotResult && snapshotResult.ok === true && snapshotResult.stale !== true
     ? snapshotResult.snapshot
     : null;
