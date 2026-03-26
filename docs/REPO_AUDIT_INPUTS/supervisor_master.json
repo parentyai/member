@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-26T07:17:57-04:00",
-  "gitCommit": "ecb608fc629ad45778aad2ac31a6254d5d0f048a",
-  "branch": "codex/line-desktop-patrol-pr10",
-  "sourceDigest": "ea11aac3f7f215c663f4b86e083c18b8c49e2972b87c891c95492d52babf0064",
+  "generatedAt": "2026-03-26T17:57:41-04:00",
+  "gitCommit": "6954a5b77c7ecd16a448d6f971ff2f80ad828061",
+  "branch": "codex/line-desktop-patrol-pr11",
+  "sourceDigest": "fa77d90933a993866e181610a91066c35a908ad3395c92ef07a5a021659b7d00",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
