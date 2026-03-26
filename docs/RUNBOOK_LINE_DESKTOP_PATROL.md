@@ -12,7 +12,8 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 2. `npm run line-desktop-patrol:state`
 3. `npm run line-desktop-patrol:probe`
 4. `npm run line-desktop-patrol:dry-run`
-5. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
+5. `npm run line-desktop-patrol:evaluate -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json`
+6. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
 
 ## Expected outputs
 - validate command:
@@ -32,6 +33,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - writes `artifacts/line_desktop_patrol/runs/<run_id>/trace.json`
   - writes `artifacts/line_desktop_patrol/runs/<run_id>/summary.json`
   - records `dry_run_only_skip` instead of sending any message
+- evaluate command:
+  - reads one local trace file
+  - converts the trace into one review unit
+  - runs the existing `qualityPatrol` evaluator / detection / planning pipeline in read-only mode
+  - writes `artifacts/line_desktop_patrol/evals/<run_id>/desktop_patrol_eval.json` by default plus any optional planning artifact
 
 ## Stop and rollback
 - local scaffold stop:
@@ -53,3 +59,8 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - no execute path in the default npm command
 - no screenshot capture execution in the default npm command
 - no target switching beyond the whitelist alias selected in policy
+
+## PR3 guardrails
+- evaluator bridge stays read-only
+- existing Firestore registry / backlog repos are not written from desktop traces
+- proposal output is artifact-only until a later PR wires queue promotion

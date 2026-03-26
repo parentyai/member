@@ -225,6 +225,7 @@ Purpose: reserve the local-only contract for future macOS LINE Desktop observati
 
 Typical files:
 - `artifacts/line_desktop_patrol/runs/<run_id>/trace.json`
+- `artifacts/line_desktop_patrol/evals/<run_id>/desktop_patrol_eval.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/before.png`
 - `artifacts/line_desktop_patrol/runs/<run_id>/after.png`
 - `artifacts/line_desktop_patrol/runs/<run_id>/before.ax.json`
@@ -256,6 +257,7 @@ Notes:
 - PR2 adds local dry-run trace emission through `member_line_patrol.dry_run_harness`.
 - raw desktop evidence remains local-only and is not written to Firestore in PR1.
 - PR2 keeps `screenshot_*` and `ax_tree_*` null in the default dry-run harness because capture/read steps are still deferred.
+- PR3 desktop eval artifacts are derived read-only outputs that reuse the existing `qualityPatrol` pipeline and do not add Firestore collections.
 - global stop continues to be the existing kill switch; local patrol enablement stays in the local policy file.
 
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`

@@ -13,6 +13,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - `member_line_patrol.dry_run_harness` で local-only dry-run trace emission を追加する
 - dry-run harness は local artifact を出力するが、desktop send / AX dump / visible-message read はまだ行わない
 
+## PR3 Additions
+- `src/usecases/qualityPatrol/buildConversationReviewUnitsFromDesktopTrace.js` で desktop trace を既存 review unit 契約へ正規化する
+- `tools/quality_patrol/run_desktop_patrol_eval.js` で desktop trace を既存 `qualityPatrol` pipeline に read-only 接続する
+- desktop evaluator bridge は proposal を生成するが、Firestore write や backlog promotion はまだ行わない
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -30,6 +35,7 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - phase48 automation config
 - Existing runtime:
   - webhook / notification / admin write path is unchanged in PR1
+  - desktop eval bridge reuses the existing `qualityPatrol` evaluator / detection / planning pipeline in read-only mode
 
 ## Safe Defaults
 - `enabled=false`
@@ -49,6 +55,7 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - `tools/line_desktop_patrol/`
 - future local artifacts:
   - `artifacts/line_desktop_patrol/runs/<run_id>/trace.json`
+  - `artifacts/line_desktop_patrol/evals/<run_id>/desktop_patrol_eval.json`
   - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
 
 ## Non-goals in PR1
@@ -64,3 +71,8 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - no visible message read
 - no evaluator bridge
 - no automatic proposal promotion
+
+## Non-goals in PR3
+- no Firestore write path for issues or backlog
+- no MCP tool that executes evaluator-triggered changes
+- no automatic proposal queue promotion
