@@ -30,6 +30,15 @@ function isInterventionRow(row) {
   return opportunityType && opportunityType !== 'none';
 }
 
+function isSyntheticPatrolReplayRow(row) {
+  const traceId = normalizeText(row && row.traceId);
+  const requestId = normalizeText(row && row.requestId);
+  return traceId.startsWith('quality_patrol_cycle_')
+    || traceId.startsWith('quality_patrol_replay_')
+    || requestId.startsWith('quality_patrol_cycle_')
+    || requestId.startsWith('quality_patrol_replay_');
+}
+
 async function loadRecentInterventionSignals(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const lineUserId = normalizeText(payload.lineUserId);
@@ -52,10 +61,12 @@ async function loadRecentInterventionSignals(params, deps) {
     : llmActionLogsRepo;
   const rows = await repo.listLlmActionLogsByLineUserId({
     lineUserId,
-    limit: Math.max(20, recentTurns * 3)
+    limit: Math.max(20, recentTurns * 3),
+    excludeSyntheticPatrolReplay: true
   }).catch(() => []);
 
   const sorted = (Array.isArray(rows) ? rows : [])
+    .filter((row) => !isSyntheticPatrolReplayRow(row))
     .slice()
     .sort((left, right) => {
       const leftMs = toMillis(left && left.createdAt);

@@ -3043,6 +3043,14 @@ async function appendLlmActionLogBestEffort(data) {
 async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
   const normalizedUserId = normalizeReplyText(lineUserId);
   if (!normalizedUserId) return [];
+  const isSyntheticPatrolReplayRow = (row) => {
+    const traceId = normalizeReplyText(row && row.traceId);
+    const requestId = normalizeReplyText(row && row.requestId);
+    return traceId.startsWith('quality_patrol_cycle_')
+      || traceId.startsWith('quality_patrol_replay_')
+      || requestId.startsWith('quality_patrol_cycle_')
+      || requestId.startsWith('quality_patrol_replay_');
+  };
   const limit = Number.isFinite(Number(recentTurns))
     ? Math.max(5, Math.min(20, Math.floor(Number(recentTurns)) * 2))
     : 10;
@@ -3050,7 +3058,8 @@ async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
   try {
     const storedRows = await llmActionLogsRepo.listLlmActionLogsByLineUserId({
       lineUserId: normalizedUserId,
-      limit
+      limit,
+      excludeSyntheticPatrolReplay: true
     });
     const deduped = [];
     const seenRows = new Map();
@@ -3125,13 +3134,18 @@ async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
       }
       seenRows.set(key, mergeRows(seenRows.get(key), row));
     };
-    (Array.isArray(storedRows) ? storedRows : []).forEach(pushRow);
-    (Array.isArray(cachedRows) ? cachedRows : []).forEach(pushRow);
+    (Array.isArray(storedRows) ? storedRows : [])
+      .filter((row) => !isSyntheticPatrolReplayRow(row))
+      .forEach(pushRow);
+    (Array.isArray(cachedRows) ? cachedRows : [])
+      .filter((row) => !isSyntheticPatrolReplayRow(row))
+      .forEach(pushRow);
     seenRows.forEach((row) => deduped.push(row));
     deduped.sort((left, right) => toMillis(right && right.createdAt) - toMillis(left && left.createdAt));
     return deduped.slice(0, limit);
   } catch (_err) {
-    return Array.isArray(cachedRows) ? cachedRows : [];
+    return (Array.isArray(cachedRows) ? cachedRows : [])
+      .filter((row) => !isSyntheticPatrolReplayRow(row));
   }
 }
 
