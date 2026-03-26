@@ -8,10 +8,18 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - `tools/line_desktop_patrol/read_repo_runtime_state.js` で repo-side の global runtime state を read-only 取得する
 - no send / no AX / no screenshot のまま safety defaults をコード化する
 
+## PR2 Additions
+- `member_line_patrol.macos_adapter` で host capability probe と bounded open/focus command planning を追加する
+- `member_line_patrol.dry_run_harness` で local-only dry-run trace emission を追加する
+- dry-run harness は local artifact を出力するが、desktop send / AX dump / visible-message read はまだ行わない
+
 ## Boundaries
 - Python sidecar:
   - policy load
   - runtime state model
+  - host capability probe
+  - bounded LINE app open/focus planning
+  - dry-run harness
   - trace store skeleton
   - proposal queue skeleton
   - MCP manifest skeleton
@@ -49,3 +57,10 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - no always-on scheduler
 - no Firestore write path
 - no admin UI contract change
+
+## Non-goals in PR2
+- no desktop send
+- no AX tree dump
+- no visible message read
+- no evaluator bridge
+- no automatic proposal promotion

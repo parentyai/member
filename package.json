@@ -131,6 +131,9 @@
     "quality-patrol:planning": "node tools/run_quality_patrol_planning.js",
     "line-desktop-patrol:state": "node tools/line_desktop_patrol/read_repo_runtime_state.js",
     "line-desktop-patrol:validate": "node tools/line_desktop_patrol/validate_scaffold.js",
-    "test:phase857": "node --test tests/phase857/*.test.js"
+    "line-desktop-patrol:probe": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter",
+    "line-desktop-patrol:dry-run": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.dry_run_harness --policy tools/line_desktop_patrol/config/policy.example.json --scenario tools/line_desktop_patrol/scenarios/smoke_dry_run.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol --allow-disabled-policy",
+    "test:phase857": "node --test tests/phase857/*.test.js",
+    "test:phase858": "node --test tests/phase858/*.test.js"
   }
 }

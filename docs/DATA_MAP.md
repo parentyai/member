@@ -253,8 +253,9 @@ Typical fields:
   - `risk_level`, `requires_human_review`
 
 Notes:
-- PR1 adds only the schema and local scaffold. No macOS observation artifact is emitted yet.
+- PR2 adds local dry-run trace emission through `member_line_patrol.dry_run_harness`.
 - raw desktop evidence remains local-only and is not written to Firestore in PR1.
+- PR2 keeps `screenshot_*` and `ax_tree_*` null in the default dry-run harness because capture/read steps are still deferred.
 - global stop continues to be the existing kill switch; local patrol enablement stays in the local policy file.
 
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`

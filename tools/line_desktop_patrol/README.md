@@ -2,13 +2,15 @@
 
 Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 
-## PR1 scope
+## PR2 scope
 - policy schema and example config
 - trace / proposal schema
 - Python sidecar package skeleton
 - read-only repo runtime state bridge
+- macOS host capability probe
+- dry-run harness that writes local trace evidence
 - no desktop send path
-- no AX / screenshot adapter yet
+- no AX / visible-message reader yet
 
 ## Safe defaults
 - `enabled=false`
@@ -20,6 +22,8 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 ## Commands
 - `npm run line-desktop-patrol:validate`
 - `npm run line-desktop-patrol:state`
+- `npm run line-desktop-patrol:probe`
+- `npm run line-desktop-patrol:dry-run`
 
 ## Layout
 - `config/`
@@ -27,5 +31,5 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - `src/member_line_patrol/`
 
 ## Notes
-- PR1 intentionally stops before any macOS UI control.
-- future PRs can add the adapter layer without changing the schema roots.
+- PR2 still keeps send disabled and dry-run only.
+- future PRs can add AX dump, screenshot capture, and visible-message reads without changing the schema roots.

@@ -15,11 +15,32 @@ class ToolSpec:
 
 TOOL_SPECS = (
     ToolSpec(
+        name="probe_host_capabilities",
+        description="Inspect local macOS command availability and LINE Desktop bundle presence.",
+        mutating=False,
+        exposure="public",
+        status="dry_run_ready",
+    ),
+    ToolSpec(
         name="get_runtime_state",
         description="Read the local patrol policy state and repo-side global runtime state.",
         mutating=False,
         exposure="public",
         status="scaffold_ready",
+    ),
+    ToolSpec(
+        name="prepare_line_app",
+        description="Plan a bounded LINE Desktop open/focus sequence without sending any message.",
+        mutating=False,
+        exposure="public",
+        status="dry_run_ready",
+    ),
+    ToolSpec(
+        name="run_dry_run_scenario",
+        description="Run a local-only dry-run harness and persist a trace artifact without desktop send side effects.",
+        mutating=True,
+        exposure="public",
+        status="dry_run_ready",
     ),
     ToolSpec(
         name="list_allowed_targets",
@@ -65,7 +86,7 @@ def build_server_manifest() -> dict:
         },
         "tools": [asdict(tool) for tool in TOOL_SPECS],
         "notes": [
-            "PR1 exposes a manifest only and does not control the macOS UI.",
+            "PR2 adds host probing and dry-run planning but still keeps send disabled.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }
