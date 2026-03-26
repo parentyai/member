@@ -49,6 +49,7 @@ const STATIC_UNREACHABLE_ALLOWLIST = Object.freeze([
   'src/domain/qualityPatrol/buildIssueRecord.js',
   'src/domain/qualityPatrol/fingerprint.js',
   'src/shared/phaseDocPathResolver.js',
+  'src/usecases/qualityPatrol/buildConversationReviewUnitsFromDesktopTrace.js',
   'src/usecases/qualityPatrol/detectAndUpsertQualityIssues.js',
   'src/usecases/qualityPatrol/upsertImprovementBacklog.js',
   'src/usecases/qualityPatrol/upsertQualityIssue.js'

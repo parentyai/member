@@ -28,7 +28,9 @@ const REQUIRED_FILES = [
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'proposal_queue.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'dry_run_harness.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'mcp_server.py'),
-  path.join(TOOL_ROOT, 'read_repo_runtime_state.js')
+  path.join(TOOL_ROOT, 'read_repo_runtime_state.js'),
+  path.join(ROOT, 'tools', 'quality_patrol', 'run_desktop_patrol_eval.js'),
+  path.join(ROOT, 'src', 'usecases', 'qualityPatrol', 'buildConversationReviewUnitsFromDesktopTrace.js')
 ];
 
 function assert(condition, message) {
@@ -69,7 +71,9 @@ function runValidation() {
   assert(Array.isArray(scenario.expected_behavior) && scenario.expected_behavior.length > 0, 'scenario example needs expected_behavior');
   assert(packageJson.scripts['line-desktop-patrol:probe'], 'package.json must define line-desktop-patrol:probe');
   assert(packageJson.scripts['line-desktop-patrol:dry-run'], 'package.json must define line-desktop-patrol:dry-run');
+  assert(packageJson.scripts['line-desktop-patrol:evaluate'], 'package.json must define line-desktop-patrol:evaluate');
   assert(packageJson.scripts['test:phase858'], 'package.json must define test:phase858');
+  assert(packageJson.scripts['test:phase859'], 'package.json must define test:phase859');
 
   return {
     ok: true,

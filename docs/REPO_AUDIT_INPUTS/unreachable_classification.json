@@ -49,6 +49,18 @@
       ]
     },
     {
+      "file": "src/usecases/qualityPatrol/buildConversationReviewUnitsFromDesktopTrace.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "keep_as_build_helper",
+      "reason": "desktop patrol CLI only; desktop trace bridge is intentionally not route or scheduler wired into src/index.js runtime",
+      "ssot_refs": [
+        "tools/quality_patrol/run_desktop_patrol_eval.js",
+        "docs/LINE_DESKTOP_PATROL_ARCHITECTURE.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
       "file": "src/usecases/qualityPatrol/upsertImprovementBacklog.js",
       "status": "monitor",
       "reachability": "non_reachable_runtime",
