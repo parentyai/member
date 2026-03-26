@@ -220,6 +220,43 @@ Notes:
   - verify harness: `tools/quality_patrol/verify_postmerge_runtime_window.js`
 - replay harness writes through the normal webhook -> action log -> snapshot path and does not create a separate raw transcript store.
 
+### LINE Desktop Patrol scaffold artifacts (local, filesystem, add-only)
+Purpose: reserve the local-only contract for future macOS LINE Desktop observation without changing the existing webhook/runtime collections in PR1.
+
+Typical files:
+- `artifacts/line_desktop_patrol/runs/<run_id>/trace.json`
+- `artifacts/line_desktop_patrol/runs/<run_id>/before.png`
+- `artifacts/line_desktop_patrol/runs/<run_id>/after.png`
+- `artifacts/line_desktop_patrol/runs/<run_id>/before.ax.json`
+- `artifacts/line_desktop_patrol/runs/<run_id>/after.ax.json`
+- `artifacts/line_desktop_patrol/proposals/queue.jsonl`
+- `tmp/line_desktop_patrol_latest.json`
+
+Typical fields:
+- trace:
+  - `run_id`, `scenario_id`, `session_id`
+  - `started_at`, `finished_at`
+  - `git_sha`, `app_version`, `target_id`
+  - `sent_text`, `visible_before`, `visible_after`
+  - `screenshot_before`, `screenshot_after`
+  - `ax_tree_before`, `ax_tree_after`
+  - `model_config`, `retrieval_refs`, `evaluator_scores`
+  - `failure_reason`, `proposal_id`
+- policy:
+  - `enabled`, `dry_run_default`, `allowed_targets`, `blocked_hours`
+  - `max_runs_per_hour`, `failure_streak_threshold`, `ui_drift_threshold`
+  - `require_target_confirmation`, `store_screenshots`, `store_ax_tree`
+  - `proposal_mode`, `auto_apply_level`
+- proposal queue:
+  - `proposal_id`, `source_trace_ids`, `root_cause_category`
+  - `proposed_change_scope`, `affected_files`, `expected_score_delta`
+  - `risk_level`, `requires_human_review`
+
+Notes:
+- PR1 adds only the schema and local scaffold. No macOS observation artifact is emitted yet.
+- raw desktop evidence remains local-only and is not written to Firestore in PR1.
+- global stop continues to be the existing kill switch; local patrol enablement stays in the local policy file.
+
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
 

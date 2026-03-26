@@ -1,0 +1,46 @@
+{
+  "enabled": false,
+  "dry_run_default": true,
+  "allowed_targets": [
+    {
+      "alias": "sample-self-test",
+      "platform": "line_desktop",
+      "target_kind": "single_user",
+      "expected_chat_title": "Codex Self Test",
+      "expected_window_title_substring": "LINE",
+      "expected_participant_labels": [
+        "Self Test"
+      ],
+      "expected_ax_fingerprint": null,
+      "allowed_send_modes": [
+        "dry_run"
+      ],
+      "notes": "Replace with a local whitelist target before enabling the patrol."
+    }
+  ],
+  "blocked_hours": [
+    {
+      "timezone": "America/New_York",
+      "days": [
+        "MON",
+        "TUE",
+        "WED",
+        "THU",
+        "FRI",
+        "SAT",
+        "SUN"
+      ],
+      "start_hour": 0,
+      "end_hour": 7,
+      "label": "default quiet window"
+    }
+  ],
+  "max_runs_per_hour": 2,
+  "failure_streak_threshold": 3,
+  "ui_drift_threshold": 0.15,
+  "require_target_confirmation": true,
+  "store_screenshots": false,
+  "store_ax_tree": true,
+  "proposal_mode": "local_queue",
+  "auto_apply_level": "none"
+}

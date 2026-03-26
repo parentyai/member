@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://member.app/schemas/line_desktop_patrol_scenario.schema.json",
+  "title": "line_desktop_patrol_scenario",
+  "type": "object",
+  "required": [
+    "scenario_id",
+    "intent",
+    "user_input",
+    "expected_behavior",
+    "expected_routing",
+    "forbidden_patterns",
+    "timeout_budget",
+    "retry_policy"
+  ],
+  "properties": {
+    "scenario_id": { "type": "string", "minLength": 3, "maxLength": 128 },
+    "intent": { "type": "string", "minLength": 2, "maxLength": 128 },
+    "user_input": { "type": "string", "minLength": 1 },
+    "expected_behavior": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 2, "maxLength": 128 },
+      "maxItems": 32
+    },
+    "expected_routing": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 2, "maxLength": 128 },
+      "maxItems": 32
+    },
+    "forbidden_patterns": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 2, "maxLength": 128 },
+      "maxItems": 32
+    },
+    "timeout_budget": {
+      "type": "object",
+      "required": ["open_target_seconds", "observe_seconds"],
+      "properties": {
+        "open_target_seconds": { "type": "integer", "minimum": 1, "maximum": 300 },
+        "observe_seconds": { "type": "integer", "minimum": 1, "maximum": 300 }
+      },
+      "additionalProperties": false
+    },
+    "retry_policy": {
+      "type": "object",
+      "required": ["max_attempts", "backoff_seconds"],
+      "properties": {
+        "max_attempts": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "backoff_seconds": { "type": "integer", "minimum": 0, "maximum": 300 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
