@@ -4,7 +4,7 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 
 ## Preconditions
 - test accounts / whitelist targets only
-- PR1 has no desktop send path
+- PR4 still has no desktop send path
 - global kill switch remains the final stop for any future side-effectful execute mode
 
 ## Validate the scaffold
@@ -13,7 +13,8 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 3. `npm run line-desktop-patrol:probe`
 4. `npm run line-desktop-patrol:dry-run`
 5. `npm run line-desktop-patrol:evaluate -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json`
-6. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
+6. `npm run line-desktop-patrol:enqueue-proposals -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json --queue-root /tmp/line_desktop_patrol_proposals`
+7. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
 
 ## Expected outputs
 - validate command:
@@ -38,6 +39,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - converts the trace into one review unit
   - runs the existing `qualityPatrol` evaluator / detection / planning pipeline in read-only mode
   - writes `artifacts/line_desktop_patrol/evals/<run_id>/desktop_patrol_eval.json` by default plus any optional planning artifact
+- enqueue-proposals command:
+  - reads one trace + one planning artifact
+  - appends schema-compliant rows into a local-only `queue.jsonl`
+  - writes `packets/<proposal_id>.codex.json`
+  - writes `proposal_linkage.json` next to the source trace
 
 ## Stop and rollback
 - local scaffold stop:
@@ -64,3 +70,9 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - evaluator bridge stays read-only
 - existing Firestore registry / backlog repos are not written from desktop traces
 - proposal output is artifact-only until a later PR wires queue promotion
+
+## PR4 guardrails
+- proposal queue stays local filesystem-only
+- every queue row keeps `requires_human_review=true`
+- no Firestore backlog promotion
+- no Codex-triggered auto-apply path

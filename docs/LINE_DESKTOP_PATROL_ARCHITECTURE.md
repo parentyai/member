@@ -18,6 +18,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - `tools/quality_patrol/run_desktop_patrol_eval.js` で desktop trace を既存 `qualityPatrol` pipeline に read-only 接続する
 - desktop evaluator bridge は proposal を生成するが、Firestore write や backlog promotion はまだ行わない
 
+## PR4 Additions
+- `member_line_patrol.enqueue_eval_proposals` で eval artifact を local proposal queue に append-only 連携する
+- `member_line_patrol.proposal_builder` で `recommendedPr` を schema-compliant queue row と Codex packet へ正規化する
+- queue row と packet は filesystem-only で、trace 本体を書き換えず `proposal_linkage.json` を sidecar 出力する
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -26,7 +31,7 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - bounded LINE app open/focus planning
   - dry-run harness
   - trace store skeleton
-  - proposal queue skeleton
+  - proposal queue + Codex packet writer
   - MCP manifest skeleton
 - Node bridge:
   - git sha
@@ -57,6 +62,8 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - `artifacts/line_desktop_patrol/runs/<run_id>/trace.json`
   - `artifacts/line_desktop_patrol/evals/<run_id>/desktop_patrol_eval.json`
   - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
+  - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
+  - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
 
 ## Non-goals in PR1
 - no macOS Accessibility adapter
@@ -76,3 +83,8 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - no Firestore write path for issues or backlog
 - no MCP tool that executes evaluator-triggered changes
 - no automatic proposal queue promotion
+
+## Non-goals in PR4
+- no admin UI inbox for desktop patrol proposals
+- no queue-to-Firestore promotion
+- no automatic PR creation from Codex packets

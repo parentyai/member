@@ -221,7 +221,7 @@ Notes:
 - replay harness writes through the normal webhook -> action log -> snapshot path and does not create a separate raw transcript store.
 
 ### LINE Desktop Patrol scaffold artifacts (local, filesystem, add-only)
-Purpose: reserve the local-only contract for future macOS LINE Desktop observation without changing the existing webhook/runtime collections in PR1.
+Purpose: reserve the local-only contract for future macOS LINE Desktop observation, read-only eval, and local proposal review without changing the existing webhook/runtime collections.
 
 Typical files:
 - `artifacts/line_desktop_patrol/runs/<run_id>/trace.json`
@@ -231,6 +231,8 @@ Typical files:
 - `artifacts/line_desktop_patrol/runs/<run_id>/before.ax.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/after.ax.json`
 - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
+- `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
+- `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
 - `tmp/line_desktop_patrol_latest.json`
 
 Typical fields:
@@ -252,12 +254,17 @@ Typical fields:
   - `proposal_id`, `source_trace_ids`, `root_cause_category`
   - `proposed_change_scope`, `affected_files`, `expected_score_delta`
   - `risk_level`, `requires_human_review`
+- Codex packet:
+  - `contract_version`, `proposal_id`, `queue_entry`
+  - `trace_ref`, `evaluation_ref`, `proposal`
+  - `operator_summary`, `codex_task_brief`
 
 Notes:
 - PR2 adds local dry-run trace emission through `member_line_patrol.dry_run_harness`.
 - raw desktop evidence remains local-only and is not written to Firestore in PR1.
 - PR2 keeps `screenshot_*` and `ax_tree_*` null in the default dry-run harness because capture/read steps are still deferred.
 - PR3 desktop eval artifacts are derived read-only outputs that reuse the existing `qualityPatrol` pipeline and do not add Firestore collections.
+- PR4 adds a local append-only proposal queue and per-proposal Codex packets; both remain filesystem-only and human-review gated.
 - global stop continues to be the existing kill switch; local patrol enablement stays in the local policy file.
 
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`

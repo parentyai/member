@@ -58,10 +58,10 @@ TOOL_SPECS = (
     ),
     ToolSpec(
         name="enqueue_proposal",
-        description="Append-only queue for Codex proposal generation based on patrol evidence.",
+        description="Append-only local queue and Codex packet writer for reviewable patrol proposals.",
         mutating=True,
         exposure="internal_only",
-        status="scaffold_ready",
+        status="proposal_queue_ready",
     ),
     ToolSpec(
         name="send_text",
@@ -87,6 +87,7 @@ def build_server_manifest() -> dict:
         "tools": [asdict(tool) for tool in TOOL_SPECS],
         "notes": [
             "PR2 adds host probing and dry-run planning but still keeps send disabled.",
+            "PR4 adds local proposal queue + Codex packet generation without enabling any repo-side write path.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }

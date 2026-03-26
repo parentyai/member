@@ -2,6 +2,7 @@
 
 from .mcp_server import build_server_manifest
 from .policy import AllowedTarget, BlockedHoursWindow, PatrolPolicy, load_policy
+from .proposal_builder import build_queue_payloads
 from .proposal_queue import ProposalQueue
 from .runtime_state import RepoRuntimeState, load_runtime_state
 from .trace_store import TraceStore
@@ -13,6 +14,7 @@ __all__ = [
     "ProposalQueue",
     "RepoRuntimeState",
     "TraceStore",
+    "build_queue_payloads",
     "build_server_manifest",
     "load_policy",
     "load_runtime_state",
@@ -36,4 +38,8 @@ def __getattr__(name):
         from .dry_run_harness import run_dry_run_harness
 
         return run_dry_run_harness
+    if name == "enqueue_eval_proposals":
+        from .enqueue_eval_proposals import enqueue_eval_proposals
+
+        return enqueue_eval_proposals
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
