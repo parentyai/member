@@ -11,10 +11,10 @@ const {
   runPythonCode,
   writePolicy,
   writeRuntimeStateFixture
-} = require('./_line_desktop_patrol_screenshot_test_helper');
+} = require('../phase863/_line_desktop_patrol_screenshot_test_helper');
 
-test('phase863: dry-run harness degrades to skipped observation when screenshot capture is unavailable', (t) => {
-  const tempRoot = makeTempRoot('phase863-dry-run-screenshot-skip-');
+test('phase865: dry-run harness degrades to skipped observation when AX dump is unavailable', (t) => {
+  const tempRoot = makeTempRoot('phase865-dry-run-ax-skip-');
   t.after(() => fs.rmSync(tempRoot, { recursive: true, force: true }));
 
   const policyPath = path.join(tempRoot, 'policy.json');
@@ -24,7 +24,8 @@ test('phase863: dry-run harness degrades to skipped observation when screenshot 
   writePolicy(policyPath, {
     enabled: true,
     blocked_hours: [],
-    store_screenshots: true
+    store_screenshots: false,
+    store_ax_tree: true
   });
   writeRuntimeStateFixture(runtimeStatePath);
 
@@ -70,12 +71,12 @@ class FakeAdapter:
             "timeout_seconds": timeout_seconds,
         }
 
-    def execute_capture_screenshot(self, output_path):
+    def execute_dump_ax_tree(self, output_path, target_process_name="LINE", timeout_seconds=2.0):
         return {
             "status": "skipped",
             "reason": "host_not_macos",
             "probe": self.probe_host(),
-            "plan": self.plan_capture_screenshot(output_path),
+            "plan": self.plan_dump_ax_tree(output_path, target_process_name=target_process_name, timeout_seconds=timeout_seconds),
         }
 
 harness.MacOSLineDesktopAdapter = FakeAdapter
@@ -84,7 +85,7 @@ result = harness.run_dry_run_harness(
     scenario_path=${JSON.stringify(path.join(path.resolve(__dirname, '..', '..'), 'tools', 'line_desktop_patrol', 'scenarios', 'smoke_dry_run.example.json'))},
     output_root=${JSON.stringify(outputRoot)},
     route_key="line-desktop-patrol",
-    current_time=datetime(2026, 3, 25, 12, 30, tzinfo=timezone.utc),
+    current_time=datetime(2026, 3, 26, 12, 30, tzinfo=timezone.utc),
     runtime_state_path=${JSON.stringify(runtimeStatePath)},
 )
 print(json.dumps(result))
@@ -95,7 +96,7 @@ print(json.dumps(result))
 
   assert.equal(result.ok, true);
   assert.equal(trace.failure_reason, 'dry_run_only_skip');
-  assert.equal(trace.screenshot_after, null);
-  assert.equal(trace.observation_status, 'screenshot_capture_skipped_pr7');
-  assert.equal(trace.observation_artifacts.capture_screenshot.reason, 'host_not_macos');
+  assert.equal(trace.ax_tree_after, null);
+  assert.equal(trace.observation_status, 'ax_dump_skipped_pr9');
+  assert.equal(trace.observation_artifacts.dump_ax_tree.reason, 'host_not_macos');
 });

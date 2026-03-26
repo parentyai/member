@@ -112,6 +112,7 @@ def build_server_manifest() -> dict:
             "PR6 adds a local guarded loop state file and stop/skip enforcement before the dry-run harness runs.",
             "PR7 adds optional screenshot capture observation when local policy.store_screenshots=true.",
             "PR8 adds a standalone bounded AX summary dump command with timeout-safe degradation.",
+            "PR9 wires AX summary dump into the dry-run harness only when local policy.store_ax_tree=true.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }

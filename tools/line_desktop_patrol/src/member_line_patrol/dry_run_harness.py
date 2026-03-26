@@ -37,6 +37,20 @@ def _transition(state: str, status: str, note: str | None = None) -> dict[str, A
     return payload
 
 
+def _promote_observation_artifact(
+    output_root: str | Path,
+    run_id: str,
+    source_path: str | None,
+    filename: str,
+) -> str | None:
+    if source_path is None:
+        return None
+    final_path = Path(output_root) / "runs" / run_id / filename
+    final_path.parent.mkdir(parents=True, exist_ok=True)
+    Path(source_path).replace(final_path)
+    return str(final_path)
+
+
 def _is_repo_root(candidate: Path) -> bool:
     return (candidate / "package.json").exists() and (candidate / "tools" / "line_desktop_patrol" / "read_repo_runtime_state.js").exists()
 
@@ -120,42 +134,77 @@ def run_dry_run_harness(
     planned_screenshot = adapter.plan_capture_screenshot(
         Path(output_root) / "runs" / "planned" / "planned_after.png"
     )
+    planned_ax_dump = adapter.plan_dump_ax_tree(
+        Path(output_root) / "runs" / "planned" / "planned_after.ax.json"
+    )
     state_transitions.append(_transition("PRECHECK", "completed"))
 
     state_transitions.append(_transition("OPEN_TARGET", "planned", "bounded LINE open/focus plan only"))
     state_transitions.append(_transition("SEND_OR_DRYRUN", "skipped", "dry_run_only_skip"))
     screenshot_after = None
+    ax_tree_after = None
     screenshot_capture = {
         "status": "skipped",
         "reason": "store_screenshots_disabled",
         "plan": planned_screenshot,
     }
-    observation_status = "planned_only_pr2"
+    ax_dump = {
+        "status": "skipped",
+        "reason": "store_ax_tree_disabled",
+        "plan": planned_ax_dump,
+    }
+    screenshot_completed = False
+    ax_completed = False
+    observation_status = "opt_in_observation_disabled_pr9"
     if policy.store_screenshots:
         state_transitions.append(_transition("OBSERVE", "started", "capture_screenshot_if_macos"))
         screenshot_output_path = Path(output_root) / "runs" / "pending" / "after.png"
         screenshot_capture = adapter.execute_capture_screenshot(screenshot_output_path)
         if screenshot_capture.get("status") == "executed" and screenshot_capture.get("result", {}).get("status") == "ok" and screenshot_capture.get("file_exists"):
             screenshot_after = str(Path(screenshot_capture["output_path"]))
-            observation_status = "screenshot_capture_completed_pr7"
+            screenshot_completed = True
             state_transitions.append(_transition("OBSERVE", "completed", "screenshot_capture_completed_pr7"))
         else:
             reason = screenshot_capture.get("reason") or screenshot_capture.get("result", {}).get("status") or "screenshot_capture_not_completed"
-            observation_status = "screenshot_capture_skipped_pr7"
             state_transitions.append(_transition("OBSERVE", "skipped", reason))
-    else:
-        state_transitions.append(_transition("OBSERVE", "skipped", "ax_and_visible_message_read_not_implemented_in_pr2"))
+    if policy.store_ax_tree:
+        state_transitions.append(_transition("OBSERVE", "started", "dump_ax_tree_if_macos"))
+        ax_output_path = Path(output_root) / "runs" / "pending" / "after.ax.json"
+        ax_dump = adapter.execute_dump_ax_tree(ax_output_path)
+        if ax_dump.get("status") == "executed" and ax_dump.get("result", {}).get("status") == "ok" and ax_dump.get("file_exists"):
+            ax_tree_after = str(Path(ax_dump["output_path"]))
+            ax_completed = True
+            state_transitions.append(_transition("OBSERVE", "completed", "ax_dump_completed_pr9"))
+        else:
+            reason = ax_dump.get("reason") or ax_dump.get("result", {}).get("status") or "ax_dump_not_completed"
+            state_transitions.append(_transition("OBSERVE", "skipped", reason))
+    if not policy.store_screenshots and not policy.store_ax_tree:
+        state_transitions.append(_transition("OBSERVE", "skipped", "no_opt_in_observation_enabled"))
+
+    if policy.store_screenshots and not policy.store_ax_tree:
+        observation_status = "screenshot_capture_completed_pr7" if screenshot_completed else "screenshot_capture_skipped_pr7"
+    elif policy.store_ax_tree and not policy.store_screenshots:
+        observation_status = "ax_dump_completed_pr9" if ax_completed else "ax_dump_skipped_pr9"
+    elif policy.store_screenshots and policy.store_ax_tree:
+        if screenshot_completed and ax_completed:
+            observation_status = "screenshot_and_ax_completed_pr9"
+        elif screenshot_completed:
+            observation_status = "screenshot_completed_ax_not_completed_pr9"
+        elif ax_completed:
+            observation_status = "screenshot_not_completed_ax_completed_pr9"
+        else:
+            observation_status = "screenshot_and_ax_not_completed_pr9"
 
     finished_at = _resolve_now(current_time)
     run_id = f"ldp_{started_at.strftime('%Y%m%dT%H%M%SZ')}_{uuid.uuid4().hex[:12]}"
     session_id = f"session_{uuid.uuid4().hex[:12]}"
     trace_store = TraceStore(output_root)
+    screenshot_after = _promote_observation_artifact(output_root, run_id, screenshot_after, "after.png")
     if screenshot_after is not None:
-        final_screenshot_path = Path(output_root) / "runs" / run_id / "after.png"
-        final_screenshot_path.parent.mkdir(parents=True, exist_ok=True)
-        Path(screenshot_after).replace(final_screenshot_path)
-        screenshot_after = str(final_screenshot_path)
         screenshot_capture["output_path"] = screenshot_after
+    ax_tree_after = _promote_observation_artifact(output_root, run_id, ax_tree_after, "after.ax.json")
+    if ax_tree_after is not None:
+        ax_dump["output_path"] = ax_tree_after
 
     trace = {
         "run_id": run_id,
@@ -172,7 +221,7 @@ def run_dry_run_harness(
         "screenshot_before": None,
         "screenshot_after": screenshot_after,
         "ax_tree_before": None,
-        "ax_tree_after": None,
+        "ax_tree_after": ax_tree_after,
         "model_config": {
             "dry_run": True,
             "route_key": route_key,
@@ -192,9 +241,11 @@ def run_dry_run_harness(
         "planned_actions": {
             "prepare_line_app": planned_prepare,
             "capture_screenshot": planned_screenshot,
+            "dump_ax_tree": planned_ax_dump,
         },
         "observation_artifacts": {
             "capture_screenshot": screenshot_capture,
+            "dump_ax_tree": ax_dump,
         },
         "scenario_expectations": {
             "expected_behavior": list(scenario.expected_behavior),

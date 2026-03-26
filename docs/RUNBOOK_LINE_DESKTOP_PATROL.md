@@ -4,7 +4,7 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 
 ## Preconditions
 - test accounts / whitelist targets only
-- PR7 still has no desktop send path
+- PR9 still has no desktop send path
 - global kill switch remains the final stop for any future side-effectful execute mode
 
 ## Validate the scaffold
@@ -43,6 +43,9 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - screenshot observation:
   - when `store_screenshots=true`, `line-desktop-patrol:dry-run` may capture `artifacts/line_desktop_patrol/runs/<run_id>/after.png`
   - on non-macOS hosts or when `screencapture` is unavailable, the trace records a skipped observation instead of failing the run
+- AX observation:
+  - when `store_ax_tree=true`, `line-desktop-patrol:dry-run` may capture `artifacts/line_desktop_patrol/runs/<run_id>/after.ax.json`
+  - on non-macOS hosts or when `osascript` / Accessibility permission is unavailable, the trace records a skipped or failed observation instead of failing the run
 - evaluate command:
   - reads one local trace file
   - converts the trace into one review unit
@@ -110,6 +113,12 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - AX summary dump does not enable visible-message read or send
 - AX summary output remains local filesystem-only
 
+## PR9 guardrails
+- AX observation stays opt-in via `store_ax_tree=true`
+- the sample policy remains `store_ax_tree=false`
+- AX dump failures degrade to trace evidence and do not write to Firestore
+- AX observation does not imply visible-message read or send enablement
+
 ## Optional operator check
 1. Generate one local trace/eval/queue sequence with the existing dry-run + evaluate + enqueue commands.
 2. Open `/admin/app?pane=quality-patrol&role=operator`.
@@ -131,3 +140,9 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 1. Run `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter --dump-ax-tree --output-path /tmp/line_desktop_patrol_ax.json --execute --target-process-name LINE --timeout-seconds 2`.
 2. If Accessibility permission is already granted and LINE is running, confirm `/tmp/line_desktop_patrol_ax.json` contains `process_name / frontmost / window_count / window_name / ui_elements_enabled`.
 3. If the host prompts or blocks `System Events`, confirm the command exits quickly with `reason=ax_timeout` or `reason=osascript_failed` instead of hanging indefinitely.
+
+## Optional PR9 dry-run AX check
+1. Copy `tools/line_desktop_patrol/config/policy.example.json` to a local override and set `enabled=true`, `blocked_hours=[]`, `store_ax_tree=true`.
+2. Run `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.dry_run_harness --policy <override> --scenario tools/line_desktop_patrol/scenarios/smoke_dry_run.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol --allow-disabled-policy`.
+3. If Accessibility permission is already granted and LINE is running, confirm `runs/<run_id>/after.ax.json` exists and `trace.json` points `ax_tree_after` to that file.
+4. If the host blocks `System Events`, confirm the trace keeps `ax_tree_after=null` and records `ax_dump_skipped_pr9` or a degraded AX observation instead of failing the run.

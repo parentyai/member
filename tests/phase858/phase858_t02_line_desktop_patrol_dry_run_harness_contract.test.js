@@ -45,5 +45,6 @@ test('phase858: dry-run harness writes a local trace without send side effects',
   assert.ok(Array.isArray(trace.state_transitions));
   assert.ok(trace.state_transitions.some((item) => item.state === 'LOAD_POLICY'));
   assert.ok(trace.state_transitions.some((item) => item.state === 'SEND_OR_DRYRUN' && item.status === 'skipped'));
-  assert.equal(trace.observation_status, 'planned_only_pr2');
+  assert.equal(trace.observation_status, 'opt_in_observation_disabled_pr9');
+  assert.equal(trace.ax_tree_after, null);
 });
