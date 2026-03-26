@@ -516,6 +516,7 @@
       "stripeWebhookEventsRepo",
       "userSubscriptionsRepo"
     ],
+    "queryLatestDesktopPatrolSummary": [],
     "queryLatestPatrolInsights": [],
     "recordClickAndRedirect": [
       "deliveriesRepo",
@@ -1223,6 +1224,7 @@
     ],
     "src/routes/admin/qualityPatrol.js": [
       "appendAuditLog",
+      "queryLatestDesktopPatrolSummary",
       "queryLatestPatrolInsights"
     ],
     "src/routes/admin/readModel.js": [

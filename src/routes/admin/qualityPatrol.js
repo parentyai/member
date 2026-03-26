@@ -4,6 +4,7 @@ const { URL } = require('url');
 
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { queryLatestPatrolInsights } = require('../../usecases/qualityPatrol/queryLatestPatrolInsights');
+const { queryLatestDesktopPatrolSummary } = require('../../usecases/qualityPatrol/queryLatestDesktopPatrolSummary');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
@@ -59,10 +60,17 @@ async function handleQualityPatrolQuery(req, res, deps) {
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   const queryUsecase = deps && deps.queryLatestPatrolInsights ? deps.queryLatestPatrolInsights : queryLatestPatrolInsights;
+  const queryDesktopUsecase = deps && deps.queryLatestDesktopPatrolSummary
+    ? deps.queryLatestDesktopPatrolSummary
+    : queryLatestDesktopPatrolSummary;
   const auditFn = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
 
   try {
-    const result = await queryUsecase(parseQueryParams(req), deps);
+    const queryParams = parseQueryParams(req);
+    const [result, desktopPatrolSummary] = await Promise.all([
+      queryUsecase(queryParams, deps),
+      queryDesktopUsecase({ audience: queryParams.audience }, deps)
+    ]);
     try {
       await auditFn({
         actor,
@@ -75,7 +83,11 @@ async function handleQualityPatrolQuery(req, res, deps) {
           audience: result && result.audience ? result.audience : 'operator',
           overallStatus: result && result.summary ? result.summary.overallStatus : null,
           topPriorityCount: result && result.summary ? result.summary.topPriorityCount : 0,
-          observationBlockerCount: result && result.summary ? result.summary.observationBlockerCount : 0
+          observationBlockerCount: result && result.summary ? result.summary.observationBlockerCount : 0,
+          desktopPatrolStatus: desktopPatrolSummary && desktopPatrolSummary.status ? desktopPatrolSummary.status : 'unavailable',
+          desktopPatrolQueueCount: desktopPatrolSummary && desktopPatrolSummary.queue
+            ? Number(desktopPatrolSummary.queue.totalCount || 0)
+            : 0
         }
       });
     } catch (auditErr) {
@@ -86,7 +98,9 @@ async function handleQualityPatrolQuery(req, res, deps) {
       ok: true,
       traceId,
       requestId
-    }, result), { reason: 'completed' });
+    }, result, {
+      desktopPatrolSummary
+    }), { reason: 'completed' });
   } catch (err) {
     logRouteError('admin.quality_patrol.query', err, { actor, traceId, requestId });
     writeJson(res, 500, { ok: false, error: 'error', traceId, requestId }, { reason: 'error' });
