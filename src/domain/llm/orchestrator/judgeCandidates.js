@@ -54,9 +54,9 @@ function resolveStrategyAlignmentPriority(packet, strategy, candidateKind) {
   const broadSetupDirectAnswer = normalizedIntent === 'general'
     && requestShape === 'answer'
     && genericFallbackSlice === 'broad';
-  const cityScopedDirectAnswer = normalizedIntent !== 'general'
+  const locationScopedDirectAnswer = normalizedIntent !== 'general'
     && requestShape === 'answer'
-    && (knowledgeScope === 'city' || locationHintKind === 'city');
+    && (knowledgeScope === 'city' || locationHintKind === 'city' || locationHintKind === 'state');
   if (normalizedStrategy === 'casual') {
     if (normalizedKind === 'casual_candidate' || normalizedKind === 'conversation_candidate') return 40;
     if (normalizedKind === 'clarify_candidate') return 6;
@@ -68,9 +68,9 @@ function resolveStrategyAlignmentPriority(packet, strategy, candidateKind) {
     return 0;
   }
   if (normalizedStrategy === 'grounded_answer') {
-    if (cityScopedDirectAnswer && normalizedKind === 'domain_concierge_candidate') return 30;
+    if (locationScopedDirectAnswer && normalizedKind === 'domain_concierge_candidate') return 30;
     if (
-      cityScopedDirectAnswer
+      locationScopedDirectAnswer
       && (
         normalizedKind === 'saved_faq_candidate'
         || normalizedKind === 'knowledge_backed_candidate'

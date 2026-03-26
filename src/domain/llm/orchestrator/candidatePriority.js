@@ -22,9 +22,9 @@ function buildCandidatePriorityContext(packet) {
   const servicePlanQuestion = /(無料プラン|有料プラン|プランの違い|プラン.*違い|料金.*違い|プラン比較|subscription|plan)/i.test(messageText);
   const generalSetupQuestion = /(赴任|引っ越し|引越し|移住|生活セットアップ|生活立ち上げ).*(何から始め|最初にやるべき|最初に何|順番|ざっくり)/i.test(messageText);
   const utilityTransformQuestion = /(家族に送れる一文|家族に送れる|一文にして|今日やること.*1行|今日やること.*一行|1行にして|一行にして|不安が強い前提|不安が強い.*1つだけ|不安が強い.*一つだけ|公式情報を確認すべき場面|判断基準だけ|失礼なく聞く短文|短文を1つ作って|断定せずに提案|相手に送る文面だけ|文面だけ|断定しすぎない|言い方に直して|人に話す感じ|2文にして|二文にして|事務的すぎない|何を確認すべきかだけ|地域によって違う)/i.test(messageText);
-  const cityScopedDirectAnswer = requestShape === 'answer'
+  const locationScopedDirectAnswer = requestShape === 'answer'
     && domainIntent !== 'general'
-    && (knowledgeScope === 'city' || locationHintKind === 'city');
+    && (knowledgeScope === 'city' || locationHintKind === 'city' || locationHintKind === 'state');
   return {
     domainIntent,
     genericFallbackSlice,
@@ -35,7 +35,7 @@ function buildCandidatePriorityContext(packet) {
     outputForm,
     knowledgeScope,
     locationHintKind,
-    cityScopedDirectAnswer,
+    locationScopedDirectAnswer,
     servicePlanQuestion,
     generalSetupQuestion,
     utilityTransformQuestion
@@ -50,7 +50,7 @@ function resolveCandidatePriority(packet, candidate) {
     && context.generalSetupQuestion === true
     && !context.followupIntent
     && context.requestShape === 'answer';
-  const cityScopedDirectAnswer = context.cityScopedDirectAnswer === true;
+  const locationScopedDirectAnswer = context.locationScopedDirectAnswer === true;
   const followupContextPreferred = context.genericFallbackSlice === 'followup'
     || context.priorContextUsed
     || context.followupResolvedFromHistory
@@ -67,11 +67,11 @@ function resolveCandidatePriority(packet, candidate) {
 
   if (kind === 'city_pack_backed_candidate') return 120;
   if (kind === 'city_grounded_candidate') return 115;
-  if (kind === 'saved_faq_candidate' && cityScopedDirectAnswer) return 96;
+  if (kind === 'saved_faq_candidate' && locationScopedDirectAnswer) return 96;
   if (kind === 'saved_faq_candidate' && followupContextPreferred) return 88;
   if (kind === 'saved_faq_candidate' && generalDirectAnswerPreferred) return 92;
   if (kind === 'saved_faq_candidate') return 110;
-  if ((kind === 'knowledge_grounded_candidate' || kind === 'knowledge_backed_candidate' || kind === 'housing_knowledge_candidate') && cityScopedDirectAnswer) return 94;
+  if ((kind === 'knowledge_grounded_candidate' || kind === 'knowledge_backed_candidate' || kind === 'housing_knowledge_candidate') && locationScopedDirectAnswer) return 94;
   if ((kind === 'knowledge_grounded_candidate' || kind === 'knowledge_backed_candidate' || kind === 'housing_knowledge_candidate') && followupContextPreferred) return 89;
   if ((kind === 'knowledge_grounded_candidate' || kind === 'knowledge_backed_candidate' || kind === 'housing_knowledge_candidate') && generalDirectAnswerPreferred) return 90;
   if (kind === 'knowledge_grounded_candidate' || kind === 'knowledge_backed_candidate' || kind === 'housing_knowledge_candidate') return 106;
@@ -89,7 +89,7 @@ function resolveCandidatePriority(packet, candidate) {
   if (kind === 'composed_concierge_candidate') return 88;
   if (kind === 'domain_concierge_candidate') {
     if (formatLocked) return 116;
-    if (cityScopedDirectAnswer) return 112;
+    if (locationScopedDirectAnswer) return 112;
     if (broadSetupDirectAnswer) return 104;
     if (generalDirectAnswerPreferred) return 112;
     if (context.domainIntent === 'ssn' || context.domainIntent === 'banking') return 84;

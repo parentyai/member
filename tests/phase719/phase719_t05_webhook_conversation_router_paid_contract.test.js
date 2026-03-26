@@ -1410,3 +1410,52 @@ test('phase719: non-city budget-blocked paid domain fallback keeps legacy concie
   assert.equal(lastWrite.requestedCityKey, null);
   assert.equal(lastWrite.routerReason, 'school_intent_detected');
 });
+
+test('phase719: state-scoped budget-blocked paid domain fallback keeps direct-answer telemetry and suppresses quick replies', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    orchestratorResult: null,
+    budgetAllowed: false,
+    budgetBlockedReason: 'llm_disabled'
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const body = createWebhookBody('学校手続きnyで');
+  const replies = [];
+  const result = await loaded.handleLineWebhook({
+    body,
+    signature: signBody(body),
+    requestId: 'phase719_state_paid_domain_budget_blocked_contract',
+    logger: () => {},
+    allowWelcome: false,
+    replyFn: async (_replyToken, message) => {
+      replies.push(message);
+    }
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(replies.length, 1);
+  assert.equal(loaded.counters.retrievalCalled, 0);
+  assert.equal(loaded.counters.paidFaqCalled, 0);
+  assert.match(replies[0].text, /市区|教育窓口|必要書類|受付期限/);
+  assert.equal(Boolean(replies[0] && replies[0].quickReply), false);
+  assert.equal(loaded.actionLogWrites.length > 0, true);
+  const lastWrite = loaded.actionLogWrites[loaded.actionLogWrites.length - 1];
+  assert.equal(lastWrite.selectedCandidateKind, 'domain_concierge_candidate');
+  assert.equal(lastWrite.requestShape, 'answer');
+  assert.equal(lastWrite.knowledgeScope, 'general');
+  assert.equal(lastWrite.locationHintKind, 'state');
+  assert.equal(lastWrite.locationHintState, 'NY');
+  assert.equal(lastWrite.requestedCityKey, null);
+  assert.equal(lastWrite.directAnswerApplied, true);
+  assert.equal(lastWrite.routerReason, 'school_intent_detected');
+});
