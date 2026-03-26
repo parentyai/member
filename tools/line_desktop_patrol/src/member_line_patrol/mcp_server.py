@@ -50,6 +50,13 @@ TOOL_SPECS = (
         status="ax_summary_ready",
     ),
     ToolSpec(
+        name="read_visible_messages",
+        description="Read a bounded visible text snapshot from LINE Desktop with timeout-safe degradation and no send path.",
+        mutating=True,
+        exposure="public",
+        status="visible_text_ready",
+    ),
+    ToolSpec(
         name="run_dry_run_scenario",
         description="Run a local-only dry-run harness and persist a trace artifact without desktop send side effects.",
         mutating=True,
@@ -113,6 +120,7 @@ def build_server_manifest() -> dict:
             "PR7 adds optional screenshot capture observation when local policy.store_screenshots=true.",
             "PR8 adds a standalone bounded AX summary dump command with timeout-safe degradation.",
             "PR9 wires AX summary dump into the dry-run harness only when local policy.store_ax_tree=true.",
+            "PR10 adds a standalone bounded visible message read command without wiring it into the dry-run harness yet.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }

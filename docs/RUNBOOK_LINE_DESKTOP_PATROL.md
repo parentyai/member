@@ -4,7 +4,7 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 
 ## Preconditions
 - test accounts / whitelist targets only
-- PR9 still has no desktop send path
+- PR10 still has no desktop send path
 - global kill switch remains the final stop for any future side-effectful execute mode
 
 ## Validate the scaffold
@@ -46,6 +46,9 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - AX observation:
   - when `store_ax_tree=true`, `line-desktop-patrol:dry-run` may capture `artifacts/line_desktop_patrol/runs/<run_id>/after.ax.json`
   - on non-macOS hosts or when `osascript` / Accessibility permission is unavailable, the trace records a skipped or failed observation instead of failing the run
+- visible-message read:
+  - `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter --read-visible-messages --output-path /tmp/line_desktop_patrol_visible.json --execute --max-items 5 --timeout-seconds 2` runs a standalone bounded read
+  - on non-macOS hosts or when `osascript` / Accessibility permission is unavailable, the command returns a skipped or failed observation instead of enabling any send path
 - evaluate command:
   - reads one local trace file
   - converts the trace into one review unit
@@ -119,6 +122,12 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - AX dump failures degrade to trace evidence and do not write to Firestore
 - AX observation does not imply visible-message read or send enablement
 
+## PR10 guardrails
+- visible-message read stays standalone and is not wired into the default dry-run command
+- visible-message read uses `--max-items` and a timeout-bounded `osascript` execution
+- visible-message read failures degrade to skipped or failed local observations and do not write to Firestore
+- visible-message read does not imply desktop send enablement
+
 ## Optional operator check
 1. Generate one local trace/eval/queue sequence with the existing dry-run + evaluate + enqueue commands.
 2. Open `/admin/app?pane=quality-patrol&role=operator`.
@@ -146,3 +155,8 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 2. Run `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.dry_run_harness --policy <override> --scenario tools/line_desktop_patrol/scenarios/smoke_dry_run.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol --allow-disabled-policy`.
 3. If Accessibility permission is already granted and LINE is running, confirm `runs/<run_id>/after.ax.json` exists and `trace.json` points `ax_tree_after` to that file.
 4. If the host blocks `System Events`, confirm the trace keeps `ax_tree_after=null` and records `ax_dump_skipped_pr9` or a degraded AX observation instead of failing the run.
+
+## Optional PR10 visible-message check
+1. Run `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter --read-visible-messages --output-path /tmp/line_desktop_patrol_visible.json --execute --target-process-name LINE --max-items 5 --timeout-seconds 2`.
+2. If Accessibility permission is already granted and LINE is frontmost, confirm `/tmp/line_desktop_patrol_visible.json` contains `target_process_name / max_items / item_count / items[]`.
+3. If the host blocks `System Events`, confirm the command exits quickly with `reason=visible_read_timeout` or `reason=osascript_failed` instead of hanging indefinitely.

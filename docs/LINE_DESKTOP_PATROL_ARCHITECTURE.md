@@ -49,6 +49,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - sample policy は `store_screenshots=false` と `store_ax_tree=false` を維持し、default dry-run command が新しい observation を勝手に実行しないようにする
 - AX dump failure は screenshot observation と同様に trace evidence へ degrade し、desktop send / visible-message read / evaluator write path はまだ行わない
 
+## PR10 Additions
+- `member_line_patrol.macos_adapter.plan_read_visible_messages` / `execute_read_visible_messages` で bounded visible text read を追加する
+- visible text read は `osascript` を timeout 付きで実行し、非 macOS / command unavailable / permission error / timeout では skipped or failed observation に degrade する
+- PR10 では standalone command + MCP manifest のみで、dry-run harness / guarded loop / evaluator / admin read model への配線はまだ行わない
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -148,3 +153,9 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - no visible message read
 - no automatic AX dump in the default sample policy
 - no AX artifact promotion into evaluator or admin read models
+
+## Non-goals in PR10
+- no desktop send
+- no visible-message wiring into the default dry-run command
+- no visible-message promotion into evaluator or admin read models
+- no visible-message retention contract beyond local ad hoc output paths

@@ -17,6 +17,7 @@
 - PR7 以降は local override で `store_screenshots=true` を明示したときだけ screenshot observation を試行し、既定サンプル設定のままでは capture しない。
 - PR8 以降は standalone AX summary dump を実行できるが、timeout-safe degraded path が既定で、運用UIや Firestore へはまだ配線しない。
 - PR9 以降は local override で `store_ax_tree=true` を明示したときだけ dry-run harness が AX observation を試行し、既定サンプル設定のままでは capture しない。
+- PR10 以降は standalone visible-message read を実行できるが、bounded timeout + `max_items` 付きの local observation のみで、dry-run harness や運用UIにはまだ配線しない。
 
 ## Feature Flag Governance（Phase PR5）
 - canonical registry:

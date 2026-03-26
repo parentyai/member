@@ -13,6 +13,7 @@ from typing import Any
 LINE_APP_NAME = "LINE"
 LINE_BUNDLE_ID = "jp.naver.line.mac"
 DEFAULT_AX_TIMEOUT_SECONDS = 2.0
+DEFAULT_VISIBLE_MESSAGE_LIMIT = 20
 LINE_BUNDLE_CANDIDATES = (
     Path("/Applications/LINE.app"),
     Path.home() / "Applications" / "LINE.app",
@@ -157,6 +158,56 @@ class MacOSLineDesktopAdapter:
             "target_process_name": target_process_name,
             "command": asdict(plan),
             "output_path": resolved,
+            "timeout_seconds": timeout_seconds,
+        }
+
+    def plan_read_visible_messages(
+        self,
+        output_path: str | Path,
+        target_process_name: str = LINE_APP_NAME,
+        *,
+        max_items: int = DEFAULT_VISIBLE_MESSAGE_LIMIT,
+        timeout_seconds: float = DEFAULT_AX_TIMEOUT_SECONDS,
+    ) -> dict[str, Any]:
+        resolved = str(Path(output_path))
+        argv = (
+            "osascript",
+            "-e",
+            'tell application "System Events"',
+            "-e",
+            f'set targetProcess to first application process whose name is "{target_process_name}"',
+            "-e",
+            "set textItems to {}",
+            "-e",
+            "repeat with targetWindow in windows of targetProcess",
+            "-e",
+            "try",
+            "-e",
+            "set textItems to textItems & (value of every static text of targetWindow)",
+            "-e",
+            "end try",
+            "-e",
+            "end repeat",
+            "-e",
+            'set AppleScript\'s text item delimiters to "||"',
+            "-e",
+            "return textItems as string",
+            "-e",
+            "end tell",
+        )
+        plan = CommandPlan(
+            name="read_visible_messages",
+            argv=argv,
+            mutating=False,
+            requires_macos=True,
+            description="Read a bounded visible text snapshot from LINE Desktop through System Events.",
+        )
+        return {
+            "status": "planned",
+            "target_process_name": target_process_name,
+            "command": asdict(plan),
+            "output_path": resolved,
+            "max_items": max_items,
             "timeout_seconds": timeout_seconds,
         }
 
@@ -359,17 +410,114 @@ class MacOSLineDesktopAdapter:
             "payload_summary": payload,
         }
 
+    def execute_read_visible_messages(
+        self,
+        output_path: str | Path,
+        *,
+        target_process_name: str = LINE_APP_NAME,
+        max_items: int = DEFAULT_VISIBLE_MESSAGE_LIMIT,
+        timeout_seconds: float = DEFAULT_AX_TIMEOUT_SECONDS,
+    ) -> dict[str, Any]:
+        probe = self.probe_host()
+        plan = self.plan_read_visible_messages(
+            output_path,
+            target_process_name=target_process_name,
+            max_items=max_items,
+            timeout_seconds=timeout_seconds,
+        )
+        if not probe["is_macos"]:
+            return {
+                "status": "skipped",
+                "reason": "host_not_macos",
+                "probe": probe,
+                "plan": plan,
+            }
+        osascript_state = probe["tools"].get("osascript", {})
+        if not osascript_state.get("available"):
+            return {
+                "status": "skipped",
+                "reason": "osascript_unavailable",
+                "probe": probe,
+                "plan": plan,
+            }
+        try:
+            completed = self.command_runner(
+                list(plan["command"]["argv"]),
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "skipped",
+                "reason": "visible_read_timeout",
+                "probe": probe,
+                "plan": plan,
+                "timeout_seconds": timeout_seconds,
+            }
+        if completed.returncode != 0:
+            return {
+                "status": "failed",
+                "reason": "osascript_failed",
+                "probe": probe,
+                "plan": plan,
+                "result": {
+                    "status": "failed",
+                    "returncode": completed.returncode,
+                    "stdout": completed.stdout.strip() or None,
+                    "stderr": completed.stderr.strip() or None,
+                },
+            }
+        raw_output = completed.stdout.strip()
+        raw_items = [item.strip() for item in raw_output.split("||")] if raw_output else []
+        visible_items = [item for item in raw_items if item][:max_items]
+        payload = {
+            "target_process_name": target_process_name,
+            "max_items": max_items,
+            "item_count": len(visible_items),
+            "truncated": len([item for item in raw_items if item]) > len(visible_items),
+            "items": [
+                {
+                    "index": index + 1,
+                    "role": "unknown",
+                    "text": item,
+                }
+                for index, item in enumerate(visible_items)
+            ],
+        }
+        resolved_path = Path(plan["output_path"])
+        resolved_path.parent.mkdir(parents=True, exist_ok=True)
+        resolved_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        return {
+            "status": "executed",
+            "probe": probe,
+            "plan": plan,
+            "result": {
+                "status": "ok",
+                "returncode": completed.returncode,
+                "stdout": raw_output or None,
+                "stderr": completed.stderr.strip() or None,
+            },
+            "output_path": str(resolved_path),
+            "file_exists": resolved_path.exists(),
+            "file_size": resolved_path.stat().st_size,
+            "payload_summary": payload,
+        }
+
 
 def build_cli_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Inspect or plan bounded macOS LINE Desktop adapter actions.")
     parser.add_argument("--prepare-line-app", action="store_true", help="Return the bounded LINE app prepare plan.")
     parser.add_argument("--capture-screenshot", action="store_true", help="Return or execute the bounded screenshot capture plan.")
     parser.add_argument("--dump-ax-tree", action="store_true", help="Return or execute the bounded AX summary dump plan.")
+    parser.add_argument("--read-visible-messages", action="store_true", help="Return or execute the bounded visible text read plan.")
     parser.add_argument("--execute", action="store_true", help="Execute the bounded open/activate plan on macOS.")
     parser.add_argument("--target-alias", default=None, help="Optional whitelist alias for plan metadata.")
     parser.add_argument("--output-path", default=None, help="Output path for --capture-screenshot.")
-    parser.add_argument("--target-process-name", default=LINE_APP_NAME, help="Process name used by --dump-ax-tree.")
-    parser.add_argument("--timeout-seconds", type=float, default=DEFAULT_AX_TIMEOUT_SECONDS, help="Timeout for AX dump execution.")
+    parser.add_argument("--target-process-name", default=LINE_APP_NAME, help="Process name used by AX and visible-text commands.")
+    parser.add_argument("--timeout-seconds", type=float, default=DEFAULT_AX_TIMEOUT_SECONDS, help="Timeout for AX and visible-text execution.")
+    parser.add_argument("--max-items", type=int, default=DEFAULT_VISIBLE_MESSAGE_LIMIT, help="Maximum visible text items to keep.")
     return parser
 
 
@@ -402,6 +550,26 @@ def main(argv: list[str] | None = None) -> int:
                 "plan": adapter.plan_dump_ax_tree(
                     args.output_path,
                     target_process_name=args.target_process_name,
+                    timeout_seconds=args.timeout_seconds,
+                ),
+            }
+    elif args.read_visible_messages:
+        if not args.output_path:
+            parser.error("--output-path is required with --read-visible-messages")
+        if args.execute:
+            payload = adapter.execute_read_visible_messages(
+                args.output_path,
+                target_process_name=args.target_process_name,
+                max_items=args.max_items,
+                timeout_seconds=args.timeout_seconds,
+            )
+        else:
+            payload = {
+                "probe": adapter.probe_host(),
+                "plan": adapter.plan_read_visible_messages(
+                    args.output_path,
+                    target_process_name=args.target_process_name,
+                    max_items=args.max_items,
                     timeout_seconds=args.timeout_seconds,
                 ),
             }
