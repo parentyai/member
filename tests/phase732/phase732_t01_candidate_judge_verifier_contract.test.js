@@ -149,3 +149,36 @@ test('phase732: city-scoped grounded answer prefers concierge direct answer over
 
   assert.equal(judged.judgeWinner, 'domain_concierge_candidate');
 });
+
+test('phase732: state-scoped grounded answer prefers concierge direct answer over generic saved faq fallback', () => {
+  const judged = judgeCandidates({
+    packet: {
+      normalizedConversationIntent: 'school',
+      requestShape: 'answer',
+      locationHint: {
+        kind: 'state',
+        state: 'NY'
+      }
+    },
+    strategy: 'grounded_answer',
+    candidates: [
+      {
+        id: 'saved_faq_candidate',
+        kind: 'saved_faq_candidate',
+        replyText: '最初の1か月は身分証、住居、金融、通信、医療導線の5領域を優先する。\nまずは次の一手です。\n・地域条件と初期費用を先に確認する\n赴任先の都市か住むエリアは決まっていますか？',
+        domainIntent: 'school',
+        retrievalQuality: 'good'
+      },
+      {
+        id: 'domain_concierge_candidate',
+        kind: 'domain_concierge_candidate',
+        replyText: '州だけ分かっている段階なら、まず対象の市区ごとの教育窓口、必要書類、受付期限の3点を確認すると進めやすいです。\n市区が決まると、次の一手をかなり具体化できます。',
+        domainIntent: 'school',
+        retrievalQuality: 'none',
+        directAnswerCandidate: true
+      }
+    ]
+  });
+
+  assert.equal(judged.judgeWinner, 'domain_concierge_candidate');
+});

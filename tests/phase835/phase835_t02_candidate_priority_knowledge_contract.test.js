@@ -49,3 +49,21 @@ test('phase835: city-scoped direct answer prefers concierge over generic faq and
   assert.ok(concierge > savedFaq);
   assert.ok(concierge > knowledge);
 });
+
+test('phase835: state-scoped direct answer still prefers concierge over generic faq and knowledge', () => {
+  const packet = {
+    normalizedConversationIntent: 'school',
+    requestShape: 'answer',
+    locationHint: {
+      kind: 'state',
+      state: 'NY'
+    }
+  };
+
+  const savedFaq = resolveCandidatePriority(packet, { kind: 'saved_faq_candidate' });
+  const knowledge = resolveCandidatePriority(packet, { kind: 'knowledge_backed_candidate' });
+  const concierge = resolveCandidatePriority(packet, { kind: 'domain_concierge_candidate' });
+
+  assert.ok(concierge > savedFaq);
+  assert.ok(concierge > knowledge);
+});

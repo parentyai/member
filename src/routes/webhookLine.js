@@ -1180,10 +1180,17 @@ function shouldPreferPaidOrchestratorForExplicitDomain(params) {
   const domainIntent = normalizeDomainIntent(payload.domainIntent);
   if (!PAID_CONCIERGE_DOMAIN_INTENTS.has(domainIntent)) return false;
   const locationHint = extractLocationHintFromText(payload.messageText || '');
-  return locationHint
-    && locationHint.kind === 'city'
+  if (!locationHint || typeof locationHint !== 'object') return false;
+  if (
+    locationHint.kind === 'city'
     && typeof locationHint.cityKey === 'string'
-    && locationHint.cityKey.trim().length > 0;
+    && locationHint.cityKey.trim().length > 0
+  ) {
+    return true;
+  }
+  return locationHint.kind === 'state'
+    && typeof locationHint.state === 'string'
+    && locationHint.state.trim().length > 0;
 }
 
 function buildBlockedFallbackRequestContract(params) {
