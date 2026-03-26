@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-25T22:37:45-04:00",
-  "gitCommit": "6639479c67133aa8f5c05d6a96ff480e3d560fc3",
-  "branch": "codex/city-pack-audit-hint",
-  "sourceDigest": "b3cb0659065298bd618913a2d9feaf713e2a9478a0445c026f7f9d690bc7e34a",
+  "generatedAt": "2026-03-25T22:53:01-04:00",
+  "gitCommit": "3b346805a30a508d864c40d9ce0de7cc405d9334",
+  "branch": "codex/line-desktop-patrol-pr6",
+  "sourceDigest": "553ab9c83503a3a6e22deab0c759f23fb121930439989c1100de6b168c807ae2",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
