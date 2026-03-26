@@ -23,6 +23,12 @@ test('phase734: followup intent resolver detects docs/appointment/next-step inte
     domainIntent: 'school'
   });
   assert.equal(nextStep.followupIntent, 'next_step');
+
+  const typoDocs = resolveFollowupIntent({
+    messageText: '手続きに必要なしょるい',
+    domainIntent: 'school'
+  });
+  assert.equal(typoDocs.followupIntent, 'docs_required');
 });
 
 test('phase734: followup intent resolver avoids domain guess without domain context', () => {
