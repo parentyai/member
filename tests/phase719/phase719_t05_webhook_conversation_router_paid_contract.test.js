@@ -1506,10 +1506,13 @@ test('phase719: budget-blocked deepen followup rebuilds school context from rece
   assert.equal(loaded.actionLogWrites.length > 0, true);
   const lastWrite = loaded.actionLogWrites[loaded.actionLogWrites.length - 1];
   assert.equal(replyText.includes('いま一番困っている手続きを1つだけ教えてください'), false);
+  assert.equal(replyText.includes('制度名まで分かるなら'), false);
+  assert.equal(replyText.split('\n').filter(Boolean).length, 1);
   assert.match(replyText, /学校|学区|必要書類|受付期限/);
   assert.equal(lastWrite.selectedCandidateKind, 'domain_concierge_candidate');
   assert.equal(lastWrite.domainIntent, 'school');
   assert.equal(lastWrite.followupIntent, 'next_step');
+  assert.equal(lastWrite.followupQuestionIncluded, false);
   assert.equal(lastWrite.requestShape, 'answer');
   assert.equal(lastWrite.depthIntent, 'deepen');
   assert.equal(lastWrite.transformSource, 'prior_assistant');
@@ -1622,10 +1625,13 @@ test('phase719: budget-blocked docs typo followup rebuilds school context from r
   assert.equal(loaded.actionLogWrites.length > 0, true);
   const lastWrite = loaded.actionLogWrites[loaded.actionLogWrites.length - 1];
   assert.equal(replyText.includes('いま一番困っている手続きを1つだけ教えてください'), false);
+  assert.equal(replyText.includes('まず最優先の手続きを1つだけ決めますか'), false);
+  assert.equal(replyText.split('\n').filter(Boolean).length, 1);
   assert.match(replyText, /必要書類|書類|住所証明|予防接種|受付期限/);
   assert.equal(lastWrite.selectedCandidateKind, 'domain_concierge_candidate');
   assert.equal(lastWrite.domainIntent, 'school');
   assert.equal(lastWrite.followupIntent, 'docs_required');
+  assert.equal(lastWrite.followupQuestionIncluded, false);
   assert.equal(lastWrite.requestShape, 'answer');
   assert.equal(lastWrite.routerReason, 'action_keyword');
 });
