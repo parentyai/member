@@ -29,6 +29,11 @@ function normalizeStatus(value) {
   return ALLOWED_STATUS.has(raw) ? raw : 'draft';
 }
 
+function canonicalizeProviderKey(value) {
+  const raw = normalizeString(value);
+  return raw ? raw.toLowerCase() : null;
+}
+
 function normalizeSeverity(value) {
   const raw = typeof value === 'string' ? value.trim().toUpperCase() : '';
   if (raw === 'CRITICAL' || raw === 'WARN' || raw === 'INFO') return raw;
@@ -122,10 +127,12 @@ async function listBulletins(params) {
   let query = getDb().collection(COLLECTION);
   const statusFilter = opts.status ? normalizeStatus(opts.status) : null;
   const regionFilter = canonicalizeRegionKey(opts.regionKey);
+  const providerFilter = canonicalizeProviderKey(opts.providerKey);
 
   // Keep a single where filter to avoid introducing new composite index requirements.
   if (statusFilter) query = query.where('status', '==', statusFilter);
   else if (regionFilter) query = query.where('regionKey', '==', regionFilter);
+  else if (providerFilter) query = query.where('providerKey', '==', providerFilter);
 
   const snap = await query.limit(limit).get();
   let rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
@@ -135,6 +142,9 @@ async function listBulletins(params) {
       const regionKey = canonicalizeRegionKey(row && row.regionKey);
       return regionKey === regionFilter;
     });
+  }
+  if (providerFilter) {
+    rows = rows.filter((row) => canonicalizeProviderKey(row && row.providerKey) === providerFilter);
   }
   return sortByUpdatedAtDesc(rows).slice(0, limit);
 }
@@ -149,6 +159,7 @@ async function listBulletinsByTraceId(traceId, limit) {
 
 module.exports = {
   canonicalizeRegionKey,
+  canonicalizeProviderKey,
   createBulletin,
   ensureDraftByDiff,
   resolveDraftIdFromDiff,
