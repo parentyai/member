@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-03-25T22:43:49-04:00",
+  "generatedAt": "2026-03-25T22:53:49-04:00",
   "source": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-  "sourceDigest": "fa18b7f1463e2813cc5b56ff6cbaba94051a4b989320a3290b6968b2f4db5ff5",
+  "sourceDigest": "61bae3b47f4a806fcd9281b216af320bcd427f2bca4f1d8215c142d60bf16929",
   "surface_count": 0,
   "point_count": 0,
   "call_breakdown": {},
