@@ -29,6 +29,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - `/admin/app?pane=quality-patrol` の既存 pane-detail へ local desktop patrol summary を read-only 表示する
 - operator audience は artifact path を保持し、human audience は redacted displayPath のみ表示する
 
+## PR6 Additions
+- `member_line_patrol.loop_state` で local loop state を `artifacts/line_desktop_patrol/runtime/state.json` に add-only 保存する
+- `member_line_patrol.patrol_loop` で policy / blocked_hours / max_runs_per_hour / failure_streak / repo-side kill switch を先に判定する guarded loop を追加する
+- guarded loop は skip/stop 時も trace + latest summary を書くが、desktop send / AX dump / visible-message read はまだ行わない
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -70,6 +75,8 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
   - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
   - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
+  - `artifacts/line_desktop_patrol/runtime/state.json`
+  - `tmp/line_desktop_patrol_latest.json`
 
 ## Non-goals in PR1
 - no macOS Accessibility adapter
@@ -100,3 +107,10 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - no queue mutation from browser
 - no backlog promotion from the admin pane
 - no retention / cleanup operation in the operator surface
+
+## Non-goals in PR6
+- no desktop send
+- no AX tree dump
+- no visible message read
+- no screenshot capture execution
+- no background scheduler wiring

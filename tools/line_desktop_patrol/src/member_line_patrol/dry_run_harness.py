@@ -18,6 +18,14 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _resolve_now(value: datetime | None) -> datetime:
+    if value is None:
+        return _utc_now()
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def _transition(state: str, status: str, note: str | None = None) -> dict[str, Any]:
     payload = {
         "state": state,
@@ -29,7 +37,9 @@ def _transition(state: str, status: str, note: str | None = None) -> dict[str, A
     return payload
 
 
-def _load_repo_runtime_state(repo_root: Path, route_key: str) -> dict[str, Any]:
+def _load_repo_runtime_state(repo_root: Path, route_key: str, runtime_state_path: str | Path | None = None) -> dict[str, Any]:
+    if runtime_state_path is not None:
+        return json.loads(Path(runtime_state_path).read_text(encoding="utf-8"))
     script = repo_root / "tools" / "line_desktop_patrol" / "read_repo_runtime_state.js"
     completed = subprocess.run(
         ["node", str(script)],
@@ -60,8 +70,10 @@ def run_dry_run_harness(
     route_key: str,
     target_alias: str | None = None,
     allow_disabled_policy: bool = False,
+    current_time: datetime | None = None,
+    runtime_state_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    started_at = _utc_now()
+    started_at = _resolve_now(current_time)
     state_transitions = [_transition("LOAD_POLICY", "started")]
     policy = load_policy(policy_path)
     state_transitions.append(_transition("LOAD_POLICY", "completed"))
@@ -75,7 +87,7 @@ def run_dry_run_harness(
 
     state_transitions.append(_transition("LOAD_RUNTIME_STATE", "started"))
     repo_root = Path(policy_path).resolve().parents[3]
-    runtime_state = _load_repo_runtime_state(repo_root, route_key)
+    runtime_state = _load_repo_runtime_state(repo_root, route_key, runtime_state_path)
     state_transitions.append(_transition("LOAD_RUNTIME_STATE", "completed"))
 
     state_transitions.append(_transition("PROBE_HOST", "started"))
@@ -94,7 +106,7 @@ def run_dry_run_harness(
     state_transitions.append(_transition("SEND_OR_DRYRUN", "skipped", "dry_run_only_skip"))
     state_transitions.append(_transition("OBSERVE", "skipped", "ax_and_visible_message_read_not_implemented_in_pr2"))
 
-    finished_at = _utc_now()
+    finished_at = _resolve_now(current_time)
     run_id = f"ldp_{started_at.strftime('%Y%m%dT%H%M%SZ')}_{uuid.uuid4().hex[:12]}"
     session_id = f"session_{uuid.uuid4().hex[:12]}"
     trace_store = TraceStore(output_root)

@@ -43,6 +43,13 @@ TOOL_SPECS = (
         status="dry_run_ready",
     ),
     ToolSpec(
+        name="run_guarded_patrol_loop",
+        description="Run the local-only guarded loop with policy, blocked-hours, hourly-cap, and kill-switch enforcement before dry-run trace emission.",
+        mutating=True,
+        exposure="public",
+        status="guarded_loop_ready",
+    ),
+    ToolSpec(
         name="list_allowed_targets",
         description="List locally configured whitelist targets for the patrol.",
         mutating=False,
@@ -88,6 +95,7 @@ def build_server_manifest() -> dict:
         "notes": [
             "PR2 adds host probing and dry-run planning but still keeps send disabled.",
             "PR4 adds local proposal queue + Codex packet generation without enabling any repo-side write path.",
+            "PR6 adds a local guarded loop state file and stop/skip enforcement before the dry-run harness runs.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }
