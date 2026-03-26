@@ -37,6 +37,23 @@ def _transition(state: str, status: str, note: str | None = None) -> dict[str, A
     return payload
 
 
+def _is_repo_root(candidate: Path) -> bool:
+    return (candidate / "package.json").exists() and (candidate / "tools" / "line_desktop_patrol" / "read_repo_runtime_state.js").exists()
+
+
+def _resolve_repo_root() -> Path:
+    cwd = Path.cwd().resolve()
+    search_roots = [cwd, *cwd.parents, Path(__file__).resolve(), *Path(__file__).resolve().parents]
+    seen: set[Path] = set()
+    for candidate in search_roots:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if _is_repo_root(candidate):
+            return candidate
+    return Path(__file__).resolve().parents[4]
+
+
 def _load_repo_runtime_state(repo_root: Path, route_key: str, runtime_state_path: str | Path | None = None) -> dict[str, Any]:
     if runtime_state_path is not None:
         return json.loads(Path(runtime_state_path).read_text(encoding="utf-8"))
@@ -86,7 +103,7 @@ def run_dry_run_harness(
         raise ValueError("policy disabled; pass --allow-disabled-policy for local dry-run validation")
 
     state_transitions.append(_transition("LOAD_RUNTIME_STATE", "started"))
-    repo_root = Path(policy_path).resolve().parents[3]
+    repo_root = _resolve_repo_root()
     runtime_state = _load_repo_runtime_state(repo_root, route_key, runtime_state_path)
     state_transitions.append(_transition("LOAD_RUNTIME_STATE", "completed"))
 

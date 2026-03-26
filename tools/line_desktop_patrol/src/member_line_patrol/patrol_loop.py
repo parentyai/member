@@ -8,7 +8,7 @@ import json
 import uuid
 from typing import Any
 
-from .dry_run_harness import _load_repo_runtime_state, _resolve_target, _transition, run_dry_run_harness
+from .dry_run_harness import _load_repo_runtime_state, _resolve_repo_root, _resolve_target, _transition, run_dry_run_harness
 from .loop_state import load_loop_state, update_loop_state
 from .macos_adapter import MacOSLineDesktopAdapter
 from .policy import BlockedHoursWindow, PatrolPolicy, load_policy
@@ -147,7 +147,7 @@ def run_patrol_loop(
     scenario = load_scenario(scenario_path)
     state_transitions.append(_transition("LOAD_SCENARIO", "completed"))
 
-    repo_root = Path(policy_path).resolve().parents[3]
+    repo_root = _resolve_repo_root()
     latest_summary_output = Path(latest_summary_path).resolve() if latest_summary_path else repo_root / "tmp" / "line_desktop_patrol_latest.json"
     output_root_resolved = Path(output_root).resolve()
 
