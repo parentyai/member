@@ -12,6 +12,7 @@ from typing import Any
 
 LINE_APP_NAME = "LINE"
 LINE_BUNDLE_ID = "jp.naver.line.mac"
+DEFAULT_AX_TIMEOUT_SECONDS = 2.0
 LINE_BUNDLE_CANDIDATES = (
     Path("/Applications/LINE.app"),
     Path.home() / "Applications" / "LINE.app",
@@ -114,6 +115,51 @@ class MacOSLineDesktopAdapter:
             "output_path": resolved,
         }
 
+    def plan_dump_ax_tree(
+        self,
+        output_path: str | Path,
+        target_process_name: str = LINE_APP_NAME,
+        timeout_seconds: float = DEFAULT_AX_TIMEOUT_SECONDS,
+    ) -> dict[str, Any]:
+        resolved = str(Path(output_path))
+        argv = (
+            "osascript",
+            "-e",
+            'tell application "System Events"',
+            "-e",
+            "set uiEnabled to UI elements enabled",
+            "-e",
+            f'set targetProcess to first application process whose name is "{target_process_name}"',
+            "-e",
+            "set processName to name of targetProcess",
+            "-e",
+            "set frontmostState to frontmost of targetProcess",
+            "-e",
+            "set windowCount to count of windows of targetProcess",
+            "-e",
+            'set windowName to ""',
+            "-e",
+            "if windowCount > 0 then set windowName to name of window 1 of targetProcess",
+            "-e",
+            'return processName & "||" & frontmostState & "||" & windowCount & "||" & windowName & "||" & uiEnabled',
+            "-e",
+            "end tell",
+        )
+        plan = CommandPlan(
+            name="dump_ax_tree",
+            argv=argv,
+            mutating=False,
+            requires_macos=True,
+            description="Dump a bounded LINE Desktop accessibility summary through System Events.",
+        )
+        return {
+            "status": "planned",
+            "target_process_name": target_process_name,
+            "command": asdict(plan),
+            "output_path": resolved,
+            "timeout_seconds": timeout_seconds,
+        }
+
     def execute_prepare_line_app(self, target_alias: str | None = None) -> dict[str, Any]:
         probe = self.probe_host()
         plan = self.plan_prepare_line_app(target_alias)
@@ -198,14 +244,132 @@ class MacOSLineDesktopAdapter:
             "file_size": file_size,
         }
 
+    def execute_dump_ax_tree(
+        self,
+        output_path: str | Path,
+        *,
+        target_process_name: str = LINE_APP_NAME,
+        timeout_seconds: float = DEFAULT_AX_TIMEOUT_SECONDS,
+    ) -> dict[str, Any]:
+        probe = self.probe_host()
+        plan = self.plan_dump_ax_tree(
+            output_path,
+            target_process_name=target_process_name,
+            timeout_seconds=timeout_seconds,
+        )
+        if not probe["is_macos"]:
+            return {
+                "status": "skipped",
+                "reason": "host_not_macos",
+                "probe": probe,
+                "plan": plan,
+            }
+        osascript_state = probe["tools"].get("osascript", {})
+        if not osascript_state.get("available"):
+            return {
+                "status": "skipped",
+                "reason": "osascript_unavailable",
+                "probe": probe,
+                "plan": plan,
+            }
+        try:
+            completed = self.command_runner(
+                list(plan["command"]["argv"]),
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "skipped",
+                "reason": "ax_timeout",
+                "probe": probe,
+                "plan": plan,
+                "timeout_seconds": timeout_seconds,
+            }
+        if completed.returncode != 0:
+            return {
+                "status": "failed",
+                "reason": "osascript_failed",
+                "probe": probe,
+                "plan": plan,
+                "result": {
+                    "status": "failed",
+                    "returncode": completed.returncode,
+                    "stdout": completed.stdout.strip() or None,
+                    "stderr": completed.stderr.strip() or None,
+                },
+            }
+        raw_output = completed.stdout.strip()
+        parts = raw_output.split("||", 4)
+        if len(parts) != 5:
+            return {
+                "status": "failed",
+                "reason": "invalid_ax_dump_output",
+                "probe": probe,
+                "plan": plan,
+                "result": {
+                    "status": "failed",
+                    "returncode": completed.returncode,
+                    "stdout": raw_output or None,
+                    "stderr": completed.stderr.strip() or None,
+                },
+            }
+        process_name, frontmost_state, window_count, window_name, ui_enabled = parts
+        try:
+            parsed_window_count = int(window_count.strip() or "0")
+        except ValueError:
+            return {
+                "status": "failed",
+                "reason": "invalid_ax_window_count",
+                "probe": probe,
+                "plan": plan,
+                "result": {
+                    "status": "failed",
+                    "returncode": completed.returncode,
+                    "stdout": raw_output or None,
+                    "stderr": completed.stderr.strip() or None,
+                },
+            }
+        payload = {
+            "target_process_name": target_process_name,
+            "process_name": process_name,
+            "frontmost": frontmost_state.strip().lower() == "true",
+            "window_count": parsed_window_count,
+            "window_name": window_name or None,
+            "ui_elements_enabled": ui_enabled.strip().lower() == "true",
+        }
+        resolved_path = Path(plan["output_path"])
+        resolved_path.parent.mkdir(parents=True, exist_ok=True)
+        resolved_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        return {
+            "status": "executed",
+            "probe": probe,
+            "plan": plan,
+            "result": {
+                "status": "ok",
+                "returncode": completed.returncode,
+                "stdout": raw_output or None,
+                "stderr": completed.stderr.strip() or None,
+            },
+            "output_path": str(resolved_path),
+            "file_exists": resolved_path.exists(),
+            "file_size": resolved_path.stat().st_size,
+            "payload_summary": payload,
+        }
+
 
 def build_cli_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Inspect or plan bounded macOS LINE Desktop adapter actions.")
     parser.add_argument("--prepare-line-app", action="store_true", help="Return the bounded LINE app prepare plan.")
     parser.add_argument("--capture-screenshot", action="store_true", help="Return or execute the bounded screenshot capture plan.")
+    parser.add_argument("--dump-ax-tree", action="store_true", help="Return or execute the bounded AX summary dump plan.")
     parser.add_argument("--execute", action="store_true", help="Execute the bounded open/activate plan on macOS.")
     parser.add_argument("--target-alias", default=None, help="Optional whitelist alias for plan metadata.")
     parser.add_argument("--output-path", default=None, help="Output path for --capture-screenshot.")
+    parser.add_argument("--target-process-name", default=LINE_APP_NAME, help="Process name used by --dump-ax-tree.")
+    parser.add_argument("--timeout-seconds", type=float, default=DEFAULT_AX_TIMEOUT_SECONDS, help="Timeout for AX dump execution.")
     return parser
 
 
@@ -222,6 +386,24 @@ def main(argv: list[str] | None = None) -> int:
             payload = {
                 "probe": adapter.probe_host(),
                 "plan": adapter.plan_capture_screenshot(args.output_path),
+            }
+    elif args.dump_ax_tree:
+        if not args.output_path:
+            parser.error("--output-path is required with --dump-ax-tree")
+        if args.execute:
+            payload = adapter.execute_dump_ax_tree(
+                args.output_path,
+                target_process_name=args.target_process_name,
+                timeout_seconds=args.timeout_seconds,
+            )
+        else:
+            payload = {
+                "probe": adapter.probe_host(),
+                "plan": adapter.plan_dump_ax_tree(
+                    args.output_path,
+                    target_process_name=args.target_process_name,
+                    timeout_seconds=args.timeout_seconds,
+                ),
             }
     elif args.execute:
         payload = adapter.execute_prepare_line_app(target_alias=args.target_alias)

@@ -142,6 +142,7 @@
     "test:phase860": "node --test tests/phase860/*.test.js",
     "test:phase861": "node --test tests/phase861/*.test.js",
     "test:phase862": "node --test tests/phase862/*.test.js",
-    "test:phase863": "node --test tests/phase863/*.test.js"
+    "test:phase863": "node --test tests/phase863/*.test.js",
+    "test:phase864": "node --test tests/phase864/*.test.js"
   }
 }

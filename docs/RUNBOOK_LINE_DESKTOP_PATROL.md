@@ -104,6 +104,12 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - screenshot capture does not imply AX dump, visible-message read, or send enablement
 - screenshot capture failures degrade to trace evidence and do not write to Firestore
 
+## PR8 guardrails
+- AX summary dump is standalone and not wired into the default dry-run command
+- AX summary dump uses a bounded timeout and may return `ax_timeout`
+- AX summary dump does not enable visible-message read or send
+- AX summary output remains local filesystem-only
+
 ## Optional operator check
 1. Generate one local trace/eval/queue sequence with the existing dry-run + evaluate + enqueue commands.
 2. Open `/admin/app?pane=quality-patrol&role=operator`.
@@ -120,3 +126,8 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 2. Run `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.dry_run_harness --policy <override> --scenario tools/line_desktop_patrol/scenarios/smoke_dry_run.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol --allow-disabled-policy`.
 3. On macOS with Screen Recording permission, confirm `runs/<run_id>/after.png` exists and `trace.json` points `screenshot_after` to that file.
 4. On non-macOS or without `screencapture`, confirm the trace keeps `screenshot_after=null` and records a skipped screenshot observation instead of failing the run.
+
+## Optional PR8 AX summary check
+1. Run `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter --dump-ax-tree --output-path /tmp/line_desktop_patrol_ax.json --execute --target-process-name LINE --timeout-seconds 2`.
+2. If Accessibility permission is already granted and LINE is running, confirm `/tmp/line_desktop_patrol_ax.json` contains `process_name / frontmost / window_count / window_name / ui_elements_enabled`.
+3. If the host prompts or blocks `System Events`, confirm the command exits quickly with `reason=ax_timeout` or `reason=osascript_failed` instead of hanging indefinitely.

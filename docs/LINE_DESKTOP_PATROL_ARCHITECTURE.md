@@ -39,6 +39,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - `member_line_patrol.dry_run_harness` は `policy.store_screenshots=true` のときだけ screenshot capture を試行し、成功時は `screenshot_after` に local artifact path を記録する
 - screenshot capture は observation-only で、desktop send / AX dump / visible-message read はまだ行わない
 
+## PR8 Additions
+- `member_line_patrol.macos_adapter.plan_dump_ax_tree` / `execute_dump_ax_tree` で bounded AX summary dump を追加する
+- AX summary dump は `osascript` を timeout 付きで実行し、permission/prompt で詰まる host でも `ax_timeout` / `host_not_macos` / `osascript_unavailable` に degrade する
+- PR8 では standalone command のみで、dry-run harness / guarded loop / evaluator への配線はまだ行わない
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -126,3 +131,9 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - no visible message read
 - no screenshot capture requirement in the default sample policy
 - no screenshot promotion into admin/browser write paths
+
+## Non-goals in PR8
+- no desktop send
+- no visible message read
+- no automatic AX dump during the default dry-run command
+- no AX artifact promotion into evaluator or admin read models
