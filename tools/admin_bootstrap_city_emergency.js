@@ -369,7 +369,9 @@ function collectDetachedCityPackDrafts(cityPacks, requests) {
       requestId: typeof pack.requestId === 'string' ? pack.requestId : null,
       packClass: typeof pack.packClass === 'string' ? pack.packClass : null,
       language: typeof pack.language === 'string' ? pack.language : null,
-      status: pack.status
+      status: pack.status,
+      recommendedAction: 'retire',
+      reason: 'detached_draft'
     }));
 }
 
@@ -749,6 +751,7 @@ async function bootstrapCityPack(ctx) {
     composeItemIds: Array.isArray(composed && composed.items) ? composed.items.map((item) => item.cityPackId) : [],
     modulesSubscribed: pref && pref.modulesSubscribed ? pref.modulesSubscribed : [],
     detachedDraftCount: detachedDrafts.length,
+    detachedDraftRecommendation: detachedDrafts.length > 0 ? 'retire' : 'none',
     detachedDrafts
   };
 }
@@ -1056,7 +1059,8 @@ async function main() {
       cityPackId: summary.cityPack.cityPackId || null,
       requestId: summary.cityPack.requestId || null,
       composeSummary: summary.cityPack.composeSummary || null,
-      detachedDraftCount: Number(summary.cityPack.detachedDraftCount) || 0
+      detachedDraftCount: Number(summary.cityPack.detachedDraftCount) || 0,
+      detachedDraftRecommendation: summary.cityPack.detachedDraftRecommendation || 'none'
     },
     emergency: summary.emergency && {
       providerCount: summary.emergency.providerCount || 0,

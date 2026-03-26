@@ -55,6 +55,8 @@ test('phase674: city pack bootstrap marks only unreferenced drafts as detached',
     requestId: null,
     packClass: 'regional',
     language: 'ja',
-    status: 'draft'
+    status: 'draft',
+    recommendedAction: 'retire',
+    reason: 'detached_draft'
   }]);
 });
