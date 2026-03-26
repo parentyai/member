@@ -121,6 +121,7 @@ def build_server_manifest() -> dict:
             "PR8 adds a standalone bounded AX summary dump command with timeout-safe degradation.",
             "PR9 wires AX summary dump into the dry-run harness only when local policy.store_ax_tree=true.",
             "PR10 adds a standalone bounded visible message read command without wiring it into the dry-run harness yet.",
+            "PR11 wires visible message read into the dry-run harness behind the existing local policy.store_ax_tree gate.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }

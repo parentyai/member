@@ -54,6 +54,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - visible text read は `osascript` を timeout 付きで実行し、非 macOS / command unavailable / permission error / timeout では skipped or failed observation に degrade する
 - PR10 では standalone command + MCP manifest のみで、dry-run harness / guarded loop / evaluator / admin read model への配線はまだ行わない
 
+## PR11 Additions
+- `member_line_patrol.dry_run_harness` は `policy.store_ax_tree=true` のときだけ visible-message read も試行し、成功時は `visible_after` と `observation_artifacts.read_visible_messages` に local evidence を残す
+- PR11 は policy schema を増やさず、Accessibility 系 observation の既存 gate として `store_ax_tree` を再利用する
+- visible-message read failure は AX dump と同様に degraded local observation として残し、desktop send / evaluator write / admin write path はまだ行わない
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -96,6 +101,7 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
   - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
   - `artifacts/line_desktop_patrol/runtime/state.json`
+  - `artifacts/line_desktop_patrol/runs/<run_id>/after.visible.json`
   - `tmp/line_desktop_patrol_latest.json`
 
 ## Non-goals in PR1
@@ -159,3 +165,9 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - no visible-message wiring into the default dry-run command
 - no visible-message promotion into evaluator or admin read models
 - no visible-message retention contract beyond local ad hoc output paths
+
+## Non-goals in PR11
+- no desktop send
+- no new policy/schema key dedicated to visible-message storage
+- no speaker attribution beyond bounded `unknown` role rows
+- no visible-message promotion into evaluator or admin read models

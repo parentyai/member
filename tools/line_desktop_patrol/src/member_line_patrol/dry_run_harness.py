@@ -137,10 +137,20 @@ def run_dry_run_harness(
     planned_ax_dump = adapter.plan_dump_ax_tree(
         Path(output_root) / "runs" / "planned" / "planned_after.ax.json"
     )
+    planned_visible_output_path = Path(output_root) / "runs" / "planned" / "planned_after.visible.json"
+    if hasattr(adapter, "plan_read_visible_messages"):
+        planned_visible_messages = adapter.plan_read_visible_messages(planned_visible_output_path)
+    else:
+        planned_visible_messages = {
+            "status": "planned",
+            "reason": "visible_message_observation_not_supported",
+            "output_path": str(planned_visible_output_path),
+        }
     state_transitions.append(_transition("PRECHECK", "completed"))
 
     state_transitions.append(_transition("OPEN_TARGET", "planned", "bounded LINE open/focus plan only"))
     state_transitions.append(_transition("SEND_OR_DRYRUN", "skipped", "dry_run_only_skip"))
+    visible_after = []
     screenshot_after = None
     ax_tree_after = None
     screenshot_capture = {
@@ -152,6 +162,11 @@ def run_dry_run_harness(
         "status": "skipped",
         "reason": "store_ax_tree_disabled",
         "plan": planned_ax_dump,
+    }
+    visible_read = {
+        "status": "skipped",
+        "reason": "store_ax_tree_disabled",
+        "plan": planned_visible_messages,
     }
     screenshot_completed = False
     ax_completed = False
@@ -177,6 +192,30 @@ def run_dry_run_harness(
             state_transitions.append(_transition("OBSERVE", "completed", "ax_dump_completed_pr9"))
         else:
             reason = ax_dump.get("reason") or ax_dump.get("result", {}).get("status") or "ax_dump_not_completed"
+            state_transitions.append(_transition("OBSERVE", "skipped", reason))
+        state_transitions.append(_transition("OBSERVE", "started", "read_visible_messages_if_macos"))
+        visible_output_path = Path(output_root) / "runs" / "pending" / "after.visible.json"
+        if hasattr(adapter, "execute_read_visible_messages"):
+            visible_read = adapter.execute_read_visible_messages(visible_output_path)
+        else:
+            visible_read = {
+                "status": "skipped",
+                "reason": "visible_message_observation_not_supported",
+                "plan": planned_visible_messages,
+            }
+        if visible_read.get("status") == "executed" and visible_read.get("result", {}).get("status") == "ok" and visible_read.get("file_exists"):
+            visible_items = visible_read.get("payload_summary", {}).get("items") or []
+            visible_after = [
+                {
+                    "role": str(item.get("role") or "unknown"),
+                    "text": str(item.get("text") or "").strip(),
+                }
+                for item in visible_items
+                if str(item.get("text") or "").strip()
+            ]
+            state_transitions.append(_transition("OBSERVE", "completed", "visible_message_read_completed_pr11"))
+        else:
+            reason = visible_read.get("reason") or visible_read.get("result", {}).get("status") or "visible_message_read_not_completed"
             state_transitions.append(_transition("OBSERVE", "skipped", reason))
     if not policy.store_screenshots and not policy.store_ax_tree:
         state_transitions.append(_transition("OBSERVE", "skipped", "no_opt_in_observation_enabled"))
@@ -205,6 +244,10 @@ def run_dry_run_harness(
     ax_tree_after = _promote_observation_artifact(output_root, run_id, ax_tree_after, "after.ax.json")
     if ax_tree_after is not None:
         ax_dump["output_path"] = ax_tree_after
+    visible_output_path = visible_read.get("output_path")
+    promoted_visible_output_path = _promote_observation_artifact(output_root, run_id, visible_output_path, "after.visible.json")
+    if promoted_visible_output_path is not None:
+        visible_read["output_path"] = promoted_visible_output_path
 
     trace = {
         "run_id": run_id,
@@ -217,7 +260,7 @@ def run_dry_run_harness(
         "target_id": target.alias,
         "sent_text": scenario.user_input,
         "visible_before": [],
-        "visible_after": [],
+        "visible_after": visible_after,
         "screenshot_before": None,
         "screenshot_after": screenshot_after,
         "ax_tree_before": None,
@@ -242,10 +285,12 @@ def run_dry_run_harness(
             "prepare_line_app": planned_prepare,
             "capture_screenshot": planned_screenshot,
             "dump_ax_tree": planned_ax_dump,
+            "read_visible_messages": planned_visible_messages,
         },
         "observation_artifacts": {
             "capture_screenshot": screenshot_capture,
             "dump_ax_tree": ax_dump,
+            "read_visible_messages": visible_read,
         },
         "scenario_expectations": {
             "expected_behavior": list(scenario.expected_behavior),
