@@ -17,6 +17,12 @@ PRESERVE_STREAK_DECISIONS = frozenset({
 RESET_STREAK_DECISIONS = frozenset({
     "",
     "dry_run_only_skip",
+    "open_target_ready",
+    "execute_sent",
+    "execute_evaluated",
+    "execute_queued",
+    "post_send_reply_missing",
+    "post_send_reply_ambiguous",
 })
 
 

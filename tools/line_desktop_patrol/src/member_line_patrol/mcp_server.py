@@ -57,6 +57,20 @@ TOOL_SPECS = (
         status="visible_text_ready",
     ),
     ToolSpec(
+        name="validate_target",
+        description="Validate that the currently frontmost LINE Desktop chat matches the allowlisted target before any send path is attempted.",
+        mutating=False,
+        exposure="public",
+        status="execute_ready",
+    ),
+    ToolSpec(
+        name="open_test_chat",
+        description="Open a uniquely matched allowlist chat in LINE Desktop and fail closed on ambiguous or missing target matches.",
+        mutating=True,
+        exposure="public",
+        status="execute_ready",
+    ),
+    ToolSpec(
         name="run_dry_run_scenario",
         description="Run a local-only dry-run harness and persist a trace artifact without desktop send side effects.",
         mutating=True,
@@ -93,10 +107,24 @@ TOOL_SPECS = (
     ),
     ToolSpec(
         name="send_text",
-        description="Reserved for a later PR. No desktop send path is enabled in PR1.",
+        description="Send one message only after allowlist, kill-switch, blocked-hours, and target-validation guards all pass.",
         mutating=True,
-        exposure="disabled",
-        status="planned",
+        exposure="public",
+        status="execute_ready",
+    ),
+    ToolSpec(
+        name="run_execute_scenario",
+        description="Run one bounded execute scenario and persist trace, evaluation, and proposal artifacts without auto-apply.",
+        mutating=True,
+        exposure="public",
+        status="execute_ready",
+    ),
+    ToolSpec(
+        name="promote_proposal_to_draft_pr",
+        description="Prepare a dedicated branch/worktree plus draft PR body for one queued proposal without auto-merging or auto-applying changes.",
+        mutating=True,
+        exposure="internal_only",
+        status="draft_pr_ready",
     ),
 )
 
@@ -122,6 +150,9 @@ def build_server_manifest() -> dict:
             "PR9 wires AX summary dump into the dry-run harness only when local policy.store_ax_tree=true.",
             "PR10 adds a standalone bounded visible message read command without wiring it into the dry-run harness yet.",
             "PR11 wires visible message read into the dry-run harness behind the existing local policy.store_ax_tree gate.",
+            "PR12 adds bounded target validation, open_test_chat, and send_text foundations while keeping tracked sample policy dry_run-only.",
+            "PR13 adds a one-shot execute harness that writes trace/eval/queue artifacts without enabling auto-apply.",
+            "PR15 adds proposal promotion into a prepared branch/worktree and optional draft PR body without auto-merging any code.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }

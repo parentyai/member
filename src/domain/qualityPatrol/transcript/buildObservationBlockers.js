@@ -30,6 +30,8 @@ function buildObservationBlockers(params) {
   if (payload.userMessageAvailable !== true || payload.assistantReplyAvailable !== true) {
     blockers.push(createBlocker('transcript_not_reviewable'));
   }
+  const extraCodes = Array.isArray(payload.extraBlockerCodes) ? payload.extraBlockerCodes : [];
+  extraCodes.forEach((code) => blockers.push(createBlocker(code)));
 
   return blockers.filter(Boolean).filter((item, index, rows) =>
     rows.findIndex((other) => other && other.code === item.code) === index

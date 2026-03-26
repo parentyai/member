@@ -59,6 +59,32 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - PR11 は policy schema を増やさず、Accessibility 系 observation の既存 gate として `store_ax_tree` を再利用する
 - visible-message read failure は AX dump と同様に degraded local observation として残し、desktop send / evaluator write / admin write path はまだ行わない
 
+## PR12 Additions
+- `member_line_patrol.macos_adapter` に `validate_target`, `open_test_chat`, `send_text` の bounded foundation を追加する
+- target validation は `expected_chat_title`, `expected_window_title_substring`, `expected_participant_labels`, `expected_ax_fingerprint` の一致で fail-closed する
+- tracked sample policy / allowed_targets は `dry_run` のまま固定し、execute は machine-local override のみで有効化する
+
+## PR13 Additions
+- `member_line_patrol.execute_harness` で one-shot execute state machine を追加する
+- one-shot execute は `before/after` の screenshot / AX / visible text を同一 run root に書き、trace / eval / proposal queue を 1 コマンドで閉じる
+- send 後の reply 観測が欠けても trace は残し、`post_send_reply_missing` / `post_send_reply_ambiguous` として degrade する
+
+## PR14 Additions
+- `buildConversationReviewUnitsFromDesktopTrace` は execute trace の `unknown` visible rows から `sent_text` と post-send diff を使って `userMessage` / `assistantReply` を推定する
+- execute trace は `target_validation_failed`, `send_not_confirmed`, `post_send_reply_missing`, `visible_correlation_ambiguous` blocker を add-only で持つ
+- `desktopPatrolSummary` は execute 系の `executionMode`, `sendStatus`, `targetValidationStatus`, `replyObservationStatus`, `lastRunKind` を read-only で返す
+
+## PR15 Additions
+- `member_line_patrol.promote_proposal` で proposal queue から branch/worktree/draft PR body を準備する
+- promotion record は `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json` に保存し、draft PR URL があれば summary 側に read-only で出す
+- proposal promotion は human review 前提で、runtime auto-apply や auto-merge は行わない
+
+## PR16-17 Additions
+- `member_line_patrol.execute_loop` で overlap lock 付きの scheduled execute wrapper を追加する
+- `member_line_patrol.doctor` で host/policy/runtime/latest-summary を一括診断できる
+- `member_line_patrol.retention` で raw screenshot / AX / visible artifacts の local retention dry-run/apply を追加する
+- `tools/line_desktop_patrol/launchd/com.member.line-desktop-patrol.execute-loop.plist.example` で launchd 定期起動の例を示す
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -66,7 +92,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - host capability probe
   - bounded LINE app open/focus planning
   - dry-run harness
+  - execute harness
+  - execute loop wrapper
   - trace store skeleton
+  - doctor / retention helpers
+  - proposal promotion worker
   - proposal queue + Codex packet writer
   - MCP manifest skeleton
 - Node bridge:
@@ -99,8 +129,10 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - `artifacts/line_desktop_patrol/evals/<run_id>/desktop_patrol_eval.json`
   - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
   - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`
   - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
   - `artifacts/line_desktop_patrol/runtime/state.json`
+  - `artifacts/line_desktop_patrol/runtime/execute.lock.json`
   - `artifacts/line_desktop_patrol/runs/<run_id>/after.visible.json`
   - `tmp/line_desktop_patrol_latest.json`
 
@@ -166,8 +198,8 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - no visible-message promotion into evaluator or admin read models
 - no visible-message retention contract beyond local ad hoc output paths
 
-## Non-goals in PR11
-- no desktop send
-- no new policy/schema key dedicated to visible-message storage
-- no speaker attribution beyond bounded `unknown` role rows
-- no visible-message promotion into evaluator or admin read models
+## Ongoing non-goals
+- no tracked sample config that enables execute by default
+- no automatic runtime/code apply from execute runs
+- no automatic merge or deploy from proposal promotion
+- no off-whitelist send path

@@ -134,8 +134,15 @@
     "line-desktop-patrol:probe": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter",
     "line-desktop-patrol:dry-run": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.dry_run_harness --policy tools/line_desktop_patrol/config/policy.example.json --scenario tools/line_desktop_patrol/scenarios/smoke_dry_run.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol --allow-disabled-policy",
     "line-desktop-patrol:loop": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.patrol_loop --policy tools/line_desktop_patrol/config/policy.example.json --scenario tools/line_desktop_patrol/scenarios/smoke_dry_run.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol",
+    "line-desktop-patrol:open-target": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.execute_harness --mode open_target --policy tools/line_desktop_patrol/config/policy.example.json --scenario tools/line_desktop_patrol/scenarios/smoke_dry_run.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol",
+    "line-desktop-patrol:send": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.execute_harness --mode send_only --policy tools/line_desktop_patrol/config/policy.example.json --scenario tools/line_desktop_patrol/scenarios/smoke_dry_run.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol",
+    "line-desktop-patrol:execute-once": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.execute_harness --mode execute_once --policy tools/line_desktop_patrol/config/policy.example.json --scenario tools/line_desktop_patrol/scenarios/smoke_dry_run.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol",
+    "line-desktop-patrol:loop-execute": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.execute_loop --policy tools/line_desktop_patrol/config/policy.example.json --scenario tools/line_desktop_patrol/scenarios/smoke_dry_run.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol",
     "line-desktop-patrol:evaluate": "node tools/quality_patrol/run_desktop_patrol_eval.js",
     "line-desktop-patrol:enqueue-proposals": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.enqueue_eval_proposals",
+    "line-desktop-patrol:promote-proposal": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.promote_proposal --queue-root artifacts/line_desktop_patrol/proposals --repo-root .",
+    "line-desktop-patrol:doctor": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.doctor --policy tools/line_desktop_patrol/config/policy.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol",
+    "line-desktop-patrol:retention": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.retention --output-root artifacts/line_desktop_patrol",
     "test:phase857": "node --test tests/phase857/*.test.js",
     "test:phase858": "node --test tests/phase858/*.test.js",
     "test:phase859": "node --test tests/phase859/*.test.js",
@@ -146,6 +153,11 @@
     "test:phase864": "node --test tests/phase864/*.test.js",
     "test:phase865": "node --test tests/phase865/*.test.js",
     "test:phase866": "node --test tests/phase866/*.test.js",
-    "test:phase867": "node --test tests/phase867/*.test.js"
+    "test:phase867": "node --test tests/phase867/*.test.js",
+    "test:phase868": "node --test tests/phase868/*.test.js",
+    "test:phase869": "node --test tests/phase869/*.test.js",
+    "test:phase870": "node --test tests/phase870/*.test.js",
+    "test:phase871": "node --test tests/phase871/*.test.js",
+    "test:phase872": "node --test tests/phase872/*.test.js"
   }
 }

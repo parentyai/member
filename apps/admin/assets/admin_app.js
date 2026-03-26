@@ -4365,10 +4365,15 @@ function renderQualityPatrolDesktopSummary(result) {
       ].filter(Boolean),
       meta: [
         latestRun.finishedAt ? `finishedAt=${formatDateLabel(latestRun.finishedAt)}` : 'finishedAt=-',
-        payload.generatedAt ? `summaryAt=${formatDateLabel(payload.generatedAt)}` : null
+        payload.generatedAt ? `summaryAt=${formatDateLabel(payload.generatedAt)}` : null,
+        latestRun.executionMode ? `executionMode=${latestRun.executionMode}` : null
       ],
       details: [
         `failureReason: ${asText(latestRun.failureReason, 'none')}`,
+        `sendStatus: ${asText(latestRun.sendStatus, '-')}`,
+        `targetValidationStatus: ${asText(latestRun.targetValidationStatus, '-')}`,
+        `replyObservationStatus: ${asText(latestRun.replyObservationStatus, '-')}`,
+        `lastRunKind: ${asText(latestRun.lastRunKind, '-')}`,
         `proposalIds: ${latestProposalIds.length ? latestProposalIds.join(', ') : '-'}`
       ]
     }));
@@ -4381,7 +4386,8 @@ function renderQualityPatrolDesktopSummary(result) {
       badges: [{ label: 'local_queue', tone: 'info' }],
       meta: [
         `latestProposalId=${asText(queue.latestProposalId, '-')}`,
-        `packetCount=${Number(queue.packetCount || 0)}`
+        `packetCount=${Number(queue.packetCount || 0)}`,
+        `latestDraftPrRef=${asText(queue.latestDraftPrRef, '-')}`
       ]
     }));
   }
