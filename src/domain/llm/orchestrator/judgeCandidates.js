@@ -38,6 +38,14 @@ function resolveStrategyAlignmentPriority(packet, strategy, candidateKind) {
   const normalizedIntent = normalizeText(packet && packet.normalizedConversationIntent).toLowerCase() || 'general';
   const genericFallbackSlice = normalizeText(packet && packet.genericFallbackSlice).toLowerCase();
   const requestShape = normalizeText(packet && (packet.requestShape || (packet.requestContract && packet.requestContract.requestShape))).toLowerCase();
+  const knowledgeScope = normalizeText(packet && (packet.knowledgeScope || (packet.requestContract && packet.requestContract.knowledgeScope))).toLowerCase() || 'none';
+  const locationHintKind = normalizeText(
+    packet && (
+      packet.locationHintKind
+      || (packet.locationHint && packet.locationHint.kind)
+      || (packet.requestContract && packet.requestContract.locationHint && packet.requestContract.locationHint.kind)
+    )
+  ).toLowerCase() || 'none';
   const continuationContext = packet && (
     packet.priorContextUsed === true
     || packet.followupResolvedFromHistory === true
@@ -46,6 +54,9 @@ function resolveStrategyAlignmentPriority(packet, strategy, candidateKind) {
   const broadSetupDirectAnswer = normalizedIntent === 'general'
     && requestShape === 'answer'
     && genericFallbackSlice === 'broad';
+  const cityScopedDirectAnswer = normalizedIntent !== 'general'
+    && requestShape === 'answer'
+    && (knowledgeScope === 'city' || locationHintKind === 'city');
   if (normalizedStrategy === 'casual') {
     if (normalizedKind === 'casual_candidate' || normalizedKind === 'conversation_candidate') return 40;
     if (normalizedKind === 'clarify_candidate') return 6;
@@ -57,6 +68,17 @@ function resolveStrategyAlignmentPriority(packet, strategy, candidateKind) {
     return 0;
   }
   if (normalizedStrategy === 'grounded_answer') {
+    if (cityScopedDirectAnswer && normalizedKind === 'domain_concierge_candidate') return 30;
+    if (
+      cityScopedDirectAnswer
+      && (
+        normalizedKind === 'saved_faq_candidate'
+        || normalizedKind === 'knowledge_backed_candidate'
+        || normalizedKind === 'housing_knowledge_candidate'
+      )
+    ) {
+      return 18;
+    }
     if (normalizedKind === 'continuation_candidate') {
       return continuationContext || requestShape === 'followup_continue' ? 34 : 12;
     }

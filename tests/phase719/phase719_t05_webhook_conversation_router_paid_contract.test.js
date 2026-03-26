@@ -1269,6 +1269,7 @@ test('phase719: city-scoped paid domain prompt bypasses legacy domain concierge 
   assert.equal(result.status, 200);
   assert.equal(replies.length, 1);
   assert.equal(loaded.counters.paidFaqCalled, 1);
+  assert.equal(Boolean(replies[0] && replies[0].quickReply), false);
   assert.equal(loaded.actionLogWrites.length > 0, true);
   const lastWrite = loaded.actionLogWrites[loaded.actionLogWrites.length - 1];
   assert.notEqual(lastWrite.selectedCandidateKind, 'domain_concierge_candidate');
@@ -1312,6 +1313,7 @@ test('phase719: city-scoped budget-blocked paid domain fallback keeps city reque
   assert.equal(loaded.counters.retrievalCalled, 0);
   assert.equal(loaded.counters.paidFaqCalled, 0);
   assert.match(replies[0].text, /教育窓口|必要書類|受付期限/);
+  assert.equal(Boolean(replies[0] && replies[0].quickReply), false);
   assert.equal(replies[0].text.includes('学年と希望エリアを教えてもらえますか'), false);
   assert.equal(loaded.actionLogWrites.length > 0, true);
   const lastWrite = loaded.actionLogWrites[loaded.actionLogWrites.length - 1];
