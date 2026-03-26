@@ -38,7 +38,7 @@ const DOMAIN_SPECS = Object.freeze({
     pitfall: '提出書類の不足や期限超過で入学手続きが止まりやすくなります。',
     question: '学年と希望エリアを教えてもらえますか？',
     directAnswers: {
-      docs_required: '学校手続きは、住所証明と予防接種記録を先にそろえると止まりにくいです。',
+      docs_required: '学校手続きで先にそろえるのは、住所証明と予防接種記録です。',
       appointment_needed: '面談や学校登録は予約制のことが多いので、対象校が決まったら先に空き枠を確認しましょう。',
       next_step: '学校手続きの次は、対象校を1校に絞って必要書類を先に確定するのが最短です。'
     }
@@ -517,9 +517,13 @@ function buildDeepenReplyFromSource(sourceReplyText, domainIntent, messageText) 
     ];
   }
   if (/対象地域の窓口|必要書類|受付期限/.test(source) || /確認するのは/.test(sourceLine)) {
+    if (domainIntent === 'school') {
+      return [
+        '具体的には、教育窓口のページで対象校の条件、必要書類、受付期限の3点だけ見れば十分です'
+      ];
+    }
     return [
-      '具体的には、窓口名、必要書類、受付期限の3点だけを同じ画面で確認すると判断しやすいです',
-      '制度名まで分かるなら、その制度ページでこの3点だけ見れば十分です'
+      '具体的には、窓口名、必要書類、受付期限の3点だけ見れば十分です'
     ];
   }
   if (/住むエリアと学区の関係/.test(source) || /住居候補と学校候補/.test(source)) {
@@ -607,11 +611,14 @@ function buildContractReply(params) {
     : {};
   const locationHintKind = normalizeText(locationHint.kind).toLowerCase();
   const domainIntent = resolveDomainIntent(requestContract.primaryDomainIntent || payload.domainIntent, payload.contextResumeDomain);
+  const followupIntent = normalizeText(payload.followupIntent).toLowerCase();
   const domainSignals = Array.isArray(requestContract.domainSignals) ? requestContract.domainSignals : [];
   const sourceReplyText = normalizeText(requestContract.sourceReplyText || payload.sourceReplyText);
   const lines = [];
 
-  if (depthIntent === 'deepen' && sourceReplyText) {
+  if (followupIntent === 'docs_required' && domainIntent === 'school' && /(必要|書類|しょるい|提出物)/.test(messageText)) {
+    lines.push('学校手続きで先にそろえるのは、住所証明と予防接種記録です');
+  } else if (depthIntent === 'deepen' && sourceReplyText) {
     lines.push(...buildDeepenReplyFromSource(sourceReplyText, domainIntent, messageText));
   } else if (requestShape === 'followup_continue' && sourceReplyText) {
     if (/(次の一手だけ|次の一手を|次に何を)/i.test(messageText)) {

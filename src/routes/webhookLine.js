@@ -1207,6 +1207,30 @@ function buildBlockedFallbackRequestContract(params) {
   });
 }
 
+function withBlockedFallbackDetailObligations(requestContract, options) {
+  const contract = requestContract && typeof requestContract === 'object'
+    ? Object.assign({}, requestContract)
+    : null;
+  if (!contract) return null;
+  const followupIntent = normalizeFollowupIntent(options && options.followupIntent);
+  const depthIntent = normalizeReplyText(contract.depthIntent).toLowerCase();
+  const obligations = Array.isArray(contract.detailObligations)
+    ? contract.detailObligations.filter(Boolean)
+    : [];
+
+  if (
+    depthIntent === 'deepen'
+    || ['docs_required', 'appointment_needed', 'next_step'].includes(followupIntent)
+  ) {
+    if (!obligations.includes('avoid_question_back')) obligations.push('avoid_question_back');
+  }
+
+  if (obligations.length > 0) {
+    contract.detailObligations = obligations;
+  }
+  return contract;
+}
+
 async function buildBlockedFallbackContext(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const messageText = typeof payload.messageText === 'string' ? payload.messageText : '';
@@ -1290,7 +1314,7 @@ async function buildBlockedFallbackContext(params) {
 
   return {
     domainIntent,
-    requestContract: packet.requestContract,
+    requestContract: withBlockedFallbackDetailObligations(packet.requestContract, { followupIntent }),
     contextResumeDomain: packet.contextResumeDomain || null,
     followupIntent,
     recentFollowupIntents: Array.isArray(packet.recentFollowupIntents) ? packet.recentFollowupIntents.slice(0, 6) : [],
