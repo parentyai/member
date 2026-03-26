@@ -76,3 +76,14 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - every queue row keeps `requires_human_review=true`
 - no Firestore backlog promotion
 - no Codex-triggered auto-apply path
+
+## PR5 guardrails
+- `/admin/app?pane=quality-patrol` is read-only and does not mutate queue artifacts
+- `desktopPatrolSummary` is nested under the existing `GET /api/admin/quality-patrol` response
+- operator audience may inspect artifact paths, but human audience stays redacted
+
+## Optional operator check
+1. Generate one local trace/eval/queue sequence with the existing dry-run + evaluate + enqueue commands.
+2. Open `/admin/app?pane=quality-patrol&role=operator`.
+3. Confirm `LINE Desktop Patrol (local)` shows `status / stage / queueCount / planningStatus`.
+4. Switch to `audience=human` and confirm artifact paths are redacted.

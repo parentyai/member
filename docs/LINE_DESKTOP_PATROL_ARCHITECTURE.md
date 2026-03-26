@@ -23,6 +23,12 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - `member_line_patrol.proposal_builder` で `recommendedPr` を schema-compliant queue row と Codex packet へ正規化する
 - queue row と packet は filesystem-only で、trace 本体を書き換えず `proposal_linkage.json` を sidecar 出力する
 
+## PR5 Additions
+- `src/usecases/qualityPatrol/queryLatestDesktopPatrolSummary.js` で local artifact root を read-only 集約する
+- `GET /api/admin/quality-patrol` は既存 contract を維持したまま nested `desktopPatrolSummary` を add-only で返す
+- `/admin/app?pane=quality-patrol` の既存 pane-detail へ local desktop patrol summary を read-only 表示する
+- operator audience は artifact path を保持し、human audience は redacted displayPath のみ表示する
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -88,3 +94,9 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - no admin UI inbox for desktop patrol proposals
 - no queue-to-Firestore promotion
 - no automatic PR creation from Codex packets
+
+## Non-goals in PR5
+- no new admin write route
+- no queue mutation from browser
+- no backlog promotion from the admin pane
+- no retention / cleanup operation in the operator surface

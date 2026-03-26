@@ -12,6 +12,7 @@
 - local policy の既定値は `enabled=false` / `dry_run_default=true`。
 - 将来 desktop execute path が追加されても、最終停止は既存 kill switch を優先する。
 - 運用確認は `docs/RUNBOOK_LINE_DESKTOP_PATROL.md` を参照する。
+- PR5 以降は `/admin/app?pane=quality-patrol` の read-only panel で local desktop patrol の最新 summary を確認できる。
 
 ## Feature Flag Governance（Phase PR5）
 - canonical registry:
@@ -129,6 +130,8 @@ internal outcome quick guide:
 - emergency sync/provider jobs: `blocked/kill_switch_on`=`409`, `partial/completed_with_failures`=`207`, `error/*`=`500 or pass-through`
 - admin phase2 automation: `success/completed`, `error/invalid_fallback_mode`, `error/<usecase_error>`
 - admin quality patrol query: `success/completed`, `error/not_found`, `error/error`
+  - nested `desktopPatrolSummary.status`: `ready`, `insufficient_evidence`, `unavailable`, `error`
+  - nested `desktopPatrolSummary.stage`: `queued`, `evaluated`, `trace_only`, `not_observed`, `error`
 - admin journey KPI view: `success/completed`, `blocked/journey_kpi_disabled`, `error/error`
 - admin dashboard KPI view: `success/completed_from_snapshot`, `success/completed`, `degraded/completed_with_fallback`, `degraded/not_available`, `error/invalid_fallback_mode`, `error/invalid_fallback_on_empty`, `error/invalid_snapshot_refresh`, `error/error`
 - admin ops system snapshot view/rebuild: `success/completed`, `success/dry_run`, `blocked/ops_system_snapshot_disabled`, `error/invalid_json`, `error/error`
