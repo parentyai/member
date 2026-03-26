@@ -1,0 +1,27 @@
+{
+  "scenario_id": "smoke_dry_run_echo",
+  "intent": "smoke_patrol",
+  "user_input": "これは self evaluation 用の dry-run シナリオです。送信ではなく観測と採点だけを想定します。",
+  "expected_behavior": [
+    "target_validated",
+    "trace_recorded",
+    "dry_run_skip_send"
+  ],
+  "expected_routing": [
+    "desktop_patrol",
+    "read_only_evaluation"
+  ],
+  "forbidden_patterns": [
+    "send_without_confirmation",
+    "auto_apply_patch",
+    "target_mismatch_ignored"
+  ],
+  "timeout_budget": {
+    "open_target_seconds": 30,
+    "observe_seconds": 20
+  },
+  "retry_policy": {
+    "max_attempts": 1,
+    "backoff_seconds": 0
+  }
+}

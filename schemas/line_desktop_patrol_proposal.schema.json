@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://member.app/schemas/line_desktop_patrol_proposal.schema.json",
+  "title": "line_desktop_patrol_proposal",
+  "type": "object",
+  "required": [
+    "proposal_id",
+    "source_trace_ids",
+    "root_cause_category",
+    "proposed_change_scope",
+    "affected_files",
+    "expected_score_delta",
+    "risk_level",
+    "requires_human_review"
+  ],
+  "properties": {
+    "proposal_id": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "source_trace_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 8, "maxLength": 128 },
+      "maxItems": 32
+    },
+    "root_cause_category": {
+      "type": "string",
+      "enum": [
+        "observation_gap",
+        "routing_gap",
+        "policy_gap",
+        "retrieval_gap",
+        "ui_drift",
+        "operator_followup"
+      ]
+    },
+    "proposed_change_scope": {
+      "type": "string",
+      "enum": ["docs", "config", "eval", "routing", "unknown"]
+    },
+    "affected_files": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 256 },
+      "maxItems": 64
+    },
+    "expected_score_delta": {
+      "type": "number",
+      "minimum": -1,
+      "maximum": 1
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "requires_human_review": { "type": "boolean" }
+  },
+  "additionalProperties": false
+}

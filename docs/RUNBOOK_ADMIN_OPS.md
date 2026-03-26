@@ -7,6 +7,12 @@
 - kill switch は「送信副作用の最終停止装置」
 - traceId は監査の主キー（Trace Search で追えること）
 
+## LINE Desktop Patrol scaffold（PR1）
+- `tools/line_desktop_patrol/` は local-only scaffold で、PR1 時点では送信導線を持たない。
+- local policy の既定値は `enabled=false` / `dry_run_default=true`。
+- 将来 desktop execute path が追加されても、最終停止は既存 kill switch を優先する。
+- 運用確認は `docs/RUNBOOK_LINE_DESKTOP_PATROL.md` を参照する。
+
 ## Feature Flag Governance（Phase PR5）
 - canonical registry:
   - `docs/REPO_AUDIT_INPUTS/feature_flag_registry.json`
