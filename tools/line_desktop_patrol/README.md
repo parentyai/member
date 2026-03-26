@@ -2,7 +2,7 @@
 
 Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 
-## PR10 scope
+## PR11 scope
 - policy schema and example config
 - trace / proposal schema
 - Python sidecar package skeleton
@@ -14,11 +14,12 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - standalone bounded AX summary dump command
 - optional AX summary observation in the dry-run harness
 - standalone bounded visible-message read command
+- optional visible-message observation in the dry-run harness behind the existing `store_ax_tree` gate
 - read-only evaluator bridge into existing `qualityPatrol`
 - append-only local proposal queue
 - per-proposal Codex packet contract
 - no desktop send path
-- no visible-message wiring into the dry-run harness yet
+- no standalone `store_visible_messages` policy key yet
 
 ## Safe defaults
 - `enabled=false`
@@ -44,13 +45,14 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - `src/member_line_patrol/`
 
 ## Notes
-- PR10 still keeps send disabled and dry-run only.
+- PR11 still keeps send disabled and dry-run only.
 - the guarded loop writes `artifacts/line_desktop_patrol/runtime/state.json` and respects blocked hours, hourly caps, failure streak, and the repo-side kill switch before invoking the dry-run harness.
 - when `store_screenshots=true`, the dry-run harness may capture `runs/<run_id>/after.png` on macOS and record it in `screenshot_after`.
 - when `store_ax_tree=true`, the dry-run harness may capture `runs/<run_id>/after.ax.json` on macOS and record it in `ax_tree_after`.
-- the standalone visible-message read command is bounded by `--max-items` and a timeout, and it degrades to a skipped or failed observation instead of enabling any send path.
+- when `store_ax_tree=true`, the dry-run harness may also capture `runs/<run_id>/after.visible.json` and populate `visible_after` with bounded `unknown` role rows.
+- the visible-message read path reuses the existing `store_ax_tree` gate so PR11 does not expand the policy schema.
 - the sample policy keeps `store_screenshots=false` and `store_ax_tree=false`, so both observations remain opt-in.
 - the evaluator bridge is read-only and reuses existing `tools/quality_patrol` logic.
 - the evaluator default main artifact path is `artifacts/line_desktop_patrol/evals/<run_id>/desktop_patrol_eval.json`.
 - proposal queue output is local-only at `artifacts/line_desktop_patrol/proposals/queue.jsonl` unless an explicit temp path is supplied.
-- future PRs can wire visible-message artifacts into the dry-run harness without changing the schema roots.
+- future PRs can refine speaker attribution and evaluator usage for visible-message artifacts without changing the schema roots.

@@ -230,6 +230,7 @@ Typical files:
 - `artifacts/line_desktop_patrol/runs/<run_id>/after.png`
 - `artifacts/line_desktop_patrol/runs/<run_id>/before.ax.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/after.ax.json`
+- `artifacts/line_desktop_patrol/runs/<run_id>/after.visible.json`
 - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
 - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
@@ -268,6 +269,7 @@ Notes:
 - guard decisions still emit per-run trace artifacts so operator evidence stays append-only even when the loop skips execution.
 - PR7 allows `screenshot_after` to point at `artifacts/line_desktop_patrol/runs/<run_id>/after.png` when a local override enables `store_screenshots=true`.
 - PR9 allows `ax_tree_after` to point at `artifacts/line_desktop_patrol/runs/<run_id>/after.ax.json` when a local override enables `store_ax_tree=true`.
+- PR11 allows `visible_after` plus `observation_artifacts.read_visible_messages.output_path` to point at `artifacts/line_desktop_patrol/runs/<run_id>/after.visible.json` when a local override enables `store_ax_tree=true`.
 
 Notes:
 - PR2 adds local dry-run trace emission through `member_line_patrol.dry_run_harness`.

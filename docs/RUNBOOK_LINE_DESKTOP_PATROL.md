@@ -4,7 +4,7 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 
 ## Preconditions
 - test accounts / whitelist targets only
-- PR10 still has no desktop send path
+- PR11 still has no desktop send path
 - global kill switch remains the final stop for any future side-effectful execute mode
 
 ## Validate the scaffold
@@ -49,6 +49,7 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - visible-message read:
   - `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter --read-visible-messages --output-path /tmp/line_desktop_patrol_visible.json --execute --max-items 5 --timeout-seconds 2` runs a standalone bounded read
   - on non-macOS hosts or when `osascript` / Accessibility permission is unavailable, the command returns a skipped or failed observation instead of enabling any send path
+  - when `store_ax_tree=true`, `line-desktop-patrol:dry-run` also attempts a bounded visible-message read and stores `unknown` role rows into `visible_after`
 - evaluate command:
   - reads one local trace file
   - converts the trace into one review unit
@@ -128,6 +129,12 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - visible-message read failures degrade to skipped or failed local observations and do not write to Firestore
 - visible-message read does not imply desktop send enablement
 
+## PR11 guardrails
+- dry-run visible-message observation reuses the existing `store_ax_tree=true` gate and does not add a new policy key
+- visible-message rows stay bounded and speaker attribution remains `unknown`
+- visible-message observation failures do not block AX observation or write to Firestore
+- visible-message observation does not imply desktop send enablement
+
 ## Optional operator check
 1. Generate one local trace/eval/queue sequence with the existing dry-run + evaluate + enqueue commands.
 2. Open `/admin/app?pane=quality-patrol&role=operator`.
@@ -160,3 +167,9 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 1. Run `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter --read-visible-messages --output-path /tmp/line_desktop_patrol_visible.json --execute --target-process-name LINE --max-items 5 --timeout-seconds 2`.
 2. If Accessibility permission is already granted and LINE is frontmost, confirm `/tmp/line_desktop_patrol_visible.json` contains `target_process_name / max_items / item_count / items[]`.
 3. If the host blocks `System Events`, confirm the command exits quickly with `reason=visible_read_timeout` or `reason=osascript_failed` instead of hanging indefinitely.
+
+## Optional PR11 dry-run visible-message check
+1. Copy `tools/line_desktop_patrol/config/policy.example.json` to a local override and set `enabled=true`, `blocked_hours=[]`, `store_ax_tree=true`.
+2. Run `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.dry_run_harness --policy <override> --scenario tools/line_desktop_patrol/scenarios/smoke_dry_run.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol --allow-disabled-policy`.
+3. If Accessibility permission is already granted and LINE is frontmost, confirm `trace.json` includes `visible_after[]` and `observation_artifacts.read_visible_messages.output_path`, and confirm `runs/<run_id>/after.visible.json` exists.
+4. If the host blocks `System Events`, confirm `visible_after=[]` and `observation_artifacts.read_visible_messages.reason` captures the degraded result without failing the dry run.
