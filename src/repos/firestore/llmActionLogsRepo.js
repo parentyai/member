@@ -204,6 +204,15 @@ function normalizeRewardSignals(value) {
   };
 }
 
+function isSyntheticPatrolReplayRow(row) {
+  const traceId = normalizeString(row && row.traceId, '');
+  const requestId = normalizeString(row && row.requestId, '');
+  return traceId.startsWith('quality_patrol_cycle_')
+    || traceId.startsWith('quality_patrol_replay_')
+    || requestId.startsWith('quality_patrol_cycle_')
+    || requestId.startsWith('quality_patrol_replay_');
+}
+
 function normalizeConversationMode(value) {
   const normalized = normalizeString(value, '').toLowerCase();
   if (!normalized) return null;
@@ -878,12 +887,16 @@ async function listLlmActionLogsByLineUserId(params) {
   const lineUserId = normalizeString(payload.lineUserId, '');
   if (!lineUserId) return [];
   const limit = Number.isFinite(Number(payload.limit)) ? Math.max(1, Math.min(300, Math.floor(Number(payload.limit)))) : 100;
+  const excludeSyntheticPatrolReplay = payload.excludeSyntheticPatrolReplay === true;
+  const queryLimit = excludeSyntheticPatrolReplay
+    ? Math.max(limit, Math.min(300, limit * 10))
+    : limit;
   const fromAt = toDate(payload.fromAt);
   const toAt = toDate(payload.toAt);
   const db = getDb();
-  const snap = await db.collection(COLLECTION).where('lineUserId', '==', lineUserId).limit(limit).get();
-  return snap.docs
+  const toRows = (snap) => (snap && Array.isArray(snap.docs) ? snap.docs : [])
     .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .filter((row) => !excludeSyntheticPatrolReplay || !isSyntheticPatrolReplayRow(row))
     .filter((row) => {
       const at = toDate(row && row.createdAt);
       if (!at) return false;
@@ -894,8 +907,23 @@ async function listLlmActionLogsByLineUserId(params) {
     .sort((a, b) => {
       const left = toDate(a && a.createdAt);
       const right = toDate(b && b.createdAt);
-      return (left ? left.getTime() : 0) - (right ? right.getTime() : 0);
-    });
+      return (right ? right.getTime() : 0) - (left ? left.getTime() : 0);
+    })
+    .slice(0, limit);
+
+  try {
+    const orderedSnap = await db.collection(COLLECTION)
+      .where('lineUserId', '==', lineUserId)
+      .orderBy('createdAt', 'desc')
+      .limit(queryLimit)
+      .get();
+    return toRows(orderedSnap);
+  } catch (_err) {
+    const fallbackSnap = await db.collection(COLLECTION)
+      .where('lineUserId', '==', lineUserId)
+      .get();
+    return toRows(fallbackSnap);
+  }
 }
 
 async function listLlmActionLogsByTraceId(params) {
@@ -951,5 +979,6 @@ module.exports = {
   getLlmActionLogByRequestId,
   patchLlmActionLog,
   toDate,
-  normalizeRewardSignals
+  normalizeRewardSignals,
+  isSyntheticPatrolReplayRow
 };

@@ -1516,6 +1516,65 @@ test('phase719: budget-blocked deepen followup rebuilds school context from rece
   assert.equal(lastWrite.routerReason, 'question_pattern');
 });
 
+test('phase719: budget-blocked deepen followup ignores synthetic patrol rows when rebuilding school context', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_V1_CHANNEL_EDGE: 'false',
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    budgetAllowed: false,
+    budgetBlockedReason: 'llm_disabled',
+    recentActionRows: [
+      {
+        traceId: 'quality_patrol_cycle_123_0',
+        requestId: 'quality_patrol_cycle_123_0',
+        createdAt: '2026-03-26T01:05:00.000Z',
+        domainIntent: 'general',
+        replyText: 'いまの状況を整理します。',
+        followupIntent: null,
+        requestShape: null
+      },
+      {
+        createdAt: '2026-03-26T01:00:00.000Z',
+        domainIntent: 'school',
+        replyText: '最初に学区と対象校を確認して、必要書類と受付期限を整理すると進めやすいです。',
+        committedFollowupQuestion: '必要書類を先に確認しますか？',
+        followupIntent: 'next_step',
+        requestShape: 'answer',
+        outputForm: 'message_only'
+      }
+    ]
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const body = createWebhookBody('具体的には？');
+  const result = await loaded.handleLineWebhook({
+    body,
+    signature: signBody(body),
+    requestId: 'phase719_budget_blocked_school_deepen_ignores_synthetic_rows_contract',
+    logger: () => {},
+    allowWelcome: false,
+    replyFn: async () => {}
+  });
+
+  assert.equal(result.status, 200);
+  const replyText = latestAssistantReplyText(loaded);
+  const lastWrite = loaded.actionLogWrites[loaded.actionLogWrites.length - 1];
+  assert.equal(replyText.includes('いま一番困っている手続きを1つだけ教えてください'), false);
+  assert.match(replyText, /学校|学区|必要書類|受付期限/);
+  assert.equal(lastWrite.domainIntent, 'school');
+  assert.equal(lastWrite.followupIntent, 'next_step');
+  assert.equal(lastWrite.requestShape, 'answer');
+  assert.equal(lastWrite.depthIntent, 'deepen');
+});
+
 test('phase719: budget-blocked docs typo followup rebuilds school context from recent action rows', { concurrency: false }, async (t) => {
   const restoreEnv = withEnv({
     LINE_CHANNEL_SECRET: HMAC_SEED,
