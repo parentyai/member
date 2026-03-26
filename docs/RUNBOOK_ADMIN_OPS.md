@@ -13,6 +13,7 @@
 - 将来 desktop execute path が追加されても、最終停止は既存 kill switch を優先する。
 - 運用確認は `docs/RUNBOOK_LINE_DESKTOP_PATROL.md` を参照する。
 - PR5 以降は `/admin/app?pane=quality-patrol` の read-only panel で local desktop patrol の最新 summary を確認できる。
+- PR6 以降の local guarded loop は `blocked_hours` / `max_runs_per_hour` / `failure_streak_threshold` も尊重し、skip/stop のたびに local trace と latest summary を更新する。
 
 ## Feature Flag Governance（Phase PR5）
 - canonical registry:

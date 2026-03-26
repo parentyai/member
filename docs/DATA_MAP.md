@@ -233,6 +233,7 @@ Typical files:
 - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
 - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
+- `artifacts/line_desktop_patrol/runtime/state.json`
 - `tmp/line_desktop_patrol_latest.json`
 
 Typical fields:
@@ -254,10 +255,17 @@ Typical fields:
   - `proposal_id`, `source_trace_ids`, `root_cause_category`
   - `proposed_change_scope`, `affected_files`, `expected_score_delta`
   - `risk_level`, `requires_human_review`
+- loop state:
+  - `updated_at`, `failure_streak`, `last_run_id`, `last_failure_reason`
+  - `recent_runs[]`, `last_decision`
 - Codex packet:
   - `contract_version`, `proposal_id`, `queue_entry`
   - `trace_ref`, `evaluation_ref`, `proposal`
   - `operator_summary`, `codex_task_brief`
+
+Notes:
+- PR6 guarded loop uses `artifacts/line_desktop_patrol/runtime/state.json` only for local rate limiting / stop-state continuity.
+- guard decisions still emit per-run trace artifacts so operator evidence stays append-only even when the loop skips execution.
 
 Notes:
 - PR2 adds local dry-run trace emission through `member_line_patrol.dry_run_harness`.

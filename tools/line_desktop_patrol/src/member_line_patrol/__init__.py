@@ -1,6 +1,7 @@
 """Member LINE Desktop patrol scaffold."""
 
 from .mcp_server import build_server_manifest
+from .loop_state import PatrolLoopState, load_loop_state
 from .policy import AllowedTarget, BlockedHoursWindow, PatrolPolicy, load_policy
 from .proposal_builder import build_queue_payloads
 from .proposal_queue import ProposalQueue
@@ -11,11 +12,13 @@ __all__ = [
     "AllowedTarget",
     "BlockedHoursWindow",
     "PatrolPolicy",
+    "PatrolLoopState",
     "ProposalQueue",
     "RepoRuntimeState",
     "TraceStore",
     "build_queue_payloads",
     "build_server_manifest",
+    "load_loop_state",
     "load_policy",
     "load_runtime_state",
 ]
@@ -42,4 +45,8 @@ def __getattr__(name):
         from .enqueue_eval_proposals import enqueue_eval_proposals
 
         return enqueue_eval_proposals
+    if name == "run_patrol_loop":
+        from .patrol_loop import run_patrol_loop
+
+        return run_patrol_loop
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
