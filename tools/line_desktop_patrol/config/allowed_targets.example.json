@@ -1,0 +1,17 @@
+[
+  {
+    "alias": "sample-self-test",
+    "platform": "line_desktop",
+    "target_kind": "single_user",
+    "expected_chat_title": "Codex Self Test",
+    "expected_window_title_substring": "LINE",
+    "expected_participant_labels": [
+      "Self Test"
+    ],
+    "expected_ax_fingerprint": null,
+    "allowed_send_modes": [
+      "dry_run"
+    ],
+    "notes": "Sample only. Replace this file locally before any enablement."
+  }
+]

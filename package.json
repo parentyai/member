@@ -125,6 +125,9 @@
     "quality-patrol:metrics": "node tools/run_quality_patrol_metrics.js",
     "quality-patrol:cycle": "node tools/quality_patrol/run_quality_patrol_cycle.js",
     "quality-patrol:detection": "node tools/run_quality_patrol_detection.js",
-    "quality-patrol:planning": "node tools/run_quality_patrol_planning.js"
+    "quality-patrol:planning": "node tools/run_quality_patrol_planning.js",
+    "line-desktop-patrol:state": "node tools/line_desktop_patrol/read_repo_runtime_state.js",
+    "line-desktop-patrol:validate": "node tools/line_desktop_patrol/validate_scaffold.js",
+    "test:phase857": "node --test tests/phase857/*.test.js"
   }
 }

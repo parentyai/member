@@ -12,6 +12,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/RUNBOOK_TRACE_AUDIT.md`（traceId 監査 runbook）
 - `docs/RUNBOOK_OPS.md`（Ops判断/停止/復旧の runbook）
 - `docs/RUNBOOK_ADMIN_OPS.md`（管理UI運用OSの日次/事故対応 runbook）
+- `docs/LINE_DESKTOP_PATROL_ARCHITECTURE.md`（LINE Desktop patrol local scaffold / schema / bridge 境界）
+- `docs/RUNBOOK_LINE_DESKTOP_PATROL.md`（LINE Desktop patrol scaffold の validate / stop / rollback runbook）
 - `docs/FEATURE_FLAG_GOVERNANCE.md`（`ENABLE_*` owner/default/reviewBy/blast radius registry）
 - `docs/RUNBOOK_DEPLOY_ENVIRONMENTS.md`（stg/prod 分離デプロイ runbook）
 - `docs/RUNBOOK_STG_NOTIFICATION_E2E_CHECKLIST.md`（stg 通知実測チェックリスト）
