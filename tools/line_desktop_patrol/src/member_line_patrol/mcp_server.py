@@ -36,6 +36,13 @@ TOOL_SPECS = (
         status="dry_run_ready",
     ),
     ToolSpec(
+        name="capture_screenshot",
+        description="Capture a local LINE Desktop screenshot when policy.store_screenshots=true without enabling any send path.",
+        mutating=True,
+        exposure="public",
+        status="observation_ready",
+    ),
+    ToolSpec(
         name="run_dry_run_scenario",
         description="Run a local-only dry-run harness and persist a trace artifact without desktop send side effects.",
         mutating=True,
@@ -96,6 +103,7 @@ def build_server_manifest() -> dict:
             "PR2 adds host probing and dry-run planning but still keeps send disabled.",
             "PR4 adds local proposal queue + Codex packet generation without enabling any repo-side write path.",
             "PR6 adds a local guarded loop state file and stop/skip enforcement before the dry-run harness runs.",
+            "PR7 adds optional screenshot capture observation when local policy.store_screenshots=true.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }

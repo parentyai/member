@@ -34,6 +34,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - `member_line_patrol.patrol_loop` で policy / blocked_hours / max_runs_per_hour / failure_streak / repo-side kill switch を先に判定する guarded loop を追加する
 - guarded loop は skip/stop 時も trace + latest summary を書くが、desktop send / AX dump / visible-message read はまだ行わない
 
+## PR7 Additions
+- `member_line_patrol.macos_adapter.execute_capture_screenshot` で bounded `screencapture -x` 実行を追加する
+- `member_line_patrol.dry_run_harness` は `policy.store_screenshots=true` のときだけ screenshot capture を試行し、成功時は `screenshot_after` に local artifact path を記録する
+- screenshot capture は observation-only で、desktop send / AX dump / visible-message read はまだ行わない
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -114,3 +119,10 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - no visible message read
 - no screenshot capture execution
 - no background scheduler wiring
+
+## Non-goals in PR7
+- no desktop send
+- no AX tree dump
+- no visible message read
+- no screenshot capture requirement in the default sample policy
+- no screenshot promotion into admin/browser write paths
