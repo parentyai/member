@@ -12,6 +12,8 @@ dependencies = []
 
 [project.scripts]
 member-line-desktop-patrol-manifest = "member_line_patrol.mcp_server:main"
+member-line-desktop-patrol-probe = "member_line_patrol.macos_adapter:main"
+member-line-desktop-patrol-dry-run = "member_line_patrol.dry_run_harness:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

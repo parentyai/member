@@ -10,7 +10,9 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 ## Validate the scaffold
 1. `npm run line-desktop-patrol:validate`
 2. `npm run line-desktop-patrol:state`
-3. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
+3. `npm run line-desktop-patrol:probe`
+4. `npm run line-desktop-patrol:dry-run`
+5. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
 
 ## Expected outputs
 - validate command:
@@ -22,6 +24,14 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - prints git sha
   - prints Firestore project id resolution
   - prints kill switch / notification caps / automation mode in read-only form
+- probe command:
+  - prints `is_macos`
+  - prints `open` / `osascript` / `screencapture` availability
+  - prints whether `LINE.app` is present in standard application paths
+- dry-run command:
+  - writes `artifacts/line_desktop_patrol/runs/<run_id>/trace.json`
+  - writes `artifacts/line_desktop_patrol/runs/<run_id>/summary.json`
+  - records `dry_run_only_skip` instead of sending any message
 
 ## Stop and rollback
 - local scaffold stop:
@@ -37,3 +47,9 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - no desktop automation implementation
 - no screenshot or AX dump retention yet
 - no promotion into backlog collections
+
+## PR2 guardrails
+- bounded app open/focus planning only
+- no execute path in the default npm command
+- no screenshot capture execution in the default npm command
+- no target switching beyond the whitelist alias selected in policy
