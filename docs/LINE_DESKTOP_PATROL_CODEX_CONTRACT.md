@@ -82,3 +82,15 @@ This document defines the local-only handoff between the LINE Desktop patrol que
   - review prompts tied to the current anchor preview
   - stop conditions for manual diff drafting
 - the bundle still does not apply code, commit changes, or open a PR by itself
+
+## Code edit bundle
+- `line-desktop-patrol:synthesize-code-edit-bundle` consumes one code diff draft bundle and emits:
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_edit_bundle.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_edit_bundle.md`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_edit_bundle.prompt.md`
+- the bundle adds:
+  - worker prompt text for a human or Codex code-edit session
+  - expected outputs for the actual edit task
+  - task packets copied from the diff draft with validation commands
+  - stop conditions for the real code editing step
+- the bundle still does not apply code, commit changes, or open a PR by itself
