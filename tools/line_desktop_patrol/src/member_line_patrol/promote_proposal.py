@@ -17,7 +17,7 @@ def _safe_branch_name(proposal_id: str) -> str:
     return f"codex/line-desktop-patrol-{normalized[:48]}"
 
 
-def _read_packet(queue_root: Path, proposal_id: str) -> dict[str, Any]:
+def _read_packet(queue_root: Path, proposal_id: str) -> tuple[dict[str, Any], Path]:
     packet_path = queue_root / "packets" / f"{proposal_id}.codex.json"
     if not packet_path.exists():
         raise FileNotFoundError(f"missing packet for proposal_id={proposal_id}")
@@ -69,6 +69,57 @@ def _build_draft_pr_body(packet: dict[str, Any], queue_entry: dict[str, Any]) ->
         "",
         "## Rollback note",
         "- Revert the draft PR branch or discard the worktree if no code changes are applied.",
+    ])
+
+
+def _build_patch_draft(packet: dict[str, Any], queue_entry: dict[str, Any]) -> str:
+    proposal = packet.get("proposal") if isinstance(packet.get("proposal"), dict) else {}
+    trace_ref = packet.get("trace_ref") if isinstance(packet.get("trace_ref"), dict) else {}
+    evaluation_ref = packet.get("evaluation_ref") if isinstance(packet.get("evaluation_ref"), dict) else {}
+    target_files = queue_entry.get("affected_files") or []
+    expected_impact = proposal.get("expected_impact") if isinstance(proposal.get("expected_impact"), list) else []
+    rollback_plan = proposal.get("rollback_plan") if isinstance(proposal.get("rollback_plan"), list) else []
+    root_cause_refs = proposal.get("root_cause_refs") if isinstance(proposal.get("root_cause_refs"), list) else []
+    return "\n".join([
+        f"# Patch draft for {queue_entry['proposal_id']}",
+        "",
+        "## Intent",
+        f"- title: {_build_draft_pr_title(packet, queue_entry['proposal_id'])}",
+        f"- change_scope: {queue_entry.get('proposed_change_scope') or '-'}",
+        f"- risk_level: {queue_entry.get('risk_level') or '-'}",
+        f"- expected_score_delta: {queue_entry.get('expected_score_delta')}",
+        "",
+        "## Source evidence",
+        f"- run_id: {trace_ref.get('run_id') or '-'}",
+        f"- trace_path: {trace_ref.get('trace_path') or '-'}",
+        f"- scenario_id: {trace_ref.get('scenario_id') or '-'}",
+        f"- planning_status: {evaluation_ref.get('planning_status') or '-'}",
+        f"- observation_status: {evaluation_ref.get('observation_status') or '-'}",
+        "",
+        "## Why now",
+        str(proposal.get("why_now") or "Promoted from execute patrol evidence."),
+        "",
+        "## Why not others",
+        str(proposal.get("why_not_others") or "Keep the patch limited to the smallest reviewable scope supported by the evidence."),
+        "",
+        "## Root cause refs",
+        *([f"- {item}" for item in root_cause_refs] or ["- none"]),
+        "",
+        "## Affected files",
+        *([f"- {item}" for item in target_files] or ["- inspect the linked proposal packet and trace before selecting files"]),
+        "",
+        "## Expected impact",
+        *([f"- {item}" for item in expected_impact] or ["- improve the score delta predicted in the proposal queue entry"]),
+        "",
+        "## Draft patch checklist",
+        "- Reproduce the issue from the linked trace and evaluation artifacts.",
+        "- Keep edits add-only or minimally invasive.",
+        "- Update tests that prove the guarded behavior still fails closed on wrong targets.",
+        "- Refresh docs or runbooks if the chosen patch changes operator-visible behavior.",
+        "- Do not auto-apply runtime or routing changes without human review.",
+        "",
+        "## Rollback note",
+        *([f"- {item}" for item in rollback_plan] or ["- Revert the draft branch or discard the patch draft if evidence changes."]),
     ])
 
 
@@ -142,6 +193,8 @@ def promote_proposal(
     promotions_root.mkdir(parents=True, exist_ok=True)
     body_path = promotions_root / f"{proposal_id}.draft_pr.md"
     body_path.write_text(_build_draft_pr_body(packet, queue_entry), encoding="utf-8")
+    patch_draft_path = promotions_root / f"{proposal_id}.patch_draft.md"
+    patch_draft_path.write_text(_build_patch_draft(packet, queue_entry), encoding="utf-8")
 
     active_runner = runner or _default_runner
     worktree_result = _ensure_worktree(
@@ -209,6 +262,7 @@ def promote_proposal(
         "base_ref": base_ref,
         "worktree_path": str(worktree),
         "body_path": str(body_path),
+        "patch_draft_path": str(patch_draft_path),
         "risk_level": risk_level,
         "create_draft_pr": create_draft_pr,
         "worktree": worktree_result,

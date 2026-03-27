@@ -16,6 +16,7 @@ const SCHEMA_FILES = [
 const REQUIRED_FILES = [
   path.join(TOOL_ROOT, 'README.md'),
   path.join(TOOL_ROOT, 'pyproject.toml'),
+  path.join(TOOL_ROOT, 'scaffold_operator_bundle.js'),
   path.join(TOOL_ROOT, 'config', 'policy.example.json'),
   path.join(TOOL_ROOT, 'config', 'allowed_targets.example.json'),
   path.join(TOOL_ROOT, 'config', 'acceptance.manual.example.json'),
@@ -92,6 +93,7 @@ function runValidation() {
   assert(packageJson.scripts['line-desktop-patrol:evaluate'], 'package.json must define line-desktop-patrol:evaluate');
   assert(packageJson.scripts['line-desktop-patrol:enqueue-proposals'], 'package.json must define line-desktop-patrol:enqueue-proposals');
   assert(packageJson.scripts['line-desktop-patrol:promote-proposal'], 'package.json must define line-desktop-patrol:promote-proposal');
+  assert(packageJson.scripts['line-desktop-patrol:scaffold-operator-bundle'], 'package.json must define line-desktop-patrol:scaffold-operator-bundle');
   assert(packageJson.scripts['line-desktop-patrol:doctor'], 'package.json must define line-desktop-patrol:doctor');
   assert(packageJson.scripts['line-desktop-patrol:retention'], 'package.json must define line-desktop-patrol:retention');
   assert(packageJson.scripts['line-desktop-patrol:acceptance-gate'], 'package.json must define line-desktop-patrol:acceptance-gate');
@@ -113,6 +115,8 @@ function runValidation() {
   assert(packageJson.scripts['test:phase874'], 'package.json must define test:phase874');
   assert(packageJson.scripts['test:phase875'], 'package.json must define test:phase875');
   assert(packageJson.scripts['test:phase876'], 'package.json must define test:phase876');
+  assert(packageJson.scripts['test:phase877'], 'package.json must define test:phase877');
+  assert(packageJson.scripts['test:phase878'], 'package.json must define test:phase878');
 
   const samplePolicy = readJson(path.join(TOOL_ROOT, 'config', 'policy.example.json'));
   assert(samplePolicy.store_ax_tree === false, 'policy.example.json must keep store_ax_tree=false by default');

@@ -9,21 +9,39 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 
 ## Validate the scaffold
 1. `npm run line-desktop-patrol:validate`
-2. `npm run line-desktop-patrol:state`
-3. `npm run line-desktop-patrol:probe`
-4. `npm run line-desktop-patrol:dry-run`
-5. `npm run line-desktop-patrol:loop`
-6. `npm run line-desktop-patrol:open-target -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
-7. `npm run line-desktop-patrol:send -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json --message-text "self test message"`
-8. `npm run line-desktop-patrol:execute-once -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
-9. `npm run line-desktop-patrol:loop-execute -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
-10. `npm run line-desktop-patrol:evaluate -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json`
-11. `npm run line-desktop-patrol:enqueue-proposals -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json --queue-root /tmp/line_desktop_patrol_proposals`
-12. `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
-13. `npm run line-desktop-patrol:doctor`
-14. `npm run line-desktop-patrol:retention`
-15. `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
-16. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
+2. `npm run line-desktop-patrol:scaffold-operator-bundle -- --bundle-root ~/member-line-desktop-patrol --target-chat-title "メンバー"`
+3. `npm run line-desktop-patrol:state`
+4. `npm run line-desktop-patrol:probe`
+5. `npm run line-desktop-patrol:dry-run`
+6. `npm run line-desktop-patrol:loop`
+7. `npm run line-desktop-patrol:open-target -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
+8. `npm run line-desktop-patrol:send -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json --message-text "self test message"`
+9. `npm run line-desktop-patrol:execute-once -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
+10. `npm run line-desktop-patrol:loop-execute -- --policy ~/member-line-desktop-patrol/soak/policy.soak.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
+11. `npm run line-desktop-patrol:evaluate -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json`
+12. `npm run line-desktop-patrol:enqueue-proposals -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json --queue-root /tmp/line_desktop_patrol_proposals`
+13. `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
+14. `npm run line-desktop-patrol:doctor`
+15. `npm run line-desktop-patrol:retention`
+16. `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
+17. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
+
+## Machine-local operator bundle
+- `line-desktop-patrol:scaffold-operator-bundle` only writes outside the repo.
+- the generated bundle keeps `enabled=false`, `dry_run_default=true`, and `allowed_send_modes=["dry_run"]`.
+- operators must pin exactly one member-only self-test LINE chat, for example `メンバー`, before any execute enablement.
+- the generated bundle includes:
+  - `policy.local.json`
+  - `acceptance.manual.json`
+  - `scenarios/execute_smoke.json`
+  - `soak/policy.soak.json`
+  - `soak/acceptance.soak.json`
+  - `README.md`
+- execute enablement must remain machine-local:
+  - set `enabled=true`
+  - set `dry_run_default=false`
+  - set `allowed_targets[0].allowed_send_modes=["execute"]`
+  - keep the target title fixed to the member-only self-test chat
 
 ## Expected outputs
 - validate command:
@@ -81,7 +99,7 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - writes `proposal_linkage.json` next to the source trace
 - promote-proposal command:
   - reads one queue row and one Codex packet
-  - prepares a dedicated git branch/worktree and a draft PR body file
+  - prepares a dedicated git branch/worktree, a patch draft file, and a draft PR body file
   - only creates a GitHub draft PR when the prepared branch already has a code diff and the proposal is not blocked by risk policy
 - doctor command:
   - reports host capability, policy readiness, runtime visibility, loop state, and latest summary presence
@@ -178,10 +196,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 
 ## PR18 completion gate
 1. Copy `tools/line_desktop_patrol/config/acceptance.manual.example.json` to a machine-local path outside the repo.
-2. Run `execute_once` against a self-test target until `execute_once_attempted >= 10` and `execute_once_passed == execute_once_attempted`.
-3. Run scheduled execute on the same host until `scheduled_execute_attempted >= 50` and `scheduled_execute_passed == scheduled_execute_attempted`.
-4. Mark `accessibility_granted=true`, `screen_recording_granted=true`, and `self_test_target_ready=true` in the machine-local manual report.
-5. Run `npm run line-desktop-patrol:acceptance-gate -- --manual-report <path>` and confirm:
+2. Restrict the machine-local policy to one member-only self-test target, for example `メンバー`.
+3. Run `execute_once` against that target until `execute_once_attempted >= 10` and `execute_once_passed == execute_once_attempted`.
+4. Run scheduled execute on the same host until `scheduled_execute_attempted >= 50` and `scheduled_execute_passed == scheduled_execute_attempted`.
+5. Mark `accessibility_granted=true`, `screen_recording_granted=true`, and `self_test_target_ready=true` in the machine-local manual report.
+6. Run `npm run line-desktop-patrol:acceptance-gate -- --manual-report <path>` and confirm:
    - `overallStatus=ready`
    - `automatic.status=ready`
    - `manual.status=ready`
