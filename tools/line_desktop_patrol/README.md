@@ -90,6 +90,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - `synthesize_code_apply_task` builds `code_apply_task.json`, `code_apply_task.md`, and `code_apply_task.prompt.md` artifacts with reviewer checklist and worker prompt so a human or Codex session can execute the final reviewed apply step without auto-applying code.
 - `synthesize_code_review_packet` builds `code_review_packet.json`, `code_review_packet.md`, and `code_review_packet.prompt.md` artifacts with approval checklist and signoff prompt so a human reviewer can approve the final apply task without auto-applying code.
 - `synthesize_code_apply_evidence` builds `code_apply_evidence.json`, `code_apply_evidence.md`, and `code_apply_evidence.prompt.md` artifacts with final evidence requirements so a human can record the reviewed apply result without auto-applying code.
+- `synthesize_code_apply_signoff` builds `code_apply_signoff.json`, `code_apply_signoff.md`, and `code_apply_signoff.prompt.md` artifacts with final approval requirements so a human can record the final go/no-go signoff without auto-applying code.
 - `retention` only touches stale raw screenshot / AX / visible artifacts by default and keeps `trace.json` / eval / queue artifacts intact.
 - `acceptance_gate` writes `artifacts/line_desktop_patrol/acceptance/latest.json` and blocks completion until both KPI thresholds and machine-local soak evidence are satisfied.
 - the visible-message read path reuses the existing `store_ax_tree` gate so PR11 does not expand the policy schema.
