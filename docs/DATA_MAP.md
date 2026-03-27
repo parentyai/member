@@ -352,6 +352,12 @@ Typical fields:
   - `code_apply_record_path`, `code_apply_record_markdown_path`, `record_prompt_path`
   - `code_apply_signoff_path`, `code_apply_evidence_path`, `code_review_packet_path`, `patch_document_path`, `record_requirements[]`
   - `expected_outputs[]`, `validation_commands[]`, `stop_conditions[]`
+- admin desktop summary promotion view:
+  - `desktopPatrolSummary.promotion.latestProposalId`
+  - `desktopPatrolSummary.promotion.latestArtifactKind`
+  - `desktopPatrolSummary.promotion.latestArtifactStatus`
+  - `desktopPatrolSummary.promotion.latestDraftPrRef`
+  - `desktopPatrolSummary.promotion.updatedAt`
 - loop state:
   - `updated_at`, `failure_streak`, `last_run_id`, `last_failure_reason`
   - `recent_runs[]`, `last_decision`
@@ -380,6 +386,7 @@ Notes:
 - PR28 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_evidence.json`, `.code_apply_evidence.md`, and `.code_apply_evidence.prompt.md` so the human patch workflow can capture the final apply evidence after the reviewed apply step.
 - PR29 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_signoff.json`, `.code_apply_signoff.md`, and `.code_apply_signoff.prompt.md` so the final approver can record the go/no-go signoff after the evidence pass without auto-applying code.
 - PR30 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_record.json`, `.code_apply_record.md`, and `.code_apply_record.prompt.md` so the operator can record the final post-apply and post-merge closure without auto-applying code.
+- PR31 adds read-only `desktopPatrolSummary.promotion.*` fields so Admin can surface the latest promotion/apply-record artifact kind, status, draft PR ref, and timestamp without mutating the local queue.
 - PR16 adds `artifacts/line_desktop_patrol/runtime/execute.lock.json` for overlap protection in scheduled execute mode.
 - PR18 adds `artifacts/line_desktop_patrol/acceptance/latest.json` for KPI + manual soak completion gating.
 

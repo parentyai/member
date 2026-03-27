@@ -4305,6 +4305,7 @@ function renderQualityPatrolDesktopSummary(result) {
     : {};
   const latestRun = payload.latestRun && typeof payload.latestRun === 'object' ? payload.latestRun : null;
   const queue = payload.queue && typeof payload.queue === 'object' ? payload.queue : {};
+  const promotion = payload.promotion && typeof payload.promotion === 'object' ? payload.promotion : {};
   const evaluation = payload.evaluation && typeof payload.evaluation === 'object' ? payload.evaluation : {};
   const artifactRefs = Array.isArray(payload.artifactRefs) ? payload.artifactRefs : [];
   const latestProposalIds = Array.isArray(payload.latestProposalIds) ? payload.latestProposalIds : [];
@@ -4345,7 +4346,14 @@ function renderQualityPatrolDesktopSummary(result) {
   if (!container) return;
   clearElementChildren(container);
 
-  if (!latestRun && !artifactRefs.length && !Number(queue.totalCount || 0)) {
+  const hasPromotion = Boolean(
+    promotion.latestProposalId
+    || promotion.latestArtifactKind
+    || promotion.latestArtifactStatus
+    || promotion.latestDraftPrRef
+  );
+
+  if (!latestRun && !artifactRefs.length && !Number(queue.totalCount || 0) && !hasPromotion) {
     renderQualityPatrolPlaceholder(
       'quality-patrol-desktop-latest',
       payload.status === 'error'
@@ -4388,6 +4396,19 @@ function renderQualityPatrolDesktopSummary(result) {
         `latestProposalId=${asText(queue.latestProposalId, '-')}`,
         `packetCount=${Number(queue.packetCount || 0)}`,
         `latestDraftPrRef=${asText(queue.latestDraftPrRef, '-')}`
+      ]
+    }));
+  }
+
+  if (hasPromotion) {
+    container.appendChild(createQualityPatrolItem({
+      title: 'Latest promotion',
+      summary: `${asText(promotion.latestArtifactKind, '-')} / ${asText(promotion.latestArtifactStatus, '-')}`,
+      badges: [{ label: 'local_promotion', tone: 'info' }],
+      meta: [
+        `proposalId=${asText(promotion.latestProposalId, '-')}`,
+        `draftPrRef=${asText(promotion.latestDraftPrRef, '-')}`,
+        promotion.updatedAt ? `updatedAt=${formatDateLabel(promotion.updatedAt)}` : 'updatedAt=-'
       ]
     }));
   }
@@ -4597,6 +4618,7 @@ function renderQualityPatrolResult(result) {
       stage: 'not_observed',
       summary: 'local desktop patrol artifact はまだありません。',
       queue: { totalCount: 0, latestProposalId: null, packetCount: 0 },
+      promotion: { latestProposalId: null, latestArtifactKind: null, latestArtifactStatus: null, latestDraftPrRef: null, updatedAt: null },
       evaluation: { planningStatus: 'unavailable', analysisStatus: 'unavailable', observationStatus: 'unavailable' },
       latestRun: null,
       latestProposalIds: [],
