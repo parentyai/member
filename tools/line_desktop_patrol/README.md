@@ -16,6 +16,8 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - standalone bounded visible-message read command
 - optional visible-message observation in the dry-run harness behind the existing `store_ax_tree` gate
 - bounded target validation / open target / send foundations
+- OCR-assisted header fallback for target validation when LINE does not expose the active chat title through AX static text
+- bounded composer click/paste/OCR fallback for send confirmation when LINE does not expose the composer AX field
 - one-shot execute harness that writes trace + eval + queue artifacts
 - execute loop wrapper with overlap lock
 - local doctor and retention CLIs
@@ -64,6 +66,8 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - tracked sample policy still keeps send disabled and dry-run only.
 - the guarded loop writes `artifacts/line_desktop_patrol/runtime/state.json` and respects blocked hours, hourly caps, failure streak, and the repo-side kill switch before invoking the dry-run harness.
 - `execute_harness` keeps fail-closed guards for `policy.enabled`, repo-side kill switch, blocked hours, failure streak, and allowlist `allowed_send_modes=["execute"]`.
+- when AX/visible text do not expose the active LINE chat title, `validate_target` may capture a bounded window-header screenshot and require local OCR to match the allowlist chat title before send proceeds.
+- when LINE does not expose a composer AX field, `send_text` may use a bounded composer-region click/paste path and require local OCR to confirm the echoed message before return-key send proceeds.
 - `execute_loop` adds an overlap lock at `artifacts/line_desktop_patrol/runtime/execute.lock.json`.
 - when `store_screenshots=true`, the dry-run harness may capture `runs/<run_id>/after.png` on macOS and record it in `screenshot_after`.
 - when `store_ax_tree=true`, the dry-run harness may capture `runs/<run_id>/after.ax.json` on macOS and record it in `ax_tree_after`.

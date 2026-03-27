@@ -101,11 +101,9 @@ class AllowedTarget:
         expected_window_title_substring = _require_str(record, "expected_window_title_substring", allow_null=True)
         expected_ax_fingerprint = _require_str(record, "expected_ax_fingerprint", allow_null=True)
         raw_participants = record.get("expected_participant_labels")
-        if not isinstance(raw_participants, list) or not raw_participants:
-            raise ValueError("expected_participant_labels must be a non-empty array")
+        if not isinstance(raw_participants, list):
+            raise ValueError("expected_participant_labels must be an array")
         participants = tuple(str(item).strip() for item in raw_participants if str(item).strip())
-        if not participants:
-            raise ValueError("expected_participant_labels must contain at least one non-empty label")
         raw_modes = record.get("allowed_send_modes")
         if not isinstance(raw_modes, list) or not raw_modes:
             raise ValueError("allowed_send_modes must be a non-empty array")

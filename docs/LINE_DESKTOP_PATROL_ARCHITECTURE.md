@@ -62,12 +62,14 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 ## PR12 Additions
 - `member_line_patrol.macos_adapter` に `validate_target`, `open_test_chat`, `send_text` の bounded foundation を追加する
 - target validation は `expected_chat_title`, `expected_window_title_substring`, `expected_participant_labels`, `expected_ax_fingerprint` の一致で fail-closed する
+- LINE が active chat title を AX static text として露出しない場合に備えて、bounded window-header screenshot + local OCR fallback を使って `expected_chat_title` を再確認できる
 - tracked sample policy / allowed_targets は `dry_run` のまま固定し、execute は machine-local override のみで有効化する
 
 ## PR13 Additions
 - `member_line_patrol.execute_harness` で one-shot execute state machine を追加する
 - one-shot execute は `before/after` の screenshot / AX / visible text を同一 run root に書き、trace / eval / proposal queue を 1 コマンドで閉じる
 - send 後の reply 観測が欠けても trace は残し、`post_send_reply_missing` / `post_send_reply_ambiguous` として degrade する
+- LINE が composer AX field を露出しない場合に備えて、bounded composer-region click/paste + local OCR echo confirmation fallback を使い、確認できた場合だけ return-key send に進む
 
 ## PR14 Additions
 - `buildConversationReviewUnitsFromDesktopTrace` は execute trace の `unknown` visible rows から `sent_text` と post-send diff を使って `userMessage` / `assistantReply` を推定する

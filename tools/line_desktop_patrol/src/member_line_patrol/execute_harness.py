@@ -47,6 +47,19 @@ def _write_latest_summary(path_value: str | Path, payload: dict[str, Any]) -> st
     return str(output_path)
 
 
+def _write_latest_summary_with_optional_mirror(
+    primary_path: str | Path,
+    payload: dict[str, Any],
+    *,
+    mirror_path: str | Path | None = None,
+) -> tuple[str, str | None]:
+    written_primary = _write_latest_summary(primary_path, payload)
+    written_mirror = None
+    if mirror_path is not None:
+        written_mirror = _write_latest_summary(mirror_path, payload)
+    return written_primary, written_mirror
+
+
 def _capture_execute_observation(
     *,
     adapter: MacOSLineDesktopAdapter,
@@ -135,6 +148,19 @@ def _correlate_visible(before_rows: list[dict[str, str]], after_rows: list[dict[
         "assistant_reply_candidate": assistant_candidates[0] if assistant_candidates else None,
         "new_visible_count": len(new_rows),
     }
+
+
+def _post_observation_confirms_send(post_observation: dict[str, Any]) -> bool:
+    if not isinstance(post_observation, dict):
+        return False
+    capture = post_observation.get("capture_screenshot")
+    capture_confirmed = isinstance(capture, dict) and _normalize_text(capture.get("status")) == "executed"
+    validation = post_observation.get("validate_target")
+    if not isinstance(validation, dict):
+        return False
+    validation_payload = validation.get("validation")
+    target_confirmed = isinstance(validation_payload, dict) and validation_payload.get("matched") is True
+    return capture_confirmed and target_confirmed
 
 
 def _resolve_guard_decision(
@@ -259,7 +285,12 @@ def run_execute_harness(
 
     repo_root = _resolve_repo_root()
     output_root_resolved = Path(output_root).resolve()
-    latest_summary_output = Path(latest_summary_path).resolve() if latest_summary_path else repo_root / "tmp" / "line_desktop_patrol_latest.json"
+    latest_summary_output = (
+        Path(latest_summary_path).resolve()
+        if latest_summary_path
+        else output_root_resolved / "runtime" / "latest_summary.json"
+    )
+    latest_summary_mirror_output = None if latest_summary_path else repo_root / "tmp" / "line_desktop_patrol_latest.json"
 
     state_transitions.append(_transition("LOAD_LOCAL_STATE", "started"))
     current_state = load_loop_state(output_root_resolved)
@@ -341,7 +372,11 @@ def run_execute_harness(
             "run_id": run_id,
             "target_id": target.alias,
         }
-        latest_summary_written = _write_latest_summary(latest_summary_output, latest_summary)
+        latest_summary_written, latest_summary_mirror_written = _write_latest_summary_with_optional_mirror(
+            latest_summary_output,
+            latest_summary,
+            mirror_path=latest_summary_mirror_output,
+        )
         return {
             "ok": True,
             "allowed": False,
@@ -349,6 +384,7 @@ def run_execute_harness(
             "tracePath": str(trace_path),
             "statePath": state_update["state_path"],
             "latestSummaryPath": latest_summary_written,
+            "latestSummaryMirrorPath": latest_summary_mirror_written,
         }
     state_transitions.append(_transition("PRECHECK", "completed"))
 
@@ -448,6 +484,8 @@ def run_execute_harness(
             _extract_visible_rows(post_observation),
             sent_text,
         )
+        if correlation["status"] == "post_visible_missing" and _post_observation_confirms_send(post_observation):
+            correlation["status"] = "post_send_reply_missing"
         if correlation["status"] == "reply_observed":
             decision = "execute_sent"
         elif correlation["status"] == "post_send_reply_missing":
@@ -605,7 +643,11 @@ def run_execute_harness(
         "eval": eval_result,
         "queue": enqueue_result,
     }
-    latest_summary_written = _write_latest_summary(latest_summary_output, latest_summary)
+    latest_summary_written, latest_summary_mirror_written = _write_latest_summary_with_optional_mirror(
+        latest_summary_output,
+        latest_summary,
+        mirror_path=latest_summary_mirror_output,
+    )
     return {
         "ok": True,
         "allowed": True,
@@ -613,6 +655,7 @@ def run_execute_harness(
         "tracePath": str(trace_path),
         "statePath": state_update["state_path"],
         "latestSummaryPath": latest_summary_written,
+        "latestSummaryMirrorPath": latest_summary_mirror_written,
         "eval": eval_result,
         "queue": enqueue_result,
     }

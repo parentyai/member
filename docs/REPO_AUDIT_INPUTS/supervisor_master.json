@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-26T20:20:10-04:00",
-  "gitCommit": "c206522c1d2bf03ee172cb1e7deec3bea071bd63",
-  "branch": "codex/line-desktop-patrol-pr18",
-  "sourceDigest": "35979961d8e8e1b35df5633d701ad7b81fe0b719a3cb8b3a4bbe316a5fb755ee",
+  "generatedAt": "2026-03-26T20:33:56-04:00",
+  "gitCommit": "d96e0c9de3fee0943f77d448075caf777152a2f7",
+  "branch": "codex/line-desktop-patrol-ocr-targeting",
+  "sourceDigest": "e99c6c9eea0665c8c4768b510cc572830b5fec75f28de42b8f756bd1aaecd77f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

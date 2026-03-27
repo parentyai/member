@@ -160,6 +160,9 @@
     "test:phase870": "node --test tests/phase870/*.test.js",
     "test:phase871": "node --test tests/phase871/*.test.js",
     "test:phase872": "node --test tests/phase872/*.test.js",
-    "test:phase873": "node --test tests/phase873/*.test.js"
+    "test:phase873": "node --test tests/phase873/*.test.js",
+    "test:phase874": "node --test tests/phase874/*.test.js",
+    "test:phase875": "node --test tests/phase875/*.test.js",
+    "test:phase876": "node --test tests/phase876/*.test.js"
   }
 }
