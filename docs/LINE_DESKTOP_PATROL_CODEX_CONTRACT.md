@@ -116,3 +116,14 @@ This document defines the local-only handoff between the LINE Desktop patrol que
   - a worker prompt that names the prepared write set, patch document, validation commands, and stop conditions
   - expected outputs for the final human-reviewed apply task
 - the bundle still does not apply code, commit changes, or open a PR by itself
+
+## Code review packet
+- `line-desktop-patrol:synthesize-code-review-packet` consumes one code apply task and emits:
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_review_packet.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_review_packet.md`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_review_packet.prompt.md`
+- the bundle adds:
+  - an approval checklist for the final human review before any apply step
+  - a signoff prompt that captures the final review goals and stop conditions
+  - expected outputs for the final human-reviewed review decision
+- the bundle still does not apply code, commit changes, or open a PR by itself

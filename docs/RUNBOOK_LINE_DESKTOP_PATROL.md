@@ -139,6 +139,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - writes `code_apply_task.json`, `code_apply_task.md`, and `code_apply_task.prompt.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
   - derives a reviewer checklist, worker prompt, and expected outputs for the final human-reviewed apply step
   - still does not auto-apply edits, commit code, or create a PR by itself
+- synthesize-code-review-packet command:
+  - reads the code apply task and prepared worktree
+  - writes `code_review_packet.json`, `code_review_packet.md`, and `code_review_packet.prompt.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
+  - derives the final approval checklist and signoff prompt for the human review step before any apply action
+  - still does not auto-apply edits, commit code, or create a PR by itself
 - doctor command:
   - reports host capability, policy readiness, runtime visibility, loop state, and latest summary presence
 - retention command:
