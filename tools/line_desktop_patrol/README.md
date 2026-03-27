@@ -20,6 +20,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - execute loop wrapper with overlap lock
 - local doctor and retention CLIs
 - proposal promotion worker that prepares branch/worktree + draft PR body
+- acceptance gate CLI for KPI + manual host completion checks
 - read-only evaluator bridge into existing `qualityPatrol`
 - append-only local proposal queue
 - per-proposal Codex packet contract
@@ -48,6 +49,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
 - `npm run line-desktop-patrol:doctor`
 - `npm run line-desktop-patrol:retention`
+- `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
 - `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter --dump-ax-tree --output-path /tmp/line_desktop_patrol_ax.json --execute`
 - `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter --read-visible-messages --output-path /tmp/line_desktop_patrol_visible.json --execute --max-items 5`
 - `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter --validate-target --execute --expected-chat-title "Codex Self Test" --expected-window-title-substring "LINE" --expected-participant-label "Self Test"`
@@ -69,6 +71,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - when `execute_once` succeeds, the harness writes `trace.json`, `summary.json`, local eval artifacts, proposal linkage, and queue artifacts under the same run id.
 - `promote_proposal` only prepares a branch/worktree and draft PR body; it never auto-merges or auto-applies runtime changes.
 - `retention` only touches stale raw screenshot / AX / visible artifacts by default and keeps `trace.json` / eval / queue artifacts intact.
+- `acceptance_gate` writes `artifacts/line_desktop_patrol/acceptance/latest.json` and blocks completion until both KPI thresholds and machine-local soak evidence are satisfied.
 - the visible-message read path reuses the existing `store_ax_tree` gate so PR11 does not expand the policy schema.
 - the sample policy keeps `store_screenshots=false` and `store_ax_tree=false`, so both observations remain opt-in.
 - the evaluator bridge is read-only and reuses existing `tools/quality_patrol` logic.

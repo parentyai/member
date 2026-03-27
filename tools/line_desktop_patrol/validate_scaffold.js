@@ -18,6 +18,7 @@ const REQUIRED_FILES = [
   path.join(TOOL_ROOT, 'pyproject.toml'),
   path.join(TOOL_ROOT, 'config', 'policy.example.json'),
   path.join(TOOL_ROOT, 'config', 'allowed_targets.example.json'),
+  path.join(TOOL_ROOT, 'config', 'acceptance.manual.example.json'),
   path.join(TOOL_ROOT, 'scenarios', 'smoke_dry_run.example.json'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', '__init__.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'macos_adapter.py'),
@@ -38,6 +39,7 @@ const REQUIRED_FILES = [
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'promote_proposal.py'),
   path.join(TOOL_ROOT, 'read_repo_runtime_state.js'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'retention.py'),
+  path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'acceptance_gate.py'),
   path.join(ROOT, 'tools', 'quality_patrol', 'run_desktop_patrol_eval.js'),
   path.join(ROOT, 'src', 'usecases', 'qualityPatrol', 'buildConversationReviewUnitsFromDesktopTrace.js'),
   path.join(ROOT, 'docs', 'LINE_DESKTOP_PATROL_CODEX_CONTRACT.md'),
@@ -92,6 +94,7 @@ function runValidation() {
   assert(packageJson.scripts['line-desktop-patrol:promote-proposal'], 'package.json must define line-desktop-patrol:promote-proposal');
   assert(packageJson.scripts['line-desktop-patrol:doctor'], 'package.json must define line-desktop-patrol:doctor');
   assert(packageJson.scripts['line-desktop-patrol:retention'], 'package.json must define line-desktop-patrol:retention');
+  assert(packageJson.scripts['line-desktop-patrol:acceptance-gate'], 'package.json must define line-desktop-patrol:acceptance-gate');
   assert(packageJson.scripts['test:phase858'], 'package.json must define test:phase858');
   assert(packageJson.scripts['test:phase859'], 'package.json must define test:phase859');
   assert(packageJson.scripts['test:phase860'], 'package.json must define test:phase860');
@@ -106,6 +109,7 @@ function runValidation() {
   assert(packageJson.scripts['test:phase870'], 'package.json must define test:phase870');
   assert(packageJson.scripts['test:phase871'], 'package.json must define test:phase871');
   assert(packageJson.scripts['test:phase872'], 'package.json must define test:phase872');
+  assert(packageJson.scripts['test:phase873'], 'package.json must define test:phase873');
 
   const samplePolicy = readJson(path.join(TOOL_ROOT, 'config', 'policy.example.json'));
   assert(samplePolicy.store_ax_tree === false, 'policy.example.json must keep store_ax_tree=false by default');

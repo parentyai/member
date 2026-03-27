@@ -22,7 +22,8 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 12. `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
 13. `npm run line-desktop-patrol:doctor`
 14. `npm run line-desktop-patrol:retention`
-15. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
+15. `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
+16. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
 
 ## Expected outputs
 - validate command:
@@ -85,6 +86,10 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - retention command:
   - dry-run by default
   - only deletes stale raw screenshot / AX / visible artifacts when `--apply` is passed
+- acceptance gate command:
+  - writes `artifacts/line_desktop_patrol/acceptance/latest.json`
+  - computes automatic KPI thresholds from local execute traces and promotion records
+  - remains `blocked` until a machine-local manual acceptance report is supplied and meets the soak thresholds
 
 ## Stop and rollback
 - local scaffold stop:
@@ -164,8 +169,25 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - tracked `policy.example.json` and `allowed_targets.example.json` remain dry-run only
 - execute enablement requires machine-local override plus `allowed_send_modes=["execute"]`
 - `send_text` fails closed on target mismatch, blocked hours, kill switch, failure streak, or composer echo mismatch
+- `execute_harness` re-reads repo-side runtime state immediately before send and aborts if kill switch becomes true mid-run
 - proposal promotion never auto-merges and does not auto-apply code changes
 - launchd scheduling is optional and should only target local override configs
+
+## PR18 completion gate
+1. Copy `tools/line_desktop_patrol/config/acceptance.manual.example.json` to a machine-local path outside the repo.
+2. Run `execute_once` against a self-test target until `execute_once_attempted >= 10` and `execute_once_passed == execute_once_attempted`.
+3. Run scheduled execute on the same host until `scheduled_execute_attempted >= 50` and `scheduled_execute_passed == scheduled_execute_attempted`.
+4. Mark `accessibility_granted=true`, `screen_recording_granted=true`, and `self_test_target_ready=true` in the machine-local manual report.
+5. Run `npm run line-desktop-patrol:acceptance-gate -- --manual-report <path>` and confirm:
+   - `overallStatus=ready`
+   - `automatic.status=ready`
+   - `manual.status=ready`
+   - `offWhitelistSendIncidents=0`
+   - `targetMismatchFalseNegativeCount=0`
+   - `sendSuccessRate >= 0.99`
+   - `observeSuccessRate >= 0.95`
+   - `replyCorrelationUsableRate >= 0.80`
+   - `draftPrDuplicateRate = 0`
 
 ## Optional operator check
 1. Generate one local trace/eval/queue sequence with the existing dry-run + evaluate + enqueue commands.

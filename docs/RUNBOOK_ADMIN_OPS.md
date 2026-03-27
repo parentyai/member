@@ -24,6 +24,7 @@
 - PR15 以降は proposal promotion が branch/worktree/draft PR body を準備するが、auto-merge は行わない。
 - PR16 以降は `line-desktop-patrol:loop-execute` が overlap lock を使い、launchd からの定期起動に対応する。
 - PR17 以降は `line-desktop-patrol:doctor` と `line-desktop-patrol:retention` で host 診断と raw artifact retention を実行できる。
+- PR18 以降は `line-desktop-patrol:acceptance-gate` が execute KPI と manual soak report を completion gate として集約する。
 
 ## Feature Flag Governance（Phase PR5）
 - canonical registry:

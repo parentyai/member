@@ -234,6 +234,7 @@ Typical files:
 - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
 - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`
+- `artifacts/line_desktop_patrol/acceptance/latest.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
 - `artifacts/line_desktop_patrol/runtime/state.json`
 - `artifacts/line_desktop_patrol/runtime/execute.lock.json`
@@ -281,6 +282,7 @@ Notes:
 - PR13 adds execute trace fields for send/validation/correlation while preserving the original required trace schema.
 - PR15 adds promotion metadata under `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`.
 - PR16 adds `artifacts/line_desktop_patrol/runtime/execute.lock.json` for overlap protection in scheduled execute mode.
+- PR18 adds `artifacts/line_desktop_patrol/acceptance/latest.json` for KPI + manual soak completion gating.
 
 Notes:
 - PR2 adds local dry-run trace emission through `member_line_patrol.dry_run_harness`.

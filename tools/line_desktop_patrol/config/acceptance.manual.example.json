@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-03-27T00:00:00.000Z",
+  "accessibility_granted": false,
+  "screen_recording_granted": false,
+  "self_test_target_ready": false,
+  "execute_once_attempted": 0,
+  "execute_once_passed": 0,
+  "scheduled_execute_attempted": 0,
+  "scheduled_execute_passed": 0,
+  "notes": [
+    "Copy this file outside the repo for machine-local acceptance tracking.",
+    "Do not commit execute-enabled overrides or host-specific evidence."
+  ]
+}
