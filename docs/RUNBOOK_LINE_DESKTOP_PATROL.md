@@ -144,6 +144,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - writes `code_review_packet.json`, `code_review_packet.md`, and `code_review_packet.prompt.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
   - derives the final approval checklist and signoff prompt for the human review step before any apply action
   - still does not auto-apply edits, commit code, or create a PR by itself
+- synthesize-code-apply-evidence command:
+  - reads the code review packet and prepared worktree
+  - writes `code_apply_evidence.json`, `code_apply_evidence.md`, and `code_apply_evidence.prompt.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
+  - derives the final evidence requirements and signoff expectations after the reviewed apply step
+  - still does not auto-apply edits, commit code, or create a PR by itself
 - doctor command:
   - reports host capability, policy readiness, runtime visibility, loop state, and latest summary presence
 - retention command:
