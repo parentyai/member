@@ -42,6 +42,7 @@ const REQUIRED_FILES = [
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'synthesize_code_patch_bundle.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'synthesize_code_edit_task.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'synthesize_code_diff_draft.py'),
+  path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'synthesize_code_edit_bundle.py'),
   path.join(TOOL_ROOT, 'read_repo_runtime_state.js'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'retention.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'acceptance_gate.py'),
@@ -101,6 +102,7 @@ function runValidation() {
   assert(packageJson.scripts['line-desktop-patrol:synthesize-code-patch'], 'package.json must define line-desktop-patrol:synthesize-code-patch');
   assert(packageJson.scripts['line-desktop-patrol:synthesize-code-edit'], 'package.json must define line-desktop-patrol:synthesize-code-edit');
   assert(packageJson.scripts['line-desktop-patrol:synthesize-code-diff'], 'package.json must define line-desktop-patrol:synthesize-code-diff');
+  assert(packageJson.scripts['line-desktop-patrol:synthesize-code-edit-bundle'], 'package.json must define line-desktop-patrol:synthesize-code-edit-bundle');
   assert(packageJson.scripts['line-desktop-patrol:scaffold-operator-bundle'], 'package.json must define line-desktop-patrol:scaffold-operator-bundle');
   assert(packageJson.scripts['line-desktop-patrol:doctor'], 'package.json must define line-desktop-patrol:doctor');
   assert(packageJson.scripts['line-desktop-patrol:retention'], 'package.json must define line-desktop-patrol:retention');
@@ -133,6 +135,8 @@ function runValidation() {
   assert(packageJson.scripts['test:phase884'], 'package.json must define test:phase884');
   assert(packageJson.scripts['test:phase885'], 'package.json must define test:phase885');
   assert(packageJson.scripts['test:phase886'], 'package.json must define test:phase886');
+  assert(packageJson.scripts['test:phase887'], 'package.json must define test:phase887');
+  assert(packageJson.scripts['test:phase888'], 'package.json must define test:phase888');
 
   const samplePolicy = readJson(path.join(TOOL_ROOT, 'config', 'policy.example.json'));
   assert(samplePolicy.store_ax_tree === false, 'policy.example.json must keep store_ax_tree=false by default');
