@@ -149,6 +149,7 @@
     "line-desktop-patrol:synthesize-code-apply-draft": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.synthesize_code_apply_draft --queue-root artifacts/line_desktop_patrol/proposals --repo-root .",
     "line-desktop-patrol:synthesize-code-apply-task": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.synthesize_code_apply_task --queue-root artifacts/line_desktop_patrol/proposals --repo-root .",
     "line-desktop-patrol:synthesize-code-review-packet": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.synthesize_code_review_packet --queue-root artifacts/line_desktop_patrol/proposals --repo-root .",
+    "line-desktop-patrol:synthesize-code-apply-evidence": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.synthesize_code_apply_evidence --queue-root artifacts/line_desktop_patrol/proposals --repo-root .",
     "line-desktop-patrol:scaffold-operator-bundle": "node tools/line_desktop_patrol/scaffold_operator_bundle.js",
     "line-desktop-patrol:doctor": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.doctor --policy tools/line_desktop_patrol/config/policy.example.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol",
     "line-desktop-patrol:retention": "PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.retention --output-root artifacts/line_desktop_patrol",
@@ -190,6 +191,8 @@
     "test:phase891": "node --test tests/phase891/*.test.js",
     "test:phase892": "node --test tests/phase892/*.test.js",
     "test:phase893": "node --test tests/phase893/*.test.js",
-    "test:phase894": "node --test tests/phase894/*.test.js"
+    "test:phase894": "node --test tests/phase894/*.test.js",
+    "test:phase895": "node --test tests/phase895/*.test.js",
+    "test:phase896": "node --test tests/phase896/*.test.js"
   }
 }

@@ -127,3 +127,14 @@ This document defines the local-only handoff between the LINE Desktop patrol que
   - a signoff prompt that captures the final review goals and stop conditions
   - expected outputs for the final human-reviewed review decision
 - the bundle still does not apply code, commit changes, or open a PR by itself
+
+## Code apply evidence
+- `line-desktop-patrol:synthesize-code-apply-evidence` consumes one code review packet and emits:
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_evidence.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_evidence.md`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_evidence.prompt.md`
+- the bundle adds:
+  - the final evidence requirements for the reviewed apply step
+  - a prompt that lists validation and signoff evidence expectations
+  - expected outputs for the final evidence record after human apply review
+- the bundle still does not apply code, commit changes, or open a PR by itself
