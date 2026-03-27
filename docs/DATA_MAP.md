@@ -237,6 +237,8 @@ Typical files:
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_draft.md`
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.json`
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.md`
+- `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_patch_bundle.json`
+- `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_patch_bundle.md`
 - `artifacts/line_desktop_patrol/acceptance/latest.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
 - `artifacts/line_desktop_patrol/runtime/state.json`
@@ -272,6 +274,11 @@ Typical fields:
   - `proposal_id`, `status`, `promotion_record_path`, `packet_path`
   - `patch_draft_path`, `patch_request_path`, `patch_request_markdown_path`
   - `validation_commands[]`, `candidate_edits[]`, `operator_instructions[]`
+- code patch bundle:
+  - `proposal_id`, `status`, `worktree_path`, `branch_name`
+  - `code_patch_bundle_path`, `code_patch_bundle_markdown_path`
+  - `file_snapshots[]` with `file_path`, `workspace_file_path`, `exists`, `line_count`, `size_bytes`, `preview`, `preview_truncated`
+  - `validation_commands[]`, `stop_conditions[]`, `operator_instructions[]`
 - loop state:
   - `updated_at`, `failure_streak`, `last_run_id`, `last_failure_reason`
   - `recent_runs[]`, `last_decision`
@@ -290,6 +297,7 @@ Notes:
 - PR15 adds promotion metadata under `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`.
 - PR19 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_draft.md` so proposal promotion can stop at a reviewable patch intent before any code diff exists.
 - PR20 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.json` and `.patch_request.md` so operators can hand a proposal to a human patch workflow without widening runtime authority.
+- PR21 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_patch_bundle.json` and `.code_patch_bundle.md` so the human patch workflow can snapshot candidate files before writing code.
 - PR16 adds `artifacts/line_desktop_patrol/runtime/execute.lock.json` for overlap protection in scheduled execute mode.
 - PR18 adds `artifacts/line_desktop_patrol/acceptance/latest.json` for KPI + manual soak completion gating.
 

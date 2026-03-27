@@ -22,10 +22,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 12. `npm run line-desktop-patrol:enqueue-proposals -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json --queue-root /tmp/line_desktop_patrol_proposals`
 13. `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
 14. `npm run line-desktop-patrol:synthesize-patch -- --proposal-id <proposal_id>`
-15. `npm run line-desktop-patrol:doctor`
-16. `npm run line-desktop-patrol:retention`
-17. `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
-18. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
+15. `npm run line-desktop-patrol:synthesize-code-patch -- --proposal-id <proposal_id>`
+16. `npm run line-desktop-patrol:doctor`
+17. `npm run line-desktop-patrol:retention`
+18. `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
+19. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
 
 ## Machine-local operator bundle
 - `line-desktop-patrol:scaffold-operator-bundle` only writes outside the repo.
@@ -107,6 +108,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - writes `patch_request.json` and `patch_request.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
   - includes candidate edit targets, validation commands, and human-only stop conditions
   - does not auto-apply edits or create a code diff by itself
+- synthesize-code-patch command:
+  - reads the patch request bundle and prepared worktree
+  - writes `code_patch_bundle.json` and `code_patch_bundle.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
+  - snapshots candidate edit files with bounded previews and workspace paths
+  - still does not auto-apply edits or create a code diff by itself
 - doctor command:
   - reports host capability, policy readiness, runtime visibility, loop state, and latest summary presence
 - retention command:

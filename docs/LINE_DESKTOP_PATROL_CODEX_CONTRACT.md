@@ -49,3 +49,14 @@ This document defines the local-only handoff between the LINE Desktop patrol que
   - candidate edit targets
   - operator instructions
 - the bundle is still evidence for human patch work, not execution authority
+
+## Code patch bundle
+- `line-desktop-patrol:synthesize-code-patch` consumes one patch request bundle and emits:
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_patch_bundle.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_patch_bundle.md`
+- the bundle adds:
+  - worktree-aware file snapshots
+  - preview excerpts for candidate edit files
+  - stop conditions for code patch work
+  - the same validation commands reused from the patch request
+- the bundle still does not write code, auto-apply edits, or auto-merge
