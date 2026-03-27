@@ -168,6 +168,13 @@ TOOL_SPECS = (
         exposure="internal_only",
         status="code_apply_draft_ready",
     ),
+    ToolSpec(
+        name="synthesize_code_apply_task",
+        description="Build a human-reviewed code apply task with reviewer checklist and worker prompt without auto-applying code.",
+        mutating=True,
+        exposure="internal_only",
+        status="code_apply_task_ready",
+    ),
 )
 
 
@@ -201,6 +208,7 @@ def build_server_manifest() -> dict:
             "PR23 adds code diff draft bundles with apply_patch-ready placeholders while still stopping short of code auto-apply.",
             "PR24 adds code edit bundles with worker prompts and expected outputs while still stopping short of code auto-apply.",
             "PR25 adds code apply drafts with patch documents and apply steps while still stopping short of code auto-apply.",
+            "PR26 adds code apply tasks with reviewer checklist and task prompt while still stopping short of code auto-apply.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }
