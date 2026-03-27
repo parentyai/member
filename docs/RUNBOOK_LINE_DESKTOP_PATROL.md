@@ -23,10 +23,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 13. `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
 14. `npm run line-desktop-patrol:synthesize-patch -- --proposal-id <proposal_id>`
 15. `npm run line-desktop-patrol:synthesize-code-patch -- --proposal-id <proposal_id>`
-16. `npm run line-desktop-patrol:doctor`
-17. `npm run line-desktop-patrol:retention`
-18. `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
-19. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
+16. `npm run line-desktop-patrol:synthesize-code-edit -- --proposal-id <proposal_id>`
+17. `npm run line-desktop-patrol:doctor`
+18. `npm run line-desktop-patrol:retention`
+19. `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
+20. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
 
 ## Machine-local operator bundle
 - `line-desktop-patrol:scaffold-operator-bundle` only writes outside the repo.
@@ -112,6 +113,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - reads the patch request bundle and prepared worktree
   - writes `code_patch_bundle.json` and `code_patch_bundle.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
   - snapshots candidate edit files with bounded previews and workspace paths
+  - still does not auto-apply edits or create a code diff by itself
+- synthesize-code-edit command:
+  - reads the code patch bundle and prepared worktree
+  - writes `code_edit_task.json` and `code_edit_task.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
+  - derives per-file edit tasks, patch hint templates, and review checklist items
   - still does not auto-apply edits or create a code diff by itself
 - doctor command:
   - reports host capability, policy readiness, runtime visibility, loop state, and latest summary presence

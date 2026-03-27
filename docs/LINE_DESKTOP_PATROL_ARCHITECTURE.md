@@ -107,6 +107,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - code patch bundle は affected file ごとの preview snapshot と stop conditions を追加し、人間または Codex が最小 diff を書く前の編集土台を固定する
 - MCP manifest は `synthesize_code_patch_bundle` を `code_patch_bundle_ready` として公開し、bundle は引き続き artifact-only で code auto-apply を持たない
 
+## PR22 Additions
+- `member_line_patrol.synthesize_code_edit_task` で code patch bundle を `code_edit_task.json` / `code_edit_task.md` に正規化する
+- code edit task は per-file patch hint, anchor preview, review checklist を追加し、実際の編集着手前のタスク粒度を固定する
+- MCP manifest は `synthesize_code_edit_task` を `code_edit_task_ready` として公開し、bundle は依然として artifact-only で code auto-apply を持たない
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -157,6 +162,8 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.md`
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_patch_bundle.json`
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_patch_bundle.md`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_edit_task.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_edit_task.md`
   - `artifacts/line_desktop_patrol/acceptance/latest.json`
   - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
   - `artifacts/line_desktop_patrol/runtime/state.json`

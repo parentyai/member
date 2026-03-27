@@ -140,6 +140,13 @@ TOOL_SPECS = (
         exposure="internal_only",
         status="code_patch_bundle_ready",
     ),
+    ToolSpec(
+        name="synthesize_code_edit_task",
+        description="Build a human-reviewed code edit task with per-file patch hints and review checklist without auto-applying code.",
+        mutating=True,
+        exposure="internal_only",
+        status="code_edit_task_ready",
+    ),
 )
 
 
@@ -169,6 +176,7 @@ def build_server_manifest() -> dict:
             "PR15 adds proposal promotion into a prepared branch/worktree and optional draft PR body without auto-merging any code.",
             "PR20 adds patch synthesis bundles that stay artifact-only until a human writes and validates the code diff.",
             "PR21 adds code patch bundles that snapshot candidate files and worktree context while still requiring a human to write the diff.",
+            "PR22 adds code edit task bundles with per-file patch hints while still stopping short of code auto-apply.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }
