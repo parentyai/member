@@ -52,6 +52,8 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - all require a machine-local override where `enabled=true` and the selected target allows `execute`
   - `open-target` validates the frontmost LINE chat and only attempts a uniquely matched allowlist target click
   - `send` only proceeds after target validation and composer echo confirmation succeed
+  - if LINE does not expose chat title via AX static text, target validation may use bounded window-header OCR before send proceeds
+  - if LINE does not expose the composer AX field, send may use a bounded composer click/paste fallback and requires OCR echo confirmation before return-key send proceeds
   - `execute-once` writes `before/after` evidence plus trace/eval/queue artifacts under one run id
 - execute loop:
   - acquires `artifacts/line_desktop_patrol/runtime/execute.lock.json`
@@ -169,6 +171,7 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - tracked `policy.example.json` and `allowed_targets.example.json` remain dry-run only
 - execute enablement requires machine-local override plus `allowed_send_modes=["execute"]`
 - `send_text` fails closed on target mismatch, blocked hours, kill switch, failure streak, or composer echo mismatch
+- OCR-assisted validation and composer fallback remain bounded to the active LINE window and must still match the allowlist target title before any send is attempted
 - `execute_harness` re-reads repo-side runtime state immediately before send and aborts if kill switch becomes true mid-run
 - proposal promotion never auto-merges and does not auto-apply code changes
 - launchd scheduling is optional and should only target local override configs

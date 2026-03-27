@@ -137,6 +137,19 @@ def _correlate_visible(before_rows: list[dict[str, str]], after_rows: list[dict[
     }
 
 
+def _post_observation_confirms_send(post_observation: dict[str, Any]) -> bool:
+    if not isinstance(post_observation, dict):
+        return False
+    capture = post_observation.get("capture_screenshot")
+    capture_confirmed = isinstance(capture, dict) and _normalize_text(capture.get("status")) == "executed"
+    validation = post_observation.get("validate_target")
+    if not isinstance(validation, dict):
+        return False
+    validation_payload = validation.get("validation")
+    target_confirmed = isinstance(validation_payload, dict) and validation_payload.get("matched") is True
+    return capture_confirmed and target_confirmed
+
+
 def _resolve_guard_decision(
     *,
     policy: Any,
@@ -448,6 +461,8 @@ def run_execute_harness(
             _extract_visible_rows(post_observation),
             sent_text,
         )
+        if correlation["status"] == "post_visible_missing" and _post_observation_confirms_send(post_observation):
+            correlation["status"] = "post_send_reply_missing"
         if correlation["status"] == "reply_observed":
             decision = "execute_sent"
         elif correlation["status"] == "post_send_reply_missing":

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-27T00:29:09.175Z",
-  "gitCommit": "c206522c1d2bf03ee172cb1e7deec3bea071bd63",
-  "branch": "codex/line-desktop-patrol-pr18",
-  "sourceDigest": "a4fa2450657eef1ed2cb0bb33573988a6847f03e43816735a3289660da8cfab0",
+  "generatedAt": "2026-03-27T01:51:29.760Z",
+  "gitCommit": "d96e0c9de3fee0943f77d448075caf777152a2f7",
+  "branch": "codex/line-desktop-patrol-ocr-targeting",
+  "sourceDigest": "46213f4e4489e0810dc2d8dfa6d8abc8e95f12a59f19ff5042c8f7e14f23af0d",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "2cfd804abe0b8d3befd416dcda3c5ef39b942818253c08c7f219e35980537b1f",
+      "sha256": "e3220fad924590260d5227697eef2c9b73c46d72d2c55f50ee691a8c74094d3f",
       "bytes": 453884
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "521e665af8d7aa4bf8287e22bc1829c9c0f083b46eeb0ec7983025f3ffac9ac3",
-      "bytes": 2416
+      "sha256": "1ba75fb7609eb58d366ae939e65ba4f2fa09e433ba169dc91a6dde0ea1d819be",
+      "bytes": 2425
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",

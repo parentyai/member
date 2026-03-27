@@ -16,6 +16,7 @@ LINE_APP_NAME = "LINE"
 LINE_BUNDLE_ID = "jp.naver.line.mac"
 DEFAULT_AX_TIMEOUT_SECONDS = 2.0
 DEFAULT_VISIBLE_MESSAGE_LIMIT = 20
+DEFAULT_OCR_TIMEOUT_SECONDS = 4.0
 LINE_BUNDLE_CANDIDATES = (
     Path("/Applications/LINE.app"),
     Path.home() / "Applications" / "LINE.app",
@@ -45,6 +46,21 @@ def _contains_normalized(haystack: Any, needle: Any) -> bool:
     return needle_text in haystack_text
 
 
+def _normalize_ocr_echo_compare(value: Any) -> str:
+    text = _normalize_text(value)
+    if not text:
+        return ""
+    return "".join(character.casefold() for character in text if character.isalnum())
+
+
+def _ocr_echo_matches(candidate: Any, expected: Any) -> bool:
+    candidate_text = _normalize_ocr_echo_compare(candidate)
+    expected_text = _normalize_ocr_echo_compare(expected)
+    if not candidate_text or not expected_text:
+        return False
+    return candidate_text == expected_text
+
+
 def _unique_texts(values: list[str]) -> list[str]:
     seen: set[str] = set()
     output: list[str] = []
@@ -64,6 +80,13 @@ def _build_osascript_argv(lines: tuple[str, ...], *args: str) -> tuple[str, ...]
     if args:
         argv.extend(args)
     return tuple(argv)
+
+
+def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        return default
 
 
 class MacOSLineDesktopAdapter:
@@ -93,7 +116,7 @@ class MacOSLineDesktopAdapter:
         platform_release = self._resolve_platform_release()
         is_macos = platform_system == "Darwin"
         tools = {}
-        for name in ("open", "osascript", "screencapture", "python3"):
+        for name in ("open", "osascript", "screencapture", "python3", "swift"):
             resolved_path = self.tool_lookup(name)
             tools[name] = {
                 "available": resolved_path is not None,
@@ -153,6 +176,36 @@ class MacOSLineDesktopAdapter:
             "output_path": resolved,
         }
 
+    def plan_capture_window_region(
+        self,
+        output_path: str | Path,
+        *,
+        bounds: dict[str, int],
+    ) -> dict[str, Any]:
+        resolved = str(Path(output_path))
+        x = max(0, _safe_int(bounds.get("x")))
+        y = max(0, _safe_int(bounds.get("y")))
+        width = max(1, _safe_int(bounds.get("width")))
+        height = max(1, _safe_int(bounds.get("height")))
+        plan = CommandPlan(
+            name="capture_window_region",
+            argv=("screencapture", "-x", "-R", f"{x},{y},{width},{height}", resolved),
+            mutating=False,
+            requires_macos=True,
+            description="Capture a bounded LINE window region without UI chrome.",
+        )
+        return {
+            "status": "planned",
+            "command": asdict(plan),
+            "output_path": resolved,
+            "bounds": {
+                "x": x,
+                "y": y,
+                "width": width,
+                "height": height,
+            },
+        }
+
     def plan_dump_ax_tree(
         self,
         output_path: str | Path,
@@ -177,9 +230,33 @@ class MacOSLineDesktopAdapter:
             "-e",
             'set windowName to ""',
             "-e",
+            "set windowX to 0",
+            "-e",
+            "set windowY to 0",
+            "-e",
+            "set windowWidth to 0",
+            "-e",
+            "set windowHeight to 0",
+            "-e",
+            "set windowPosition to {0, 0}",
+            "-e",
+            "set windowSize to {0, 0}",
+            "-e",
             "if windowCount > 0 then set windowName to name of window 1 of targetProcess",
             "-e",
-            'return processName & "||" & frontmostState & "||" & windowCount & "||" & windowName & "||" & uiEnabled',
+            "if windowCount > 0 then set windowPosition to position of window 1 of targetProcess",
+            "-e",
+            "if windowCount > 0 then set windowSize to size of window 1 of targetProcess",
+            "-e",
+            "if windowCount > 0 then set windowX to item 1 of windowPosition",
+            "-e",
+            "if windowCount > 0 then set windowY to item 2 of windowPosition",
+            "-e",
+            "if windowCount > 0 then set windowWidth to item 1 of windowSize",
+            "-e",
+            "if windowCount > 0 then set windowHeight to item 2 of windowSize",
+            "-e",
+            'return processName & "||" & frontmostState & "||" & windowCount & "||" & windowName & "||" & uiEnabled & "||" & windowX & "||" & windowY & "||" & windowWidth & "||" & windowHeight',
             "-e",
             "end tell",
         )
@@ -274,6 +351,420 @@ class MacOSLineDesktopAdapter:
             json.dumps(fingerprint_input, ensure_ascii=False, sort_keys=True).encode("utf-8")
         ).hexdigest()[:24]
 
+    def _build_header_probe_bounds(self, ax_payload: dict[str, Any]) -> dict[str, int] | None:
+        bounds = ax_payload.get("window_bounds") if isinstance(ax_payload.get("window_bounds"), dict) else {}
+        x = _safe_int(bounds.get("x"))
+        y = _safe_int(bounds.get("y"))
+        width = _safe_int(bounds.get("width"))
+        height = _safe_int(bounds.get("height"))
+        if width <= 0 or height <= 0:
+            return None
+        left_offset = min(max(int(width * 0.18), 180), max(180, width - 260))
+        crop_x = x + left_offset
+        crop_y = y
+        crop_width = max(220, min(int(width * 0.55), width - left_offset))
+        crop_height = max(90, min(160, int(height * 0.14)))
+        return {
+            "x": crop_x,
+            "y": crop_y,
+            "width": crop_width,
+            "height": crop_height,
+        }
+
+    def _build_composer_probe_bounds(self, ax_payload: dict[str, Any]) -> dict[str, int] | None:
+        bounds = ax_payload.get("window_bounds") if isinstance(ax_payload.get("window_bounds"), dict) else {}
+        x = _safe_int(bounds.get("x"))
+        y = _safe_int(bounds.get("y"))
+        width = _safe_int(bounds.get("width"))
+        height = _safe_int(bounds.get("height"))
+        if width <= 0 or height <= 0:
+            return None
+        left_offset = max(220, min(int(width * 0.16), 260))
+        crop_x = x + left_offset
+        composer_height = max(100, min(int(height * 0.11), 150))
+        crop_y = y + max(0, height - composer_height)
+        crop_width = max(320, min(int(width * 0.55), width - left_offset))
+        crop_height = max(60, min(int(height * 0.08), 100))
+        return {
+            "x": crop_x,
+            "y": crop_y,
+            "width": crop_width,
+            "height": crop_height,
+        }
+
+    def execute_capture_window_region(
+        self,
+        output_path: str | Path,
+        *,
+        bounds: dict[str, int],
+    ) -> dict[str, Any]:
+        probe = self.probe_host()
+        plan = self.plan_capture_window_region(output_path, bounds=bounds)
+        if not probe["is_macos"]:
+            return {
+                "status": "skipped",
+                "reason": "host_not_macos",
+                "probe": probe,
+                "plan": plan,
+            }
+        screencapture_state = probe["tools"].get("screencapture", {})
+        if not screencapture_state.get("available"):
+            return {
+                "status": "skipped",
+                "reason": "screencapture_unavailable",
+                "probe": probe,
+                "plan": plan,
+            }
+        resolved_path = Path(plan["output_path"])
+        resolved_path.parent.mkdir(parents=True, exist_ok=True)
+        completed = self.command_runner(
+            list(plan["command"]["argv"]),
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        file_exists = resolved_path.exists()
+        file_size = resolved_path.stat().st_size if file_exists else None
+        return {
+            "status": "executed",
+            "probe": probe,
+            "plan": plan,
+            "result": {
+                "status": "ok" if completed.returncode == 0 else "failed",
+                "returncode": completed.returncode,
+                "stdout": completed.stdout.strip() or None,
+                "stderr": completed.stderr.strip() or None,
+            },
+            "output_path": str(resolved_path),
+            "file_exists": file_exists,
+            "file_size": file_size,
+        }
+
+    def execute_paste_composer_text(
+        self,
+        message_text: str,
+        *,
+        composer_bounds: dict[str, int],
+        timeout_seconds: float = DEFAULT_OCR_TIMEOUT_SECONDS,
+    ) -> dict[str, Any]:
+        probe = self.probe_host()
+        message = _normalize_text(message_text)
+        if not message:
+            return {
+                "status": "failed",
+                "reason": "empty_message",
+                "probe": probe,
+                "composer_bounds": composer_bounds,
+            }
+        if not probe["is_macos"]:
+            return {
+                "status": "skipped",
+                "reason": "host_not_macos",
+                "probe": probe,
+                "composer_bounds": composer_bounds,
+            }
+        swift_state = probe["tools"].get("swift", {})
+        if not swift_state.get("available"):
+            return {
+                "status": "skipped",
+                "reason": "swift_unavailable",
+                "probe": probe,
+                "composer_bounds": composer_bounds,
+            }
+        resolved_bounds = {
+            "x": max(0, _safe_int(composer_bounds.get("x"))),
+            "y": max(0, _safe_int(composer_bounds.get("y"))),
+            "width": max(1, _safe_int(composer_bounds.get("width"), 1)),
+            "height": max(1, _safe_int(composer_bounds.get("height"), 1)),
+        }
+        swift_source = """
+import AppKit
+import CoreGraphics
+import Foundation
+
+let args = CommandLine.arguments
+guard args.count >= 6 else {
+    fputs("usage: swift - <message> <x> <y> <width> <height>\\n", stderr)
+    exit(2)
+}
+let message = args[1]
+guard let originX = Double(args[2]),
+      let originY = Double(args[3]),
+      let width = Double(args[4]),
+      let height = Double(args[5]),
+      let screenHeight = NSScreen.main?.frame.height else {
+    fputs("invalid_bounds\\n", stderr)
+    exit(1)
+}
+let clickPoint = CGPoint(
+    x: originX + (width / 2.0),
+    y: screenHeight - (originY + (height / 2.0))
+)
+let pasteboard = NSPasteboard.general
+pasteboard.clearContents()
+pasteboard.setString(message, forType: .string)
+
+func mouseEvent(_ type: CGEventType, at point: CGPoint) {
+    let event = CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: .left)
+    event?.post(tap: .cghidEventTap)
+}
+
+func keyStroke(_ keyCode: CGKeyCode, flags: CGEventFlags = []) {
+    let down = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: true)
+    down?.flags = flags
+    down?.post(tap: .cghidEventTap)
+    let up = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: false)
+    up?.flags = flags
+    up?.post(tap: .cghidEventTap)
+}
+
+mouseEvent(.leftMouseDown, at: clickPoint)
+mouseEvent(.leftMouseUp, at: clickPoint)
+Thread.sleep(forTimeInterval: 0.2)
+keyStroke(0x00, flags: .maskCommand)
+Thread.sleep(forTimeInterval: 0.05)
+keyStroke(0x33)
+Thread.sleep(forTimeInterval: 0.1)
+keyStroke(0x09, flags: .maskCommand)
+print("pasted||\\(Int(clickPoint.x))||\\(Int(clickPoint.y))")
+""".strip()
+        try:
+            completed = self.command_runner(
+                [
+                    "swift",
+                    "-",
+                    message,
+                    str(resolved_bounds["x"]),
+                    str(resolved_bounds["y"]),
+                    str(resolved_bounds["width"]),
+                    str(resolved_bounds["height"]),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+                input=swift_source,
+            )
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "skipped",
+                "reason": "paste_timeout",
+                "probe": probe,
+                "composer_bounds": resolved_bounds,
+            }
+        if completed.returncode != 0:
+            return {
+                "status": "failed",
+                "reason": "paste_failed",
+                "probe": probe,
+                "composer_bounds": resolved_bounds,
+                "result": {
+                    "status": "failed",
+                    "returncode": completed.returncode,
+                    "stdout": completed.stdout.strip() or None,
+                    "stderr": completed.stderr.strip() or None,
+                },
+            }
+        return {
+            "status": "executed",
+            "probe": probe,
+            "composer_bounds": resolved_bounds,
+            "result": {
+                "status": "ok",
+                "returncode": completed.returncode,
+                "stdout": completed.stdout.strip() or None,
+                "stderr": completed.stderr.strip() or None,
+            },
+        }
+
+    def execute_press_return_key(
+        self,
+        *,
+        timeout_seconds: float = DEFAULT_OCR_TIMEOUT_SECONDS,
+    ) -> dict[str, Any]:
+        probe = self.probe_host()
+        if not probe["is_macos"]:
+            return {
+                "status": "skipped",
+                "reason": "host_not_macos",
+                "probe": probe,
+            }
+        swift_state = probe["tools"].get("swift", {})
+        if not swift_state.get("available"):
+            return {
+                "status": "skipped",
+                "reason": "swift_unavailable",
+                "probe": probe,
+            }
+        swift_source = """
+import CoreGraphics
+import Foundation
+
+func keyStroke(_ keyCode: CGKeyCode) {
+    let down = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: true)
+    down?.post(tap: .cghidEventTap)
+    let up = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: false)
+    up?.post(tap: .cghidEventTap)
+}
+
+keyStroke(0x24)
+print("return_sent")
+""".strip()
+        try:
+            completed = self.command_runner(
+                ["swift", "-"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+                input=swift_source,
+            )
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "skipped",
+                "reason": "return_timeout",
+                "probe": probe,
+            }
+        if completed.returncode != 0:
+            return {
+                "status": "failed",
+                "reason": "return_failed",
+                "probe": probe,
+                "result": {
+                    "status": "failed",
+                    "returncode": completed.returncode,
+                    "stdout": completed.stdout.strip() or None,
+                    "stderr": completed.stderr.strip() or None,
+                },
+            }
+        return {
+            "status": "executed",
+            "probe": probe,
+            "result": {
+                "status": "ok",
+                "returncode": completed.returncode,
+                "stdout": completed.stdout.strip() or None,
+                "stderr": completed.stderr.strip() or None,
+            },
+        }
+
+    def execute_ocr_window_title(
+        self,
+        screenshot_path: str | Path,
+        *,
+        timeout_seconds: float = DEFAULT_OCR_TIMEOUT_SECONDS,
+        max_items: int = DEFAULT_VISIBLE_MESSAGE_LIMIT,
+    ) -> dict[str, Any]:
+        probe = self.probe_host()
+        resolved_path = Path(screenshot_path).resolve()
+        if not probe["is_macos"]:
+            return {
+                "status": "skipped",
+                "reason": "host_not_macos",
+                "probe": probe,
+                "image_path": str(resolved_path),
+            }
+        swift_state = probe["tools"].get("swift", {})
+        if not swift_state.get("available"):
+            return {
+                "status": "skipped",
+                "reason": "swift_unavailable",
+                "probe": probe,
+                "image_path": str(resolved_path),
+            }
+        if not resolved_path.exists():
+            return {
+                "status": "skipped",
+                "reason": "ocr_image_missing",
+                "probe": probe,
+                "image_path": str(resolved_path),
+            }
+        swift_source = """
+import Foundation
+import Vision
+import AppKit
+
+let args = CommandLine.arguments
+guard args.count >= 2 else {
+    fputs("usage: swift - <image_path>\\n", stderr)
+    exit(2)
+}
+let imageURL = URL(fileURLWithPath: args[1])
+guard let nsImage = NSImage(contentsOf: imageURL) else {
+    fputs("failed_to_load_image\\n", stderr)
+    exit(1)
+}
+var rect = NSRect(origin: .zero, size: nsImage.size)
+guard let cgImage = nsImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
+    fputs("failed_to_make_cgimage\\n", stderr)
+    exit(1)
+}
+let request = VNRecognizeTextRequest()
+request.recognitionLevel = .accurate
+request.usesLanguageCorrection = false
+request.recognitionLanguages = ["ja-JP", "en-US"]
+let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+do {
+    try handler.perform([request])
+    let texts = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }
+    print(texts.joined(separator: "\\n"))
+} catch {
+    fputs("vision_failed: \\(error)\\n", stderr)
+    exit(1)
+}
+""".strip()
+        try:
+            completed = self.command_runner(
+                ["swift", "-", str(resolved_path)],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+                input=swift_source,
+            )
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "skipped",
+                "reason": "ocr_timeout",
+                "probe": probe,
+                "image_path": str(resolved_path),
+            }
+        if completed.returncode != 0:
+            return {
+                "status": "failed",
+                "reason": "ocr_failed",
+                "probe": probe,
+                "image_path": str(resolved_path),
+                "result": {
+                    "status": "failed",
+                    "returncode": completed.returncode,
+                    "stdout": completed.stdout.strip() or None,
+                    "stderr": completed.stderr.strip() or None,
+                },
+            }
+        lines = [
+            _normalize_text(line)
+            for line in completed.stdout.splitlines()
+            if _normalize_text(line)
+        ]
+        payload = {
+            "image_path": str(resolved_path),
+            "item_count": len(lines[:max_items]),
+            "items": [{"role": "ocr_window_header", "text": line} for line in lines[:max_items]],
+        }
+        return {
+            "status": "executed",
+            "probe": probe,
+            "image_path": str(resolved_path),
+            "payload_summary": payload,
+            "result": {
+                "status": "ok",
+                "returncode": completed.returncode,
+                "stdout": completed.stdout.strip() or None,
+                "stderr": completed.stderr.strip() or None,
+            },
+        }
+
     def validate_target_observation(
         self,
         *,
@@ -283,6 +774,7 @@ class MacOSLineDesktopAdapter:
         expected_ax_fingerprint: str | None = None,
         ax_payload: dict[str, Any] | None = None,
         visible_payload: dict[str, Any] | None = None,
+        ocr_title_payload: dict[str, Any] | None = None,
         require_confirmation: bool = False,
     ) -> dict[str, Any]:
         ax_payload = ax_payload if isinstance(ax_payload, dict) else {}
@@ -293,6 +785,14 @@ class MacOSLineDesktopAdapter:
             visible_items = [
                 _normalize_text(item.get("text"))
                 for item in raw_items
+                if isinstance(item, dict) and _normalize_text(item.get("text"))
+            ]
+        ocr_items = []
+        raw_ocr_items = ocr_title_payload.get("items") if isinstance(ocr_title_payload, dict) else None
+        if isinstance(raw_ocr_items, list):
+            ocr_items = [
+                _normalize_text(item.get("text"))
+                for item in raw_ocr_items
                 if isinstance(item, dict) and _normalize_text(item.get("text"))
             ]
         participant_labels = tuple(
@@ -310,6 +810,8 @@ class MacOSLineDesktopAdapter:
                 chat_title_matches.append("window_name")
             if any(_contains_normalized(item, expected_chat_title) for item in visible_items):
                 chat_title_matches.append("visible_items")
+            if any(_contains_normalized(item, expected_chat_title) for item in ocr_items):
+                chat_title_matches.append("ocr_window_header")
         chat_title_ok = len(chat_title_matches) > 0
 
         participant_hits = [
@@ -373,6 +875,8 @@ class MacOSLineDesktopAdapter:
             "configured_identity_signals": configured_identity_signals,
             "visible_item_count": len(visible_items),
             "visible_items_sample": visible_items[:10],
+            "ocr_title_item_count": len(ocr_items),
+            "ocr_title_items_sample": ocr_items[:10],
             "failure_reasons": failure_reasons,
         }
 
@@ -403,19 +907,72 @@ class MacOSLineDesktopAdapter:
             max_items=max_items,
             timeout_seconds=timeout_seconds,
         )
+        ax_payload = ax_dump.get("payload_summary") if ax_dump.get("status") == "executed" else None
+        visible_payload = visible_read.get("payload_summary") if visible_read.get("status") == "executed" else None
+        preliminary_validation = self.validate_target_observation(
+            expected_chat_title=expected_chat_title,
+            expected_window_title_substring=expected_window_title_substring,
+            expected_participant_labels=expected_participant_labels,
+            expected_ax_fingerprint=expected_ax_fingerprint,
+            ax_payload=ax_payload,
+            visible_payload=visible_payload,
+            require_confirmation=require_confirmation,
+        )
+        ocr_title_read = {
+            "status": "skipped",
+            "reason": "ocr_not_needed",
+        }
+        if (
+            isinstance(ax_payload, dict)
+            and preliminary_validation.get("matched") is False
+            and "insufficient_identity_signals" in preliminary_validation.get("failure_reasons", [])
+            and preliminary_validation.get("frontmost") is True
+            and _normalize_text(expected_chat_title)
+        ):
+            header_bounds = self._build_header_probe_bounds(ax_payload)
+            if header_bounds is None:
+                ocr_title_read = {
+                    "status": "skipped",
+                    "reason": "ocr_bounds_missing",
+                }
+            else:
+                ocr_image_path = (
+                    Path(ax_path).with_suffix(".ocr-title.png")
+                    if ax_output_path is not None
+                    else Path(tempfile.gettempdir()) / "line_desktop_patrol_validate.ocr-title.png"
+                )
+                header_capture = self.execute_capture_window_region(
+                    ocr_image_path,
+                    bounds=header_bounds,
+                )
+                if header_capture.get("status") == "executed" and header_capture.get("result", {}).get("status") == "ok":
+                    ocr_title_read = self.execute_ocr_window_title(
+                        header_capture["output_path"],
+                        max_items=max_items,
+                    )
+                    if isinstance(ocr_title_read, dict):
+                        ocr_title_read["capture"] = header_capture
+                else:
+                    ocr_title_read = {
+                        "status": "skipped",
+                        "reason": "ocr_capture_failed",
+                        "capture": header_capture,
+                    }
         validation = self.validate_target_observation(
             expected_chat_title=expected_chat_title,
             expected_window_title_substring=expected_window_title_substring,
             expected_participant_labels=expected_participant_labels,
             expected_ax_fingerprint=expected_ax_fingerprint,
-            ax_payload=ax_dump.get("payload_summary") if ax_dump.get("status") == "executed" else None,
-            visible_payload=visible_read.get("payload_summary") if visible_read.get("status") == "executed" else None,
+            ax_payload=ax_payload,
+            visible_payload=visible_payload,
+            ocr_title_payload=ocr_title_read.get("payload_summary") if isinstance(ocr_title_read, dict) and ocr_title_read.get("status") == "executed" else None,
             require_confirmation=require_confirmation,
         )
         return {
             "status": "executed",
             "ax_dump": ax_dump,
             "visible_read": visible_read,
+            "ocr_title_read": ocr_title_read,
             "validation": validation,
         }
 
@@ -836,12 +1393,75 @@ class MacOSLineDesktopAdapter:
         parts = (completed.stdout.strip().split("||", 2) + ["", "", ""])[:3]
         send_status, send_method, echoed_text = parts
         result_status = send_status or "unknown"
+        fallback_result: dict[str, Any] | None = None
+        if result_status == "composer_missing":
+            validation_ax = validation_result.get("ax_dump") if isinstance(validation_result, dict) else None
+            ax_payload = validation_ax.get("payload_summary") if isinstance(validation_ax, dict) else None
+            composer_bounds = self._build_composer_probe_bounds(ax_payload or {})
+            fallback_result = {
+                "reason": "composer_missing",
+                "composer_bounds": composer_bounds,
+            }
+            if composer_bounds is not None:
+                paste_result = self.execute_paste_composer_text(
+                    message,
+                    composer_bounds=composer_bounds,
+                    timeout_seconds=max(timeout_seconds, DEFAULT_OCR_TIMEOUT_SECONDS),
+                )
+                fallback_result["paste"] = paste_result
+                if paste_result.get("status") == "executed":
+                    with tempfile.NamedTemporaryFile(prefix="line_desktop_patrol_composer_", suffix=".png", delete=False) as handle:
+                        composer_probe_path = Path(handle.name)
+                    capture_result = self.execute_capture_window_region(
+                        composer_probe_path,
+                        bounds=composer_bounds,
+                    )
+                    fallback_result["capture"] = capture_result
+                    ocr_result = self.execute_ocr_window_title(
+                        composer_probe_path,
+                        timeout_seconds=max(timeout_seconds, DEFAULT_OCR_TIMEOUT_SECONDS),
+                    )
+                    fallback_result["ocr"] = ocr_result
+                    ocr_payload = ocr_result.get("payload_summary") if isinstance(ocr_result, dict) else None
+                    ocr_items = ocr_payload.get("items") if isinstance(ocr_payload, dict) else None
+                    matched_ocr_text = None
+                    if isinstance(ocr_items, list):
+                        for item in ocr_items:
+                            if isinstance(item, dict) and _ocr_echo_matches(item.get("text"), message):
+                                matched_ocr_text = _normalize_text(item.get("text"))
+                                break
+                    if matched_ocr_text:
+                        press_result = self.execute_press_return_key(
+                            timeout_seconds=max(timeout_seconds, DEFAULT_OCR_TIMEOUT_SECONDS),
+                        )
+                        fallback_result["press_return"] = press_result
+                        if press_result.get("status") == "executed":
+                            return {
+                                "status": "executed",
+                                "reason": "sent",
+                                "probe": probe,
+                                "plan": plan,
+                                "target_validation": validation_result,
+                                "fallback": fallback_result,
+                                "result": {
+                                    "status": "sent",
+                                    "send_method": "return_fallback",
+                                    "echoed_text": matched_ocr_text,
+                                    "returncode": 0,
+                                    "stdout": "sent||return_fallback||" + matched_ocr_text,
+                                    "stderr": None,
+                                },
+                            }
+                    result_status = "echo_mismatch"
+                    send_method = "return_fallback"
+                    echoed_text = matched_ocr_text or None
         return {
             "status": "executed" if result_status == "sent" else "failed",
             "reason": "sent" if result_status == "sent" else "send_not_confirmed",
             "probe": probe,
             "plan": plan,
             "target_validation": validation_result,
+            "fallback": fallback_result,
             "result": {
                 "status": result_status,
                 "send_method": _normalize_text(send_method) or None,
@@ -994,8 +1614,8 @@ class MacOSLineDesktopAdapter:
                 },
             }
         raw_output = completed.stdout.strip()
-        parts = raw_output.split("||", 4)
-        if len(parts) != 5:
+        parts = raw_output.split("||", 8)
+        if len(parts) != 9:
             return {
                 "status": "failed",
                 "reason": "invalid_ax_dump_output",
@@ -1008,7 +1628,7 @@ class MacOSLineDesktopAdapter:
                     "stderr": completed.stderr.strip() or None,
                 },
             }
-        process_name, frontmost_state, window_count, window_name, ui_enabled = parts
+        process_name, frontmost_state, window_count, window_name, ui_enabled, window_x, window_y, window_width, window_height = parts
         try:
             parsed_window_count = int(window_count.strip() or "0")
         except ValueError:
@@ -1031,6 +1651,12 @@ class MacOSLineDesktopAdapter:
             "window_count": parsed_window_count,
             "window_name": window_name or None,
             "ui_elements_enabled": ui_enabled.strip().lower() == "true",
+            "window_bounds": {
+                "x": _safe_int(window_x),
+                "y": _safe_int(window_y),
+                "width": _safe_int(window_width),
+                "height": _safe_int(window_height),
+            },
         }
         resolved_path = Path(plan["output_path"])
         resolved_path.parent.mkdir(parents=True, exist_ok=True)
