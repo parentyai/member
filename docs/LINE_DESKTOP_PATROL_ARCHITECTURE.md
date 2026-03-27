@@ -124,8 +124,10 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 
 ## PR25 Additions
 - `member_line_patrol.synthesize_code_apply_draft` で code edit bundle を `code_apply_draft.json` / `code_apply_draft.md` / `code_apply_draft.patch` に正規化する
+- `member_line_patrol.synthesize_code_apply_task` で code apply draft を `code_apply_task.json` / `code_apply_task.md` / `code_apply_task.prompt.md` に正規化する
 - code apply draft は patch document と apply steps を追加し、人間が `apply_patch` 前レビューを行う直前の handoff を固定する
 - MCP manifest は `synthesize_code_apply_draft` を `code_apply_draft_ready` として公開し、bundle は依然として artifact-only で code auto-apply を持たない
+- MCP manifest は `synthesize_code_apply_task` を `code_apply_task_ready` として公開し、bundle は依然として artifact-only で code auto-apply を持たない
 
 ## Boundaries
 - Python sidecar:
@@ -187,6 +189,9 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_draft.json`
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_draft.md`
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_draft.patch`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_task.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_task.md`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_task.prompt.md`
   - `artifacts/line_desktop_patrol/acceptance/latest.json`
   - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
   - `artifacts/line_desktop_patrol/runtime/state.json`

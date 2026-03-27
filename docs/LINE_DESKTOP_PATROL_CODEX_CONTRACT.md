@@ -105,3 +105,14 @@ This document defines the local-only handoff between the LINE Desktop patrol que
   - explicit apply steps before any human runs `apply_patch`
   - expected outputs and validation commands for the final review step
 - the bundle still does not apply code, commit changes, or open a PR by itself
+
+## Code apply task
+- `line-desktop-patrol:synthesize-code-apply-task` consumes one code apply draft and emits:
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_task.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_task.md`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_task.prompt.md`
+- the bundle adds:
+  - a reviewer checklist for the final apply step
+  - a worker prompt that names the prepared write set, patch document, validation commands, and stop conditions
+  - expected outputs for the final human-reviewed apply task
+- the bundle still does not apply code, commit changes, or open a PR by itself
