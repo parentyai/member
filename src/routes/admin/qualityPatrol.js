@@ -85,9 +85,22 @@ async function handleQualityPatrolQuery(req, res, deps) {
           topPriorityCount: result && result.summary ? result.summary.topPriorityCount : 0,
           observationBlockerCount: result && result.summary ? result.summary.observationBlockerCount : 0,
           desktopPatrolStatus: desktopPatrolSummary && desktopPatrolSummary.status ? desktopPatrolSummary.status : 'unavailable',
+          desktopPatrolStage: desktopPatrolSummary && desktopPatrolSummary.stage ? desktopPatrolSummary.stage : 'not_observed',
           desktopPatrolQueueCount: desktopPatrolSummary && desktopPatrolSummary.queue
             ? Number(desktopPatrolSummary.queue.totalCount || 0)
             : 0,
+          desktopPatrolLatestRunId: desktopPatrolSummary && desktopPatrolSummary.latestRun
+            ? desktopPatrolSummary.latestRun.runId || null
+            : null,
+          desktopPatrolLastRunKind: desktopPatrolSummary && desktopPatrolSummary.latestRun
+            ? desktopPatrolSummary.latestRun.lastRunKind || null
+            : null,
+          desktopPatrolSendStatus: desktopPatrolSummary && desktopPatrolSummary.latestRun
+            ? desktopPatrolSummary.latestRun.sendStatus || null
+            : null,
+          desktopPatrolPromotionProposalId: desktopPatrolSummary && desktopPatrolSummary.promotion
+            ? desktopPatrolSummary.promotion.latestProposalId || null
+            : null,
           desktopPatrolPromotionKind: desktopPatrolSummary && desktopPatrolSummary.promotion
             ? desktopPatrolSummary.promotion.latestArtifactKind || null
             : null,
@@ -96,6 +109,9 @@ async function handleQualityPatrolQuery(req, res, deps) {
             : null,
           desktopPatrolPromotionDraftPrRef: desktopPatrolSummary && desktopPatrolSummary.promotion
             ? desktopPatrolSummary.promotion.latestDraftPrRef || null
+            : null,
+          desktopPatrolPromotionUpdatedAt: desktopPatrolSummary && desktopPatrolSummary.promotion
+            ? desktopPatrolSummary.promotion.updatedAt || null
             : null
         }
       });

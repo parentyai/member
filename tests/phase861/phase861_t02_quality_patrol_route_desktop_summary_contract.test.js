@@ -48,12 +48,18 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
       ok: true,
       status: 'ready',
       stage: 'queued',
+      latestRun: {
+        runId: 'ldp_run_002',
+        lastRunKind: 'execute',
+        sendStatus: 'sent'
+      },
       queue: { totalCount: 2, latestProposalId: 'prop_002', packetCount: 2 },
       promotion: {
         latestProposalId: 'prop_002',
         latestArtifactKind: 'code_apply_record',
         latestArtifactStatus: 'completed',
-        latestDraftPrRef: 'refs/pull/2002/head'
+        latestDraftPrRef: 'refs/pull/2002/head',
+        updatedAt: '2026-03-27T22:58:00.000Z'
       }
     }),
     appendAuditLog: async (payload) => {
@@ -69,8 +75,14 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
   assert.equal(payload.desktopPatrolSummary.queue.totalCount, 2);
   assert.equal(auditCalls.length, 1);
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolStatus, 'ready');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolStage, 'queued');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolQueueCount, 2);
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolLatestRunId, 'ldp_run_002');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolLastRunKind, 'execute');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolSendStatus, 'sent');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionProposalId, 'prop_002');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionKind, 'code_apply_record');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionStatus, 'completed');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionDraftPrRef, 'refs/pull/2002/head');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionUpdatedAt, '2026-03-27T22:58:00.000Z');
 });
