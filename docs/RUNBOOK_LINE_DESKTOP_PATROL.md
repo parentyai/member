@@ -4,7 +4,7 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 
 ## Preconditions
 - test accounts / whitelist targets only
-- PR11 still has no desktop send path
+- tracked sample config still has no desktop send path
 - global kill switch remains the final stop for any future side-effectful execute mode
 
 ## Validate the scaffold
@@ -13,9 +13,16 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 3. `npm run line-desktop-patrol:probe`
 4. `npm run line-desktop-patrol:dry-run`
 5. `npm run line-desktop-patrol:loop`
-6. `npm run line-desktop-patrol:evaluate -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json`
-7. `npm run line-desktop-patrol:enqueue-proposals -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json --queue-root /tmp/line_desktop_patrol_proposals`
-8. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
+6. `npm run line-desktop-patrol:open-target -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
+7. `npm run line-desktop-patrol:send -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json --message-text "self test message"`
+8. `npm run line-desktop-patrol:execute-once -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
+9. `npm run line-desktop-patrol:loop-execute -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
+10. `npm run line-desktop-patrol:evaluate -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json`
+11. `npm run line-desktop-patrol:enqueue-proposals -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json --queue-root /tmp/line_desktop_patrol_proposals`
+12. `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
+13. `npm run line-desktop-patrol:doctor`
+14. `npm run line-desktop-patrol:retention`
+15. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
 
 ## Expected outputs
 - validate command:
@@ -40,6 +47,15 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - writes `artifacts/line_desktop_patrol/runtime/state.json`
   - refreshes `tmp/line_desktop_patrol_latest.json`
   - emits a guard trace with `failure_reason` like `policy_disabled_stop`, `kill_switch_stop`, `blocked_hours_skip`, `max_runs_per_hour_skip`, or `failure_streak_stop` before any dry-run trace is attempted
+- open-target / send / execute-once:
+  - all require a machine-local override where `enabled=true` and the selected target allows `execute`
+  - `open-target` validates the frontmost LINE chat and only attempts a uniquely matched allowlist target click
+  - `send` only proceeds after target validation and composer echo confirmation succeed
+  - `execute-once` writes `before/after` evidence plus trace/eval/queue artifacts under one run id
+- execute loop:
+  - acquires `artifacts/line_desktop_patrol/runtime/execute.lock.json`
+  - skips with `overlap_run_skip` while a fresh lock is active
+  - is intended for launchd or operator-scheduled runs, not for tracked sample config
 - screenshot observation:
   - when `store_screenshots=true`, `line-desktop-patrol:dry-run` may capture `artifacts/line_desktop_patrol/runs/<run_id>/after.png`
   - on non-macOS hosts or when `screencapture` is unavailable, the trace records a skipped observation instead of failing the run
@@ -60,6 +76,15 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - appends schema-compliant rows into a local-only `queue.jsonl`
   - writes `packets/<proposal_id>.codex.json`
   - writes `proposal_linkage.json` next to the source trace
+- promote-proposal command:
+  - reads one queue row and one Codex packet
+  - prepares a dedicated git branch/worktree and a draft PR body file
+  - only creates a GitHub draft PR when the prepared branch already has a code diff and the proposal is not blocked by risk policy
+- doctor command:
+  - reports host capability, policy readiness, runtime visibility, loop state, and latest summary presence
+- retention command:
+  - dry-run by default
+  - only deletes stale raw screenshot / AX / visible artifacts when `--apply` is passed
 
 ## Stop and rollback
 - local scaffold stop:
@@ -134,6 +159,13 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 - visible-message rows stay bounded and speaker attribution remains `unknown`
 - visible-message observation failures do not block AX observation or write to Firestore
 - visible-message observation does not imply desktop send enablement
+
+## Execute guardrails
+- tracked `policy.example.json` and `allowed_targets.example.json` remain dry-run only
+- execute enablement requires machine-local override plus `allowed_send_modes=["execute"]`
+- `send_text` fails closed on target mismatch, blocked hours, kill switch, failure streak, or composer echo mismatch
+- proposal promotion never auto-merges and does not auto-apply code changes
+- launchd scheduling is optional and should only target local override configs
 
 ## Optional operator check
 1. Generate one local trace/eval/queue sequence with the existing dry-run + evaluate + enqueue commands.

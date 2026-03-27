@@ -37,6 +37,26 @@ const BLOCKER_CATALOG = Object.freeze({
     severity: 'high',
     message: 'Conversation transcript is not reviewable because required masked text is missing.',
     source: 'conversation_review_snapshots'
+  }),
+  target_validation_failed: Object.freeze({
+    severity: 'high',
+    message: 'Desktop target validation failed before the execute run could be trusted.',
+    source: 'line_desktop_patrol_trace'
+  }),
+  send_not_confirmed: Object.freeze({
+    severity: 'high',
+    message: 'Desktop send was not confirmed, so the execute trace cannot be trusted as a sent run.',
+    source: 'line_desktop_patrol_trace'
+  }),
+  post_send_reply_missing: Object.freeze({
+    severity: 'medium',
+    message: 'The desktop execute run sent successfully, but a reply was not observed in the bounded follow-up window.',
+    source: 'line_desktop_patrol_trace'
+  }),
+  visible_correlation_ambiguous: Object.freeze({
+    severity: 'medium',
+    message: 'Visible desktop rows changed, but the send/reply correlation remained ambiguous.',
+    source: 'line_desktop_patrol_trace'
   })
 });
 

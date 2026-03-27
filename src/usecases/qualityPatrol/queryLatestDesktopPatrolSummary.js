@@ -48,6 +48,25 @@ async function readDirIfExists(dirPath) {
   }
 }
 
+async function latestPromotionRecord(promotionsRoot) {
+  const entries = await readDirIfExists(promotionsRoot);
+  const files = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => path.join(promotionsRoot, entry.name));
+  let latest = null;
+  let latestSortKey = 0;
+  for (const filePath of files) {
+    const payload = await readJsonIfExists(filePath);
+    const stat = await statIfExists(filePath);
+    const sortKey = resolveSortKey(payload, stat);
+    if (sortKey >= latestSortKey) {
+      latest = payload ? Object.assign({ __path: filePath }, payload) : latest;
+      latestSortKey = sortKey;
+    }
+  }
+  return latest;
+}
+
 async function statIfExists(targetPath) {
   try {
     return await fs.promises.stat(targetPath);
@@ -107,12 +126,33 @@ function toArtifactRef(kind, filePath, audience) {
 function normalizeLatestRun(run) {
   if (!run || !run.trace || typeof run.trace !== 'object') return null;
   const trace = run.trace;
+  const sendResult = trace.send_result && typeof trace.send_result === 'object' && trace.send_result.result && typeof trace.send_result.result === 'object'
+    ? trace.send_result.result
+    : {};
+  const targetValidation = trace.target_validation && typeof trace.target_validation === 'object'
+    ? trace.target_validation
+    : {};
+  const executionMode = normalizeText(trace.send_mode, null);
+  const failureReason = normalizeText(trace.failure_reason || trace.failureReason, null);
+  let lastRunKind = 'dry_run';
+  if (executionMode === 'execute_once' || executionMode === 'send_only' || executionMode === 'open_target') {
+    lastRunKind = 'execute';
+  } else if (failureReason && failureReason.endsWith('_stop')) {
+    lastRunKind = 'guard_stop';
+  }
   return {
     runId: normalizeText(trace.run_id, run.runId),
     scenarioId: normalizeText(trace.scenario_id, null),
     targetId: normalizeText(trace.target_id, null),
     finishedAt: normalizeText(trace.finished_at || trace.finishedAt || trace.started_at || trace.startedAt, null),
-    failureReason: normalizeText(trace.failure_reason || trace.failureReason, null)
+    failureReason,
+    executionMode,
+    sendStatus: normalizeText(sendResult.status, null),
+    targetValidationStatus: targetValidation.matched === true
+      ? 'matched'
+      : normalizeText(targetValidation.reason, null),
+    replyObservationStatus: normalizeText(trace.correlation_status, null),
+    lastRunKind
   };
 }
 
@@ -213,6 +253,7 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
     const latestQueueEntry = queueEntries.length ? queueEntries[queueEntries.length - 1] : null;
     const packetRoot = path.join(artifactRoot, 'proposals', 'packets');
     const packetPaths = await listPacketPaths(packetRoot);
+    const latestPromotion = await latestPromotionRecord(path.join(artifactRoot, 'proposals', 'promotions'));
     const latestProposalIds = summarizeLatestProposalIds(
       latestRunRecord ? latestRunRecord.linkage : null,
       queueEntries
@@ -272,7 +313,12 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
         latestProposalId: latestQueueEntry && typeof latestQueueEntry === 'object'
           ? normalizeText(latestQueueEntry.proposal_id, null)
           : null,
-        packetCount: packetPaths.length
+        packetCount: packetPaths.length,
+        latestDraftPrRef: latestPromotion && typeof latestPromotion === 'object'
+          ? normalizeText(latestPromotion.draft_pr_ref || latestPromotion.draft_pr_url, null)
+          : (latestQueueEntry && typeof latestQueueEntry === 'object'
+            ? normalizeText(latestQueueEntry.draft_pr_ref, null)
+            : null)
       },
       latestProposalIds,
       artifactRefs

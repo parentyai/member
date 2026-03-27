@@ -233,8 +233,10 @@ Typical files:
 - `artifacts/line_desktop_patrol/runs/<run_id>/after.visible.json`
 - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
 - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
+- `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
 - `artifacts/line_desktop_patrol/runtime/state.json`
+- `artifacts/line_desktop_patrol/runtime/execute.lock.json`
 - `tmp/line_desktop_patrol_latest.json`
 
 Typical fields:
@@ -247,6 +249,9 @@ Typical fields:
   - `ax_tree_before`, `ax_tree_after`
   - `model_config`, `retrieval_refs`, `evaluator_scores`
   - `failure_reason`, `proposal_id`
+  - optional execute fields: `send_mode`, `target_validation`, `send_result`
+  - optional execute fields: `pre_observation`, `post_observation`, `correlation_status`
+  - optional execute fields: `reply_wait_window_ms`, `execute_guard_reason`
 - policy:
   - `enabled`, `dry_run_default`, `allowed_targets`, `blocked_hours`
   - `max_runs_per_hour`, `failure_streak_threshold`, `ui_drift_threshold`
@@ -256,6 +261,9 @@ Typical fields:
   - `proposal_id`, `source_trace_ids`, `root_cause_category`
   - `proposed_change_scope`, `affected_files`, `expected_score_delta`
   - `risk_level`, `requires_human_review`
+- promotion record:
+  - `proposal_id`, `status`, `branch_name`, `base_ref`, `worktree_path`
+  - `body_path`, `draft_pr_url`, `draft_pr_ref`, `risk_level`
 - loop state:
   - `updated_at`, `failure_streak`, `last_run_id`, `last_failure_reason`
   - `recent_runs[]`, `last_decision`
@@ -270,6 +278,9 @@ Notes:
 - PR7 allows `screenshot_after` to point at `artifacts/line_desktop_patrol/runs/<run_id>/after.png` when a local override enables `store_screenshots=true`.
 - PR9 allows `ax_tree_after` to point at `artifacts/line_desktop_patrol/runs/<run_id>/after.ax.json` when a local override enables `store_ax_tree=true`.
 - PR11 allows `visible_after` plus `observation_artifacts.read_visible_messages.output_path` to point at `artifacts/line_desktop_patrol/runs/<run_id>/after.visible.json` when a local override enables `store_ax_tree=true`.
+- PR13 adds execute trace fields for send/validation/correlation while preserving the original required trace schema.
+- PR15 adds promotion metadata under `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`.
+- PR16 adds `artifacts/line_desktop_patrol/runtime/execute.lock.json` for overlap protection in scheduled execute mode.
 
 Notes:
 - PR2 adds local dry-run trace emission through `member_line_patrol.dry_run_harness`.
@@ -277,6 +288,7 @@ Notes:
 - PR2 keeps `screenshot_*` and `ax_tree_*` null in the default dry-run harness because capture/read steps are still deferred.
 - PR3 desktop eval artifacts are derived read-only outputs that reuse the existing `qualityPatrol` pipeline and do not add Firestore collections.
 - PR4 adds a local append-only proposal queue and per-proposal Codex packets; both remain filesystem-only and human-review gated.
+- PR17 retention only targets stale raw screenshot / AX / visible artifacts and intentionally preserves trace / eval / queue artifacts.
 - global stop continues to be the existing kill switch; local patrol enablement stays in the local policy file.
 
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`

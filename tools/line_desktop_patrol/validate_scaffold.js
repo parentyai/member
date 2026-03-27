@@ -29,13 +29,19 @@ const REQUIRED_FILES = [
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'proposal_builder.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'enqueue_eval_proposals.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'dry_run_harness.py'),
+  path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'execute_harness.py'),
+  path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'execute_loop.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'loop_state.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'patrol_loop.py'),
+  path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'doctor.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'mcp_server.py'),
+  path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'promote_proposal.py'),
   path.join(TOOL_ROOT, 'read_repo_runtime_state.js'),
+  path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'retention.py'),
   path.join(ROOT, 'tools', 'quality_patrol', 'run_desktop_patrol_eval.js'),
   path.join(ROOT, 'src', 'usecases', 'qualityPatrol', 'buildConversationReviewUnitsFromDesktopTrace.js'),
-  path.join(ROOT, 'docs', 'LINE_DESKTOP_PATROL_CODEX_CONTRACT.md')
+  path.join(ROOT, 'docs', 'LINE_DESKTOP_PATROL_CODEX_CONTRACT.md'),
+  path.join(TOOL_ROOT, 'launchd', 'com.member.line-desktop-patrol.execute-loop.plist.example')
 ];
 
 function assert(condition, message) {
@@ -77,8 +83,15 @@ function runValidation() {
   assert(packageJson.scripts['line-desktop-patrol:probe'], 'package.json must define line-desktop-patrol:probe');
   assert(packageJson.scripts['line-desktop-patrol:dry-run'], 'package.json must define line-desktop-patrol:dry-run');
   assert(packageJson.scripts['line-desktop-patrol:loop'], 'package.json must define line-desktop-patrol:loop');
+  assert(packageJson.scripts['line-desktop-patrol:open-target'], 'package.json must define line-desktop-patrol:open-target');
+  assert(packageJson.scripts['line-desktop-patrol:send'], 'package.json must define line-desktop-patrol:send');
+  assert(packageJson.scripts['line-desktop-patrol:execute-once'], 'package.json must define line-desktop-patrol:execute-once');
+  assert(packageJson.scripts['line-desktop-patrol:loop-execute'], 'package.json must define line-desktop-patrol:loop-execute');
   assert(packageJson.scripts['line-desktop-patrol:evaluate'], 'package.json must define line-desktop-patrol:evaluate');
   assert(packageJson.scripts['line-desktop-patrol:enqueue-proposals'], 'package.json must define line-desktop-patrol:enqueue-proposals');
+  assert(packageJson.scripts['line-desktop-patrol:promote-proposal'], 'package.json must define line-desktop-patrol:promote-proposal');
+  assert(packageJson.scripts['line-desktop-patrol:doctor'], 'package.json must define line-desktop-patrol:doctor');
+  assert(packageJson.scripts['line-desktop-patrol:retention'], 'package.json must define line-desktop-patrol:retention');
   assert(packageJson.scripts['test:phase858'], 'package.json must define test:phase858');
   assert(packageJson.scripts['test:phase859'], 'package.json must define test:phase859');
   assert(packageJson.scripts['test:phase860'], 'package.json must define test:phase860');
@@ -88,6 +101,11 @@ function runValidation() {
   assert(packageJson.scripts['test:phase865'], 'package.json must define test:phase865');
   assert(packageJson.scripts['test:phase866'], 'package.json must define test:phase866');
   assert(packageJson.scripts['test:phase867'], 'package.json must define test:phase867');
+  assert(packageJson.scripts['test:phase868'], 'package.json must define test:phase868');
+  assert(packageJson.scripts['test:phase869'], 'package.json must define test:phase869');
+  assert(packageJson.scripts['test:phase870'], 'package.json must define test:phase870');
+  assert(packageJson.scripts['test:phase871'], 'package.json must define test:phase871');
+  assert(packageJson.scripts['test:phase872'], 'package.json must define test:phase872');
 
   const samplePolicy = readJson(path.join(TOOL_ROOT, 'config', 'policy.example.json'));
   assert(samplePolicy.store_ax_tree === false, 'policy.example.json must keep store_ax_tree=false by default');

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.member.line-desktop-patrol.execute-loop</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/zsh</string>
+      <string>-lc</string>
+      <string>cd /Volumes/Arumamihs/Member &amp;&amp; npm run line-desktop-patrol:loop-execute -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json --output-root artifacts/line_desktop_patrol --route-key line-desktop-patrol</string>
+    </array>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>StartInterval</key>
+    <integer>1800</integer>
+    <key>StandardOutPath</key>
+    <string>/tmp/member-line-desktop-patrol.execute-loop.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/member-line-desktop-patrol.execute-loop.err.log</string>
+    <key>WorkingDirectory</key>
+    <string>/Volumes/Arumamihs/Member</string>
+  </dict>
+</plist>

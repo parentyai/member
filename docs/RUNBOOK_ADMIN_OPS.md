@@ -7,8 +7,8 @@
 - kill switch は「送信副作用の最終停止装置」
 - traceId は監査の主キー（Trace Search で追えること）
 
-## LINE Desktop Patrol scaffold（PR1）
-- `tools/line_desktop_patrol/` は local-only scaffold で、PR1 時点では送信導線を持たない。
+## LINE Desktop Patrol scaffold
+- `tools/line_desktop_patrol/` は local-only harness で、tracked sample config では送信導線を持たない。
 - local policy の既定値は `enabled=false` / `dry_run_default=true`。
 - 将来 desktop execute path が追加されても、最終停止は既存 kill switch を優先する。
 - 運用確認は `docs/RUNBOOK_LINE_DESKTOP_PATROL.md` を参照する。
@@ -19,6 +19,11 @@
 - PR9 以降は local override で `store_ax_tree=true` を明示したときだけ dry-run harness が AX observation を試行し、既定サンプル設定のままでは capture しない。
 - PR10 以降は standalone visible-message read を実行できるが、bounded timeout + `max_items` 付きの local observation のみで、dry-run harness や運用UIにはまだ配線しない。
 - PR11 以降は `store_ax_tree=true` の local override 時に限り dry-run harness も bounded visible-message read を試行するが、speaker attribution は `unknown` のままで運用UIや Firestore へはまだ配線しない。
+- PR12 以降は local override + allowlist execute target に限り `open-target` / `send` / `execute-once` を実行できる。
+- PR13 以降は `execute-once` が trace/eval/queue を 1 run で閉じる。
+- PR15 以降は proposal promotion が branch/worktree/draft PR body を準備するが、auto-merge は行わない。
+- PR16 以降は `line-desktop-patrol:loop-execute` が overlap lock を使い、launchd からの定期起動に対応する。
+- PR17 以降は `line-desktop-patrol:doctor` と `line-desktop-patrol:retention` で host 診断と raw artifact retention を実行できる。
 
 ## Feature Flag Governance（Phase PR5）
 - canonical registry:
