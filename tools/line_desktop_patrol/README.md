@@ -52,6 +52,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - `npm run line-desktop-patrol:enqueue-proposals -- --trace <artifacts/.../trace.json> --planning-output <artifacts/.../desktop_patrol_eval_planning.json>`
 - `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
 - `npm run line-desktop-patrol:synthesize-patch -- --proposal-id <proposal_id>`
+- `npm run line-desktop-patrol:synthesize-code-patch -- --proposal-id <proposal_id>`
 - `npm run line-desktop-patrol:scaffold-operator-bundle -- --bundle-root ~/member-line-desktop-patrol --target-chat-title "メンバー"`
 - `npm run line-desktop-patrol:doctor`
 - `npm run line-desktop-patrol:retention`
@@ -80,6 +81,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - `line-desktop-patrol:scaffold-operator-bundle` creates machine-local dry-run-only `policy.local.json`, `acceptance.manual.json`, `scenarios/execute_smoke.json`, and `soak/*` files outside the repo so operators can pin one member-only self-test chat such as `メンバー` without touching tracked config.
 - `promote_proposal` prepares a branch/worktree, patch draft artifact, and draft PR body; it never auto-merges or auto-applies runtime changes.
 - `synthesize_patch_task` builds `patch_request.json` and `patch_request.md` artifacts that convert one queued proposal into a human-reviewed patch brief with validation commands and candidate edit targets.
+- `synthesize_code_patch_bundle` builds `code_patch_bundle.json` and `code_patch_bundle.md` artifacts with worktree-aware file snapshots so a human or Codex can write the minimal diff without broadening runtime authority.
 - `retention` only touches stale raw screenshot / AX / visible artifacts by default and keeps `trace.json` / eval / queue artifacts intact.
 - `acceptance_gate` writes `artifacts/line_desktop_patrol/acceptance/latest.json` and blocks completion until both KPI thresholds and machine-local soak evidence are satisfied.
 - the visible-message read path reuses the existing `store_ax_tree` gate so PR11 does not expand the policy schema.
