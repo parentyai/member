@@ -223,6 +223,8 @@ print(json.dumps(result))
 
   assert.equal(result.allowed, true);
   assert.equal(result.decision, 'execute_queued');
+  assert.match(result.latestSummaryPath, /artifacts[\\/]+runtime[\\/]+latest_summary\.json$/);
+  assert.equal(typeof result.latestSummaryMirrorPath, 'string');
   assert.equal(trace.send_result.result.status, 'sent');
   assert.equal(trace.correlation_status, 'reply_observed');
   assert.equal(trace.evaluator_scores.status, 'completed');
