@@ -246,6 +246,7 @@ def run_execute_harness(
     adapter_factory: Callable[[], MacOSLineDesktopAdapter] | None = None,
     evaluate_runner: Callable[..., dict[str, Any]] | None = None,
     enqueue_runner: Callable[..., dict[str, Any]] | None = None,
+    runtime_state_loader: Callable[[Path, str, str | Path | None], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     started_at = _resolve_now(now_iso)
     state_transitions = [_transition("LOAD_POLICY", "started")]
@@ -265,7 +266,8 @@ def run_execute_harness(
     state_transitions.append(_transition("LOAD_LOCAL_STATE", "completed"))
 
     state_transitions.append(_transition("LOAD_RUNTIME_STATE", "started"))
-    runtime_state = _load_repo_runtime_state(repo_root, route_key, runtime_state_path)
+    active_runtime_state_loader = runtime_state_loader or _load_repo_runtime_state
+    runtime_state = active_runtime_state_loader(repo_root, route_key, runtime_state_path)
     state_transitions.append(_transition("LOAD_RUNTIME_STATE", "completed"))
 
     adapter = adapter_factory() if adapter_factory else MacOSLineDesktopAdapter()
@@ -395,30 +397,39 @@ def run_execute_harness(
     }
     eval_result = None
     enqueue_result = None
+    runtime_state_before_send = runtime_state
 
     if decision is None and mode in {"send_only", "execute_once"}:
-        state_transitions.append(_transition("SEND", "started"))
-        send_result = adapter.execute_send_text(
-            sent_text,
-            expected_chat_title=target.expected_chat_title,
-            expected_window_title_substring=target.expected_window_title_substring,
-            expected_participant_labels=target.expected_participant_labels,
-            expected_ax_fingerprint=target.expected_ax_fingerprint,
-            require_confirmation=policy.require_target_confirmation,
-            existing_validation=open_result.get("validation"),
-        )
-        send_status = (
-            send_result.get("result", {}).get("status")
-            if isinstance(send_result, dict)
-            else None
-        )
-        if send_status != "sent":
-            decision = "send_not_confirmed"
+        state_transitions.append(_transition("RECHECK_RUNTIME_STATE", "started"))
+        runtime_state_before_send = active_runtime_state_loader(repo_root, route_key, runtime_state_path)
+        state_transitions.append(_transition("RECHECK_RUNTIME_STATE", "completed"))
+        if _runtime_kill_switch_enabled(runtime_state_before_send):
+            decision = "kill_switch_stop"
+            note = "repo-side global kill switch flipped during execute run"
             state_transitions.append(_transition("SEND", "skipped", decision))
         else:
-            state_transitions.append(_transition("SEND", "completed", send_result.get("reason")))
-            if mode == "send_only":
-                decision = "execute_sent"
+            state_transitions.append(_transition("SEND", "started"))
+            send_result = adapter.execute_send_text(
+                sent_text,
+                expected_chat_title=target.expected_chat_title,
+                expected_window_title_substring=target.expected_window_title_substring,
+                expected_participant_labels=target.expected_participant_labels,
+                expected_ax_fingerprint=target.expected_ax_fingerprint,
+                require_confirmation=policy.require_target_confirmation,
+                existing_validation=open_result.get("validation"),
+            )
+            send_status = (
+                send_result.get("result", {}).get("status")
+                if isinstance(send_result, dict)
+                else None
+            )
+            if send_status != "sent":
+                decision = "send_not_confirmed"
+                state_transitions.append(_transition("SEND", "skipped", decision))
+            else:
+                state_transitions.append(_transition("SEND", "completed", send_result.get("reason")))
+                if mode == "send_only":
+                    decision = "execute_sent"
 
     if decision is None and mode == "execute_once":
         if reply_wait_window_ms > 0:
@@ -489,9 +500,11 @@ def run_execute_harness(
         "correlation_status": correlation["status"],
         "reply_wait_window_ms": reply_wait_window_ms,
         "runtime_state": runtime_state,
+        "runtime_state_before_send": runtime_state_before_send,
         "host_probe": host_probe,
         "state_transitions": state_transitions,
     }
+    trace_path = trace_store.write_trace(trace)
     if mode == "execute_once" and send_result and send_result.get("result", {}).get("status") == "sent":
         state_transitions.append(_transition("SCORE", "started"))
         eval_root = output_root_resolved / "evals" / run_id

@@ -85,6 +85,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - `member_line_patrol.retention` で raw screenshot / AX / visible artifacts の local retention dry-run/apply を追加する
 - `tools/line_desktop_patrol/launchd/com.member.line-desktop-patrol.execute-loop.plist.example` で launchd 定期起動の例を示す
 
+## PR18 Additions
+- `member_line_patrol.acceptance_gate` で automatic KPI と machine-local manual soak report をまとめて completion gate 化する
+- `member_line_patrol.execute_harness` は send 直前に repo-side runtime state を再読込し、kill switch が mid-run で flipped した場合も fail-closed で停止する
+- failure injection contract tests は target mismatch / echo mismatch / post-send reply gap / mid-run kill switch を CI 上で再現する
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -130,6 +135,7 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
   - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`
+  - `artifacts/line_desktop_patrol/acceptance/latest.json`
   - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
   - `artifacts/line_desktop_patrol/runtime/state.json`
   - `artifacts/line_desktop_patrol/runtime/execute.lock.json`
