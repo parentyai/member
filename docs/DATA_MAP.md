@@ -235,6 +235,8 @@ Typical files:
 - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_draft.md`
+- `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.json`
+- `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.md`
 - `artifacts/line_desktop_patrol/acceptance/latest.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
 - `artifacts/line_desktop_patrol/runtime/state.json`
@@ -266,6 +268,10 @@ Typical fields:
 - promotion record:
   - `proposal_id`, `status`, `branch_name`, `base_ref`, `worktree_path`
   - `body_path`, `patch_draft_path`, `draft_pr_url`, `draft_pr_ref`, `risk_level`
+- patch synthesis bundle:
+  - `proposal_id`, `status`, `promotion_record_path`, `packet_path`
+  - `patch_draft_path`, `patch_request_path`, `patch_request_markdown_path`
+  - `validation_commands[]`, `candidate_edits[]`, `operator_instructions[]`
 - loop state:
   - `updated_at`, `failure_streak`, `last_run_id`, `last_failure_reason`
   - `recent_runs[]`, `last_decision`
@@ -283,6 +289,7 @@ Notes:
 - PR13 adds execute trace fields for send/validation/correlation while preserving the original required trace schema.
 - PR15 adds promotion metadata under `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`.
 - PR19 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_draft.md` so proposal promotion can stop at a reviewable patch intent before any code diff exists.
+- PR20 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.json` and `.patch_request.md` so operators can hand a proposal to a human patch workflow without widening runtime authority.
 - PR16 adds `artifacts/line_desktop_patrol/runtime/execute.lock.json` for overlap protection in scheduled execute mode.
 - PR18 adds `artifacts/line_desktop_patrol/acceptance/latest.json` for KPI + manual soak completion gating.
 

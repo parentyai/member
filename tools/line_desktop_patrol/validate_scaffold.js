@@ -38,6 +38,7 @@ const REQUIRED_FILES = [
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'doctor.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'mcp_server.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'promote_proposal.py'),
+  path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'synthesize_patch_task.py'),
   path.join(TOOL_ROOT, 'read_repo_runtime_state.js'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'retention.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'acceptance_gate.py'),
@@ -93,6 +94,7 @@ function runValidation() {
   assert(packageJson.scripts['line-desktop-patrol:evaluate'], 'package.json must define line-desktop-patrol:evaluate');
   assert(packageJson.scripts['line-desktop-patrol:enqueue-proposals'], 'package.json must define line-desktop-patrol:enqueue-proposals');
   assert(packageJson.scripts['line-desktop-patrol:promote-proposal'], 'package.json must define line-desktop-patrol:promote-proposal');
+  assert(packageJson.scripts['line-desktop-patrol:synthesize-patch'], 'package.json must define line-desktop-patrol:synthesize-patch');
   assert(packageJson.scripts['line-desktop-patrol:scaffold-operator-bundle'], 'package.json must define line-desktop-patrol:scaffold-operator-bundle');
   assert(packageJson.scripts['line-desktop-patrol:doctor'], 'package.json must define line-desktop-patrol:doctor');
   assert(packageJson.scripts['line-desktop-patrol:retention'], 'package.json must define line-desktop-patrol:retention');
@@ -117,6 +119,8 @@ function runValidation() {
   assert(packageJson.scripts['test:phase876'], 'package.json must define test:phase876');
   assert(packageJson.scripts['test:phase877'], 'package.json must define test:phase877');
   assert(packageJson.scripts['test:phase878'], 'package.json must define test:phase878');
+  assert(packageJson.scripts['test:phase879'], 'package.json must define test:phase879');
+  assert(packageJson.scripts['test:phase880'], 'package.json must define test:phase880');
 
   const samplePolicy = readJson(path.join(TOOL_ROOT, 'config', 'policy.example.json'));
   assert(samplePolicy.store_ax_tree === false, 'policy.example.json must keep store_ax_tree=false by default');

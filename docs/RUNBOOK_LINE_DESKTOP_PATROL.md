@@ -21,10 +21,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 11. `npm run line-desktop-patrol:evaluate -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json`
 12. `npm run line-desktop-patrol:enqueue-proposals -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json --queue-root /tmp/line_desktop_patrol_proposals`
 13. `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
-14. `npm run line-desktop-patrol:doctor`
-15. `npm run line-desktop-patrol:retention`
-16. `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
-17. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
+14. `npm run line-desktop-patrol:synthesize-patch -- --proposal-id <proposal_id>`
+15. `npm run line-desktop-patrol:doctor`
+16. `npm run line-desktop-patrol:retention`
+17. `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
+18. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
 
 ## Machine-local operator bundle
 - `line-desktop-patrol:scaffold-operator-bundle` only writes outside the repo.
@@ -101,6 +102,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - reads one queue row and one Codex packet
   - prepares a dedicated git branch/worktree, a patch draft file, and a draft PR body file
   - only creates a GitHub draft PR when the prepared branch already has a code diff and the proposal is not blocked by risk policy
+- synthesize-patch command:
+  - reads the proposal promotion record, queue row, and Codex packet
+  - writes `patch_request.json` and `patch_request.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
+  - includes candidate edit targets, validation commands, and human-only stop conditions
+  - does not auto-apply edits or create a code diff by itself
 - doctor command:
   - reports host capability, policy readiness, runtime visibility, loop state, and latest summary presence
 - retention command:
