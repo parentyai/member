@@ -127,11 +127,13 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - `member_line_patrol.synthesize_code_apply_task` で code apply draft を `code_apply_task.json` / `code_apply_task.md` / `code_apply_task.prompt.md` に正規化する
 - `member_line_patrol.synthesize_code_review_packet` で code apply task を `code_review_packet.json` / `code_review_packet.md` / `code_review_packet.prompt.md` に正規化する
 - `member_line_patrol.synthesize_code_apply_evidence` で code review packet を `code_apply_evidence.json` / `code_apply_evidence.md` / `code_apply_evidence.prompt.md` に正規化する
+- `member_line_patrol.synthesize_code_apply_signoff` で code apply evidence を `code_apply_signoff.json` / `code_apply_signoff.md` / `code_apply_signoff.prompt.md` に正規化する
 - code apply draft は patch document と apply steps を追加し、人間が `apply_patch` 前レビューを行う直前の handoff を固定する
 - MCP manifest は `synthesize_code_apply_draft` を `code_apply_draft_ready` として公開し、bundle は依然として artifact-only で code auto-apply を持たない
 - MCP manifest は `synthesize_code_apply_task` を `code_apply_task_ready` として公開し、bundle は依然として artifact-only で code auto-apply を持たない
 - MCP manifest は `synthesize_code_review_packet` を `code_review_packet_ready` として公開し、bundle は依然として artifact-only で code auto-apply を持たない
 - MCP manifest は `synthesize_code_apply_evidence` を `code_apply_evidence_ready` として公開し、bundle は依然として artifact-only で code auto-apply を持たない
+- MCP manifest は `synthesize_code_apply_signoff` を `code_apply_signoff_ready` として公開し、bundle は依然として artifact-only で code auto-apply を持たない
 
 ## Boundaries
 - Python sidecar:
@@ -202,6 +204,9 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_evidence.json`
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_evidence.md`
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_evidence.prompt.md`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_signoff.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_signoff.md`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_signoff.prompt.md`
   - `artifacts/line_desktop_patrol/acceptance/latest.json`
   - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
   - `artifacts/line_desktop_patrol/runtime/state.json`

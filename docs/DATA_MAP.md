@@ -258,6 +258,9 @@ Typical files:
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_evidence.json`
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_evidence.md`
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_evidence.prompt.md`
+- `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_signoff.json`
+- `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_signoff.md`
+- `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_signoff.prompt.md`
 - `artifacts/line_desktop_patrol/acceptance/latest.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
 - `artifacts/line_desktop_patrol/runtime/state.json`
@@ -336,6 +339,11 @@ Typical fields:
   - `code_apply_evidence_path`, `code_apply_evidence_markdown_path`, `evidence_prompt_path`
   - `code_review_packet_path`, `patch_document_path`, `evidence_requirements[]`
   - `expected_outputs[]`, `validation_commands[]`, `stop_conditions[]`
+- code apply signoff:
+  - `proposal_id`, `status`, `worktree_path`, `branch_name`
+  - `code_apply_signoff_path`, `code_apply_signoff_markdown_path`, `signoff_prompt_path`
+  - `code_apply_evidence_path`, `code_review_packet_path`, `patch_document_path`, `signoff_requirements[]`
+  - `expected_outputs[]`, `validation_commands[]`, `stop_conditions[]`
 - loop state:
   - `updated_at`, `failure_streak`, `last_run_id`, `last_failure_reason`
   - `recent_runs[]`, `last_decision`
@@ -362,6 +370,7 @@ Notes:
 - PR26 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_task.json`, `.code_apply_task.md`, and `.code_apply_task.prompt.md` so the human patch workflow can hand the reviewed apply draft to the final apply session without widening runtime authority.
 - PR27 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_review_packet.json`, `.code_review_packet.md`, and `.code_review_packet.prompt.md` so the human patch workflow can capture the final approval checklist before any reviewed apply step is carried out.
 - PR28 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_evidence.json`, `.code_apply_evidence.md`, and `.code_apply_evidence.prompt.md` so the human patch workflow can capture the final apply evidence after the reviewed apply step.
+- PR29 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_signoff.json`, `.code_apply_signoff.md`, and `.code_apply_signoff.prompt.md` so the final approver can record the go/no-go signoff after the evidence pass without auto-applying code.
 - PR16 adds `artifacts/line_desktop_patrol/runtime/execute.lock.json` for overlap protection in scheduled execute mode.
 - PR18 adds `artifacts/line_desktop_patrol/acceptance/latest.json` for KPI + manual soak completion gating.
 
