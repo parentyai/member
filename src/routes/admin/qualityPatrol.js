@@ -87,7 +87,16 @@ async function handleQualityPatrolQuery(req, res, deps) {
           desktopPatrolStatus: desktopPatrolSummary && desktopPatrolSummary.status ? desktopPatrolSummary.status : 'unavailable',
           desktopPatrolQueueCount: desktopPatrolSummary && desktopPatrolSummary.queue
             ? Number(desktopPatrolSummary.queue.totalCount || 0)
-            : 0
+            : 0,
+          desktopPatrolPromotionKind: desktopPatrolSummary && desktopPatrolSummary.promotion
+            ? desktopPatrolSummary.promotion.latestArtifactKind || null
+            : null,
+          desktopPatrolPromotionStatus: desktopPatrolSummary && desktopPatrolSummary.promotion
+            ? desktopPatrolSummary.promotion.latestArtifactStatus || null
+            : null,
+          desktopPatrolPromotionDraftPrRef: desktopPatrolSummary && desktopPatrolSummary.promotion
+            ? desktopPatrolSummary.promotion.latestDraftPrRef || null
+            : null
         }
       });
     } catch (auditErr) {
