@@ -189,6 +189,13 @@ TOOL_SPECS = (
         exposure="internal_only",
         status="code_apply_evidence_ready",
     ),
+    ToolSpec(
+        name="synthesize_code_apply_signoff",
+        description="Build a human-reviewed code apply signoff bundle with final approval requirements without auto-applying code.",
+        mutating=True,
+        exposure="internal_only",
+        status="code_apply_signoff_ready",
+    ),
 )
 
 
@@ -225,6 +232,7 @@ def build_server_manifest() -> dict:
             "PR26 adds code apply tasks with reviewer checklist and task prompt while still stopping short of code auto-apply.",
             "PR27 adds code review packets with approval checklist and signoff prompt while still stopping short of code auto-apply.",
             "PR28 adds code apply evidence bundles with final evidence requirements while still stopping short of code auto-apply.",
+            "PR29 adds code apply signoff bundles with final approval requirements while still stopping short of code auto-apply.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }
