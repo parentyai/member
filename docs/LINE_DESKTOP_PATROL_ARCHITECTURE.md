@@ -75,6 +75,7 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - `buildConversationReviewUnitsFromDesktopTrace` は execute trace の `unknown` visible rows から `sent_text` と post-send diff を使って `userMessage` / `assistantReply` を推定する
 - execute trace は `target_validation_failed`, `send_not_confirmed`, `post_send_reply_missing`, `visible_correlation_ambiguous` blocker を add-only で持つ
 - `desktopPatrolSummary` は execute 系の `executionMode`, `sendStatus`, `targetValidationStatus`, `replyObservationStatus`, `lastRunKind` を read-only で返す
+- `desktopPatrolSummary` は add-only で `promotion.latestProposalId`, `promotion.latestArtifactKind`, `promotion.latestArtifactStatus`, `promotion.latestDraftPrRef`, `promotion.updatedAt` を返し、最新 promotion/apply-record artifact を admin から read-only で確認できる
 
 ## PR15 Additions
 - `member_line_patrol.promote_proposal` で proposal queue から branch/worktree/draft PR body を準備する

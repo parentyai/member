@@ -205,6 +205,7 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 ## PR5 guardrails
 - `/admin/app?pane=quality-patrol` is read-only and does not mutate queue artifacts
 - `desktopPatrolSummary` is nested under the existing `GET /api/admin/quality-patrol` response
+- `desktopPatrolSummary.promotion` exposes the latest promotion kind / status / draft PR ref / updatedAt as read-only admin evidence
 - operator audience may inspect artifact paths, but human audience stays redacted
 
 ## PR6 guardrails

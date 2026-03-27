@@ -214,6 +214,7 @@ ServicePhase（1〜4）は SSOT として保持される（`docs/SSOT_SERVICE_PH
 ## Quality Patrol Local Desktop Summary（PR5 add-only）
 - `/admin/app?pane=quality-patrol` は既存 pane / route を維持したまま、`LINE Desktop Patrol (local)` の read-only panel を detail 側へ追加する。
 - `GET /api/admin/quality-patrol` は既存 contract を維持しつつ nested `desktopPatrolSummary` を add-only で返す。
+- panel は add-only で `Latest promotion` を表示し、latest promotion kind / status / draft PR ref / updatedAt を read-only で確認できる。
 - operator audience では local artifact path を確認できるが、human audience では redacted displayPath のみ表示する。
 - browser から queue mutation / backlog promotion / retention mutation を行わない。
 

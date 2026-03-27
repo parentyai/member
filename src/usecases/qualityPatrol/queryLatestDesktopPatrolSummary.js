@@ -60,7 +60,7 @@ async function latestPromotionRecord(promotionsRoot) {
     const stat = await statIfExists(filePath);
     const sortKey = resolveSortKey(payload, stat);
     if (sortKey >= latestSortKey) {
-      latest = payload ? Object.assign({ __path: filePath }, payload) : latest;
+      latest = payload ? Object.assign({ __path: filePath, __sortKey: sortKey }, payload) : latest;
       latestSortKey = sortKey;
     }
   }
@@ -99,6 +99,13 @@ function resolveSortKey(trace, stat) {
 function normalizeText(value, fallback) {
   if (typeof value === 'string' && value.trim()) return value.trim();
   return fallback;
+}
+
+function resolvePromotionArtifactKind(filePath) {
+  const baseName = path.basename(String(filePath || ''), '.json');
+  const segments = baseName.split('.');
+  if (segments.length >= 2) return normalizeText(segments.slice(1).join('.'), null);
+  return normalizeText(baseName, null);
 }
 
 function compactDisplayPath(filePath) {
@@ -153,6 +160,37 @@ function normalizeLatestRun(run) {
       : normalizeText(targetValidation.reason, null),
     replyObservationStatus: normalizeText(trace.correlation_status, null),
     lastRunKind
+  };
+}
+
+function normalizeLatestPromotion(record) {
+  if (!record || typeof record !== 'object') {
+    return {
+      latestProposalId: null,
+      latestArtifactKind: null,
+      latestArtifactStatus: null,
+      latestDraftPrRef: null,
+      updatedAt: null
+    };
+  }
+
+  const updatedAt = normalizeText(
+    record.updated_at
+    || record.updatedAt
+    || record.finished_at
+    || record.finishedAt
+    || record.created_at
+    || record.createdAt
+    || (record.__sortKey ? new Date(record.__sortKey).toISOString() : null),
+    null
+  );
+
+  return {
+    latestProposalId: normalizeText(record.proposal_id, null),
+    latestArtifactKind: normalizeText(record.artifact_kind, null) || resolvePromotionArtifactKind(record.__path),
+    latestArtifactStatus: normalizeText(record.status, null),
+    latestDraftPrRef: normalizeText(record.draft_pr_ref || record.draft_pr_url, null),
+    updatedAt
   };
 }
 
@@ -254,6 +292,10 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
     const packetRoot = path.join(artifactRoot, 'proposals', 'packets');
     const packetPaths = await listPacketPaths(packetRoot);
     const latestPromotion = await latestPromotionRecord(path.join(artifactRoot, 'proposals', 'promotions'));
+    const promotion = normalizeLatestPromotion(latestPromotion);
+    const latestDraftPrRef = promotion.latestDraftPrRef || (latestQueueEntry && typeof latestQueueEntry === 'object'
+      ? normalizeText(latestQueueEntry.draft_pr_ref, null)
+      : null);
     const latestProposalIds = summarizeLatestProposalIds(
       latestRunRecord ? latestRunRecord.linkage : null,
       queueEntries
@@ -284,6 +326,7 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
     }
     if (queueCount > 0) artifactRefs.push(toArtifactRef('proposal_queue', queuePath, audience));
     if (packetPaths.length > 0) artifactRefs.push(toArtifactRef('codex_packet', packetPaths[packetPaths.length - 1], audience));
+    if (latestPromotion && latestPromotion.__path) artifactRefs.push(toArtifactRef('promotion', latestPromotion.__path, audience));
 
     const evaluation = latestRunRecord && latestRunRecord.evaluation && typeof latestRunRecord.evaluation === 'object'
       ? {
@@ -314,12 +357,9 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
           ? normalizeText(latestQueueEntry.proposal_id, null)
           : null,
         packetCount: packetPaths.length,
-        latestDraftPrRef: latestPromotion && typeof latestPromotion === 'object'
-          ? normalizeText(latestPromotion.draft_pr_ref || latestPromotion.draft_pr_url, null)
-          : (latestQueueEntry && typeof latestQueueEntry === 'object'
-            ? normalizeText(latestQueueEntry.draft_pr_ref, null)
-            : null)
+        latestDraftPrRef
       },
+      promotion,
       latestProposalIds,
       artifactRefs
     };
@@ -343,7 +383,15 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
       queue: {
         totalCount: 0,
         latestProposalId: null,
-        packetCount: 0
+        packetCount: 0,
+        latestDraftPrRef: null
+      },
+      promotion: {
+        latestProposalId: null,
+        latestArtifactKind: null,
+        latestArtifactStatus: null,
+        latestDraftPrRef: null,
+        updatedAt: null
       },
       latestProposalIds: [],
       artifactRefs: []

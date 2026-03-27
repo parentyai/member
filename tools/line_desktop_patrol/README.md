@@ -92,6 +92,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - `synthesize_code_apply_evidence` builds `code_apply_evidence.json`, `code_apply_evidence.md`, and `code_apply_evidence.prompt.md` artifacts with final evidence requirements so a human can record the reviewed apply result without auto-applying code.
 - `synthesize_code_apply_signoff` builds `code_apply_signoff.json`, `code_apply_signoff.md`, and `code_apply_signoff.prompt.md` artifacts with final approval requirements so a human can record the final go/no-go signoff without auto-applying code.
 - `synthesize_code_apply_record` builds `code_apply_record.json`, `code_apply_record.md`, and `code_apply_record.prompt.md` artifacts with final closure requirements so a human can record the post-apply and post-merge outcome without auto-applying code.
+- the admin `LINE Desktop Patrol (local)` panel surfaces the latest promotion kind / status / draft PR ref / updatedAt in read-only form so operators can inspect the newest promotion/apply-record artifact without opening local files.
 - `retention` only touches stale raw screenshot / AX / visible artifacts by default and keeps `trace.json` / eval / queue artifacts intact.
 - `acceptance_gate` writes `artifacts/line_desktop_patrol/acceptance/latest.json` and blocks completion until both KPI thresholds and machine-local soak evidence are satisfied.
 - the visible-message read path reuses the existing `store_ax_tree` gate so PR11 does not expand the policy schema.
