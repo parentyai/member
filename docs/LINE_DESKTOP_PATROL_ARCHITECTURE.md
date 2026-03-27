@@ -112,6 +112,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - code edit task は per-file patch hint, anchor preview, review checklist を追加し、実際の編集着手前のタスク粒度を固定する
 - MCP manifest は `synthesize_code_edit_task` を `code_edit_task_ready` として公開し、bundle は依然として artifact-only で code auto-apply を持たない
 
+## PR23 Additions
+- `member_line_patrol.synthesize_code_diff_draft` で code edit task bundle を `code_diff_draft.json` / `code_diff_draft.md` に正規化する
+- code diff draft は per-file apply_patch placeholder と review prompts を追加し、実際の diff 起草前に stop conditions を固定する
+- MCP manifest は `synthesize_code_diff_draft` を `code_diff_draft_ready` として公開し、bundle は依然として artifact-only で code auto-apply を持たない
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -164,6 +169,8 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_patch_bundle.md`
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_edit_task.json`
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_edit_task.md`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_diff_draft.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_diff_draft.md`
   - `artifacts/line_desktop_patrol/acceptance/latest.json`
   - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
   - `artifacts/line_desktop_patrol/runtime/state.json`

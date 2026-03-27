@@ -147,6 +147,13 @@ TOOL_SPECS = (
         exposure="internal_only",
         status="code_edit_task_ready",
     ),
+    ToolSpec(
+        name="synthesize_code_diff_draft",
+        description="Build a human-reviewed code diff draft with apply_patch-ready placeholders without auto-applying code.",
+        mutating=True,
+        exposure="internal_only",
+        status="code_diff_draft_ready",
+    ),
 )
 
 
@@ -177,6 +184,7 @@ def build_server_manifest() -> dict:
             "PR20 adds patch synthesis bundles that stay artifact-only until a human writes and validates the code diff.",
             "PR21 adds code patch bundles that snapshot candidate files and worktree context while still requiring a human to write the diff.",
             "PR22 adds code edit task bundles with per-file patch hints while still stopping short of code auto-apply.",
+            "PR23 adds code diff draft bundles with apply_patch-ready placeholders while still stopping short of code auto-apply.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }

@@ -84,6 +84,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - `synthesize_patch_task` builds `patch_request.json` and `patch_request.md` artifacts that convert one queued proposal into a human-reviewed patch brief with validation commands and candidate edit targets.
 - `synthesize_code_patch_bundle` builds `code_patch_bundle.json` and `code_patch_bundle.md` artifacts with worktree-aware file snapshots so a human or Codex can write the minimal diff without broadening runtime authority.
 - `synthesize_code_edit_task` builds `code_edit_task.json` and `code_edit_task.md` artifacts with per-file patch hints and review checklist so a human or Codex can draft the actual edit without auto-applying code.
+- `synthesize_code_diff_draft` builds `code_diff_draft.json` and `code_diff_draft.md` artifacts with apply_patch-ready placeholder blocks so a human or Codex can draft the concrete diff without auto-applying code.
 - `retention` only touches stale raw screenshot / AX / visible artifacts by default and keeps `trace.json` / eval / queue artifacts intact.
 - `acceptance_gate` writes `artifacts/line_desktop_patrol/acceptance/latest.json` and blocks completion until both KPI thresholds and machine-local soak evidence are satisfied.
 - the visible-message read path reuses the existing `store_ax_tree` gate so PR11 does not expand the policy schema.

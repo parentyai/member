@@ -119,6 +119,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - writes `code_edit_task.json` and `code_edit_task.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
   - derives per-file edit tasks, patch hint templates, and review checklist items
   - still does not auto-apply edits or create a code diff by itself
+- synthesize-code-diff command:
+  - reads the code edit task bundle and prepared worktree
+  - writes `code_diff_draft.json` and `code_diff_draft.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
+  - derives per-file draft patch stubs and apply_patch placeholder blocks
+  - still does not auto-apply edits, commit code, or create a code diff by itself
 - doctor command:
   - reports host capability, policy readiness, runtime visibility, loop state, and latest summary presence
 - retention command:
