@@ -154,6 +154,11 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - writes `code_apply_signoff.json`, `code_apply_signoff.md`, and `code_apply_signoff.prompt.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
   - derives the final go/no-go signoff requirements after the evidence pass
   - still does not auto-apply edits, commit code, or create a PR by itself
+- synthesize-code-apply-record command:
+  - reads the code apply signoff bundle and prepared worktree
+  - writes `code_apply_record.json`, `code_apply_record.md`, and `code_apply_record.prompt.md` under `artifacts/line_desktop_patrol/proposals/promotions/`
+  - derives the final closure record requirements after the signoff step
+  - still does not auto-apply edits, commit code, or create a PR by itself
 - doctor command:
   - reports host capability, policy readiness, runtime visibility, loop state, and latest summary presence
 - retention command:
