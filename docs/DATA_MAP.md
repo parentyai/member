@@ -241,6 +241,8 @@ Typical files:
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_patch_bundle.md`
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_edit_task.json`
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_edit_task.md`
+- `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_diff_draft.json`
+- `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_diff_draft.md`
 - `artifacts/line_desktop_patrol/acceptance/latest.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
 - `artifacts/line_desktop_patrol/runtime/state.json`
@@ -287,6 +289,12 @@ Typical fields:
   - `edit_tasks[]` with `task_id`, `file_path`, `workspace_file_path`, `patch_shape`, `anchor_preview`, `edit_goal`
   - `edit_tasks[].apply_patch_hint` with bounded template lines
   - `validation_commands[]`, `review_checklist[]`, `stop_conditions[]`
+- code diff draft:
+  - `proposal_id`, `status`, `worktree_path`, `branch_name`
+  - `code_diff_draft_path`, `code_diff_draft_markdown_path`
+  - `diff_tasks[]` with `task_id`, `file_path`, `workspace_file_path`, `patch_shape`, `anchor_preview`, `draft_summary`
+  - `diff_tasks[].draft_patch_lines[]` with apply_patch-ready placeholder lines
+  - `validation_commands[]`, `review_checklist[]`, `stop_conditions[]`
 - loop state:
   - `updated_at`, `failure_streak`, `last_run_id`, `last_failure_reason`
   - `recent_runs[]`, `last_decision`
@@ -307,6 +315,7 @@ Notes:
 - PR20 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.json` and `.patch_request.md` so operators can hand a proposal to a human patch workflow without widening runtime authority.
 - PR21 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_patch_bundle.json` and `.code_patch_bundle.md` so the human patch workflow can snapshot candidate files before writing code.
 - PR22 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_edit_task.json` and `.code_edit_task.md` so the human patch workflow can turn snapshots into per-file edit tasks before writing code.
+- PR23 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_diff_draft.json` and `.code_diff_draft.md` so the human patch workflow can turn edit tasks into apply_patch-ready draft stubs before writing code.
 - PR16 adds `artifacts/line_desktop_patrol/runtime/execute.lock.json` for overlap protection in scheduled execute mode.
 - PR18 adds `artifacts/line_desktop_patrol/acceptance/latest.json` for KPI + manual soak completion gating.
 

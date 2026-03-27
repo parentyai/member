@@ -71,3 +71,14 @@ This document defines the local-only handoff between the LINE Desktop patrol que
   - apply_patch hint templates
   - review checklist and stop conditions
 - the bundle still does not edit files, apply code, or open a PR by itself
+
+## Code diff draft bundle
+- `line-desktop-patrol:synthesize-code-diff` consumes one code edit task bundle and emits:
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_diff_draft.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_diff_draft.md`
+- the bundle adds:
+  - per-file draft patch stubs
+  - apply_patch-ready placeholder blocks
+  - review prompts tied to the current anchor preview
+  - stop conditions for manual diff drafting
+- the bundle still does not apply code, commit changes, or open a PR by itself
