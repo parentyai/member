@@ -1614,8 +1614,8 @@ do {
                 },
             }
         raw_output = completed.stdout.strip()
-        parts = raw_output.split("||", 8)
-        if len(parts) != 9:
+        parts = raw_output.split("||")
+        if len(parts) not in (5, 9):
             return {
                 "status": "failed",
                 "reason": "invalid_ax_dump_output",
@@ -1628,7 +1628,14 @@ do {
                     "stderr": completed.stderr.strip() or None,
                 },
             }
-        process_name, frontmost_state, window_count, window_name, ui_enabled, window_x, window_y, window_width, window_height = parts
+        if len(parts) == 5:
+            process_name, frontmost_state, window_count, window_name, ui_enabled = parts
+            window_x = "0"
+            window_y = "0"
+            window_width = "0"
+            window_height = "0"
+        else:
+            process_name, frontmost_state, window_count, window_name, ui_enabled, window_x, window_y, window_width, window_height = parts
         try:
             parsed_window_count = int(window_count.strip() or "0")
         except ValueError:
