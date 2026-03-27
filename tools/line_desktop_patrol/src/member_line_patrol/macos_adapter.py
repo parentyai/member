@@ -10,6 +10,7 @@ import platform
 import shutil
 import subprocess
 import tempfile
+import time
 from typing import Any
 
 LINE_APP_NAME = "LINE"
@@ -17,6 +18,8 @@ LINE_BUNDLE_ID = "jp.naver.line.mac"
 DEFAULT_AX_TIMEOUT_SECONDS = 2.0
 DEFAULT_VISIBLE_MESSAGE_LIMIT = 20
 DEFAULT_OCR_TIMEOUT_SECONDS = 4.0
+OCR_RETRY_TIMEOUT_SECONDS = 8.0
+OPEN_TARGET_REVALIDATE_WAIT_SECONDS = 0.5
 LINE_BUNDLE_CANDIDATES = (
     Path("/Applications/LINE.app"),
     Path.home() / "Applications" / "LINE.app",
@@ -87,6 +90,21 @@ def _safe_int(value: Any, default: int = 0) -> int:
         return int(str(value).strip())
     except (TypeError, ValueError):
         return default
+
+
+def _normalize_match_key(value: Any) -> str:
+    text = _normalize_text(value)
+    if not text:
+        return ""
+    return " ".join(text.casefold().split())
+
+
+def _exact_normalized_match(candidate: Any, expected: Any) -> bool:
+    candidate_key = _normalize_match_key(candidate)
+    expected_key = _normalize_match_key(expected)
+    if not candidate_key or not expected_key:
+        return False
+    return candidate_key == expected_key
 
 
 class MacOSLineDesktopAdapter:
@@ -371,6 +389,44 @@ class MacOSLineDesktopAdapter:
             "height": crop_height,
         }
 
+    def _build_wide_header_probe_bounds(self, ax_payload: dict[str, Any]) -> dict[str, int] | None:
+        bounds = ax_payload.get("window_bounds") if isinstance(ax_payload.get("window_bounds"), dict) else {}
+        x = _safe_int(bounds.get("x"))
+        y = _safe_int(bounds.get("y"))
+        width = _safe_int(bounds.get("width"))
+        height = _safe_int(bounds.get("height"))
+        if width <= 0 or height <= 0:
+            return None
+        left_inset = min(max(int(width * 0.08), 80), max(80, width - 240))
+        right_inset = min(max(int(width * 0.06), 60), max(60, width - left_inset - 180))
+        crop_width = max(240, width - left_inset - right_inset)
+        crop_height = max(100, min(190, int(height * 0.17)))
+        return {
+            "x": x + left_inset,
+            "y": y,
+            "width": crop_width,
+            "height": crop_height,
+        }
+
+    def _build_sidebar_probe_bounds(self, ax_payload: dict[str, Any]) -> dict[str, int] | None:
+        bounds = ax_payload.get("window_bounds") if isinstance(ax_payload.get("window_bounds"), dict) else {}
+        x = _safe_int(bounds.get("x"))
+        y = _safe_int(bounds.get("y"))
+        width = _safe_int(bounds.get("width"))
+        height = _safe_int(bounds.get("height"))
+        if width <= 0 or height <= 0:
+            return None
+        top_offset = min(max(int(height * 0.06), 70), max(70, height - 200))
+        bottom_inset = min(max(int(height * 0.05), 40), max(40, height - top_offset - 160))
+        crop_width = max(220, min(int(width * 0.28), 360))
+        crop_height = max(240, height - top_offset - bottom_inset)
+        return {
+            "x": x,
+            "y": y + top_offset,
+            "width": crop_width,
+            "height": crop_height,
+        }
+
     def _build_composer_probe_bounds(self, ax_payload: dict[str, Any]) -> dict[str, int] | None:
         bounds = ax_payload.get("window_bounds") if isinstance(ax_payload.get("window_bounds"), dict) else {}
         x = _safe_int(bounds.get("x"))
@@ -577,6 +633,100 @@ print("pasted||\\(Int(clickPoint.x))||\\(Int(clickPoint.y))")
             },
         }
 
+    def execute_click_screen_point(
+        self,
+        *,
+        x: int,
+        y: int,
+        timeout_seconds: float = DEFAULT_AX_TIMEOUT_SECONDS,
+    ) -> dict[str, Any]:
+        probe = self.probe_host()
+        if not probe["is_macos"]:
+            return {
+                "status": "skipped",
+                "reason": "host_not_macos",
+                "probe": probe,
+                "point": {"x": x, "y": y},
+            }
+        swift_state = probe["tools"].get("swift", {})
+        if not swift_state.get("available"):
+            return {
+                "status": "skipped",
+                "reason": "swift_unavailable",
+                "probe": probe,
+                "point": {"x": x, "y": y},
+            }
+        swift_source = """
+import AppKit
+import CoreGraphics
+import Foundation
+
+let args = CommandLine.arguments
+guard args.count >= 3 else {
+    fputs("usage: swift - <x> <y>\\n", stderr)
+    exit(2)
+}
+guard let pointX = Double(args[1]),
+      let pointY = Double(args[2]),
+      let screenHeight = NSScreen.main?.frame.height else {
+    fputs("invalid_point\\n", stderr)
+    exit(1)
+}
+let clickPoint = CGPoint(
+    x: pointX,
+    y: screenHeight - pointY
+)
+
+func mouseEvent(_ type: CGEventType, at point: CGPoint) {
+    let event = CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: .left)
+    event?.post(tap: .cghidEventTap)
+}
+
+mouseEvent(.leftMouseDown, at: clickPoint)
+mouseEvent(.leftMouseUp, at: clickPoint)
+print("clicked||\\(Int(clickPoint.x))||\\(Int(clickPoint.y))")
+""".strip()
+        try:
+            completed = self.command_runner(
+                ["swift", "-", str(max(0, x)), str(max(0, y))],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+                input=swift_source,
+            )
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "skipped",
+                "reason": "click_timeout",
+                "probe": probe,
+                "point": {"x": x, "y": y},
+            }
+        if completed.returncode != 0:
+            return {
+                "status": "failed",
+                "reason": "click_failed",
+                "probe": probe,
+                "point": {"x": x, "y": y},
+                "result": {
+                    "status": "failed",
+                    "returncode": completed.returncode,
+                    "stdout": completed.stdout.strip() or None,
+                    "stderr": completed.stderr.strip() or None,
+                },
+            }
+        return {
+            "status": "executed",
+            "probe": probe,
+            "point": {"x": x, "y": y},
+            "result": {
+                "status": "clicked",
+                "returncode": completed.returncode,
+                "stdout": completed.stdout.strip() or None,
+                "stderr": completed.stderr.strip() or None,
+            },
+        }
+
     def execute_press_return_key(
         self,
         *,
@@ -765,6 +915,134 @@ do {
             },
         }
 
+    def _execute_ocr_probe(
+        self,
+        image_path: str | Path,
+        *,
+        bounds: dict[str, int],
+        max_items: int,
+        timeout_seconds: float,
+    ) -> dict[str, Any]:
+        capture = self.execute_capture_window_region(
+            image_path,
+            bounds=bounds,
+        )
+        if capture.get("status") == "executed" and capture.get("result", {}).get("status") == "ok":
+            ocr_result = self.execute_ocr_window_title(
+                capture["output_path"],
+                max_items=max_items,
+                timeout_seconds=timeout_seconds,
+            )
+            if isinstance(ocr_result, dict):
+                ocr_result["capture"] = capture
+            return ocr_result
+        return {
+            "status": "skipped",
+            "reason": "ocr_capture_failed",
+            "capture": capture,
+        }
+
+    def _sidebar_match_indices(
+        self,
+        ocr_sidebar_payload: dict[str, Any] | None,
+        candidate_text: str,
+    ) -> list[int]:
+        payload = ocr_sidebar_payload if isinstance(ocr_sidebar_payload, dict) else {}
+        raw_items = payload.get("items")
+        if not isinstance(raw_items, list):
+            return []
+        matches: list[int] = []
+        for index, item in enumerate(raw_items):
+            if not isinstance(item, dict):
+                continue
+            if _exact_normalized_match(item.get("text"), candidate_text):
+                matches.append(index)
+        return matches
+
+    def _execute_click_sidebar_ocr_candidate(
+        self,
+        candidate_text: str,
+        *,
+        ocr_sidebar_read: dict[str, Any] | None,
+        timeout_seconds: float = DEFAULT_AX_TIMEOUT_SECONDS,
+    ) -> dict[str, Any]:
+        payload = (
+            ocr_sidebar_read.get("payload_summary")
+            if isinstance(ocr_sidebar_read, dict) and isinstance(ocr_sidebar_read.get("payload_summary"), dict)
+            else {}
+        )
+        capture = (
+            ocr_sidebar_read.get("capture")
+            if isinstance(ocr_sidebar_read, dict) and isinstance(ocr_sidebar_read.get("capture"), dict)
+            else {}
+        )
+        bounds = capture.get("bounds") if isinstance(capture.get("bounds"), dict) else None
+        matches = self._sidebar_match_indices(payload, candidate_text)
+        item_count = len(payload.get("items", [])) if isinstance(payload.get("items"), list) else 0
+        attempt = {
+            "status": "executed",
+            "method": "ocr_sidebar",
+            "candidate_text": _normalize_text(candidate_text) or None,
+            "ocr_match_status": "no_match",
+            "sidebar_item_count": item_count,
+            "sidebar_match_indices": matches,
+            "result": {
+                "status": "no_match",
+                "clicked_label": None,
+            },
+        }
+        if len(matches) == 0:
+            return attempt
+        if len(matches) > 1:
+            attempt["ocr_match_status"] = "ambiguous_match"
+            attempt["result"] = {
+                "status": "ambiguous",
+                "clicked_label": _normalize_text(candidate_text) or None,
+            }
+            return attempt
+        if bounds is None:
+            attempt["status"] = "failed"
+            attempt["ocr_match_status"] = "bounds_missing"
+            attempt["result"] = {
+                "status": "bounds_missing",
+                "clicked_label": _normalize_text(candidate_text) or None,
+            }
+            return attempt
+        match_index = matches[0]
+        line_count = max(item_count, 1)
+        click_x = _safe_int(bounds.get("x")) + max(8, _safe_int(bounds.get("width")) // 2)
+        click_y = _safe_int(bounds.get("y")) + int(((match_index + 0.5) / line_count) * max(1, _safe_int(bounds.get("height"))))
+        click_result = self.execute_click_screen_point(
+            x=click_x,
+            y=click_y,
+            timeout_seconds=timeout_seconds,
+        )
+        attempt["ocr_match_status"] = "unique_match"
+        attempt["click_point"] = {"x": click_x, "y": click_y}
+        attempt["result"] = {
+            "status": (
+                click_result.get("result", {}).get("status")
+                if isinstance(click_result.get("result"), dict)
+                else click_result.get("status")
+            ) or "clicked",
+            "clicked_label": _normalize_text(candidate_text) or None,
+        }
+        attempt["click_result"] = click_result
+        return attempt
+
+    def _should_retry_open_target_revalidation(self, validation_result: dict[str, Any]) -> bool:
+        validation = validation_result.get("validation") if isinstance(validation_result, dict) else {}
+        if not isinstance(validation, dict):
+            return False
+        if validation.get("matched") is True:
+            return False
+        if _normalize_text(validation.get("reason")) != "insufficient_identity_signals":
+            return False
+        target_resolution = validation.get("target_resolution")
+        if not isinstance(target_resolution, dict):
+            return False
+        return _normalize_text(target_resolution.get("ocr_title_reason")) == "ocr_timeout"
+
     def validate_target_observation(
         self,
         *,
@@ -918,10 +1196,18 @@ do {
             visible_payload=visible_payload,
             require_confirmation=require_confirmation,
         )
+        resolution_path = ["ax_visible"]
+        ocr_capture_bounds: list[dict[str, Any]] = []
+        ocr_attempt_count = 0
         ocr_title_read = {
             "status": "skipped",
             "reason": "ocr_not_needed",
         }
+        ocr_sidebar_read = {
+            "status": "skipped",
+            "reason": "sidebar_ocr_not_needed",
+        }
+        validation = preliminary_validation
         if (
             isinstance(ax_payload, dict)
             and preliminary_validation.get("matched") is False
@@ -929,35 +1215,92 @@ do {
             and preliminary_validation.get("frontmost") is True
             and _normalize_text(expected_chat_title)
         ):
-            header_bounds = self._build_header_probe_bounds(ax_payload)
-            if header_bounds is None:
-                ocr_title_read = {
-                    "status": "skipped",
-                    "reason": "ocr_bounds_missing",
-                }
-            else:
-                ocr_image_path = (
-                    Path(ax_path).with_suffix(".ocr-title.png")
-                    if ax_output_path is not None
-                    else Path(tempfile.gettempdir()) / "line_desktop_patrol_validate.ocr-title.png"
-                )
-                header_capture = self.execute_capture_window_region(
-                    ocr_image_path,
-                    bounds=header_bounds,
-                )
-                if header_capture.get("status") == "executed" and header_capture.get("result", {}).get("status") == "ok":
-                    ocr_title_read = self.execute_ocr_window_title(
-                        header_capture["output_path"],
+            ocr_base_path = (
+                Path(ax_path).with_suffix("")
+                if ax_output_path is not None
+                else Path(tempfile.gettempdir()) / "line_desktop_patrol_validate"
+            )
+            for probe_name, bounds in (
+                ("ocr_primary", self._build_header_probe_bounds(ax_payload)),
+                ("ocr_wide_header", self._build_wide_header_probe_bounds(ax_payload)),
+            ):
+                if bounds is None:
+                    if probe_name == "ocr_primary":
+                        ocr_title_read = {
+                            "status": "skipped",
+                            "reason": "ocr_bounds_missing",
+                        }
+                    continue
+                for attempt_index in range(2):
+                    step_name = probe_name if attempt_index == 0 else f"{probe_name}_retry"
+                    resolution_path.append(step_name)
+                    ocr_attempt_count += 1
+                    ocr_capture_bounds.append({
+                        "step": step_name,
+                        "bounds": {
+                            "x": _safe_int(bounds.get("x")),
+                            "y": _safe_int(bounds.get("y")),
+                            "width": _safe_int(bounds.get("width")),
+                            "height": _safe_int(bounds.get("height")),
+                        },
+                    })
+                    ocr_title_read = self._execute_ocr_probe(
+                        ocr_base_path.with_name(f"{ocr_base_path.name}.{step_name}.png"),
+                        bounds=bounds,
                         max_items=max_items,
+                        timeout_seconds=(
+                            max(timeout_seconds, DEFAULT_OCR_TIMEOUT_SECONDS)
+                            if attempt_index == 0
+                            else OCR_RETRY_TIMEOUT_SECONDS
+                        ),
                     )
-                    if isinstance(ocr_title_read, dict):
-                        ocr_title_read["capture"] = header_capture
-                else:
-                    ocr_title_read = {
+                    validation = self.validate_target_observation(
+                        expected_chat_title=expected_chat_title,
+                        expected_window_title_substring=expected_window_title_substring,
+                        expected_participant_labels=expected_participant_labels,
+                        expected_ax_fingerprint=expected_ax_fingerprint,
+                        ax_payload=ax_payload,
+                        visible_payload=visible_payload,
+                        ocr_title_payload=(
+                            ocr_title_read.get("payload_summary")
+                            if isinstance(ocr_title_read, dict) and ocr_title_read.get("status") == "executed"
+                            else None
+                        ),
+                        require_confirmation=require_confirmation,
+                    )
+                    if validation.get("matched") is True:
+                        break
+                    if attempt_index == 0 and _normalize_text(ocr_title_read.get("reason")) == "ocr_timeout":
+                        continue
+                    break
+                if validation.get("matched") is True:
+                    break
+            if validation.get("matched") is not True:
+                resolution_path.append("ocr_sidebar")
+                sidebar_bounds = self._build_sidebar_probe_bounds(ax_payload)
+                if sidebar_bounds is None:
+                    ocr_sidebar_read = {
                         "status": "skipped",
-                        "reason": "ocr_capture_failed",
-                        "capture": header_capture,
+                        "reason": "sidebar_bounds_missing",
                     }
+                else:
+                    ocr_capture_bounds.append({
+                        "step": "ocr_sidebar",
+                        "bounds": {
+                            "x": _safe_int(sidebar_bounds.get("x")),
+                            "y": _safe_int(sidebar_bounds.get("y")),
+                            "width": _safe_int(sidebar_bounds.get("width")),
+                            "height": _safe_int(sidebar_bounds.get("height")),
+                        },
+                    })
+                    ocr_sidebar_read = self._execute_ocr_probe(
+                        ocr_base_path.with_name(f"{ocr_base_path.name}.ocr_sidebar.png"),
+                        bounds=sidebar_bounds,
+                        max_items=max(max_items, 40),
+                        timeout_seconds=max(timeout_seconds, DEFAULT_OCR_TIMEOUT_SECONDS),
+                    )
+        else:
+            validation = preliminary_validation
         validation = self.validate_target_observation(
             expected_chat_title=expected_chat_title,
             expected_window_title_substring=expected_window_title_substring,
@@ -968,11 +1311,41 @@ do {
             ocr_title_payload=ocr_title_read.get("payload_summary") if isinstance(ocr_title_read, dict) and ocr_title_read.get("status") == "executed" else None,
             require_confirmation=require_confirmation,
         )
+        ocr_sidebar_payload = (
+            ocr_sidebar_read.get("payload_summary")
+            if isinstance(ocr_sidebar_read, dict) and isinstance(ocr_sidebar_read.get("payload_summary"), dict)
+            else {}
+        )
+        sidebar_items = ocr_sidebar_payload.get("items") if isinstance(ocr_sidebar_payload.get("items"), list) else []
+        target_resolution = {
+            "resolution_path": resolution_path,
+            "visible_read_status": _normalize_text(visible_read.get("status")) or "unknown",
+            "visible_read_reason": _normalize_text(visible_read.get("reason")),
+            "ocr_title_status": _normalize_text(ocr_title_read.get("status")) or "unknown",
+            "ocr_title_reason": _normalize_text(ocr_title_read.get("reason")),
+            "ocr_attempt_count": ocr_attempt_count,
+            "ocr_capture_bounds": ocr_capture_bounds,
+        }
+        validation["target_resolution"] = target_resolution
+        validation["generic_shell_detected"] = bool(
+            validation.get("frontmost") is True
+            and _exact_normalized_match(validation.get("window_name"), LINE_APP_NAME)
+            and int(validation.get("visible_item_count") or 0) == 0
+            and int(validation.get("ocr_title_item_count") or 0) == 0
+        )
+        validation["ocr_sidebar_item_count"] = len(sidebar_items)
+        validation["ocr_sidebar_items_sample"] = [
+            _normalize_text(item.get("text"))
+            for item in sidebar_items[:10]
+            if isinstance(item, dict) and _normalize_text(item.get("text"))
+        ]
         return {
             "status": "executed",
             "ax_dump": ax_dump,
             "visible_read": visible_read,
             "ocr_title_read": ocr_title_read,
+            "ocr_sidebar_read": ocr_sidebar_read,
+            "target_resolution": target_resolution,
             "validation": validation,
         }
 
@@ -1099,6 +1472,9 @@ do {
         if completed.returncode != 0:
             return {
                 "status": "failed",
+                "method": "ax_contents",
+                "candidate_text": resolved_text or None,
+                "ocr_match_status": "not_used",
                 "reason": "osascript_failed",
                 "probe": probe,
                 "plan": plan,
@@ -1113,6 +1489,9 @@ do {
         click_status, clicked_label = (raw_output.split("||", 1) + [""])[:2]
         return {
             "status": "executed",
+            "method": "ax_contents",
+            "candidate_text": resolved_text or None,
+            "ocr_match_status": "not_used",
             "probe": probe,
             "plan": plan,
             "result": {
@@ -1161,6 +1540,20 @@ do {
             }
 
         open_attempts = []
+        if not (validation.get("frontmost") is True and validation.get("window_title_ok") is True):
+            return {
+                "status": "failed",
+                "reason": "target_mismatch_stop",
+                "prepare": prepare,
+                "validation": validation_result,
+                "open_attempts": open_attempts,
+            }
+
+        ocr_sidebar_read = (
+            validation_result.get("ocr_sidebar_read")
+            if isinstance(validation_result, dict) and isinstance(validation_result.get("ocr_sidebar_read"), dict)
+            else None
+        )
         for candidate_text in _unique_texts(
             [_normalize_text(expected_chat_title), *[_normalize_text(item) for item in expected_participant_labels]]
         ):
@@ -1175,6 +1568,18 @@ do {
                 if isinstance(attempt.get("result"), dict)
                 else None
             )
+            if result_status != "clicked" and isinstance(ocr_sidebar_read, dict):
+                sidebar_attempt = self._execute_click_sidebar_ocr_candidate(
+                    candidate_text,
+                    ocr_sidebar_read=ocr_sidebar_read,
+                    timeout_seconds=timeout_seconds,
+                )
+                open_attempts.append(sidebar_attempt)
+                result_status = (
+                    sidebar_attempt.get("result", {}).get("status")
+                    if isinstance(sidebar_attempt.get("result"), dict)
+                    else None
+                )
             if result_status != "clicked":
                 continue
             validation_result = self.execute_validate_target(
@@ -1189,6 +1594,20 @@ do {
                 visible_output_path=visible_output_path,
             )
             validation = validation_result.get("validation", {})
+            if self._should_retry_open_target_revalidation(validation_result):
+                time.sleep(OPEN_TARGET_REVALIDATE_WAIT_SECONDS)
+                validation_result = self.execute_validate_target(
+                    expected_chat_title=expected_chat_title,
+                    expected_window_title_substring=expected_window_title_substring,
+                    expected_participant_labels=expected_participant_labels,
+                    expected_ax_fingerprint=expected_ax_fingerprint,
+                    require_confirmation=require_confirmation,
+                    target_process_name=target_process_name,
+                    timeout_seconds=timeout_seconds,
+                    ax_output_path=ax_output_path,
+                    visible_output_path=visible_output_path,
+                )
+                validation = validation_result.get("validation", {})
             if validation.get("matched"):
                 return {
                     "status": "executed",

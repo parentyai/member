@@ -12,6 +12,10 @@
 - local policy の既定値は `enabled=false` / `dry_run_default=true`。
 - 将来 desktop execute path が追加されても、最終停止は既存 kill switch を優先する。
 - 運用確認は `docs/RUNBOOK_LINE_DESKTOP_PATROL.md` を参照する。
+- operator bundle の正式順序は `doctor -> open-target -> execute-once -> loop-execute -> acceptance-gate` で、`send` は debug-only に降格している。
+- `open-target` が `open_target_ready` 以外なら execute に進まず、`open_target_mismatch_stop` は preflight 診断として扱う。
+- `generic LINE shell only` は `frontmost=true` / `window_name="LINE"` / `visible_item_count=0` / header OCR empty-or-timeout の状態を指す。
+- member-only self-test target は `メンバー` 1 件のみを pin し、allowlist を広げない。
 - PR5 以降は `/admin/app?pane=quality-patrol` の read-only panel で local desktop patrol の最新 summary を確認できる。
 - PR6 以降の local guarded loop は `blocked_hours` / `max_runs_per_hour` / `failure_streak_threshold` も尊重し、skip/stop のたびに local trace と latest summary を更新する。
 - PR7 以降は local override で `store_screenshots=true` を明示したときだけ screenshot observation を試行し、既定サンプル設定のままでは capture しない。
@@ -25,6 +29,8 @@
 - PR16 以降は `line-desktop-patrol:loop-execute` が overlap lock を使い、launchd からの定期起動に対応する。
 - PR17 以降は `line-desktop-patrol:doctor` と `line-desktop-patrol:retention` で host 診断と raw artifact retention を実行できる。
 - PR18 以降は `line-desktop-patrol:acceptance-gate` が execute KPI と manual soak report を completion gate として集約する。
+- PR18 以降の gate 集計は `send_attempted` を基準にし、`open_target` の preflight 失敗は send failure と同一扱いにしない。
+- PR18 以降の acceptance summary には `openTargetRunCount` / `openTargetMismatchCount` を追加し、診断用に preflight の量を見られるようにする。
 
 ## Feature Flag Governance（Phase PR5）
 - canonical registry:

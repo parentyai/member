@@ -14,20 +14,19 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 4. `npm run line-desktop-patrol:probe`
 5. `npm run line-desktop-patrol:dry-run`
 6. `npm run line-desktop-patrol:loop`
-7. `npm run line-desktop-patrol:open-target -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
-8. `npm run line-desktop-patrol:send -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json --message-text "self test message"`
+7. `npm run line-desktop-patrol:doctor -- --policy ~/member-line-desktop-patrol/policy.local.json`
+8. `npm run line-desktop-patrol:open-target -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
 9. `npm run line-desktop-patrol:execute-once -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
 10. `npm run line-desktop-patrol:loop-execute -- --policy ~/member-line-desktop-patrol/soak/policy.soak.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
-11. `npm run line-desktop-patrol:evaluate -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json`
-12. `npm run line-desktop-patrol:enqueue-proposals -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json --queue-root /tmp/line_desktop_patrol_proposals`
-13. `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
-14. `npm run line-desktop-patrol:synthesize-patch -- --proposal-id <proposal_id>`
-15. `npm run line-desktop-patrol:synthesize-code-patch -- --proposal-id <proposal_id>`
-16. `npm run line-desktop-patrol:synthesize-code-edit -- --proposal-id <proposal_id>`
-17. `npm run line-desktop-patrol:doctor`
+11. `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/soak/acceptance.soak.json`
+12. `npm run line-desktop-patrol:evaluate -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json`
+13. `npm run line-desktop-patrol:enqueue-proposals -- --trace artifacts/line_desktop_patrol/runs/<run_id>/trace.json --planning-output /tmp/line_desktop_patrol_planning.json --queue-root /tmp/line_desktop_patrol_proposals`
+14. `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
+15. `npm run line-desktop-patrol:synthesize-patch -- --proposal-id <proposal_id>`
+16. `npm run line-desktop-patrol:synthesize-code-patch -- --proposal-id <proposal_id>`
+17. `npm run line-desktop-patrol:synthesize-code-edit -- --proposal-id <proposal_id>`
 18. `npm run line-desktop-patrol:retention`
-19. `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
-20. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
+19. optional syntax check: `python3 -m compileall tools/line_desktop_patrol/src`
 
 ## Machine-local operator bundle
 - `line-desktop-patrol:scaffold-operator-bundle` only writes outside the repo.
@@ -45,6 +44,23 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - set `dry_run_default=false`
   - set `allowed_targets[0].allowed_send_modes=["execute"]`
   - keep the target title fixed to the member-only self-test chat
+
+## Safe execute sequence
+1. `doctor` must report `overallStatus=ready`.
+2. `open-target` must return `decision=open_target_ready`.
+3. Only then run `execute-once`.
+4. Only after a supervised `execute-once` succeeds should `loop-execute` be used against `soak/policy.soak.json`.
+5. Finish with `acceptance-gate` against `soak/acceptance.soak.json`.
+
+Do not continue to `execute-once` or `loop-execute` when `open-target` returns `open_target_mismatch_stop`.
+
+`generic LINE shell only` means all of the following:
+- `frontmost=true`
+- `window_name="LINE"`
+- `visible_item_count=0`
+- header OCR is empty or timed out
+
+That state is fail-closed and must not advance to any execute command.
 
 ## Expected outputs
 - validate command:
@@ -69,17 +85,22 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
   - writes `artifacts/line_desktop_patrol/runtime/state.json`
   - refreshes `tmp/line_desktop_patrol_latest.json`
   - emits a guard trace with `failure_reason` like `policy_disabled_stop`, `kill_switch_stop`, `blocked_hours_skip`, `max_runs_per_hour_skip`, or `failure_streak_stop` before any dry-run trace is attempted
-- open-target / send / execute-once:
+- open-target / execute-once:
   - all require a machine-local override where `enabled=true` and the selected target allows `execute`
-  - `open-target` validates the frontmost LINE chat and only attempts a uniquely matched allowlist target click
-  - `send` only proceeds after target validation and composer echo confirmation succeed
-  - if LINE does not expose chat title via AX static text, target validation may use bounded window-header OCR before send proceeds
+  - `open-target` is preflight only and does not attempt a send
+  - `open-target` now resolves identity in bounded order `ax/visible -> ocr_primary -> ocr_primary_retry -> ocr_wide_header -> ocr_wide_header_retry -> ocr_sidebar`
+  - `open-target` only attempts a click when the LINE window is frontmost and `window_title_ok=true`
+  - `open_target_mismatch_stop` is diagnostic only; it preserves failure streak and does not count toward the hourly send cap
+  - if LINE does not expose chat title via AX static text, target validation may use bounded window-header OCR and sidebar OCR discovery before execute proceeds
   - if LINE does not expose the composer AX field, send may use a bounded composer click/paste fallback and requires OCR echo confirmation before return-key send proceeds
   - `execute-once` writes `before/after` evidence plus trace/eval/queue artifacts under one run id
 - execute loop:
   - acquires `artifacts/line_desktop_patrol/runtime/execute.lock.json`
   - skips with `overlap_run_skip` while a fresh lock is active
   - is intended for launchd or operator-scheduled runs, not for tracked sample config
+- debug-only send:
+  - `line-desktop-patrol:send` remains available only for bounded debugging after `doctor` and `open-target` already succeeded
+  - `send` is not part of the formal operator sequence
 - screenshot observation:
   - when `store_screenshots=true`, `line-desktop-patrol:dry-run` may capture `artifacts/line_desktop_patrol/runs/<run_id>/after.png`
   - on non-macOS hosts or when `screencapture` is unavailable, the trace records a skipped observation instead of failing the run
@@ -256,10 +277,12 @@ Local-only scaffold runbook for the LINE Desktop patrol harness.
 ## PR18 completion gate
 1. Copy `tools/line_desktop_patrol/config/acceptance.manual.example.json` to a machine-local path outside the repo.
 2. Restrict the machine-local policy to one member-only self-test target, for example `メンバー`.
-3. Run `execute_once` against that target until `execute_once_attempted >= 10` and `execute_once_passed == execute_once_attempted`.
-4. Run scheduled execute on the same host until `scheduled_execute_attempted >= 50` and `scheduled_execute_passed == scheduled_execute_attempted`.
-5. Mark `accessibility_granted=true`, `screen_recording_granted=true`, and `self_test_target_ready=true` in the machine-local manual report.
-6. Run `npm run line-desktop-patrol:acceptance-gate -- --manual-report <path>` and confirm:
+3. Run `doctor` and confirm `overallStatus=ready`.
+4. Run `open-target` until it returns `decision=open_target_ready`.
+5. Run `execute_once` against that target until `execute_once_attempted >= 10` and `execute_once_passed == execute_once_attempted`.
+6. Run scheduled execute on the same host until `scheduled_execute_attempted >= 50` and `scheduled_execute_passed == scheduled_execute_attempted`.
+7. Mark `accessibility_granted=true`, `screen_recording_granted=true`, and `self_test_target_ready=true` in the machine-local manual report.
+8. Run `npm run line-desktop-patrol:acceptance-gate -- --manual-report <path>` and confirm:
    - `overallStatus=ready`
    - `automatic.status=ready`
    - `manual.status=ready`

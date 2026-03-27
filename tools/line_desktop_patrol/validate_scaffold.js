@@ -163,6 +163,10 @@ function runValidation() {
   assert(packageJson.scripts['test:phase900'], 'package.json must define test:phase900');
   assert(packageJson.scripts['test:phase901'], 'package.json must define test:phase901');
   assert(packageJson.scripts['test:phase902'], 'package.json must define test:phase902');
+  assert(packageJson.scripts['test:phase903'], 'package.json must define test:phase903');
+  assert(packageJson.scripts['test:phase904'], 'package.json must define test:phase904');
+  assert(packageJson.scripts['test:phase905'], 'package.json must define test:phase905');
+  assert(packageJson.scripts['test:phase906'], 'package.json must define test:phase906');
 
   const samplePolicy = readJson(path.join(TOOL_ROOT, 'config', 'policy.example.json'));
   assert(samplePolicy.store_ax_tree === false, 'policy.example.json must keep store_ax_tree=false by default');

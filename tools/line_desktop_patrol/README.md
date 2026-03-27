@@ -44,23 +44,38 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - `npm run line-desktop-patrol:probe`
 - `npm run line-desktop-patrol:dry-run`
 - `npm run line-desktop-patrol:loop`
+- `npm run line-desktop-patrol:scaffold-operator-bundle -- --bundle-root ~/member-line-desktop-patrol --target-chat-title "メンバー"`
+- `npm run line-desktop-patrol:doctor`
 - `npm run line-desktop-patrol:open-target`
-- `npm run line-desktop-patrol:send`
 - `npm run line-desktop-patrol:execute-once`
 - `npm run line-desktop-patrol:loop-execute`
+- `npm run line-desktop-patrol:retention`
+- `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
 - `npm run line-desktop-patrol:evaluate -- --trace <artifacts/.../trace.json>`
 - `npm run line-desktop-patrol:enqueue-proposals -- --trace <artifacts/.../trace.json> --planning-output <artifacts/.../desktop_patrol_eval_planning.json>`
 - `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
 - `npm run line-desktop-patrol:synthesize-patch -- --proposal-id <proposal_id>`
 - `npm run line-desktop-patrol:synthesize-code-patch -- --proposal-id <proposal_id>`
 - `npm run line-desktop-patrol:synthesize-code-edit -- --proposal-id <proposal_id>`
-- `npm run line-desktop-patrol:scaffold-operator-bundle -- --bundle-root ~/member-line-desktop-patrol --target-chat-title "メンバー"`
-- `npm run line-desktop-patrol:doctor`
-- `npm run line-desktop-patrol:retention`
-- `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/acceptance.manual.json`
 - `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter --dump-ax-tree --output-path /tmp/line_desktop_patrol_ax.json --execute`
 - `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter --read-visible-messages --output-path /tmp/line_desktop_patrol_visible.json --execute --max-items 5`
 - `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.macos_adapter --validate-target --execute --expected-chat-title "Codex Self Test" --expected-window-title-substring "LINE" --expected-participant-label "Self Test"`
+
+## Safe execute sequence
+1. `npm run line-desktop-patrol:validate`
+2. `npm run line-desktop-patrol:scaffold-operator-bundle -- --bundle-root ~/member-line-desktop-patrol --target-chat-title "メンバー"`
+3. `npm run line-desktop-patrol:doctor -- --policy ~/member-line-desktop-patrol/policy.local.json`
+4. `npm run line-desktop-patrol:open-target -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
+5. `npm run line-desktop-patrol:execute-once -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
+6. `npm run line-desktop-patrol:loop-execute -- --policy ~/member-line-desktop-patrol/soak/policy.soak.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json`
+7. `npm run line-desktop-patrol:acceptance-gate -- --manual-report ~/member-line-desktop-patrol/soak/acceptance.soak.json`
+
+`doctor` must be `ready`.
+`open-target` must return `open_target_ready`.
+If `open-target` returns `open_target_mismatch_stop`, do not continue to `execute-once` or `loop-execute`.
+
+## Debug commands
+- `npm run line-desktop-patrol:send -- --policy ~/member-line-desktop-patrol/policy.local.json --scenario ~/member-line-desktop-patrol/scenarios/execute_smoke.json --message-text "self test message"`
 
 ## Layout
 - `config/`
@@ -72,7 +87,10 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - tracked sample policy still keeps send disabled and dry-run only.
 - the guarded loop writes `artifacts/line_desktop_patrol/runtime/state.json` and respects blocked hours, hourly caps, failure streak, and the repo-side kill switch before invoking the dry-run harness.
 - `execute_harness` keeps fail-closed guards for `policy.enabled`, repo-side kill switch, blocked hours, failure streak, and allowlist `allowed_send_modes=["execute"]`.
-- when AX/visible text do not expose the active LINE chat title, `validate_target` may capture a bounded window-header screenshot and require local OCR to match the allowlist chat title before send proceeds.
+- when AX/visible text do not expose the active LINE chat title, `validate_target` now uses bounded fallback order `ax/visible -> ocr_primary -> ocr_primary_retry -> ocr_wide_header -> ocr_wide_header_retry -> ocr_sidebar`.
+- `open-target` is preflight only. Runs with `send_attempted=false` keep the failure streak unchanged and do not count toward the hourly send cap.
+- `open_target_mismatch_stop` means the LINE app was frontmost but the allowlist identity was still insufficient. This is a diagnostic stop, not a send failure.
+- `generic LINE shell only` means `frontmost=true`, `window_name="LINE"`, `visible_item_count=0`, and header OCR is empty or timed out. Do not continue to execute in that state.
 - when LINE does not expose a composer AX field, `send_text` may use a bounded composer-region click/paste path and require local OCR to confirm the echoed message before return-key send proceeds.
 - `execute_loop` adds an overlap lock at `artifacts/line_desktop_patrol/runtime/execute.lock.json`.
 - when `store_screenshots=true`, the dry-run harness may capture `runs/<run_id>/after.png` on macOS and record it in `screenshot_after`.
@@ -80,6 +98,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - when `store_ax_tree=true`, the dry-run harness may also capture `runs/<run_id>/after.visible.json` and populate `visible_after` with bounded `unknown` role rows.
 - when `execute_once` succeeds, the harness writes `trace.json`, `summary.json`, local eval artifacts, proposal linkage, and queue artifacts under the same run id.
 - `line-desktop-patrol:scaffold-operator-bundle` creates machine-local dry-run-only `policy.local.json`, `acceptance.manual.json`, `scenarios/execute_smoke.json`, and `soak/*` files outside the repo so operators can pin one member-only self-test chat such as `メンバー` without touching tracked config.
+- member-only self-test remains pinned to one chat such as `メンバー`; off-whitelist send incidents must stay `0`.
 - `promote_proposal` prepares a branch/worktree, patch draft artifact, and draft PR body; it never auto-merges or auto-applies runtime changes.
 - `synthesize_patch_task` builds `patch_request.json` and `patch_request.md` artifacts that convert one queued proposal into a human-reviewed patch brief with validation commands and candidate edit targets.
 - `synthesize_code_patch_bundle` builds `code_patch_bundle.json` and `code_patch_bundle.md` artifacts with worktree-aware file snapshots so a human or Codex can write the minimal diff without broadening runtime authority.

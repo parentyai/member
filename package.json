@@ -201,6 +201,10 @@
     "test:phase899": "node --test tests/phase899/*.test.js",
     "test:phase900": "node --test tests/phase900/*.test.js",
     "test:phase901": "node --test tests/phase901/*.test.js",
-    "test:phase902": "node --test tests/phase902/*.test.js"
+    "test:phase902": "node --test tests/phase902/*.test.js",
+    "test:phase903": "node --test tests/phase903/*.test.js",
+    "test:phase904": "node --test tests/phase904/*.test.js",
+    "test:phase905": "node --test tests/phase905/*.test.js",
+    "test:phase906": "node --test tests/phase906/*.test.js"
   }
 }

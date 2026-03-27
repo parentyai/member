@@ -70,6 +70,9 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - one-shot execute は `before/after` の screenshot / AX / visible text を同一 run root に書き、trace / eval / proposal queue を 1 コマンドで閉じる
 - send 後の reply 観測が欠けても trace は残し、`post_send_reply_missing` / `post_send_reply_ambiguous` として degrade する
 - LINE が composer AX field を露出しない場合に備えて、bounded composer-region click/paste + local OCR echo confirmation fallback を使い、確認できた場合だけ return-key send に進む
+- target validation は `ax/visible -> ocr_primary -> ocr_primary_retry -> ocr_wide_header -> ocr_wide_header_retry -> ocr_sidebar` の bounded fallback 順を採用し、sidebar OCR は exact unique match のみ開く
+- open-target preflight は send authority とは切り離し、`open_target_mismatch_stop` は diagnostic stop として failure streak を増やさない
+- `send_attempted=false` の run は hourly cap にも数えず、preflight success も send success と同義にしない
 
 ## PR14 Additions
 - `buildConversationReviewUnitsFromDesktopTrace` は execute trace の `unknown` visible rows から `sent_text` と post-send diff を使って `userMessage` / `assistantReply` を推定する
@@ -92,6 +95,8 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - `member_line_patrol.acceptance_gate` で automatic KPI と machine-local manual soak report をまとめて completion gate 化する
 - `member_line_patrol.execute_harness` は send 直前に repo-side runtime state を再読込し、kill switch が mid-run で flipped した場合も fail-closed で停止する
 - failure injection contract tests は target mismatch / echo mismatch / post-send reply gap / mid-run kill switch を CI 上で再現する
+- loop state は `recent_runs[].send_attempted` と `last_decision.send_attempted` を保持し、preflight だけの run は failure streak を増やさない
+- acceptance summary は `openTargetRunCount` / `openTargetMismatchCount` を追加し、`attemptedSendCount` は `send_attempted=true` の run のみ数える
 
 ## PR19 Additions
 - `tools/line_desktop_patrol/scaffold_operator_bundle.js` で machine-local operator bundle を生成し、member-only self-test chat 用の `policy.local.json`, `acceptance.manual.json`, `scenarios/execute_smoke.json`, `soak/*` を repo 外へ作成する

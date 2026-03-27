@@ -256,6 +256,25 @@ def _derive_evaluator_scores(main_artifact: dict[str, Any] | None, decision: str
     }
 
 
+def _summarize_open_attempts(open_result: dict[str, Any] | None) -> dict[str, Any]:
+    attempts = open_result.get("open_attempts") if isinstance(open_result, dict) else []
+    normalized_attempts = attempts if isinstance(attempts, list) else []
+    attempt_statuses = []
+    for attempt in normalized_attempts:
+        if not isinstance(attempt, dict):
+            continue
+        method = _normalize_text(attempt.get("method")) or "unknown"
+        result = attempt.get("result") if isinstance(attempt.get("result"), dict) else {}
+        status = _normalize_text(result.get("status")) or _normalize_text(attempt.get("reason")) or _normalize_text(attempt.get("status")) or "unknown"
+        attempt_statuses.append(f"{method}:{status}")
+    return {
+        "status": _normalize_text(open_result.get("status")) if isinstance(open_result, dict) else None,
+        "reason": _normalize_text(open_result.get("reason")) if isinstance(open_result, dict) else None,
+        "attempt_count": len(normalized_attempts),
+        "attempt_statuses": attempt_statuses,
+    }
+
+
 def run_execute_harness(
     *,
     policy_path: str | Path,
@@ -321,6 +340,7 @@ def run_execute_harness(
         state_transitions.append(_transition("PRECHECK", "skipped", decision))
         run_id = f"ldp_{started_at.strftime('%Y%m%dT%H%M%SZ')}_{uuid.uuid4().hex[:12]}"
         trace_store = TraceStore(output_root_resolved)
+        send_attempted = False
         trace = {
             "run_id": run_id,
             "scenario_id": scenario.scenario_id,
@@ -343,6 +363,7 @@ def run_execute_harness(
             "failure_reason": decision,
             "proposal_id": None,
             "send_mode": mode,
+            "send_attempted": send_attempted,
             "execute_guard_reason": note,
             "runtime_state": runtime_state,
             "host_probe": host_probe,
@@ -357,6 +378,7 @@ def run_execute_harness(
             finished_at=trace["finished_at"],
             decision=decision,
             target_id=target.alias,
+            send_attempted=send_attempted,
             counted_towards_hourly_cap=False,
             allowed=False,
             note=note,
@@ -371,6 +393,7 @@ def run_execute_harness(
             "state_path": state_update["state_path"],
             "run_id": run_id,
             "target_id": target.alias,
+            "send_attempted": send_attempted,
         }
         latest_summary_written, latest_summary_mirror_written = _write_latest_summary_with_optional_mirror(
             latest_summary_output,
@@ -410,7 +433,7 @@ def run_execute_harness(
         "validate_target": open_result.get("validation"),
     }
     if open_result.get("status") != "executed":
-        decision = "target_mismatch_stop"
+        decision = "open_target_mismatch_stop" if mode == "open_target" else "target_mismatch_stop"
         state_transitions.append(_transition("OPEN_TARGET", "skipped", decision))
     else:
         state_transitions.append(_transition("OPEN_TARGET", "completed", open_result.get("reason")))
@@ -434,6 +457,7 @@ def run_execute_harness(
     eval_result = None
     enqueue_result = None
     runtime_state_before_send = runtime_state
+    send_attempted = False
 
     if decision is None and mode in {"send_only", "execute_once"}:
         state_transitions.append(_transition("RECHECK_RUNTIME_STATE", "started"))
@@ -445,6 +469,7 @@ def run_execute_harness(
             state_transitions.append(_transition("SEND", "skipped", decision))
         else:
             state_transitions.append(_transition("SEND", "started"))
+            send_attempted = True
             send_result = adapter.execute_send_text(
                 sent_text,
                 expected_chat_title=target.expected_chat_title,
@@ -527,8 +552,15 @@ def run_execute_harness(
         "failure_reason": decision,
         "proposal_id": proposal_id,
         "send_mode": mode,
+        "send_attempted": send_attempted,
+        "open_target": _summarize_open_attempts(open_result),
         "target_validation": (
             open_result.get("validation", {}).get("validation")
+            if isinstance(open_result, dict) and isinstance(open_result.get("validation"), dict)
+            else None
+        ),
+        "target_resolution": (
+            open_result.get("validation", {}).get("target_resolution")
             if isinstance(open_result, dict) and isinstance(open_result.get("validation"), dict)
             else None
         ),
@@ -599,6 +631,7 @@ def run_execute_harness(
         "run_id": run_id,
         "mode": mode,
         "decision": decision,
+        "send_attempted": send_attempted,
         "send_status": (
             send_result.get("result", {}).get("status")
             if isinstance(send_result, dict) and isinstance(send_result.get("result"), dict)
@@ -609,7 +642,7 @@ def run_execute_harness(
         "trace_path": str(trace_path),
     })
 
-    counted_towards_hourly_cap = mode in {"send_only", "execute_once"}
+    counted_towards_hourly_cap = send_attempted
     state_update = update_loop_state(
         output_root_resolved,
         now=finished_at,
@@ -618,6 +651,7 @@ def run_execute_harness(
         finished_at=trace["finished_at"],
         decision=decision,
         target_id=target.alias,
+        send_attempted=send_attempted,
         counted_towards_hourly_cap=counted_towards_hourly_cap,
         allowed=True,
         note=mode,
@@ -632,6 +666,7 @@ def run_execute_harness(
         "state_path": state_update["state_path"],
         "run_id": run_id,
         "target_id": target.alias,
+        "send_attempted": send_attempted,
         "counted_runs_last_hour": current_state.counted_runs_last_hour(finished_at) + (1 if counted_towards_hourly_cap else 0),
         "send_status": (
             send_result.get("result", {}).get("status")
