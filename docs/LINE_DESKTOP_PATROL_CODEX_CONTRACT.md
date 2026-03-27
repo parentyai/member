@@ -60,3 +60,14 @@ This document defines the local-only handoff between the LINE Desktop patrol que
   - stop conditions for code patch work
   - the same validation commands reused from the patch request
 - the bundle still does not write code, auto-apply edits, or auto-merge
+
+## Code edit task bundle
+- `line-desktop-patrol:synthesize-code-edit` consumes one code patch bundle and emits:
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_edit_task.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_edit_task.md`
+- the bundle adds:
+  - per-file edit tasks
+  - anchor previews for current file context
+  - apply_patch hint templates
+  - review checklist and stop conditions
+- the bundle still does not edit files, apply code, or open a PR by itself
