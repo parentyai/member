@@ -94,3 +94,14 @@ This document defines the local-only handoff between the LINE Desktop patrol que
   - task packets copied from the diff draft with validation commands
   - stop conditions for the real code editing step
 - the bundle still does not apply code, commit changes, or open a PR by itself
+
+## Code apply draft
+- `line-desktop-patrol:synthesize-code-apply-draft` consumes one code edit bundle and emits:
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_draft.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_draft.md`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.code_apply_draft.patch`
+- the bundle adds:
+  - a reviewed patch document assembled from the current draft task packets
+  - explicit apply steps before any human runs `apply_patch`
+  - expected outputs and validation commands for the final review step
+- the bundle still does not apply code, commit changes, or open a PR by itself
