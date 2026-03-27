@@ -38,3 +38,14 @@ This document defines the local-only handoff between the LINE Desktop patrol que
 - no automatic backlog promotion
 - no automatic PR creation from queued packets
 - no automatic code modification from queue consumption
+
+## Patch synthesis bundle
+- `line-desktop-patrol:synthesize-patch` consumes one promoted proposal and emits:
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.md`
+- the bundle contains:
+  - promotion/worktree references
+  - validation commands
+  - candidate edit targets
+  - operator instructions
+- the bundle is still evidence for human patch work, not execution authority

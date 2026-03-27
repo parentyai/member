@@ -126,6 +126,13 @@ TOOL_SPECS = (
         exposure="internal_only",
         status="draft_pr_ready",
     ),
+    ToolSpec(
+        name="synthesize_patch_bundle",
+        description="Build a human-reviewed patch request bundle from one queued proposal without auto-applying or auto-merging code.",
+        mutating=True,
+        exposure="internal_only",
+        status="patch_task_ready",
+    ),
 )
 
 
@@ -153,6 +160,7 @@ def build_server_manifest() -> dict:
             "PR12 adds bounded target validation, open_test_chat, and send_text foundations while keeping tracked sample policy dry_run-only.",
             "PR13 adds a one-shot execute harness that writes trace/eval/queue artifacts without enabling auto-apply.",
             "PR15 adds proposal promotion into a prepared branch/worktree and optional draft PR body without auto-merging any code.",
+            "PR20 adds patch synthesis bundles that stay artifact-only until a human writes and validates the code diff.",
             "Later PRs can attach a real MCP transport without changing the schema roots.",
         ],
     }

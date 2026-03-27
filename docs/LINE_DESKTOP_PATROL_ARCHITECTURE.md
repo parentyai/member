@@ -97,6 +97,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - scaffolded bundle は tracked config と同じ安全既定値を維持し、member-only self-test chat 例えば `メンバー` を明示で pin するまで execute enablement に進まない
 - `member_line_patrol.promote_proposal` は draft PR body に加えて `patch_draft.md` を生成し、proposal queue から reviewable な patch intent artifact を残す
 
+## PR20 Additions
+- `member_line_patrol.synthesize_patch_task` で proposal promotion artifacts を `patch_request.json` / `patch_request.md` に正規化し、candidate edits と validation commands を human-reviewed bundle として出力する
+- patch synthesis bundle は worktree と branch を再利用するが、code diff や auto-apply を自動生成しない
+- MCP manifest は `synthesize_patch_bundle` を `patch_task_ready` として公開し、operator tooling が proposal から patch 着手パケットへ進める
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -143,6 +148,8 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_draft.md`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.md`
   - `artifacts/line_desktop_patrol/acceptance/latest.json`
   - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
   - `artifacts/line_desktop_patrol/runtime/state.json`

@@ -22,6 +22,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - execute loop wrapper with overlap lock
 - local doctor and retention CLIs
 - proposal promotion worker that prepares branch/worktree + draft PR body
+- patch synthesis worker that turns one promoted proposal into a human-reviewed patch request bundle
 - acceptance gate CLI for KPI + manual host completion checks
 - machine-local operator bundle scaffold for member-only self-test acceptance
 - read-only evaluator bridge into existing `qualityPatrol`
@@ -50,6 +51,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - `npm run line-desktop-patrol:evaluate -- --trace <artifacts/.../trace.json>`
 - `npm run line-desktop-patrol:enqueue-proposals -- --trace <artifacts/.../trace.json> --planning-output <artifacts/.../desktop_patrol_eval_planning.json>`
 - `npm run line-desktop-patrol:promote-proposal -- --proposal-id <proposal_id>`
+- `npm run line-desktop-patrol:synthesize-patch -- --proposal-id <proposal_id>`
 - `npm run line-desktop-patrol:scaffold-operator-bundle -- --bundle-root ~/member-line-desktop-patrol --target-chat-title "メンバー"`
 - `npm run line-desktop-patrol:doctor`
 - `npm run line-desktop-patrol:retention`
@@ -77,6 +79,7 @@ Local-only scaffold for the Member LINE Desktop self-evaluation harness.
 - when `execute_once` succeeds, the harness writes `trace.json`, `summary.json`, local eval artifacts, proposal linkage, and queue artifacts under the same run id.
 - `line-desktop-patrol:scaffold-operator-bundle` creates machine-local dry-run-only `policy.local.json`, `acceptance.manual.json`, `scenarios/execute_smoke.json`, and `soak/*` files outside the repo so operators can pin one member-only self-test chat such as `メンバー` without touching tracked config.
 - `promote_proposal` prepares a branch/worktree, patch draft artifact, and draft PR body; it never auto-merges or auto-applies runtime changes.
+- `synthesize_patch_task` builds `patch_request.json` and `patch_request.md` artifacts that convert one queued proposal into a human-reviewed patch brief with validation commands and candidate edit targets.
 - `retention` only touches stale raw screenshot / AX / visible artifacts by default and keeps `trace.json` / eval / queue artifacts intact.
 - `acceptance_gate` writes `artifacts/line_desktop_patrol/acceptance/latest.json` and blocks completion until both KPI thresholds and machine-local soak evidence are satisfied.
 - the visible-message read path reuses the existing `store_ax_tree` gate so PR11 does not expand the policy schema.
