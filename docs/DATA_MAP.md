@@ -234,6 +234,7 @@ Typical files:
 - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
 - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
 - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`
+- `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_draft.md`
 - `artifacts/line_desktop_patrol/acceptance/latest.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
 - `artifacts/line_desktop_patrol/runtime/state.json`
@@ -264,7 +265,7 @@ Typical fields:
   - `risk_level`, `requires_human_review`
 - promotion record:
   - `proposal_id`, `status`, `branch_name`, `base_ref`, `worktree_path`
-  - `body_path`, `draft_pr_url`, `draft_pr_ref`, `risk_level`
+  - `body_path`, `patch_draft_path`, `draft_pr_url`, `draft_pr_ref`, `risk_level`
 - loop state:
   - `updated_at`, `failure_streak`, `last_run_id`, `last_failure_reason`
   - `recent_runs[]`, `last_decision`
@@ -281,6 +282,7 @@ Notes:
 - PR11 allows `visible_after` plus `observation_artifacts.read_visible_messages.output_path` to point at `artifacts/line_desktop_patrol/runs/<run_id>/after.visible.json` when a local override enables `store_ax_tree=true`.
 - PR13 adds execute trace fields for send/validation/correlation while preserving the original required trace schema.
 - PR15 adds promotion metadata under `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`.
+- PR19 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_draft.md` so proposal promotion can stop at a reviewable patch intent before any code diff exists.
 - PR16 adds `artifacts/line_desktop_patrol/runtime/execute.lock.json` for overlap protection in scheduled execute mode.
 - PR18 adds `artifacts/line_desktop_patrol/acceptance/latest.json` for KPI + manual soak completion gating.
 

@@ -92,6 +92,11 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
 - `member_line_patrol.execute_harness` は send 直前に repo-side runtime state を再読込し、kill switch が mid-run で flipped した場合も fail-closed で停止する
 - failure injection contract tests は target mismatch / echo mismatch / post-send reply gap / mid-run kill switch を CI 上で再現する
 
+## PR19 Additions
+- `tools/line_desktop_patrol/scaffold_operator_bundle.js` で machine-local operator bundle を生成し、member-only self-test chat 用の `policy.local.json`, `acceptance.manual.json`, `scenarios/execute_smoke.json`, `soak/*` を repo 外へ作成する
+- scaffolded bundle は tracked config と同じ安全既定値を維持し、member-only self-test chat 例えば `メンバー` を明示で pin するまで execute enablement に進まない
+- `member_line_patrol.promote_proposal` は draft PR body に加えて `patch_draft.md` を生成し、proposal queue から reviewable な patch intent artifact を残す
+
 ## Boundaries
 - Python sidecar:
   - policy load
@@ -137,6 +142,7 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness の a
   - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
   - `artifacts/line_desktop_patrol/proposals/packets/<proposal_id>.codex.json`
   - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_draft.md`
   - `artifacts/line_desktop_patrol/acceptance/latest.json`
   - `artifacts/line_desktop_patrol/runs/<run_id>/proposal_linkage.json`
   - `artifacts/line_desktop_patrol/runtime/state.json`
