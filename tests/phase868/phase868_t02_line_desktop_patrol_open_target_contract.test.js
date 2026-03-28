@@ -78,3 +78,51 @@ print(json.dumps(result))
   assert.equal(result.open_attempts[0].result.status, 'clicked');
   assert.equal(result.validation.validation.matched, true);
 });
+
+test('phase868: click target candidate failure path preserves normalized candidate text', () => {
+  const code = `
+import json
+from member_line_patrol.macos_adapter import MacOSLineDesktopAdapter
+
+class FakeCompleted:
+    def __init__(self):
+        self.returncode = 1
+        self.stdout = "bad stdout"
+        self.stderr = "bad stderr"
+
+class FakeAdapter(MacOSLineDesktopAdapter):
+    def __init__(self):
+        super().__init__(
+            platform_system="Darwin",
+            tool_lookup=lambda _: "/usr/bin/mock",
+            command_runner=lambda *args, **kwargs: FakeCompleted(),
+        )
+
+    def probe_host(self):
+        return {
+            "platform": "Darwin",
+            "platform_release": "24.0",
+            "is_macos": True,
+            "line_app_name": "LINE",
+            "line_bundle_id": "jp.naver.line.mac",
+            "line_bundle_path": "/Applications/LINE.app",
+            "line_bundle_present": True,
+            "tools": {
+                "open": {"available": True, "path": "/usr/bin/open"},
+                "osascript": {"available": True, "path": "/usr/bin/osascript"},
+                "screencapture": {"available": True, "path": "/usr/sbin/screencapture"},
+                "python3": {"available": True, "path": "/usr/bin/python3"},
+            },
+        }
+
+adapter = FakeAdapter()
+result = adapter._execute_click_target_candidate("  メンバー  ")
+print(json.dumps(result))
+`;
+
+  const result = JSON.parse(runPythonCode(code));
+  assert.equal(result.status, 'failed');
+  assert.equal(result.reason, 'osascript_failed');
+  assert.equal(result.candidate_text, 'メンバー');
+  assert.equal(result.result.returncode, 1);
+});
