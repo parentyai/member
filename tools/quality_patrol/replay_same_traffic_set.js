@@ -30,6 +30,10 @@ function normalizeString(value, fallback) {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
+function hasOwn(target, key) {
+  return Boolean(target) && Object.prototype.hasOwnProperty.call(target, key);
+}
+
 function maskLineUserId(lineUserId) {
   const normalized = normalizeString(lineUserId, '');
   if (!normalized) return null;
@@ -212,15 +216,22 @@ async function buildRecentSummary(params, deps) {
 
 async function replaySameTrafficSet(input, overrides) {
   const options = Object.assign({}, parseReplayArgs(['node', 'tools/quality_patrol/replay_same_traffic_set.js']), input || {});
+  const overrideDeps = overrides && typeof overrides === 'object' ? overrides : null;
   const deps = Object.assign({
     handleLineWebhook,
-    getLlmActionLogByRequestId: llmActionLogsRepo.getLlmActionLogByRequestId,
     listLlmActionLogsByLineUserId: llmActionLogsRepo.listLlmActionLogsByLineUserId,
     listConversationReviewSnapshotsByTraceId: conversationReviewSnapshotsRepo.listConversationReviewSnapshotsByTraceId,
     buildConversationReviewUnitsFromSources,
     queryLatestPatrolInsights,
     sleep
-  }, overrides || {});
+  }, overrideDeps || {});
+  if (!overrideDeps) {
+    deps.getLlmActionLogByRequestId = llmActionLogsRepo.getLlmActionLogByRequestId;
+  } else if (hasOwn(overrideDeps, 'getLlmActionLogByRequestId')) {
+    deps.getLlmActionLogByRequestId = overrideDeps.getLlmActionLogByRequestId;
+  } else {
+    deps.getLlmActionLogByRequestId = null;
+  }
 
   const startedAt = new Date();
   const fromAt = new Date(startedAt.getTime() - 60 * 1000).toISOString();

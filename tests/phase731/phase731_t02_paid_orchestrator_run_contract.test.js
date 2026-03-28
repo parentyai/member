@@ -5,6 +5,34 @@ const { test } = require('node:test');
 
 const { runPaidConversationOrchestrator } = require('../../src/domain/llm/orchestrator/runPaidConversationOrchestrator');
 
+function futureIso(days) {
+  return new Date(Date.now() + (Number(days || 90) * 24 * 60 * 60 * 1000)).toISOString();
+}
+
+function buildSavedFaqDeps(overrides) {
+  const article = Object.assign({
+    id: 'phase731_saved_faq',
+    title: '着任後1か月の生活立ち上げ優先順位',
+    body: '最初の1か月は身分証、住居、金融、通信、医療導線の5領域を優先する。未完了タスクは期限と依存関係を明示し、週次でリスクを再評価する。',
+    sourceSnapshotRefs: ['phase731_official_source'],
+    linkRegistryIds: ['phase731_link_registry'],
+    allowedIntents: ['GENERAL', 'FAQ'],
+    validUntil: futureIso(180),
+    authorityLevel: 'state',
+    authorityTier: 'T2_PUBLIC_DATA',
+    bindingLevel: 'REFERENCE',
+    riskLevel: 'low',
+    status: 'active'
+  }, overrides || {});
+  return {
+    searchFaqFromKb: async () => ({
+      ok: true,
+      candidates: [{ articleId: article.id }]
+    }),
+    getFaqArticle: async () => article
+  };
+}
+
 test('phase731: orchestrator probes grounding and can prefer saved FAQ activation before concierge fallback', async () => {
   let groundedCalls = 0;
   const result = await runPaidConversationOrchestrator({
@@ -35,7 +63,8 @@ test('phase731: orchestrator probes grounding and can prefer saved FAQ activatio
         opportunityReasonKeys: ['general_fallback'],
         interventionBudget: 1,
         auditMeta: null
-      })
+      }),
+      ...buildSavedFaqDeps()
     }
   });
 
@@ -110,7 +139,8 @@ test('phase731: orchestrator rejects legacy grounded template and prefers saniti
         opportunityReasonKeys: ['general_fallback'],
         interventionBudget: 1,
         auditMeta: null
-      })
+      }),
+      ...buildSavedFaqDeps()
     }
   });
 

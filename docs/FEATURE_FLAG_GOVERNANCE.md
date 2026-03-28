@@ -1,7 +1,7 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-28T02:11:26.382Z
-- gitCommit: 505dbf2bf3e5a5b02b736144fab01d0bd4fc5eb3
+- generatedAt: 2026-03-28T02:24:29.943Z
+- gitCommit: 573a352653b40fb67239528c17389737015131f9
 - branch: codex/pr1092-rebase
 - flagCount: 93
 - source: src/**/*.js
