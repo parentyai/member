@@ -2,6 +2,9 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const {
   buildCaseLoopArguments,
@@ -11,7 +14,6 @@ const {
   extractLatestAssistantReply,
   listRecentTraceArtifacts,
   loadStrategicBatch,
-  loadPolicyBudget,
   scoreReplyContract,
   summarizeRound,
 } = require('../../tools/line_desktop_patrol/run_desktop_self_improvement_batch');
@@ -79,21 +81,40 @@ test('phase857: strategic round summary reports proposal review when any case fa
 test('phase857: budget preflight fails closed when remaining hourly budget is smaller than fixed batch size', () => {
   const batch = loadStrategicBatch();
   const originalEnv = process.env.LINE_DESKTOP_PATROL_POLICY_PATH;
-  const policy = loadPolicyBudget();
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'line-patrol-policy-'));
+  const tempPolicyPath = path.join(tempDir, 'policy.json');
+  fs.writeFileSync(
+    tempPolicyPath,
+    JSON.stringify(
+      {
+        enabled: true,
+        max_runs_per_hour: 5,
+        failure_streak_threshold: 3,
+        targets: [
+          {
+            alias: 'sample-self-test',
+            allowed_send_modes: ['dry_run', 'execute'],
+          },
+        ],
+      },
+      null,
+      2
+    )
+  );
   try {
-    process.env.LINE_DESKTOP_PATROL_POLICY_PATH = '/Volumes/Arumamihs/Member/tools/line_desktop_patrol/config/policy.local.json';
+    process.env.LINE_DESKTOP_PATROL_POLICY_PATH = tempPolicyPath;
     const preflight = buildBatchPreflight(batch, 'execute');
     assert.equal(preflight.stage, 'budget_preflight');
+    assert.equal(preflight.code, 'insufficient_hourly_budget');
     assert.equal(typeof preflight.recentRunCount, 'number');
-    if (policy.ok) {
-      assert.equal(typeof preflight.maxRunsPerHour, 'number');
-    }
+    assert.equal(typeof preflight.maxRunsPerHour, 'number');
   } finally {
     if (typeof originalEnv === 'string') {
       process.env.LINE_DESKTOP_PATROL_POLICY_PATH = originalEnv;
     } else {
       delete process.env.LINE_DESKTOP_PATROL_POLICY_PATH;
     }
+    fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
 
