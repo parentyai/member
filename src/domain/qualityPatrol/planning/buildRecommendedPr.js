@@ -36,7 +36,13 @@ function buildPreconditions(report, cause) {
 
 function buildBlockedBy(report, cause) {
   const blockers = []
-    .concat(Array.isArray(report && report.observationBlockers) ? report.observationBlockers.map((item) => item && item.code).filter(Boolean) : [])
+    .concat(
+      report && report.historicalOnly === true
+        ? []
+        : (Array.isArray(report && report.observationBlockers)
+          ? report.observationBlockers.map((item) => item && item.code).filter(Boolean)
+          : [])
+    )
     .concat(Array.isArray(cause && cause.evidenceGaps) ? cause.evidenceGaps.filter(Boolean) : []);
   return uniqueStrings(blockers);
 }

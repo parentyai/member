@@ -30,6 +30,10 @@ function normalizeString(value, fallback) {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
+function hasOwn(target, key) {
+  return Boolean(target) && Object.prototype.hasOwnProperty.call(target, key);
+}
+
 function maskLineUserId(lineUserId) {
   const normalized = normalizeString(lineUserId, '');
   if (!normalized) return null;
@@ -131,8 +135,17 @@ function parseReplayArgs(argv) {
 
 async function findPersistedActionLog(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
+  const getByRequestId = typeof deps.getLlmActionLogByRequestId === 'function'
+    ? deps.getLlmActionLogByRequestId
+    : null;
   const listByLineUserId = deps.listLlmActionLogsByLineUserId;
   for (let attempt = 0; attempt < payload.pollAttempts; attempt += 1) {
+    if (getByRequestId) {
+      const direct = await getByRequestId({ requestId: payload.requestId });
+      if (direct) {
+        return { row: direct, attempts: attempt + 1 };
+      }
+    }
     const rows = await listByLineUserId({
       lineUserId: payload.lineUserId,
       limit: payload.limit || 250,
@@ -203,6 +216,7 @@ async function buildRecentSummary(params, deps) {
 
 async function replaySameTrafficSet(input, overrides) {
   const options = Object.assign({}, parseReplayArgs(['node', 'tools/quality_patrol/replay_same_traffic_set.js']), input || {});
+  const overrideDeps = overrides && typeof overrides === 'object' ? overrides : null;
   const deps = Object.assign({
     handleLineWebhook,
     listLlmActionLogsByLineUserId: llmActionLogsRepo.listLlmActionLogsByLineUserId,
@@ -210,7 +224,14 @@ async function replaySameTrafficSet(input, overrides) {
     buildConversationReviewUnitsFromSources,
     queryLatestPatrolInsights,
     sleep
-  }, overrides || {});
+  }, overrideDeps || {});
+  if (!overrideDeps) {
+    deps.getLlmActionLogByRequestId = llmActionLogsRepo.getLlmActionLogByRequestId;
+  } else if (hasOwn(overrideDeps, 'getLlmActionLogByRequestId')) {
+    deps.getLlmActionLogByRequestId = overrideDeps.getLlmActionLogByRequestId;
+  } else {
+    deps.getLlmActionLogByRequestId = null;
+  }
 
   const startedAt = new Date();
   const fromAt = new Date(startedAt.getTime() - 60 * 1000).toISOString();

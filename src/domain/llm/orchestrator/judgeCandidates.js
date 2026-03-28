@@ -32,9 +32,31 @@ function hasDomainAlignment(packet, candidate) {
   return packetIntent === candidateIntent;
 }
 
-function resolveStrategyAlignmentPriority(strategy, candidateKind) {
+function resolveStrategyAlignmentPriority(packet, strategy, candidateKind) {
   const normalizedStrategy = normalizeText(strategy).toLowerCase();
   const normalizedKind = normalizeText(candidateKind).toLowerCase();
+  const normalizedIntent = normalizeText(packet && packet.normalizedConversationIntent).toLowerCase() || 'general';
+  const genericFallbackSlice = normalizeText(packet && packet.genericFallbackSlice).toLowerCase();
+  const requestShape = normalizeText(packet && (packet.requestShape || (packet.requestContract && packet.requestContract.requestShape))).toLowerCase();
+  const knowledgeScope = normalizeText(packet && (packet.knowledgeScope || (packet.requestContract && packet.requestContract.knowledgeScope))).toLowerCase() || 'none';
+  const locationHintKind = normalizeText(
+    packet && (
+      packet.locationHintKind
+      || (packet.locationHint && packet.locationHint.kind)
+      || (packet.requestContract && packet.requestContract.locationHint && packet.requestContract.locationHint.kind)
+    )
+  ).toLowerCase() || 'none';
+  const continuationContext = packet && (
+    packet.priorContextUsed === true
+    || packet.followupResolvedFromHistory === true
+    || packet.contextResume === true
+  );
+  const broadSetupDirectAnswer = normalizedIntent === 'general'
+    && requestShape === 'answer'
+    && genericFallbackSlice === 'broad';
+  const locationScopedDirectAnswer = normalizedIntent !== 'general'
+    && requestShape === 'answer'
+    && (knowledgeScope === 'city' || locationHintKind === 'city' || locationHintKind === 'state');
   if (normalizedStrategy === 'casual') {
     if (normalizedKind === 'casual_candidate' || normalizedKind === 'conversation_candidate') return 40;
     if (normalizedKind === 'clarify_candidate') return 6;
@@ -46,7 +68,27 @@ function resolveStrategyAlignmentPriority(strategy, candidateKind) {
     return 0;
   }
   if (normalizedStrategy === 'grounded_answer') {
-    if (normalizedKind === 'continuation_candidate') return 34;
+    if (locationScopedDirectAnswer && normalizedKind === 'domain_concierge_candidate') return 30;
+    if (
+      locationScopedDirectAnswer
+      && (
+        normalizedKind === 'saved_faq_candidate'
+        || normalizedKind === 'knowledge_backed_candidate'
+        || normalizedKind === 'housing_knowledge_candidate'
+      )
+    ) {
+      return 18;
+    }
+    if (normalizedKind === 'continuation_candidate') {
+      return continuationContext || requestShape === 'followup_continue' ? 34 : 12;
+    }
+    if (normalizedKind === 'saved_faq_candidate' || normalizedKind === 'knowledge_backed_candidate' || normalizedKind === 'housing_knowledge_candidate') {
+      return broadSetupDirectAnswer ? 32 : 26;
+    }
+    if (broadSetupDirectAnswer && normalizedKind === 'domain_concierge_candidate') return 28;
+    if (broadSetupDirectAnswer && (normalizedKind === 'grounded_candidate' || normalizedKind === 'structured_answer_candidate')) {
+      return 12;
+    }
     if (normalizedKind === 'city_pack_backed_candidate' || normalizedKind === 'city_grounded_candidate') return 32;
     if (normalizedKind === 'grounded_candidate' || normalizedKind === 'structured_answer_candidate') return 28;
     return 0;
@@ -71,7 +113,7 @@ function scoreCandidate(packet, candidate, options) {
   const legacyTemplateHit = containsLegacyTemplateTerms(text);
   const directUrl = hasDirectUrl(text);
   const candidatePriority = resolveCandidatePriority(packet, payload);
-  const strategyAlignmentPriority = resolveStrategyAlignmentPriority(strategy, payload.kind);
+  const strategyAlignmentPriority = resolveStrategyAlignmentPriority(packet, strategy, payload.kind);
   const rejectedReasons = [];
 
   if (!text) rejectedReasons.push('empty_reply');
@@ -158,6 +200,7 @@ function judgeCandidates(params) {
   const selected = scored[0] || null;
   return {
     selected: selected ? selected.candidate : null,
+    rankedCandidates: scored.map((entry) => entry.candidate),
     judgeWinner: selected ? selected.verdict.candidateId : null,
     judgeScores: scored.map((entry) => ({
       candidateId: entry.verdict.candidateId,

@@ -14,15 +14,19 @@ function read(path) {
 test('phase810: runtime city pack signals ground official fresh pack candidates', async () => {
   const signals = await resolveRuntimeCityPackSignals({
     lineUserId: 'U-city-1',
+    messageText: 'ニューヨークで住まい探しを進めたいです',
     domainIntent: 'housing',
     intentRiskTier: 'medium',
     locale: 'ja'
   }, {
     searchCityPackCandidates: async () => ({
-      candidates: [{ sourceId: 'city-pack-tokyo' }]
+      candidates: [{ sourceId: 'city-pack-nyc' }]
     }),
     getCityPack: async () => ({
       packClass: 'housing',
+      regionKey: 'NY::new-york',
+      regionCity: 'ニューヨーク',
+      regionState: 'NY',
       sourceRefs: ['ref-1']
     }),
     validateCityPackSources: async () => ({
@@ -46,10 +50,59 @@ test('phase810: runtime city pack signals ground official fresh pack candidates'
 
   assert.equal(signals.cityPackContext, true);
   assert.equal(signals.cityPackGrounded, true);
-  assert.equal(signals.cityPackPackId, 'city-pack-tokyo');
+  assert.equal(signals.cityPackPackId, 'city-pack-nyc');
   assert.equal(signals.cityPackSourceReadinessDecision, 'allow');
+  assert.equal(signals.requestedCityKey, 'new-york');
+  assert.equal(signals.matchedCityKey, 'new-york');
+  assert.equal(signals.citySpecificitySatisfied, true);
+  assert.equal(signals.citySpecificityReason, 'city_exact_match');
   assert.ok(Number(signals.cityPackFreshnessScore) >= 0.8);
   assert.ok(Number(signals.cityPackAuthorityScore) >= 0.8);
+});
+
+test('phase810: runtime city pack signals keep city packs ungrounded when exact city match is missing', async () => {
+  const signals = await resolveRuntimeCityPackSignals({
+    lineUserId: 'U-city-3',
+    messageText: 'ニューヨークで学校手続きを進めたいです',
+    domainIntent: 'school',
+    intentRiskTier: 'medium',
+    locale: 'ja'
+  }, {
+    searchCityPackCandidates: async () => ({
+      candidates: [{ sourceId: 'city-pack-boston' }]
+    }),
+    getCityPack: async () => ({
+      packClass: 'school',
+      regionKey: 'MA::boston',
+      regionCity: 'Boston',
+      regionState: 'MA',
+      sourceRefs: ['ref-2']
+    }),
+    validateCityPackSources: async () => ({
+      blocked: false,
+      blockingInvalidSourceRefs: [],
+      optionalInvalidSourceRefs: [],
+      sourceRefs: [
+        {
+          ref: {
+            sourceType: 'official',
+            authorityLevel: 'state',
+            status: 'active',
+            validUntil: '2026-08-01T00:00:00.000Z',
+            requiredLevel: 'required',
+            domainClass: 'school'
+          }
+        }
+      ]
+    })
+  });
+
+  assert.equal(signals.cityPackContext, true);
+  assert.equal(signals.cityPackGrounded, false);
+  assert.equal(signals.requestedCityKey, 'new-york');
+  assert.equal(signals.matchedCityKey, 'boston');
+  assert.equal(signals.citySpecificitySatisfied, false);
+  assert.equal(signals.citySpecificityReason, 'city_mismatch');
 });
 
 test('phase810: required blocked city pack source shadow-refuses high-risk answers', async () => {

@@ -80,3 +80,30 @@ test('phase749: readiness clarifies when support is weak', () => {
   assert.ok(result.reasonCodes.includes('readiness_clarify'));
   assert.equal(result.safeResponseMode, 'clarify');
 });
+
+test('phase749: optional city-pack stale refs do not hedge non-city transforms', () => {
+  const result = evaluateAnswerReadiness({
+    lawfulBasis: 'contract',
+    consentVerified: true,
+    crossBorder: false,
+    legalDecision: 'allow',
+    intentRiskTier: 'low',
+    sourceAuthorityScore: 0.95,
+    sourceFreshnessScore: 0.95,
+    sourceReadinessDecision: 'allow',
+    officialOnlySatisfied: true,
+    evidenceCoverage: 0.95,
+    knowledgeScope: 'general',
+    requestedCityKey: null,
+    matchedCityKey: 'new-york',
+    cityPackGrounded: false,
+    cityPackAuthorityScore: 0.2,
+    cityPackFreshnessScore: 0.2,
+    citySpecificitySatisfied: false,
+    citySpecificityReason: 'requested_city_missing',
+    reasonCodes: ['city_pack_optional_source_stale']
+  });
+
+  assert.equal(result.decision, 'allow');
+  assert.equal(result.decisionSource, 'threshold_allow');
+});

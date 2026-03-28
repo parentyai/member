@@ -25,7 +25,24 @@ test('phase751: quality report script emits required top_10 outputs', () => {
         retrieveNeededRate: 0.3,
         avgActionCount: 2,
         directAnswerAppliedRate: 0.81,
-        avgRepeatRiskScore: 0.22
+        avgRepeatRiskScore: 0.22,
+        formatComplianceRate: 0.99,
+        detailCarryRate: 0.97,
+        correctionRecoveryRate: 0.96,
+        mixedDomainRetentionRate: 0.95,
+        citySpecificityResolvedRate: 0.94,
+        cityOverclaimRate: 0,
+        transformSourceCarryRate: 0.97,
+        depthResetRate: 0.02,
+        followupOveraskRate: 0.02,
+        internalLabelLeakRate: 0,
+        parrotEchoRate: 0,
+        commandBoundaryCollisionRate: 0,
+        domainIntentConciergeRate: 0.92,
+        officialOnlySatisfiedRate: 0.94,
+        followupResolutionRate: 0.89,
+        contextualResumeHandledRate: 0.88,
+        avgUnsupportedClaimCount: 0.01
       }
     }
   }, null, 2)}\n`);

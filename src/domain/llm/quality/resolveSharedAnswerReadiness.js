@@ -1,7 +1,11 @@
 'use strict';
 
 const { runAnswerReadinessGateV2 } = require('./runAnswerReadinessGateV2');
-const { applyAnswerReadinessDecision } = require('./applyAnswerReadinessDecision');
+const {
+  createResponseQualityContext,
+  createResponseQualityVerdict,
+  normalizeResponseQualityReasonCodes
+} = require('./responseQualityFoundation');
 const { resolveIntentRiskTier } = require('../policy/resolveIntentRiskTier');
 const { resolveRouteCoverageMeta } = require('../router/resolveRouteCoverageMeta');
 const { enforceActionGateway } = require('../../../v1/action_gateway/actionGateway');
@@ -18,17 +22,6 @@ function normalizeDecision(value) {
     return normalized;
   }
   return null;
-}
-
-function normalizeReasonCodes(values) {
-  const rows = Array.isArray(values) ? values : [];
-  const out = [];
-  rows.forEach((row) => {
-    const normalized = normalizeText(row).toLowerCase().replace(/\s+/g, '_');
-    if (!normalized) return;
-    if (!out.includes(normalized)) out.push(normalized);
-  });
-  return out.slice(0, 12);
 }
 
 function normalizeScore(value, fallback) {
@@ -50,7 +43,7 @@ function applyActionGatewayToReadiness(readiness, actionGateway) {
     : { decision: 'allow', reasonCodes: [], safeResponseMode: 'answer', qualitySnapshot: {} };
   if (!actionGateway || actionGateway.enabled !== true) return base;
   if (actionGateway.allowed === true) return base;
-  const reasonCodes = normalizeReasonCodes([].concat(base.reasonCodes || [], actionGateway.reason || []));
+  const reasonCodes = normalizeResponseQualityReasonCodes([].concat(base.reasonCodes || [], actionGateway.reason || []));
   if (actionGateway.decision === 'clarify') {
     return Object.assign({}, base, {
       decision: 'clarify',
@@ -90,7 +83,7 @@ function resolveSharedAnswerReadiness(params) {
   const optimisticLlmFallback = llmUsed === true && highRisk !== true && compatEntry !== true;
 
   const explicitDecision = normalizeDecision(payload.readinessDecision);
-  const explicitReasonCodes = normalizeReasonCodes(payload.readinessReasonCodes);
+  const explicitReasonCodes = normalizeResponseQualityReasonCodes(payload.readinessReasonCodes);
   const explicitSafeResponseMode = normalizeText(payload.readinessSafeResponseMode).toLowerCase() || null;
   const policyReasonCodes = []
     .concat(risk.riskReasonCodes || [])
@@ -105,7 +98,7 @@ function resolveSharedAnswerReadiness(params) {
     routeDecisionSource: payload.routeDecisionSource
   });
 
-  const evaluatedGate = runAnswerReadinessGateV2({
+  const responseQualityContext = createResponseQualityContext({
     entryType,
     lawfulBasis: normalizeText(payload.lawfulBasis) || 'consent',
     consentVerified: payload.consentVerified !== false,
@@ -124,7 +117,7 @@ function resolveSharedAnswerReadiness(params) {
     evidenceCoverage: evidenceCoverageObserved ? normalizeScore(payload.evidenceCoverage, undefined) : undefined,
     evidenceCoverageObserved,
     fallbackType: normalizeText(payload.fallbackType) || null,
-    reasonCodes: normalizeReasonCodes(policyReasonCodes),
+    reasonCodes: normalizeResponseQualityReasonCodes(policyReasonCodes),
     emergencyContext: payload.emergencyContext === true,
     emergencySeverity: payload.emergencySeverity || null,
     emergencyOfficialSourceSatisfied: payload.emergencyOfficialSourceSatisfied === true,
@@ -162,6 +155,11 @@ function resolveSharedAnswerReadiness(params) {
     sourceSnapshotRefs: payload.sourceSnapshotRefs,
     crossSystemConflictDetected: payload.crossSystemConflictDetected === true
   });
+  const evaluatedGate = runAnswerReadinessGateV2({
+    entryType,
+    responseQualityContext,
+    env: payload.env
+  });
   const evaluated = evaluatedGate.readiness;
 
   const actionClass = resolveActionClass(normalizeText(payload.actionClass) || 'lookup');
@@ -190,20 +188,22 @@ function resolveSharedAnswerReadiness(params) {
     : evaluated;
   const readiness = applyActionGatewayToReadiness(readinessRaw, actionGateway);
 
-  const applied = applyAnswerReadinessDecision({
-    decision: readiness.decision,
+  const verdict = createResponseQualityVerdict({
+    responseQualityContext,
+    readinessGate: evaluatedGate,
+    readinessOverride: readiness,
     replyText: payload.replyText,
     clarifyText: payload.clarifyText,
     refuseText: payload.refuseText
   });
 
   return {
-    readiness,
+    readiness: verdict.readiness,
     readinessV2: evaluatedGate.readinessV2,
     domainIntent: risk.domainIntent,
     intentRiskTier: risk.intentRiskTier,
-    replyText: applied.replyText,
-    readinessEnforced: applied.enforced === true,
+    replyText: verdict.replyText,
+    readinessEnforced: verdict.enforced === true,
     actionGateway,
     answerReadinessVersion: evaluatedGate.answerReadinessVersion,
     answerReadinessLogOnlyV2: evaluatedGate.answerReadinessLogOnlyV2,
@@ -211,7 +211,11 @@ function resolveSharedAnswerReadiness(params) {
     answerReadinessV2Mode: evaluatedGate.mode ? evaluatedGate.mode.mode : 'log_only_v2',
     answerReadinessV2Stage: evaluatedGate.mode ? evaluatedGate.mode.stage : 'log_only',
     answerReadinessV2EnforcementReason: evaluatedGate.mode ? evaluatedGate.mode.enforcementReason : 'log_only_default',
-    readinessTelemetryV2: evaluatedGate.telemetry,
+    responseQualityContextVersion: responseQualityContext.contractVersion,
+    responseQualityVerdictVersion: verdict.contractVersion,
+    responseQualityContext,
+    responseQualityVerdict: verdict,
+    readinessTelemetryV2: verdict.telemetry,
     routeCoverageMeta
   };
 }

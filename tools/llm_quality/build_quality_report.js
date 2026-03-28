@@ -1,7 +1,18 @@
 'use strict';
 
-const fs = require('node:fs');
 const path = require('node:path');
+const { readJson } = require('./lib');
+const {
+  buildConciergeReleaseSupport,
+  buildConciergeRuntimeFailures: buildConciergeRuntimeFailuresFromSupport,
+  CONCIERGE_RUNTIME_SIGNAL_KEYS
+} = require('./concierge_quality');
+const {
+  resolveHarnessRunId,
+  resolveRunScopedArtifactGroup,
+  readSummaryData,
+  writeHarnessArtifact
+} = require('./harness_shared');
 
 function parseArgs(argv) {
   const args = Array.isArray(argv) ? argv.slice(2) : [];
@@ -14,15 +25,6 @@ function parseArgs(argv) {
     if (next && !next.startsWith('--')) i += 1;
   }
   return out;
-}
-
-function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-}
-
-function writeJson(filePath, payload) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`);
 }
 
 function toMap(rows, keyField) {
@@ -175,6 +177,16 @@ function buildLineFitFailures(summary) {
     .slice(0, 10);
 }
 
+function buildConciergeRuntimeFailures(summary) {
+  return buildConciergeRuntimeFailuresFromSupport(summary).map((row) => ({
+    signal: row.signal,
+    value: row.value,
+    threshold: row.threshold,
+    available: row.available,
+    direction: row.direction
+  }));
+}
+
 function buildSignalCoverage(summary) {
   const conversation = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
     ? summary.conversationQuality
@@ -187,7 +199,8 @@ function buildSignalCoverage(summary) {
     'retrieveNeededRate',
     'avgActionCount',
     'directAnswerAppliedRate',
-    'avgRepeatRiskScore'
+    'avgRepeatRiskScore',
+    ...CONCIERGE_RUNTIME_SIGNAL_KEYS
   ];
   const missingSignals = requiredSignals.filter((key) => {
     if (!Object.prototype.hasOwnProperty.call(conversation, key)) {
@@ -222,10 +235,8 @@ function main(argv) {
 
   const baseline = readJson(baselinePath);
   const candidate = readJson(candidatePath);
-  const summaryPayload = summaryPath ? readJson(summaryPath) : null;
-  const summary = summaryPayload && typeof summaryPayload === 'object'
-    ? (summaryPayload.summary && typeof summaryPayload.summary === 'object' ? summaryPayload.summary : summaryPayload)
-    : {};
+  const summary = readSummaryData(summaryPath) || {};
+  const conciergeSupport = buildConciergeReleaseSupport(summary);
 
   const baselineDimensions = toMap(baseline.dimensions, 'key');
   const candidateDimensions = toMap(candidate.dimensions, 'key');
@@ -255,7 +266,13 @@ function main(argv) {
     top_10_context_loss_cases: buildContextLossCases(summary),
     top_10_japanese_service_failures: buildJapaneseServiceFailures(summary),
     top_10_line_fit_failures: buildLineFitFailures(summary),
+    top_10_concierge_runtime_failures: buildConciergeRuntimeFailures(summary),
     signal_coverage: buildSignalCoverage(summary),
+    concierge_runtime_signals: conciergeSupport.runtimeSignals,
+    concierge_signal_coverage: conciergeSupport.signalCoverage,
+    critical_unresolved_issues: conciergeSupport.criticalIssues,
+    critical_unresolved_issue_codes: conciergeSupport.criticalIssueCodes,
+    critical_unresolved_issue_count: conciergeSupport.criticalIssueCount,
     current_quality_risk_map: {
       high: dimensionScores.filter((row) => row.status === 'fail').slice(0, 10),
       medium: dimensionScores.filter((row) => row.status === 'warning').slice(0, 10),
@@ -263,8 +280,13 @@ function main(argv) {
     }
   };
 
-  writeJson(outPath, report);
-  process.stdout.write(`${JSON.stringify({ ok: true, outPath, report }, null, 2)}\n`);
+  const artifact = writeHarnessArtifact({
+    outputPath: outPath,
+    value: report,
+    runId: resolveHarnessRunId({ env: process.env, sourceTag: 'quality-report' }),
+    artifactGroup: resolveRunScopedArtifactGroup('report')
+  });
+  process.stdout.write(`${JSON.stringify({ ok: true, outPath: artifact.outputPath, runScopedOutPath: artifact.runScopedPath, report }, null, 2)}\n`);
   return 0;
 }
 

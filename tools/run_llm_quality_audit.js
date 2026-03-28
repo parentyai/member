@@ -1,7 +1,12 @@
 'use strict';
 
 const path = require('node:path');
-const { parseArgs, readJson, writeJson } = require('./llm_quality/lib');
+const { parseArgs, readJson } = require('./llm_quality/lib');
+const {
+  resolveHarnessRunId,
+  resolveRunScopedArtifactGroup,
+  writeHarnessArtifact
+} = require('./llm_quality/harness_shared');
 
 function uniqueList(values) {
   return Array.from(new Set((Array.isArray(values) ? values : []).filter((value) => typeof value === 'string' && value.trim())));
@@ -80,8 +85,13 @@ function main(argv) {
     })
   };
 
-  writeJson(outputPath, payload);
-  process.stdout.write(`${JSON.stringify({ ok: true, outputPath, overallScore: payload.overallScore }, null, 2)}\n`);
+  const artifact = writeHarnessArtifact({
+    outputPath,
+    value: payload,
+    runId: resolveHarnessRunId({ env: process.env, sourceTag: 'quality-audit' }),
+    artifactGroup: resolveRunScopedArtifactGroup('audit')
+  });
+  process.stdout.write(`${JSON.stringify({ ok: true, outputPath: artifact.outputPath, runScopedOutputPath: artifact.runScopedPath, overallScore: payload.overallScore }, null, 2)}\n`);
   return 0;
 }
 

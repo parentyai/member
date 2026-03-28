@@ -33,11 +33,16 @@ function resolveQualitySeverity(metricKey, params) {
     if (slice === 'follow-up' && (metricStatus === 'fail' || value >= 0.45)) return DETECTION_SEVERITY.high;
     return metricStatus === 'fail' ? DETECTION_SEVERITY.medium : DETECTION_SEVERITY.low;
   }
-  if (metricKey === 'specificity' || metricKey === 'citySpecificityMissingRate') {
+  if (metricKey === 'specificity' || metricKey === 'citySpecificityMissingRate' || metricKey === 'cityOverclaimRate') {
     if (slice === 'city' && metricStatus === 'fail') return DETECTION_SEVERITY.high;
     return metricStatus === 'fail' ? DETECTION_SEVERITY.medium : DETECTION_SEVERITY.low;
   }
-  if (metricKey === 'proceduralUtility' || metricKey === 'nextStepMissingRate' || metricKey === 'broadAbstractEscapeRate') {
+  if (
+    metricKey === 'proceduralUtility'
+    || metricKey === 'nextStepMissingRate'
+    || metricKey === 'broadAbstractEscapeRate'
+    || metricKey === 'messageOnlyViolatedRate'
+  ) {
     if (slice === 'broad' && metricStatus === 'fail') return DETECTION_SEVERITY.medium;
     return metricStatus === 'fail' ? DETECTION_SEVERITY.medium : DETECTION_SEVERITY.low;
   }
@@ -45,7 +50,12 @@ function resolveQualitySeverity(metricKey, params) {
     if (slice === 'city' && metricStatus === 'fail') return DETECTION_SEVERITY.high;
     return metricStatus === 'fail' ? DETECTION_SEVERITY.medium : DETECTION_SEVERITY.low;
   }
-  if (metricKey === 'continuity' || metricKey === 'followupContextResetRate') {
+  if (
+    metricKey === 'continuity'
+    || metricKey === 'followupContextResetRate'
+    || metricKey === 'transformSourceDropRate'
+    || metricKey === 'deepenResetRate'
+  ) {
     if (slice === 'follow-up' && metricStatus === 'fail') return DETECTION_SEVERITY.high;
     return metricStatus === 'fail' ? DETECTION_SEVERITY.medium : DETECTION_SEVERITY.low;
   }

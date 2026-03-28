@@ -32,7 +32,11 @@ const {
 } = require('../domain/llm/policy/resolveLlmLegalPolicySnapshot');
 const { resolveIntentRiskTier } = require('../domain/llm/policy/resolveIntentRiskTier');
 const { runAnswerReadinessGateV2 } = require('../domain/llm/quality/runAnswerReadinessGateV2');
-const { applyAnswerReadinessDecision } = require('../domain/llm/quality/applyAnswerReadinessDecision');
+const {
+  createResponseQualityContext,
+  createResponseQualityVerdict,
+  normalizeResponseQualityReasonCodes
+} = require('../domain/llm/quality/responseQualityFoundation');
 const { resolveJourneyActionSignals } = require('../domain/llm/quality/resolveJourneyActionSignals');
 const { resolveRuntimeCityPackSignals } = require('../domain/llm/quality/resolveRuntimeCityPackSignals');
 const { resolveRuntimeEmergencySignals } = require('../domain/llm/quality/resolveRuntimeEmergencySignals');
@@ -40,6 +44,8 @@ const { resolveTelemetryCoverageSignals } = require('../domain/llm/quality/resol
 const { generatePaidDomainConciergeReply, FORBIDDEN_REPLY_PATTERN } = require('../usecases/assistant/generatePaidDomainConciergeReply');
 const { generatePaidHousingConciergeReply } = require('../usecases/assistant/generatePaidHousingConciergeReply');
 const { runPaidConversationOrchestrator } = require('../domain/llm/orchestrator/runPaidConversationOrchestrator');
+const { buildRequestContract } = require('../domain/llm/orchestrator/buildRequestContract');
+const { buildConversationPacket } = require('../domain/llm/orchestrator/buildConversationPacket');
 const {
   upsertRecentTurn,
   listRecentTurns
@@ -100,6 +106,7 @@ const {
   regionInvalid,
   regionAlreadySet
 } = require('../domain/regionLineMessages');
+const { parseRegionInput, extractLocationHintFromText } = require('../domain/regionNormalization');
 const {
   feedbackReceived,
   feedbackUsage
@@ -294,6 +301,14 @@ function parseNextActionCompletedCommand(text) {
   return key || null;
 }
 
+function shouldReplyWithRegionAlreadySet(text) {
+  const raw = normalizeReplyText(text);
+  if (!raw) return false;
+  const parsed = parseRegionInput(raw);
+  if (parsed && parsed.ok === true) return true;
+  return /^(?:地域(?:設定|変更)?|region|city|state)(?:\s|[:：]|$)/i.test(raw);
+}
+
 function trimForLineMessage(value) {
   const text = normalizeReplyText(value);
   if (!text) return '';
@@ -327,6 +342,25 @@ function guardPaidMainReplyText(value, options) {
   const payload = options && typeof options === 'object' ? options : {};
   const fallbackText = normalizeReplyText(payload.fallbackText)
     || '状況を整理しながら進めましょう。まずは優先する手続きを1つ決めるのがおすすめです。';
+  if (payload.preserveReplyText === true) {
+    const guardedText = trimForPaidLineMessage(
+      normalizeReplyText(value)
+      || stripLegacyTemplateTokensForPaid(value)
+      || fallbackText
+    ) || fallbackText;
+    return {
+      replyText: guardedText,
+      legacyTemplateHit: detectLegacyTemplateHit(value),
+      actionCount: countActionBullets(guardedText),
+      pitfallIncluded: detectPitfallIncluded(guardedText),
+      followupQuestionIncluded: detectFollowupQuestionIncluded(guardedText),
+      fallbackTemplateKind: classifyReplyTemplateKind({
+        replyText: guardedText,
+        conciseModeApplied: payload.conciseMode === true
+      }),
+      replyTemplateFingerprint: buildReplyTemplateFingerprint(guardedText)
+    };
+  }
   const guardResult = sanitizePaidMainReply(value, payload);
   const guardedText = trimForPaidLineMessage(
     normalizeReplyText(guardResult && guardResult.text ? guardResult.text : '')
@@ -719,6 +753,11 @@ async function buildPaidDomainConciergeResult(params) {
       opportunityDecision,
       followupIntent: payload.followupIntent || null,
       recentFollowupIntents: derivedRecentFollowupIntents,
+      recentResponseHints: Array.isArray(payload.recentResponseHints) ? payload.recentResponseHints : [],
+      requestContract: payload.requestContract && typeof payload.requestContract === 'object'
+        ? payload.requestContract
+        : null,
+      recoverySignal: payload.recoverySignal === true,
       blockedReason: payload.blockedReason || null
     });
   const domainAtoms = domainReply && domainReply.atoms && typeof domainReply.atoms === 'object'
@@ -735,8 +774,12 @@ async function buildPaidDomainConciergeResult(params) {
     resolveRuntimeCityPackSignals({
       lineUserId,
       locale: 'ja',
+      messageText: text,
       domainIntent,
-      intentRiskTier: resolveIntentRiskTier({ domainIntent }).intentRiskTier
+      intentRiskTier: resolveIntentRiskTier({ domainIntent }).intentRiskTier,
+      requestContract: payload.requestContract && typeof payload.requestContract === 'object'
+        ? payload.requestContract
+        : null
     }),
     resolveRuntimeEmergencySignals({
       lineUserId,
@@ -765,7 +808,8 @@ async function buildPaidDomainConciergeResult(params) {
       : (opportunityDecision && opportunityDecision.suggestedAtoms
         ? opportunityDecision.suggestedAtoms.question
         : ''),
-    conciseMode: domainReply && domainReply.conciseModeApplied === true
+    conciseMode: domainReply && domainReply.conciseModeApplied === true,
+    preserveReplyText: domainReply && domainReply.preserveReplyText === true
   });
   const replyText = guardedReply.replyText;
   const conversationQuality = buildConversationQualityMeta({
@@ -783,6 +827,9 @@ async function buildPaidDomainConciergeResult(params) {
     pitfallIncluded: guardedReply.pitfallIncluded === true,
     followupQuestionIncluded: guardedReply.followupQuestionIncluded === true,
     conversationNaturalnessVersion: payload.conversationNaturalnessVersion || 'v2',
+    directAnswerApplied: domainReply && domainReply.preserveReplyText === true,
+    clarifySuppressed: domainReply && domainReply.preserveReplyText === true
+      && !(domainAtoms && typeof domainAtoms.followupQuestion === 'string' && domainAtoms.followupQuestion.trim()),
     conciseModeApplied: domainReply && domainReply.conciseModeApplied === true,
     followupIntent: domainReply && typeof domainReply.followupIntent === 'string' ? domainReply.followupIntent : null,
     strategyReason: payload.blockedReason ? 'domain_concierge_fallback' : 'explicit_domain_intent',
@@ -830,6 +877,7 @@ async function buildPaidDomainConciergeResult(params) {
   return {
     ok: true,
     replyText,
+    preserveReplyText: domainReply && domainReply.preserveReplyText === true,
     contextSnapshot,
     opportunityDecision,
     conciergeMeta: domainReply && domainReply.auditMeta ? domainReply.auditMeta : null,
@@ -1131,6 +1179,208 @@ function normalizeFollowupIntent(value) {
   return null;
 }
 
+function shouldPreferPaidOrchestratorForExplicitDomain(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  if (payload.paidOrchestratorEnabled !== true) return false;
+  const domainIntent = normalizeDomainIntent(payload.domainIntent);
+  if (!PAID_CONCIERGE_DOMAIN_INTENTS.has(domainIntent)) return false;
+  const locationHint = extractLocationHintFromText(payload.messageText || '');
+  if (!locationHint || typeof locationHint !== 'object') return false;
+  if (
+    locationHint.kind === 'city'
+    && typeof locationHint.cityKey === 'string'
+    && locationHint.cityKey.trim().length > 0
+  ) {
+    return true;
+  }
+  return locationHint.kind === 'state'
+    && typeof locationHint.state === 'string'
+    && locationHint.state.trim().length > 0;
+}
+
+function buildBlockedFallbackRequestContract(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  if (payload.preferPaidOrchestratorForExplicitDomain !== true) return null;
+  const messageText = typeof payload.messageText === 'string' ? payload.messageText : '';
+  if (!messageText.trim()) return null;
+  return buildRequestContract({
+    messageText,
+    fallbackDomain: normalizeDomainIntent(payload.domainIntent),
+    intentReason: typeof payload.routerReason === 'string' ? payload.routerReason : '',
+    intentMode: typeof payload.routerMode === 'string' ? payload.routerMode : ''
+  });
+}
+
+function withBlockedFallbackDetailObligations(requestContract, options) {
+  const contract = requestContract && typeof requestContract === 'object'
+    ? Object.assign({}, requestContract)
+    : null;
+  if (!contract) return null;
+  const followupIntent = normalizeFollowupIntent(options && options.followupIntent);
+  const depthIntent = normalizeReplyText(contract.depthIntent).toLowerCase();
+  const obligations = Array.isArray(contract.detailObligations)
+    ? contract.detailObligations.filter(Boolean)
+    : [];
+
+  if (
+    depthIntent === 'deepen'
+    || ['docs_required', 'appointment_needed', 'next_step'].includes(followupIntent)
+  ) {
+    if (!obligations.includes('avoid_question_back')) obligations.push('avoid_question_back');
+  }
+
+  if (obligations.length > 0) {
+    contract.detailObligations = obligations;
+  }
+  return contract;
+}
+
+async function buildBlockedFallbackContext(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const messageText = typeof payload.messageText === 'string' ? payload.messageText : '';
+  if (!messageText.trim()) return null;
+
+  const explicitRequestContract = buildBlockedFallbackRequestContract(payload);
+  if (explicitRequestContract) {
+    return {
+      domainIntent: normalizeDomainIntent(payload.domainIntent),
+      requestContract: explicitRequestContract,
+      contextResumeDomain: null,
+      followupIntent: null,
+      recentFollowupIntents: [],
+      recentResponseHints: [],
+      recoverySignal: false,
+      routerReason: typeof payload.routerReason === 'string' ? payload.routerReason : null
+    };
+  }
+
+  const lineUserId = normalizeReplyText(payload.lineUserId);
+  if (!lineUserId) return null;
+
+  const recentTurns = resolvePaidInterventionCooldownTurns();
+  const recentActionRows = await loadRecentActionRowsBestEffort(lineUserId, recentTurns);
+  if (!Array.isArray(recentActionRows) || recentActionRows.length === 0) return null;
+
+  const packet = buildConversationPacket({
+    lineUserId,
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null,
+    messageText,
+    explicitPaidIntent: payload.explicitPaidIntent || null,
+    paidIntent: payload.paidIntent || 'faq_search',
+    planInfo: payload.planInfo && typeof payload.planInfo === 'object'
+      ? payload.planInfo
+      : { plan: 'pro', status: 'active' },
+    routerMode: typeof payload.routerMode === 'string' ? payload.routerMode : 'question',
+    routerReason: typeof payload.routerReason === 'string' ? payload.routerReason : null,
+    contextSnapshot: payload.contextSnapshot && typeof payload.contextSnapshot === 'object'
+      ? payload.contextSnapshot
+      : null,
+    llmFlags: {
+      llmConciergeEnabled: payload.llmConciergeEnabled === true,
+      llmWebSearchEnabled: payload.llmWebSearchEnabled !== false,
+      llmStyleEngineEnabled: payload.llmStyleEngineEnabled !== false,
+      llmBanditEnabled: payload.llmBanditEnabled === true,
+      qualityEnabled: payload.qualityEnabled !== false,
+      snapshotStrictMode: payload.snapshotStrictMode === true,
+      actionGatewayEnabled: payload.actionGatewayEnabled === true
+    },
+    maxNextActionsCap: Number.isFinite(Number(payload.maxNextActionsCap)) ? Number(payload.maxNextActionsCap) : null,
+    recentEngagement: payload.recentEngagement && typeof payload.recentEngagement === 'object'
+      ? payload.recentEngagement
+      : { recentTurns: 0, recentInterventions: 0, recentClicks: false, recentTaskDone: false },
+    opportunityDecision: payload.opportunityDecision && typeof payload.opportunityDecision === 'object'
+      ? payload.opportunityDecision
+      : {
+        conversationMode: 'concierge',
+        opportunityType: 'none',
+        opportunityReasonKeys: [],
+        interventionBudget: 1,
+        suggestedAtoms: { nextActions: [], pitfall: '', question: '' }
+      },
+    recentActionRows
+  });
+
+  const domainIntent = normalizeDomainIntent(
+    packet.normalizedConversationIntent
+      || (packet.requestContract && packet.requestContract.primaryDomainIntent)
+      || payload.domainIntent
+  );
+  const followupIntent = normalizeFollowupIntent(packet.followupIntent);
+  const hasContextualPaidDomain = domainIntent !== 'general'
+    && (
+      packet.priorContextUsed === true
+      || packet.contextResume === true
+      || (typeof packet.contextResumeDomain === 'string' && packet.contextResumeDomain.trim().length > 0)
+      || (typeof packet.sourceDomainIntent === 'string' && packet.sourceDomainIntent.trim().length > 0)
+    );
+  if (!hasContextualPaidDomain && !followupIntent) return null;
+
+  return {
+    domainIntent,
+    requestContract: withBlockedFallbackDetailObligations(packet.requestContract, { followupIntent }),
+    contextResumeDomain: packet.contextResumeDomain || null,
+    followupIntent,
+    recentFollowupIntents: Array.isArray(packet.recentFollowupIntents) ? packet.recentFollowupIntents.slice(0, 6) : [],
+    recentResponseHints: Array.isArray(packet.recentResponseHints) ? packet.recentResponseHints.slice(0, 6) : [],
+    recoverySignal: packet.recoverySignal === true,
+    routerReason: packet.routerReason || (typeof payload.routerReason === 'string' ? payload.routerReason : null)
+  };
+}
+
+function buildRequestContractTelemetryFields(requestContract) {
+  const contract = requestContract && typeof requestContract === 'object' ? requestContract : null;
+  const locationHint = contract && contract.locationHint && typeof contract.locationHint === 'object'
+    ? contract.locationHint
+    : null;
+  if (!contract) return {};
+  return {
+    requestShape: typeof contract.requestShape === 'string' ? contract.requestShape : null,
+    depthIntent: typeof contract.depthIntent === 'string' ? contract.depthIntent : null,
+    transformSource: typeof contract.transformSource === 'string' ? contract.transformSource : null,
+    outputForm: typeof contract.outputForm === 'string' ? contract.outputForm : null,
+    knowledgeScope: typeof contract.knowledgeScope === 'string' ? contract.knowledgeScope : null,
+    locationHintKind: locationHint && typeof locationHint.kind === 'string' ? locationHint.kind : null,
+    locationHintCityKey: locationHint && typeof locationHint.cityKey === 'string' ? locationHint.cityKey : null,
+    locationHintState: locationHint && typeof locationHint.state === 'string' ? locationHint.state : null,
+    locationHintRegionKey: locationHint && typeof locationHint.regionKey === 'string' ? locationHint.regionKey : null,
+    detailObligations: Array.isArray(contract.detailObligations) ? contract.detailObligations : [],
+    answerability: typeof contract.answerability === 'string' ? contract.answerability : null,
+    echoOfPriorAssistant: typeof contract.echoOfPriorAssistant === 'boolean' ? contract.echoOfPriorAssistant : null,
+    requestedCityKey: locationHint && typeof locationHint.cityKey === 'string' ? locationHint.cityKey : null
+  };
+}
+
+function buildFallbackIntegrationTelemetryFields(fallback, requestContract) {
+  const payload = fallback && typeof fallback === 'object' ? fallback : {};
+  const integrationSignals = payload.integrationSignals && typeof payload.integrationSignals === 'object'
+    ? payload.integrationSignals
+    : {};
+  const baseTelemetry = buildRequestContractTelemetryFields(requestContract);
+  return Object.assign(
+    {},
+    baseTelemetry,
+    {
+      directAnswerApplied: payload.preserveReplyText === true,
+      clarifySuppressed: payload.preserveReplyText === true
+        && !(payload.atoms && typeof payload.atoms.followupQuestion === 'string' && payload.atoms.followupQuestion.trim()),
+      requestedCityKey: typeof integrationSignals.requestedCityKey === 'string'
+        ? integrationSignals.requestedCityKey
+        : baseTelemetry.requestedCityKey,
+      matchedCityKey: typeof integrationSignals.matchedCityKey === 'string' ? integrationSignals.matchedCityKey : null,
+      citySpecificitySatisfied: typeof integrationSignals.citySpecificitySatisfied === 'boolean'
+        ? integrationSignals.citySpecificitySatisfied
+        : null,
+      citySpecificityReason: typeof integrationSignals.citySpecificityReason === 'string'
+        ? integrationSignals.citySpecificityReason
+        : null,
+      scopeDisclosureRequired: typeof integrationSignals.scopeDisclosureRequired === 'boolean'
+        ? integrationSignals.scopeDisclosureRequired
+        : null
+    }
+  );
+}
+
 function resolveInterventionSuppressedBy(opportunityReasonKeys) {
   const reasons = Array.isArray(opportunityReasonKeys) ? opportunityReasonKeys : [];
   if (reasons.includes('intervention_cooldown_active')) return 'cooldown';
@@ -1288,6 +1538,10 @@ function resolveTranscriptSnapshotAssistantReplyText(params) {
 function buildSemanticQuickReplies(params) {
   const payload = params && typeof params === 'object' ? params : {};
   if (Array.isArray(payload.quickReplies)) return payload.quickReplies;
+  const conversationMode = normalizeReplyText(payload.conversationMode).toLowerCase();
+  if (payload.disableAutoQuickReplies === true || conversationMode === 'concierge') {
+    return [];
+  }
   const nextSteps = Array.isArray(payload.nextSteps) ? payload.nextSteps : [];
   const out = [];
   nextSteps.slice(0, 3).forEach((step) => {
@@ -1437,7 +1691,9 @@ function buildSemanticReplyEnvelope(params) {
   const quickReplies = buildSemanticQuickReplies({
     quickReplies: payload.quickReplies,
     nextSteps,
-    followupQuestion
+    followupQuestion,
+    conversationMode: payload.conversationMode,
+    disableAutoQuickReplies: payload.disableAutoQuickReplies === true
   });
   const citationSummary = resolveSemanticCitationSummary({
     readinessDecision: payload.readinessDecision,
@@ -1541,7 +1797,7 @@ function resolveAnswerReadinessTelemetry(params) {
   const sourceFreshnessScore = hasMetric(payload.sourceFreshnessScore)
     ? Number(payload.sourceFreshnessScore)
     : evidenceCoverage;
-  const readinessGate = runAnswerReadinessGateV2({
+  const responseQualityContext = createResponseQualityContext({
     entryType: normalizeReplyText(payload.entryType) || 'webhook',
     lawfulBasis: payload.legalSnapshot && payload.legalSnapshot.lawfulBasis,
     consentVerified: payload.legalSnapshot && payload.legalSnapshot.consentVerified === true,
@@ -1591,39 +1847,17 @@ function resolveAnswerReadinessTelemetry(params) {
     sourceSnapshotRefs: payload.sourceSnapshotRefs,
     crossSystemConflictDetected: payload.crossSystemConflictDetected === true
   });
+  const readinessGate = runAnswerReadinessGateV2({
+    entryType: responseQualityContext.entryType,
+    responseQualityContext
+  });
   const explicitDecision = normalizeReplyText(payload.readinessDecision).toLowerCase();
   const hasExplicitDecision = explicitDecision === 'allow'
     || explicitDecision === 'hedged'
     || explicitDecision === 'clarify'
     || explicitDecision === 'refuse';
-  const explicitReasonCodes = Array.isArray(payload.readinessReasonCodes)
-    ? payload.readinessReasonCodes
-      .map((item) => normalizeReplyText(item).toLowerCase().replace(/\s+/g, '_'))
-      .filter(Boolean)
-      .slice(0, 12)
-    : [];
+  const explicitReasonCodes = normalizeResponseQualityReasonCodes(payload.readinessReasonCodes);
   const explicitSafeResponseMode = normalizeReplyText(payload.readinessSafeResponseMode).toLowerCase();
-  const readiness = hasExplicitDecision
-    ? Object.assign({}, readinessGate.readiness, {
-      decision: explicitDecision,
-      reasonCodes: explicitReasonCodes.length ? explicitReasonCodes : readinessGate.readiness.reasonCodes,
-      safeResponseMode: explicitSafeResponseMode || readinessGate.readiness.safeResponseMode
-    })
-    : readinessGate.readiness;
-  if (!hasExplicitDecision) {
-    const legalBlocked = payload.legalSnapshot && payload.legalSnapshot.legalDecision === 'blocked';
-    const sourceSignalPresent = hasMetric(payload.sourceAuthorityScore)
-      || hasMetric(payload.sourceFreshnessScore)
-      || normalizeReplyText(payload.sourceReadinessDecision).length > 0;
-    const riskTier = payload.riskSnapshot && typeof payload.riskSnapshot.intentRiskTier === 'string'
-      ? payload.riskSnapshot.intentRiskTier.toLowerCase()
-      : 'low';
-    if (!legalBlocked && !sourceSignalPresent && !contradictionDetected && unsupportedClaimCount === 0 && riskTier !== 'high') {
-      readiness.decision = 'allow';
-      readiness.safeResponseMode = 'answer';
-      readiness.reasonCodes = ['readiness_signal_missing_allow'];
-    }
-  }
   const telemetryCoverageSignals = resolveTelemetryCoverageSignals(Object.assign({}, payload, {
     evidenceCoverage,
     unsupportedClaimCount,
@@ -1641,8 +1875,25 @@ function resolveAnswerReadinessTelemetry(params) {
     savedFaqReused: payload.savedFaqReused === true,
     sourceSnapshotRefs: payload.sourceSnapshotRefs
   }));
+  const responseQualityVerdict = createResponseQualityVerdict({
+    responseQualityContext,
+    readinessGate,
+    readinessDecision: hasExplicitDecision ? explicitDecision : null,
+    readinessReasonCodes: hasExplicitDecision ? explicitReasonCodes : null,
+    readinessSafeResponseMode: hasExplicitDecision ? explicitSafeResponseMode : null,
+    allowWhenSignalsMissing: hasExplicitDecision !== true,
+    legalSnapshot: payload.legalSnapshot,
+    riskSnapshot: payload.riskSnapshot,
+    contradictionFlags,
+    contradictionDetected,
+    unsupportedClaimCount,
+    sourceAuthorityScore: payload.sourceAuthorityScore,
+    sourceFreshnessScore: payload.sourceFreshnessScore,
+    sourceReadinessDecision: payload.sourceReadinessDecision,
+    telemetryAdditions: telemetryCoverageSignals
+  });
   return {
-    readiness,
+    readiness: responseQualityVerdict.readiness,
     readinessV2: readinessGate.readinessV2,
     answerReadinessVersion: readinessGate.answerReadinessVersion,
     answerReadinessLogOnlyV2: readinessGate.answerReadinessLogOnlyV2,
@@ -1650,7 +1901,11 @@ function resolveAnswerReadinessTelemetry(params) {
     answerReadinessV2Mode: readinessGate.mode ? readinessGate.mode.mode : null,
     answerReadinessV2Stage: readinessGate.mode ? readinessGate.mode.stage : null,
     answerReadinessV2EnforcementReason: readinessGate.mode ? readinessGate.mode.enforcementReason : null,
-    readinessTelemetryV2: Object.assign({}, readinessGate.telemetry || {}, telemetryCoverageSignals),
+    responseQualityContextVersion: responseQualityContext.contractVersion,
+    responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
+    responseQualityContext,
+    responseQualityVerdict,
+    readinessTelemetryV2: responseQualityVerdict.telemetry,
     unsupportedClaimCount,
     contradictionDetected
   };
@@ -1909,6 +2164,8 @@ async function appendLlmGateDecisionBestEffort(data) {
         readinessReasonCodes: readinessTelemetry.readiness.reasonCodes,
         readinessSafeResponseMode: readinessTelemetry.readiness.safeResponseMode,
         answerReadinessVersion: readinessTelemetry.answerReadinessVersion,
+        responseQualityContextVersion: readinessTelemetry.readinessTelemetryV2.responseQualityContextVersion || null,
+        responseQualityVerdictVersion: readinessTelemetry.readinessTelemetryV2.responseQualityVerdictVersion || null,
         answerReadinessLogOnlyV2: readinessTelemetry.answerReadinessLogOnlyV2 === true,
         answerReadinessEnforcedV2: readinessTelemetry.answerReadinessEnforcedV2 === true,
         answerReadinessV2Mode: readinessTelemetry.answerReadinessV2Mode || null,
@@ -2493,6 +2750,8 @@ async function appendLlmActionLogBestEffort(data) {
       readinessReasonCodes: readinessTelemetry.readiness.reasonCodes,
       readinessSafeResponseMode: readinessTelemetry.readiness.safeResponseMode,
       answerReadinessVersion: readinessTelemetry.answerReadinessVersion,
+      responseQualityContextVersion: readinessTelemetry.readinessTelemetryV2.responseQualityContextVersion || null,
+      responseQualityVerdictVersion: readinessTelemetry.readinessTelemetryV2.responseQualityVerdictVersion || null,
       answerReadinessLogOnlyV2: readinessTelemetry.answerReadinessLogOnlyV2 === true,
       answerReadinessEnforcedV2: readinessTelemetry.answerReadinessEnforcedV2 === true,
       answerReadinessV2Mode: readinessTelemetry.answerReadinessV2Mode || null,
@@ -2687,6 +2946,24 @@ async function appendLlmActionLogBestEffort(data) {
       judgeScores: Array.isArray(payload.judgeScores) ? payload.judgeScores : [],
       verificationOutcome: typeof payload.verificationOutcome === 'string' ? payload.verificationOutcome : null,
       contradictionFlags: Array.isArray(payload.contradictionFlags) ? payload.contradictionFlags : [],
+      requestShape: typeof payload.requestShape === 'string' ? payload.requestShape : null,
+      depthIntent: typeof payload.depthIntent === 'string' ? payload.depthIntent : null,
+      transformSource: typeof payload.transformSource === 'string' ? payload.transformSource : null,
+      outputForm: typeof payload.outputForm === 'string' ? payload.outputForm : null,
+      knowledgeScope: typeof payload.knowledgeScope === 'string' ? payload.knowledgeScope : null,
+      locationHintKind: typeof payload.locationHintKind === 'string' ? payload.locationHintKind : null,
+      locationHintCityKey: typeof payload.locationHintCityKey === 'string' ? payload.locationHintCityKey : null,
+      locationHintState: typeof payload.locationHintState === 'string' ? payload.locationHintState : null,
+      locationHintRegionKey: typeof payload.locationHintRegionKey === 'string' ? payload.locationHintRegionKey : null,
+      detailObligations: Array.isArray(payload.detailObligations) ? payload.detailObligations : [],
+      answerability: typeof payload.answerability === 'string' ? payload.answerability : null,
+      echoOfPriorAssistant: typeof payload.echoOfPriorAssistant === 'boolean' ? payload.echoOfPriorAssistant : null,
+      requestedCityKey: typeof payload.requestedCityKey === 'string' ? payload.requestedCityKey : null,
+      matchedCityKey: typeof payload.matchedCityKey === 'string' ? payload.matchedCityKey : null,
+      citySpecificitySatisfied: typeof payload.citySpecificitySatisfied === 'boolean' ? payload.citySpecificitySatisfied : null,
+      citySpecificityReason: typeof payload.citySpecificityReason === 'string' ? payload.citySpecificityReason : null,
+      scopeDisclosureRequired: typeof payload.scopeDisclosureRequired === 'boolean' ? payload.scopeDisclosureRequired : null,
+      violationCodes: Array.isArray(payload.violationCodes) ? payload.violationCodes : [],
       candidateCount: Number.isFinite(Number(payload.candidateCount)) ? Number(payload.candidateCount) : 0,
       humanReviewLabel: typeof payload.humanReviewLabel === 'string' ? payload.humanReviewLabel : null,
       committedNextActions: Array.isArray(payload.committedNextActions) ? payload.committedNextActions : [],
@@ -2797,6 +3074,14 @@ async function appendLlmActionLogBestEffort(data) {
 async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
   const normalizedUserId = normalizeReplyText(lineUserId);
   if (!normalizedUserId) return [];
+  const isSyntheticPatrolReplayRow = (row) => {
+    const traceId = normalizeReplyText(row && row.traceId);
+    const requestId = normalizeReplyText(row && row.requestId);
+    return traceId.startsWith('quality_patrol_cycle_')
+      || traceId.startsWith('quality_patrol_replay_')
+      || requestId.startsWith('quality_patrol_cycle_')
+      || requestId.startsWith('quality_patrol_replay_');
+  };
   const limit = Number.isFinite(Number(recentTurns))
     ? Math.max(5, Math.min(20, Math.floor(Number(recentTurns)) * 2))
     : 10;
@@ -2804,10 +3089,11 @@ async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
   try {
     const storedRows = await llmActionLogsRepo.listLlmActionLogsByLineUserId({
       lineUserId: normalizedUserId,
-      limit
+      limit,
+      excludeSyntheticPatrolReplay: true
     });
     const deduped = [];
-    const seenKeys = new Set();
+    const seenRows = new Map();
     const toKey = (row) => {
       const requestId = normalizeReplyText(row && row.requestId);
       if (requestId) return `req:${requestId}`;
@@ -2816,19 +3102,92 @@ async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
       const replyText = normalizeReplyText(row && row.replyText);
       return `row:${createdAt}:${domainIntent}:${replyText}`;
     };
+    const mergeRows = (existing, incoming) => {
+      const left = existing && typeof existing === 'object' ? existing : {};
+      const right = incoming && typeof incoming === 'object' ? incoming : {};
+      return Object.assign({}, left, right, {
+        __sourcePriority: Math.max(
+          Number.isFinite(Number(left.__sourcePriority)) ? Number(left.__sourcePriority) : 0,
+          Number.isFinite(Number(right.__sourcePriority)) ? Number(right.__sourcePriority) : 0
+        ),
+        replyText: normalizeReplyText(right.replyText) || normalizeReplyText(left.replyText),
+        committedNextActions: (
+          Array.isArray(right.committedNextActions) && right.committedNextActions.length > 0
+            ? right.committedNextActions
+            : (Array.isArray(left.committedNextActions) ? left.committedNextActions : [])
+        ),
+        committedFollowupQuestion: normalizeReplyText(right.committedFollowupQuestion)
+          || normalizeReplyText(left.committedFollowupQuestion)
+          || null,
+        recentUserGoal: normalizeReplyText(right.recentUserGoal)
+          || normalizeReplyText(left.recentUserGoal)
+          || null,
+        followupIntent: normalizeReplyText(right.followupIntent)
+          || normalizeReplyText(left.followupIntent)
+          || null,
+        requestShape: normalizeReplyText(right.requestShape)
+          || normalizeReplyText(left.requestShape)
+          || null,
+        depthIntent: normalizeReplyText(right.depthIntent)
+          || normalizeReplyText(left.depthIntent)
+          || null,
+        transformSource: normalizeReplyText(right.transformSource)
+          || normalizeReplyText(left.transformSource)
+          || null,
+        outputForm: normalizeReplyText(right.outputForm)
+          || normalizeReplyText(left.outputForm)
+          || null,
+        knowledgeScope: normalizeReplyText(right.knowledgeScope)
+          || normalizeReplyText(left.knowledgeScope)
+          || null,
+        detailObligations: (
+          Array.isArray(right.detailObligations) && right.detailObligations.length > 0
+            ? right.detailObligations
+            : (Array.isArray(left.detailObligations) ? left.detailObligations : [])
+        ),
+        locationHintKind: normalizeReplyText(right.locationHintKind)
+          || normalizeReplyText(left.locationHintKind)
+          || null,
+        locationHintCityKey: normalizeReplyText(right.locationHintCityKey)
+          || normalizeReplyText(left.locationHintCityKey)
+          || null,
+        locationHintState: normalizeReplyText(right.locationHintState)
+          || normalizeReplyText(left.locationHintState)
+          || null,
+        locationHintRegionKey: normalizeReplyText(right.locationHintRegionKey)
+          || normalizeReplyText(left.locationHintRegionKey)
+          || null
+      });
+    };
     const pushRow = (row) => {
       if (!row || typeof row !== 'object') return;
       const key = toKey(row);
-      if (!key || seenKeys.has(key)) return;
-      seenKeys.add(key);
-      deduped.push(row);
+      if (!key) return;
+      if (!seenRows.has(key)) {
+        seenRows.set(key, row);
+        return;
+      }
+      seenRows.set(key, mergeRows(seenRows.get(key), row));
     };
-    (Array.isArray(storedRows) ? storedRows : []).forEach(pushRow);
-    (Array.isArray(cachedRows) ? cachedRows : []).forEach(pushRow);
-    deduped.sort((left, right) => toMillis(right && right.createdAt) - toMillis(left && left.createdAt));
+    (Array.isArray(storedRows) ? storedRows : [])
+      .map((row) => Object.assign({}, row, { __sourcePriority: 2 }))
+      .filter((row) => !isSyntheticPatrolReplayRow(row))
+      .forEach(pushRow);
+    (Array.isArray(cachedRows) ? cachedRows : [])
+      .map((row) => Object.assign({}, row, { __sourcePriority: 1 }))
+      .filter((row) => !isSyntheticPatrolReplayRow(row))
+      .forEach(pushRow);
+    seenRows.forEach((row) => deduped.push(row));
+    deduped.sort((left, right) => {
+      const leftPriority = Number.isFinite(Number(left && left.__sourcePriority)) ? Number(left.__sourcePriority) : 0;
+      const rightPriority = Number.isFinite(Number(right && right.__sourcePriority)) ? Number(right.__sourcePriority) : 0;
+      if (rightPriority !== leftPriority) return rightPriority - leftPriority;
+      return toMillis(right && right.createdAt) - toMillis(left && left.createdAt);
+    });
     return deduped.slice(0, limit);
   } catch (_err) {
-    return Array.isArray(cachedRows) ? cachedRows : [];
+    return (Array.isArray(cachedRows) ? cachedRows : [])
+      .filter((row) => !isSyntheticPatrolReplayRow(row));
   }
 }
 
@@ -2864,6 +3223,11 @@ async function tryHandlePaidOrchestratorV2(params) {
     opportunityDecision: options && options.opportunityDecision ? options.opportunityDecision : payload.opportunityDecision,
     followupIntent: options && typeof options.followupIntent === 'string' ? options.followupIntent : null,
     recentFollowupIntents: options && Array.isArray(options.recentFollowupIntents) ? options.recentFollowupIntents : [],
+    recentResponseHints: options && Array.isArray(options.recentResponseHints) ? options.recentResponseHints : [],
+    requestContract: options && options.requestContract && typeof options.requestContract === 'object'
+      ? options.requestContract
+      : null,
+    recoverySignal: options && options.recoverySignal === true,
     recentEngagement: payload.recentEngagement,
     blockedReason: options && Object.prototype.hasOwnProperty.call(options, 'blockedReason') ? options.blockedReason : null,
     forceConcierge: true,
@@ -3055,6 +3419,8 @@ async function tryHandlePaidOrchestratorV2(params) {
   });
   await appendLlmGateDecisionBestEffort({
     lineUserId: payload.lineUserId,
+    messageText: payload.text,
+    replyText: orchestratedReplyText,
     plan: payload.planInfo.plan,
     status: payload.planInfo.status,
     intent: payload.paidIntent,
@@ -3149,6 +3515,26 @@ async function tryHandlePaidOrchestratorV2(params) {
     judgeScores: orchestrated.telemetry ? orchestrated.telemetry.judgeScores : [],
     verificationOutcome: orchestrated.telemetry ? orchestrated.telemetry.verificationOutcome : null,
     contradictionFlags: orchestrated.telemetry ? orchestrated.telemetry.contradictionFlags : [],
+    requestShape: orchestrated.telemetry ? orchestrated.telemetry.requestShape : null,
+    depthIntent: orchestrated.telemetry ? orchestrated.telemetry.depthIntent : null,
+    transformSource: orchestrated.telemetry ? orchestrated.telemetry.transformSource : null,
+    outputForm: orchestrated.telemetry ? orchestrated.telemetry.outputForm : null,
+    knowledgeScope: orchestrated.telemetry ? orchestrated.telemetry.knowledgeScope : null,
+    locationHintKind: orchestrated.telemetry ? orchestrated.telemetry.locationHintKind : null,
+    locationHintCityKey: orchestrated.telemetry ? orchestrated.telemetry.locationHintCityKey : null,
+    locationHintState: orchestrated.telemetry ? orchestrated.telemetry.locationHintState : null,
+    locationHintRegionKey: orchestrated.telemetry ? orchestrated.telemetry.locationHintRegionKey : null,
+    detailObligations: orchestrated.telemetry ? orchestrated.telemetry.detailObligations : [],
+    answerability: orchestrated.telemetry ? orchestrated.telemetry.answerability : null,
+    echoOfPriorAssistant: orchestrated.telemetry
+      ? (typeof orchestrated.telemetry.echoOfPriorAssistant === 'boolean' ? orchestrated.telemetry.echoOfPriorAssistant : null)
+      : null,
+    requestedCityKey: orchestrated.telemetry ? orchestrated.telemetry.requestedCityKey : null,
+    matchedCityKey: orchestrated.telemetry ? orchestrated.telemetry.matchedCityKey : null,
+    citySpecificitySatisfied: orchestrated.telemetry ? orchestrated.telemetry.citySpecificitySatisfied === true : null,
+    citySpecificityReason: orchestrated.telemetry ? orchestrated.telemetry.citySpecificityReason : null,
+    scopeDisclosureRequired: orchestrated.telemetry ? orchestrated.telemetry.scopeDisclosureRequired === true : null,
+    violationCodes: orchestrated.telemetry ? orchestrated.telemetry.violationCodes : [],
     candidateCount: orchestrated.telemetry ? orchestrated.telemetry.candidateCount : 0,
     sourceAuthorityScore: orchestrated.telemetry ? orchestrated.telemetry.sourceAuthorityScore : null,
     sourceFreshnessScore: orchestrated.telemetry ? orchestrated.telemetry.sourceFreshnessScore : null,
@@ -3539,6 +3925,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText: fallback && fallback.replyText ? fallback.replyText : '',
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -3563,6 +3951,7 @@ async function handleAssistantMessage(params) {
       plan: planInfo.plan,
       traceId,
       requestId,
+      messageText: text,
       replyText: fallback && fallback.replyText ? fallback.replyText : '',
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       llmBanditEnabled,
@@ -3599,7 +3988,15 @@ async function handleAssistantMessage(params) {
     ? routerDecision.reason
     : null);
   const paidOrchestratorEnabled = resolvePaidOrchestratorEnabled();
+  const preferPaidOrchestratorForExplicitDomain = shouldPreferPaidOrchestratorForExplicitDomain({
+    paidOrchestratorEnabled,
+    domainIntent: normalizedConversationIntent,
+    messageText: text
+  });
   const shouldRouteToPaidCasual = conversationRouterEnabled && (routerMode === 'greeting' || routerMode === 'casual');
+  const snapshotStrictMode = resolveSnapshotOnlyContextEnabled();
+  const qualityEnabled = resolvePaidFaqQualityEnabled();
+  const actionGatewayEnabled = resolveV1ActionGatewayEnabled();
 
   if (paidOrchestratorEnabled && shouldRouteToPaidCasual) {
     const earlyOrchestrated = await tryHandlePaidOrchestratorV2({
@@ -3650,6 +4047,7 @@ async function handleAssistantMessage(params) {
       pitfall: '',
       followupQuestion: '',
       defaultQuestion: '',
+      preserveReplyText: true,
       disablePitfall: true,
       disableFollowup: true
     });
@@ -3663,10 +4061,10 @@ async function handleAssistantMessage(params) {
       nextSteps: [],
       followupQuestion: null
     });
-    const replyText = semanticReplyEnvelope.replyText;
+    const replyText = normalizeReplyText(casual && casual.replyText ? casual.replyText : '') || guardedReply.replyText;
     await payload.replyFn(
       payload.replyToken,
-      semanticReplyEnvelope.lineMessage || { type: 'text', text: replyText }
+      { type: 'text', text: replyText }
     );
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
@@ -3699,6 +4097,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText,
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -3724,6 +4124,7 @@ async function handleAssistantMessage(params) {
       plan: planInfo.plan,
       traceId,
       requestId,
+      messageText: text,
       replyText,
       llmBanditEnabled,
       conversationMode: 'casual',
@@ -3748,6 +4149,33 @@ async function handleAssistantMessage(params) {
 
   if (!budget.allowed) {
     const blockedReason = budget.blockedReason || 'plan_gate_blocked';
+    const fallbackContext = await buildBlockedFallbackContext({
+      lineUserId,
+      preferPaidOrchestratorForExplicitDomain,
+      messageText: text,
+      domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+      routerReason,
+      routerMode,
+      explicitPaidIntent,
+      paidIntent,
+      planInfo,
+      llmConciergeEnabled,
+      llmWebSearchEnabled,
+      llmStyleEngineEnabled,
+      llmBanditEnabled,
+      qualityEnabled,
+      snapshotStrictMode,
+      actionGatewayEnabled,
+      traceId,
+      requestId
+    });
+    const fallbackRequestContract = fallbackContext ? fallbackContext.requestContract : null;
+    const fallbackDomainIntent = fallbackContext
+      ? fallbackContext.domainIntent
+      : (isPaidDomainIntent ? normalizedConversationIntent : 'general');
+    const fallbackRouterReason = fallbackContext && fallbackContext.routerReason
+      ? fallbackContext.routerReason
+      : routerReason;
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
       kbTopScore: 0,
@@ -3757,9 +4185,16 @@ async function handleAssistantMessage(params) {
     });
     const fallback = await replyWithPaidDomainConcierge(Object.assign({}, payload, {
       blockedReason,
-      domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+      domainIntent: fallbackDomainIntent,
+      requestContract: fallbackRequestContract,
+      contextResumeDomain: fallbackContext ? fallbackContext.contextResumeDomain : null,
+      followupIntent: fallbackContext ? fallbackContext.followupIntent : null,
+      recentFollowupIntents: fallbackContext ? fallbackContext.recentFollowupIntents : [],
+      recentResponseHints: fallbackContext ? fallbackContext.recentResponseHints : [],
+      recoverySignal: fallbackContext ? fallbackContext.recoverySignal === true : false,
       forceConcierge: true
     }));
+    const fallbackTelemetry = buildFallbackIntegrationTelemetryFields(fallback, fallbackRequestContract);
     const fallbackDecision = fallback && fallback.opportunityDecision ? fallback.opportunityDecision : null;
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -3775,6 +4210,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText: fallback && fallback.replyText ? fallback.replyText : '',
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -3789,17 +4226,37 @@ async function handleAssistantMessage(params) {
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality,
       conversationMode: 'concierge',
-      routerReason: routerReason || 'paid_fallback_concierge',
+      routerReason: fallbackRouterReason || 'paid_fallback_concierge',
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
       interventionBudget: 1,
       followupIntent: fallback && typeof fallback.followupIntent === 'string' ? fallback.followupIntent : null,
       conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
       repetitionPrevented: false,
-      domainIntent: normalizedConversationIntent,
+      directAnswerApplied: fallbackTelemetry.directAnswerApplied,
+      clarifySuppressed: fallbackTelemetry.clarifySuppressed,
+      domainIntent: fallbackDomainIntent,
+      contextResumeDomain: fallbackContext ? fallbackContext.contextResumeDomain : null,
+      requestShape: fallbackTelemetry.requestShape,
+      depthIntent: fallbackTelemetry.depthIntent,
+      transformSource: fallbackTelemetry.transformSource,
+      outputForm: fallbackTelemetry.outputForm,
+      knowledgeScope: fallbackTelemetry.knowledgeScope,
+      locationHintKind: fallbackTelemetry.locationHintKind,
+      locationHintCityKey: fallbackTelemetry.locationHintCityKey,
+      locationHintState: fallbackTelemetry.locationHintState,
+      locationHintRegionKey: fallbackTelemetry.locationHintRegionKey,
+      detailObligations: fallbackTelemetry.detailObligations,
+      answerability: fallbackTelemetry.answerability,
+      echoOfPriorAssistant: fallbackTelemetry.echoOfPriorAssistant,
+      requestedCityKey: fallbackTelemetry.requestedCityKey,
+      matchedCityKey: fallbackTelemetry.matchedCityKey,
+      citySpecificitySatisfied: fallbackTelemetry.citySpecificitySatisfied,
+      citySpecificityReason: fallbackTelemetry.citySpecificityReason,
+      scopeDisclosureRequired: fallbackTelemetry.scopeDisclosureRequired,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
-        domainIntent: normalizedConversationIntent,
+        domainIntent: fallbackDomainIntent,
         fallbackType: 'budget_blocked_fallback',
         opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : []
       })
@@ -3809,21 +4266,42 @@ async function handleAssistantMessage(params) {
       plan: planInfo.plan,
       traceId,
       requestId,
+      messageText: text,
       replyText: fallback && fallback.replyText ? fallback.replyText : '',
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       llmBanditEnabled,
       conversationMode: 'concierge',
-      routerReason: routerReason || 'paid_fallback_concierge',
+      routerReason: fallbackRouterReason || 'paid_fallback_concierge',
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
       interventionBudget: 1,
       followupIntent: fallback && typeof fallback.followupIntent === 'string' ? fallback.followupIntent : null,
       conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
       repetitionPrevented: false,
-      domainIntent: normalizedConversationIntent,
+      directAnswerApplied: fallbackTelemetry.directAnswerApplied,
+      clarifySuppressed: fallbackTelemetry.clarifySuppressed,
+      domainIntent: fallbackDomainIntent,
+      contextResumeDomain: fallbackContext ? fallbackContext.contextResumeDomain : null,
+      requestShape: fallbackTelemetry.requestShape,
+      depthIntent: fallbackTelemetry.depthIntent,
+      transformSource: fallbackTelemetry.transformSource,
+      outputForm: fallbackTelemetry.outputForm,
+      knowledgeScope: fallbackTelemetry.knowledgeScope,
+      locationHintKind: fallbackTelemetry.locationHintKind,
+      locationHintCityKey: fallbackTelemetry.locationHintCityKey,
+      locationHintState: fallbackTelemetry.locationHintState,
+      locationHintRegionKey: fallbackTelemetry.locationHintRegionKey,
+      detailObligations: fallbackTelemetry.detailObligations,
+      answerability: fallbackTelemetry.answerability,
+      echoOfPriorAssistant: fallbackTelemetry.echoOfPriorAssistant,
+      requestedCityKey: fallbackTelemetry.requestedCityKey,
+      matchedCityKey: fallbackTelemetry.matchedCityKey,
+      citySpecificitySatisfied: fallbackTelemetry.citySpecificitySatisfied,
+      citySpecificityReason: fallbackTelemetry.citySpecificityReason,
+      scopeDisclosureRequired: fallbackTelemetry.scopeDisclosureRequired,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
-        domainIntent: normalizedConversationIntent,
+        domainIntent: fallbackDomainIntent,
         fallbackType: 'budget_blocked_fallback',
         opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : []
       })
@@ -3839,6 +4317,13 @@ async function handleAssistantMessage(params) {
   const availability = await evaluateLlmAvailability({ policy: budget.policy });
   if (!availability.available) {
     const blockedReason = availability.reason || 'llm_unavailable';
+    const fallbackRequestContract = buildBlockedFallbackRequestContract({
+      preferPaidOrchestratorForExplicitDomain,
+      messageText: text,
+      domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+      routerReason,
+      routerMode
+    });
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
       kbTopScore: 0,
@@ -3849,8 +4334,10 @@ async function handleAssistantMessage(params) {
     const fallback = await replyWithPaidDomainConcierge(Object.assign({}, payload, {
       blockedReason,
       domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+      requestContract: fallbackRequestContract,
       forceConcierge: true
     }));
+    const fallbackTelemetry = buildFallbackIntegrationTelemetryFields(fallback, fallbackRequestContract);
     const fallbackDecision = fallback && fallback.opportunityDecision ? fallback.opportunityDecision : null;
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -3867,6 +4354,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText: fallback && fallback.replyText ? fallback.replyText : '',
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -3888,7 +4377,26 @@ async function handleAssistantMessage(params) {
       followupIntent: fallback && typeof fallback.followupIntent === 'string' ? fallback.followupIntent : null,
       conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
       repetitionPrevented: false,
+      directAnswerApplied: fallbackTelemetry.directAnswerApplied,
+      clarifySuppressed: fallbackTelemetry.clarifySuppressed,
       domainIntent: normalizedConversationIntent,
+      requestShape: fallbackTelemetry.requestShape,
+      depthIntent: fallbackTelemetry.depthIntent,
+      transformSource: fallbackTelemetry.transformSource,
+      outputForm: fallbackTelemetry.outputForm,
+      knowledgeScope: fallbackTelemetry.knowledgeScope,
+      locationHintKind: fallbackTelemetry.locationHintKind,
+      locationHintCityKey: fallbackTelemetry.locationHintCityKey,
+      locationHintState: fallbackTelemetry.locationHintState,
+      locationHintRegionKey: fallbackTelemetry.locationHintRegionKey,
+      detailObligations: fallbackTelemetry.detailObligations,
+      answerability: fallbackTelemetry.answerability,
+      echoOfPriorAssistant: fallbackTelemetry.echoOfPriorAssistant,
+      requestedCityKey: fallbackTelemetry.requestedCityKey,
+      matchedCityKey: fallbackTelemetry.matchedCityKey,
+      citySpecificitySatisfied: fallbackTelemetry.citySpecificitySatisfied,
+      citySpecificityReason: fallbackTelemetry.citySpecificityReason,
+      scopeDisclosureRequired: fallbackTelemetry.scopeDisclosureRequired,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
         domainIntent: normalizedConversationIntent,
@@ -3901,6 +4409,7 @@ async function handleAssistantMessage(params) {
       plan: planInfo.plan,
       traceId,
       requestId,
+      messageText: text,
       replyText: fallback && fallback.replyText ? fallback.replyText : '',
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       llmBanditEnabled,
@@ -3912,7 +4421,26 @@ async function handleAssistantMessage(params) {
       followupIntent: fallback && typeof fallback.followupIntent === 'string' ? fallback.followupIntent : null,
       conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
       repetitionPrevented: false,
+      directAnswerApplied: fallbackTelemetry.directAnswerApplied,
+      clarifySuppressed: fallbackTelemetry.clarifySuppressed,
       domainIntent: normalizedConversationIntent,
+      requestShape: fallbackTelemetry.requestShape,
+      depthIntent: fallbackTelemetry.depthIntent,
+      transformSource: fallbackTelemetry.transformSource,
+      outputForm: fallbackTelemetry.outputForm,
+      knowledgeScope: fallbackTelemetry.knowledgeScope,
+      locationHintKind: fallbackTelemetry.locationHintKind,
+      locationHintCityKey: fallbackTelemetry.locationHintCityKey,
+      locationHintState: fallbackTelemetry.locationHintState,
+      locationHintRegionKey: fallbackTelemetry.locationHintRegionKey,
+      detailObligations: fallbackTelemetry.detailObligations,
+      answerability: fallbackTelemetry.answerability,
+      echoOfPriorAssistant: fallbackTelemetry.echoOfPriorAssistant,
+      requestedCityKey: fallbackTelemetry.requestedCityKey,
+      matchedCityKey: fallbackTelemetry.matchedCityKey,
+      citySpecificitySatisfied: fallbackTelemetry.citySpecificitySatisfied,
+      citySpecificityReason: fallbackTelemetry.citySpecificityReason,
+      scopeDisclosureRequired: fallbackTelemetry.scopeDisclosureRequired,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
         domainIntent: normalizedConversationIntent,
@@ -3928,7 +4456,6 @@ async function handleAssistantMessage(params) {
     };
   }
 
-  const snapshotStrictMode = resolveSnapshotOnlyContextEnabled();
   const snapshotResult = await getUserContextSnapshot({
     lineUserId,
     maxAgeHours: 24 * 14
@@ -3937,6 +4464,13 @@ async function handleAssistantMessage(params) {
     const blockedReason = snapshotResult && snapshotResult.ok === true && snapshotResult.stale === true
       ? 'snapshot_stale'
       : 'snapshot_unavailable';
+    const fallbackRequestContract = buildBlockedFallbackRequestContract({
+      preferPaidOrchestratorForExplicitDomain,
+      messageText: text,
+      domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+      routerReason,
+      routerMode
+    });
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
       kbTopScore: 0,
@@ -3947,8 +4481,10 @@ async function handleAssistantMessage(params) {
     const fallback = await replyWithPaidDomainConcierge(Object.assign({}, payload, {
       blockedReason,
       domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+      requestContract: fallbackRequestContract,
       forceConcierge: true
     }));
+    const fallbackTelemetry = buildFallbackIntegrationTelemetryFields(fallback, fallbackRequestContract);
     const fallbackDecision = fallback && fallback.opportunityDecision ? fallback.opportunityDecision : null;
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -3965,6 +4501,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText: fallback && fallback.replyText ? fallback.replyText : '',
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -3986,7 +4524,26 @@ async function handleAssistantMessage(params) {
       followupIntent: fallback && typeof fallback.followupIntent === 'string' ? fallback.followupIntent : null,
       conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
       repetitionPrevented: false,
+      directAnswerApplied: fallbackTelemetry.directAnswerApplied,
+      clarifySuppressed: fallbackTelemetry.clarifySuppressed,
       domainIntent: normalizedConversationIntent,
+      requestShape: fallbackTelemetry.requestShape,
+      depthIntent: fallbackTelemetry.depthIntent,
+      transformSource: fallbackTelemetry.transformSource,
+      outputForm: fallbackTelemetry.outputForm,
+      knowledgeScope: fallbackTelemetry.knowledgeScope,
+      locationHintKind: fallbackTelemetry.locationHintKind,
+      locationHintCityKey: fallbackTelemetry.locationHintCityKey,
+      locationHintState: fallbackTelemetry.locationHintState,
+      locationHintRegionKey: fallbackTelemetry.locationHintRegionKey,
+      detailObligations: fallbackTelemetry.detailObligations,
+      answerability: fallbackTelemetry.answerability,
+      echoOfPriorAssistant: fallbackTelemetry.echoOfPriorAssistant,
+      requestedCityKey: fallbackTelemetry.requestedCityKey,
+      matchedCityKey: fallbackTelemetry.matchedCityKey,
+      citySpecificitySatisfied: fallbackTelemetry.citySpecificitySatisfied,
+      citySpecificityReason: fallbackTelemetry.citySpecificityReason,
+      scopeDisclosureRequired: fallbackTelemetry.scopeDisclosureRequired,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
         domainIntent: normalizedConversationIntent,
@@ -3999,6 +4556,7 @@ async function handleAssistantMessage(params) {
       plan: planInfo.plan,
       traceId,
       requestId,
+      messageText: text,
       replyText: fallback && fallback.replyText ? fallback.replyText : '',
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       llmBanditEnabled,
@@ -4010,7 +4568,26 @@ async function handleAssistantMessage(params) {
       followupIntent: fallback && typeof fallback.followupIntent === 'string' ? fallback.followupIntent : null,
       conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
       repetitionPrevented: false,
+      directAnswerApplied: fallbackTelemetry.directAnswerApplied,
+      clarifySuppressed: fallbackTelemetry.clarifySuppressed,
       domainIntent: normalizedConversationIntent,
+      requestShape: fallbackTelemetry.requestShape,
+      depthIntent: fallbackTelemetry.depthIntent,
+      transformSource: fallbackTelemetry.transformSource,
+      outputForm: fallbackTelemetry.outputForm,
+      knowledgeScope: fallbackTelemetry.knowledgeScope,
+      locationHintKind: fallbackTelemetry.locationHintKind,
+      locationHintCityKey: fallbackTelemetry.locationHintCityKey,
+      locationHintState: fallbackTelemetry.locationHintState,
+      locationHintRegionKey: fallbackTelemetry.locationHintRegionKey,
+      detailObligations: fallbackTelemetry.detailObligations,
+      answerability: fallbackTelemetry.answerability,
+      echoOfPriorAssistant: fallbackTelemetry.echoOfPriorAssistant,
+      requestedCityKey: fallbackTelemetry.requestedCityKey,
+      matchedCityKey: fallbackTelemetry.matchedCityKey,
+      citySpecificitySatisfied: fallbackTelemetry.citySpecificitySatisfied,
+      citySpecificityReason: fallbackTelemetry.citySpecificityReason,
+      scopeDisclosureRequired: fallbackTelemetry.scopeDisclosureRequired,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
         domainIntent: normalizedConversationIntent,
@@ -4026,8 +4603,6 @@ async function handleAssistantMessage(params) {
     };
   }
 
-  const qualityEnabled = resolvePaidFaqQualityEnabled();
-  const actionGatewayEnabled = resolveV1ActionGatewayEnabled();
   const contextSnapshot = snapshotResult && snapshotResult.ok === true && snapshotResult.stale !== true
     ? snapshotResult.snapshot
     : null;
@@ -4101,36 +4676,39 @@ async function handleAssistantMessage(params) {
     }));
   }
   const maxNextActionsCap = await resolveMaxNextActionsCapFromJourneyCatalog(planInfo);
-  const orchestrated = await tryHandlePaidOrchestratorV2({
-    lineUserId,
-    text,
-    replyToken: payload.replyToken,
-    replyFn: payload.replyFn,
-    eventSource: payload.eventSource,
-    planInfo,
-    explicitPaidIntent,
-    paidIntent,
-    routerMode,
-    routerReason,
-    normalizedConversationIntent,
-    contextSnapshot,
-    llmConciergeEnabled,
-    llmWebSearchEnabled,
-    llmStyleEngineEnabled,
-    llmBanditEnabled,
-    qualityEnabled,
-    actionGatewayEnabled,
-    snapshotStrictMode,
-    maxNextActionsCap,
-    recentEngagement,
-    opportunityDecision,
-    budgetPolicy: budget.policy || null,
-    banditStateFetcher,
-    traceId,
-    requestId
-  });
-  if (orchestrated && orchestrated.handled === true) {
-    return orchestrated;
+  const skipLegacyGreetingOrchestrator = !conversationRouterEnabled && greetingOrSmalltalk === true;
+  if (!skipLegacyGreetingOrchestrator) {
+    const orchestrated = await tryHandlePaidOrchestratorV2({
+      lineUserId,
+      text,
+      replyToken: payload.replyToken,
+      replyFn: payload.replyFn,
+      eventSource: payload.eventSource,
+      planInfo,
+      explicitPaidIntent,
+      paidIntent,
+      routerMode,
+      routerReason,
+      normalizedConversationIntent,
+      contextSnapshot,
+      llmConciergeEnabled,
+      llmWebSearchEnabled,
+      llmStyleEngineEnabled,
+      llmBanditEnabled,
+      qualityEnabled,
+      actionGatewayEnabled,
+      snapshotStrictMode,
+      maxNextActionsCap,
+      recentEngagement,
+      opportunityDecision,
+      budgetPolicy: budget.policy || null,
+      banditStateFetcher,
+      traceId,
+      requestId
+    });
+    if (orchestrated && orchestrated.handled === true) {
+      return orchestrated;
+    }
   }
   const greetingOrSmalltalkCasual = (
     opportunityDecision.conversationMode === 'casual'
@@ -4154,6 +4732,7 @@ async function handleAssistantMessage(params) {
       pitfall: '',
       followupQuestion: '',
       defaultQuestion: '',
+      preserveReplyText: true,
       disablePitfall: true,
       disableFollowup: true
     });
@@ -4167,10 +4746,10 @@ async function handleAssistantMessage(params) {
       nextSteps: [],
       followupQuestion: null
     });
-    const replyText = semanticReplyEnvelope.replyText;
+    const replyText = normalizeReplyText(casual && casual.replyText ? casual.replyText : '') || guardedReply.replyText;
     await payload.replyFn(
       payload.replyToken,
-      semanticReplyEnvelope.lineMessage || { type: 'text', text: replyText }
+      { type: 'text', text: replyText }
     );
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
@@ -4194,6 +4773,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText,
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -4220,6 +4801,7 @@ async function handleAssistantMessage(params) {
       plan: planInfo.plan,
       traceId,
       requestId,
+      messageText: text,
       replyText,
       llmBanditEnabled,
       conversationMode: opportunityDecision.conversationMode,
@@ -4238,7 +4820,7 @@ async function handleAssistantMessage(params) {
     };
   }
 
-  if (isPaidDomainIntent) {
+  if (isPaidDomainIntent && preferPaidOrchestratorForExplicitDomain !== true) {
     const domainConcierge = await replyWithPaidDomainConcierge(Object.assign({}, payload, {
       blockedReason: null,
       contextSnapshot,
@@ -4269,6 +4851,8 @@ async function handleAssistantMessage(params) {
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
+      messageText: text,
+      replyText: domainConcierge && domainConcierge.replyText ? domainConcierge.replyText : '',
       plan: planInfo.plan,
       status: planInfo.status,
       intent: paidIntent,
@@ -4341,6 +4925,7 @@ async function handleAssistantMessage(params) {
       plan: planInfo.plan,
       traceId,
       requestId,
+      messageText: text,
       replyText: domainConcierge && domainConcierge.replyText ? domainConcierge.replyText : '',
       conciergeMeta: domainConcierge && domainConcierge.conciergeMeta ? domainConcierge.conciergeMeta : null,
       llmBanditEnabled,
@@ -4432,6 +5017,13 @@ async function handleAssistantMessage(params) {
 
   if (!paid.ok) {
     const blockedReason = paid.blockedReason || 'llm_error';
+    const fallbackRequestContract = buildBlockedFallbackRequestContract({
+      preferPaidOrchestratorForExplicitDomain,
+      messageText: text,
+      domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+      routerReason,
+      routerMode
+    });
     const assistantQuality = normalizeAssistantQuality(paid.assistantQuality, {
       intentResolved: paidIntent,
       kbTopScore: paid.top1Score || 0,
@@ -4445,8 +5037,10 @@ async function handleAssistantMessage(params) {
         blockedReason,
         contextSnapshot,
         domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+        requestContract: fallbackRequestContract,
         forceConcierge: true
       }));
+      const fallbackTelemetry = buildFallbackIntegrationTelemetryFields(fallback, fallbackRequestContract);
       const fallbackDecision = fallback && fallback.opportunityDecision
         ? fallback.opportunityDecision
         : opportunityDecision;
@@ -4465,6 +5059,8 @@ async function handleAssistantMessage(params) {
       });
       await appendLlmGateDecisionBestEffort({
         lineUserId,
+        messageText: text,
+        replyText: fallback && fallback.replyText ? fallback.replyText : '',
         plan: planInfo.plan,
         status: planInfo.status,
         intent: paidIntent,
@@ -4486,7 +5082,26 @@ async function handleAssistantMessage(params) {
         followupIntent: fallback && typeof fallback.followupIntent === 'string' ? fallback.followupIntent : null,
         conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
         repetitionPrevented: false,
+        directAnswerApplied: fallbackTelemetry.directAnswerApplied,
+        clarifySuppressed: fallbackTelemetry.clarifySuppressed,
         domainIntent: normalizedConversationIntent,
+        requestShape: fallbackTelemetry.requestShape,
+        depthIntent: fallbackTelemetry.depthIntent,
+        transformSource: fallbackTelemetry.transformSource,
+        outputForm: fallbackTelemetry.outputForm,
+        knowledgeScope: fallbackTelemetry.knowledgeScope,
+        locationHintKind: fallbackTelemetry.locationHintKind,
+        locationHintCityKey: fallbackTelemetry.locationHintCityKey,
+        locationHintState: fallbackTelemetry.locationHintState,
+        locationHintRegionKey: fallbackTelemetry.locationHintRegionKey,
+        detailObligations: fallbackTelemetry.detailObligations,
+        answerability: fallbackTelemetry.answerability,
+        echoOfPriorAssistant: fallbackTelemetry.echoOfPriorAssistant,
+        requestedCityKey: fallbackTelemetry.requestedCityKey,
+        matchedCityKey: fallbackTelemetry.matchedCityKey,
+        citySpecificitySatisfied: fallbackTelemetry.citySpecificitySatisfied,
+        citySpecificityReason: fallbackTelemetry.citySpecificityReason,
+        scopeDisclosureRequired: fallbackTelemetry.scopeDisclosureRequired,
         conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
           replyText: fallback && fallback.replyText ? fallback.replyText : '',
           domainIntent: normalizedConversationIntent,
@@ -4499,6 +5114,7 @@ async function handleAssistantMessage(params) {
         plan: planInfo.plan,
         traceId,
         requestId,
+        messageText: text,
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
         conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
         llmBanditEnabled,
@@ -4510,7 +5126,26 @@ async function handleAssistantMessage(params) {
         followupIntent: fallback && typeof fallback.followupIntent === 'string' ? fallback.followupIntent : null,
         conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
         repetitionPrevented: false,
+        directAnswerApplied: fallbackTelemetry.directAnswerApplied,
+        clarifySuppressed: fallbackTelemetry.clarifySuppressed,
         domainIntent: normalizedConversationIntent,
+        requestShape: fallbackTelemetry.requestShape,
+        depthIntent: fallbackTelemetry.depthIntent,
+        transformSource: fallbackTelemetry.transformSource,
+        outputForm: fallbackTelemetry.outputForm,
+        knowledgeScope: fallbackTelemetry.knowledgeScope,
+        locationHintKind: fallbackTelemetry.locationHintKind,
+        locationHintCityKey: fallbackTelemetry.locationHintCityKey,
+        locationHintState: fallbackTelemetry.locationHintState,
+        locationHintRegionKey: fallbackTelemetry.locationHintRegionKey,
+        detailObligations: fallbackTelemetry.detailObligations,
+        answerability: fallbackTelemetry.answerability,
+        echoOfPriorAssistant: fallbackTelemetry.echoOfPriorAssistant,
+        requestedCityKey: fallbackTelemetry.requestedCityKey,
+        matchedCityKey: fallbackTelemetry.matchedCityKey,
+        citySpecificitySatisfied: fallbackTelemetry.citySpecificitySatisfied,
+        citySpecificityReason: fallbackTelemetry.citySpecificityReason,
+        scopeDisclosureRequired: fallbackTelemetry.scopeDisclosureRequired,
         contextSnapshot,
         conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
           replyText: fallback && fallback.replyText ? fallback.replyText : '',
@@ -4697,14 +5332,15 @@ async function handleAssistantMessage(params) {
     cityPackValidation: cityPackSignals.cityPackValidation,
     crossSystemConflictDetected: false
   });
-  const readinessApplied = applyAnswerReadinessDecision({
-    decision: readinessTelemetry.readiness.decision,
+  const responseQualityVerdict = createResponseQualityVerdict({
+    responseQualityContext: readinessTelemetry.responseQualityContext,
+    readinessOverride: readinessTelemetry.readiness,
     replyText: guardedMainReply.replyText,
     clarifyText: 'まず対象手続きと期限を1つずつ教えてください。そこから具体的な次の一手を整理します。',
     refuseText: 'この内容は安全に断定できないため、公式窓口で最終確認をお願いします。必要なら確認項目を整理します。'
   });
   const semanticReplyEnvelope = buildSemanticReplyEnvelope({
-    replyText: readinessApplied.replyText,
+    replyText: responseQualityVerdict.replyText,
     domainIntent: normalizedConversationIntent,
     conversationMode: (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath)
       ? opportunityDecision.conversationMode
@@ -4714,6 +5350,7 @@ async function handleAssistantMessage(params) {
     eventSource: payload.eventSource,
     pathType: 'slow',
     uUnits: ['U-05', 'U-06', 'U-09', 'U-11', 'U-12', 'U-13', 'U-14', 'U-15', 'U-16', 'U-17'],
+    disableAutoQuickReplies: normalizedConversationIntent !== 'general',
     nextSteps: paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : [],
     followupQuestion: paid && paid.output && Array.isArray(paid.output.gaps) ? paid.output.gaps[0] : '',
     warnings: []
@@ -4783,6 +5420,8 @@ async function handleAssistantMessage(params) {
   });
   await appendLlmGateDecisionBestEffort({
     lineUserId,
+    messageText: text,
+    replyText,
     plan: planInfo.plan,
     status: planInfo.status,
     intent: paidIntent,
@@ -4829,6 +5468,7 @@ async function handleAssistantMessage(params) {
     plan: planInfo.plan,
     traceId,
     requestId,
+    messageText: text,
     replyText,
     conciergeMeta,
     llmBanditEnabled,
@@ -5295,7 +5935,7 @@ async function handleLineWebhook(options) {
             continue;
           }
           if (region.status === 'already_set') {
-            if (/地域|city|state|region/i.test(text)) {
+            if (shouldReplyWithRegionAlreadySet(text)) {
               await replyFn(replyToken, { type: 'text', text: regionAlreadySet() });
               continue;
             }

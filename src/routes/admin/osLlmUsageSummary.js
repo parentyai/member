@@ -961,6 +961,9 @@ function buildConversationQualitySummary(actionRows) {
   const parentChapters = new Map();
   const parentRoutingInvariantStatuses = new Map();
   const contradictionFlags = new Map();
+  const requestShapes = new Map();
+  const outputForms = new Map();
+  const violationCodeCounts = new Map();
   let legacyTemplateHitCount = 0;
   let followupQuestionIncludedCount = 0;
   let pitfallIncludedCount = 0;
@@ -1055,6 +1058,25 @@ function buildConversationQualitySummary(actionRows) {
   let requiredCoreFactsCompleteCount = 0;
   let requiredCoreFactsMissingCountTotal = 0;
   let requiredCoreFactsCriticalMissingCountTotal = 0;
+  let formatComplianceSeenCount = 0;
+  let formatCompliancePassCount = 0;
+  let detailCarrySeenCount = 0;
+  let detailCarryPassCount = 0;
+  let correctionRecoverySeenCount = 0;
+  let correctionRecoveryPassCount = 0;
+  let mixedDomainRetentionSeenCount = 0;
+  let mixedDomainRetentionPassCount = 0;
+  let citySpecificityResolvedSeenCount = 0;
+  let citySpecificityResolvedPassCount = 0;
+  let transformSourceCarrySeenCount = 0;
+  let transformSourceCarryPassCount = 0;
+  let depthResetSeenCount = 0;
+  let depthResetCount = 0;
+  let followupOveraskCount = 0;
+  let internalLabelLeakCount = 0;
+  let parrotEchoCount = 0;
+  let commandBoundaryCollisionCount = 0;
+  let cityOverclaimCount = 0;
   const requiredCoreFactsGateDecisions = new Map();
 
   rows.forEach((row) => {
@@ -1141,9 +1163,24 @@ function buildConversationQualitySummary(actionRows) {
       ? row.replyTemplateFingerprint.trim()
       : null;
     const knowledgeCandidateCountBySource = normalizeKnowledgeCandidateCountBySource(row && row.knowledgeCandidateCountBySource);
+    const requestShape = normalizeReason(row && row.requestShape ? row.requestShape : 'none');
+    const depthIntent = normalizeReason(row && row.depthIntent ? row.depthIntent : 'none');
+    const transformSource = normalizeReason(row && row.transformSource ? row.transformSource : 'none');
+    const outputForm = normalizeReason(row && row.outputForm ? row.outputForm : 'default');
+    const knowledgeScope = normalizeReason(row && row.knowledgeScope ? row.knowledgeScope : 'none');
+    const locationHintKind = normalizeReason(row && row.locationHintKind ? row.locationHintKind : 'none');
+    const requestedCityKey = normalizeReason(row && row.requestedCityKey ? row.requestedCityKey : 'none');
+    const detailObligations = normalizeReasonList(row && row.detailObligations, 12);
+    const violationCodes = normalizeReasonList(row && row.violationCodes, 16);
+    const citySpecificitySatisfied = row && row.citySpecificitySatisfied === true;
 
     naturalnessVersions.set(naturalnessVersion, (naturalnessVersions.get(naturalnessVersion) || 0) + 1);
     domainCounts.set(domainIntent, (domainCounts.get(domainIntent) || 0) + 1);
+    requestShapes.set(requestShape, (requestShapes.get(requestShape) || 0) + 1);
+    outputForms.set(outputForm, (outputForms.get(outputForm) || 0) + 1);
+    violationCodes.forEach((code) => {
+      violationCodeCounts.set(code, (violationCodeCounts.get(code) || 0) + 1);
+    });
     fallbackTypes.set(fallbackType, (fallbackTypes.get(fallbackType) || 0) + 1);
     strategies.set(strategy, (strategies.get(strategy) || 0) + 1);
     strategyReasons.set(strategyReason, (strategyReasons.get(strategyReason) || 0) + 1);
@@ -1429,6 +1466,47 @@ function buildConversationQualitySummary(actionRows) {
       domainIntentCount += 1;
       if (conversationMode === 'concierge') domainConciergeCount += 1;
     }
+    const formatLockedRequest = outputForm !== 'default'
+      || ['rewrite', 'summarize', 'message_template', 'compare', 'criteria', 'correction', 'followup_continue'].includes(requestShape);
+    if (formatLockedRequest) {
+      formatComplianceSeenCount += 1;
+      if (!violationCodes.includes('format_noncompliance')) formatCompliancePassCount += 1;
+    }
+    if (detailObligations.length > 0) {
+      detailCarrySeenCount += 1;
+      if (
+        !violationCodes.includes('detail_drop')
+        && !violationCodes.includes('mixed_domain_collapse')
+        && !violationCodes.includes('correction_ignored')
+      ) {
+        detailCarryPassCount += 1;
+      }
+    }
+    if (requestShape === 'correction' || detailObligations.includes('respect_correction')) {
+      correctionRecoverySeenCount += 1;
+      if (!violationCodes.includes('correction_ignored')) correctionRecoveryPassCount += 1;
+    }
+    if (detailObligations.includes('preserve_both_domains')) {
+      mixedDomainRetentionSeenCount += 1;
+      if (!violationCodes.includes('mixed_domain_collapse')) mixedDomainRetentionPassCount += 1;
+    }
+    if (knowledgeScope === 'city' || locationHintKind === 'city' || requestedCityKey !== 'none') {
+      citySpecificityResolvedSeenCount += 1;
+      if (citySpecificitySatisfied === true) citySpecificityResolvedPassCount += 1;
+    }
+    if (transformSource === 'prior_assistant' || detailObligations.includes('preserve_source_facts')) {
+      transformSourceCarrySeenCount += 1;
+      if (!violationCodes.includes('transform_source_drop')) transformSourceCarryPassCount += 1;
+    }
+    if (depthIntent === 'deepen' || detailObligations.includes('expand_source_facts')) {
+      depthResetSeenCount += 1;
+      if (violationCodes.includes('deepen_reset')) depthResetCount += 1;
+    }
+    if (violationCodes.includes('followup_overask')) followupOveraskCount += 1;
+    if (violationCodes.includes('internal_label_leak')) internalLabelLeakCount += 1;
+    if (violationCodes.includes('parrot_echo')) parrotEchoCount += 1;
+    if (violationCodes.includes('command_boundary_collision')) commandBoundaryCollisionCount += 1;
+    if (violationCodes.includes('city_scope_overclaim')) cityOverclaimCount += 1;
   });
 
   const sampleCount = rows.length;
@@ -1496,6 +1574,42 @@ function buildConversationQualitySummary(actionRows) {
     parentRoutingInvariantStatuses: sortCountEntries(parentRoutingInvariantStatuses, 'parentRoutingInvariantStatus', 8),
     avgUnsupportedClaimCount: sampleCount > 0
       ? Math.round((unsupportedClaimCountTotal / sampleCount) * 10000) / 10000
+      : 0,
+    formatComplianceRate: formatComplianceSeenCount > 0
+      ? Math.round((formatCompliancePassCount / formatComplianceSeenCount) * 10000) / 10000
+      : 1,
+    detailCarryRate: detailCarrySeenCount > 0
+      ? Math.round((detailCarryPassCount / detailCarrySeenCount) * 10000) / 10000
+      : 1,
+    correctionRecoveryRate: correctionRecoverySeenCount > 0
+      ? Math.round((correctionRecoveryPassCount / correctionRecoverySeenCount) * 10000) / 10000
+      : 1,
+    mixedDomainRetentionRate: mixedDomainRetentionSeenCount > 0
+      ? Math.round((mixedDomainRetentionPassCount / mixedDomainRetentionSeenCount) * 10000) / 10000
+      : 1,
+    citySpecificityResolvedRate: citySpecificityResolvedSeenCount > 0
+      ? Math.round((citySpecificityResolvedPassCount / citySpecificityResolvedSeenCount) * 10000) / 10000
+      : 1,
+    cityOverclaimRate: sampleCount > 0
+      ? Math.round((cityOverclaimCount / sampleCount) * 10000) / 10000
+      : 0,
+    transformSourceCarryRate: transformSourceCarrySeenCount > 0
+      ? Math.round((transformSourceCarryPassCount / transformSourceCarrySeenCount) * 10000) / 10000
+      : 1,
+    depthResetRate: depthResetSeenCount > 0
+      ? Math.round((depthResetCount / depthResetSeenCount) * 10000) / 10000
+      : 0,
+    followupOveraskRate: sampleCount > 0
+      ? Math.round((followupOveraskCount / sampleCount) * 10000) / 10000
+      : 0,
+    internalLabelLeakRate: sampleCount > 0
+      ? Math.round((internalLabelLeakCount / sampleCount) * 10000) / 10000
+      : 0,
+    parrotEchoRate: sampleCount > 0
+      ? Math.round((parrotEchoCount / sampleCount) * 10000) / 10000
+      : 0,
+    commandBoundaryCollisionRate: sampleCount > 0
+      ? Math.round((commandBoundaryCollisionCount / sampleCount) * 10000) / 10000
       : 0,
     contradictionDetectedRate: sampleCount > 0
       ? Math.round((contradictionDetectedCount / sampleCount) * 10000) / 10000
@@ -1641,6 +1755,9 @@ function buildConversationQualitySummary(actionRows) {
       ? Math.round((defaultCasualCount / defaultCasualSeenCount) * 10000) / 10000
       : 0,
     contradictionFlags: sortCountEntries(contradictionFlags, 'flag', 10),
+    requestShapes: sortCountEntries(requestShapes, 'requestShape', 12),
+    outputForms: sortCountEntries(outputForms, 'outputForm', 12),
+    violationCodeCounts: sortCountEntries(violationCodeCounts, 'violationCode', 16),
     domainIntents: sortCountEntries(domainCounts, 'domainIntent', 10),
     fallbackTypes: sortCountEntries(fallbackTypes, 'fallbackType', 10)
   };
@@ -2220,12 +2337,22 @@ function buildQualityLoopV2Summary(data) {
   const readinessStageBreakdown = new Map();
   const readinessDecisionSourceBreakdown = new Map();
   const readinessHardeningVersionBreakdown = new Map();
+  const responseQualityContextVersionBreakdown = new Map();
+  const responseQualityVerdictVersionBreakdown = new Map();
   readinessV2Rows.forEach((row) => {
     incrementCount(readinessDecisionV2Breakdown, row && row.readinessDecisionV2 ? row.readinessDecisionV2 : 'none');
     incrementCount(readinessModeBreakdown, row && row.answerReadinessV2Mode ? row.answerReadinessV2Mode : 'unknown');
     incrementCount(readinessStageBreakdown, row && row.answerReadinessV2Stage ? row.answerReadinessV2Stage : 'unknown');
     incrementCount(readinessDecisionSourceBreakdown, row && row.readinessDecisionSourceV2 ? row.readinessDecisionSourceV2 : 'unknown');
     incrementCount(readinessHardeningVersionBreakdown, row && row.readinessHardeningVersion ? row.readinessHardeningVersion : 'none');
+    incrementCount(
+      responseQualityContextVersionBreakdown,
+      row && row.responseQualityContextVersion ? row.responseQualityContextVersion : 'none'
+    );
+    incrementCount(
+      responseQualityVerdictVersionBreakdown,
+      row && row.responseQualityVerdictVersion ? row.responseQualityVerdictVersion : 'none'
+    );
   });
   const nogoGateMandatoryCount = countWhere(readinessV2Rows, (row) => row && row.answerReadinessV2Stage === 'nogo_gate_mandatory');
   const hardEnforcedCount = countWhere(
@@ -2263,6 +2390,8 @@ function buildQualityLoopV2Summary(data) {
       stageBreakdown: sortCountEntries(readinessStageBreakdown, 'stage', 10),
       decisionSourceBreakdown: sortCountEntries(readinessDecisionSourceBreakdown, 'decisionSource', 10),
       hardeningVersionBreakdown: sortCountEntries(readinessHardeningVersionBreakdown, 'version', 10),
+      responseQualityContextVersionBreakdown: sortCountEntries(responseQualityContextVersionBreakdown, 'version', 10),
+      responseQualityVerdictVersionBreakdown: sortCountEntries(responseQualityVerdictVersionBreakdown, 'version', 10),
       hardEnforcedCount,
       softEnforcedCount,
       logOnlyCount,

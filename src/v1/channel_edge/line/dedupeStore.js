@@ -38,6 +38,8 @@ function buildWebhookEventDedupeKey(event) {
   const eventType = typeof event && typeof event.type === 'string' ? event.type : 'unknown';
   const messageId = event && event.message && typeof event.message.id === 'string' ? event.message.id : '';
   const replyToken = event && typeof event.replyToken === 'string' ? event.replyToken : '';
+  const hasStableFallbackIdentity = Boolean(timestamp || messageId || (sourceType !== 'unknown' && replyToken));
+  if (!hasStableFallbackIdentity) return '';
   return `line:fallback:${sourceType}:${sourceId}:${eventType}:${timestamp}:${messageId}:${replyToken}`;
 }
 

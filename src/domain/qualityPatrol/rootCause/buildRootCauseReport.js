@@ -9,6 +9,8 @@ const { detectReadinessCauses } = require('./detectReadinessCauses');
 const { detectFinalizerTemplateCauses } = require('./detectFinalizerTemplateCauses');
 const { detectContinuityCauses } = require('./detectContinuityCauses');
 const { detectSpecificityCauses } = require('./detectSpecificityCauses');
+const { detectConciergeCauses } = require('./detectConciergeCauses');
+const { detectFixedRootCauseCauses } = require('./detectFixedRootCauseCauses');
 const {
   ROOT_CAUSE_PROVENANCE,
   ROOT_CAUSE_ANALYSIS_STATUS,
@@ -48,9 +50,15 @@ function hasObservationLead(candidates) {
 }
 
 function analyzeStatus(issue, candidates, context) {
+  const historicalOnly = issue && issue.historicalOnly === true;
   if (!Array.isArray(candidates) || candidates.length === 0) return ROOT_CAUSE_ANALYSIS_STATUS.insufficientEvidence;
-  if (issue && issue.issueType === 'observation_blocker') return ROOT_CAUSE_ANALYSIS_STATUS.blocked;
-  if (hasObservationLead(candidates) && Array.isArray(context.observationBlockers) && context.observationBlockers.length > 0) {
+  if (issue && issue.issueType === 'observation_blocker' && historicalOnly !== true) return ROOT_CAUSE_ANALYSIS_STATUS.blocked;
+  if (
+    historicalOnly !== true
+    && hasObservationLead(candidates)
+    && Array.isArray(context.observationBlockers)
+    && context.observationBlockers.length > 0
+  ) {
     return ROOT_CAUSE_ANALYSIS_STATUS.blocked;
   }
   if (candidates.every((item) => item.causeType === ROOT_CAUSE_TYPE.evidenceInsufficient)) {
@@ -92,11 +100,14 @@ function buildRootCauseSummary(issue, candidates, analysisStatus) {
 function buildRootCauseReport(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const issue = payload.issue && typeof payload.issue === 'object' ? payload.issue : {};
+  const historicalOnly = issue && issue.historicalOnly === true;
   const context = collectCauseEvidence(payload);
   const observationCandidates = detectObservationCauses(context);
   let runtimeCandidates = [];
   if (!(issue.issueType === 'observation_blocker' && observationCandidates.length > 0)) {
     runtimeCandidates = []
+      .concat(detectFixedRootCauseCauses(context))
+      .concat(detectConciergeCauses(context))
       .concat(detectRetrievalCauses(context))
       .concat(detectKnowledgeSelectionCauses(context))
       .concat(detectReadinessCauses(context))
@@ -126,6 +137,7 @@ function buildRootCauseReport(params) {
     issueKey: issue.issueKey || null,
     issueType: issue.issueType || null,
     slice: issue.slice || 'global',
+    historicalOnly,
     rootCauseSummary: buildRootCauseSummary(issue, normalizedCandidates, analysisStatus),
     causeCandidates: normalizedCandidates,
     observationBlockers: context.observationBlockers,

@@ -4,12 +4,17 @@
 - LLM改善のたびに「品質向上を実測で証明」するための統一基準を固定する。
 - overall偏重を禁止し、slice-firstで回帰を検知する。
 - hard gate（安全/正確性/プライバシー/行動制御）を merge blocker とする。
+- 応答生成・readiness・自己評価ハーネスが同じ response-quality 契約を参照し、runtime と report が同じ reason code / provenance を出す状態を維持する。
 
 ## Framework
 - version: `v1`
 - schema:
   - `schemas/llm_quality_framework.schema.json`
   - `schemas/llm_quality_scorecard.schema.json`
+- shared foundation contract:
+  - `ResponseQualityContext`
+  - `ResponseQualityVerdict`
+  - `QualityRunManifest`
 - scorecard command:
   - `npm run llm:quality:baseline`
   - `npm run llm:quality:candidate`
@@ -18,6 +23,10 @@
   - `npm run llm:quality:must-pass`
   - `npm run llm:quality:release-policy`
   - `npm run llm:quality:report`（`tmp/llm_quality_failure_register.json` と `tmp/llm_quality_counterexample_queue.json` を同時生成）
+- artifact policy:
+  - run-scoped outputs: `tmp/llm_quality_runs/<runId>/...`
+  - compatibility outputs: `tmp/llm_quality_*.json`
+  - run-scoped artifact が primary、legacy tmp は compatibility only
 
 ## 24 Dimension Weights
 | key | weight | hardGate |
@@ -143,6 +152,10 @@
   - Replay / Perturbation
   - Quality-Latency-Cost Frontier
   - Counterexample Queue
+- add-only telemetry expectations:
+  - runtime と report は同じ response-quality contract version を持つ
+  - admin views は telemetry field の追加は可、既存 key の削除・改名は不可
+  - provenance は counterexample と replay から追跡できる
 
 ## Merge Gate
 - required artifacts:
@@ -152,6 +165,11 @@
   - quality report (`top_10_*` を含む)
 - quality failure register (`tmp/llm_quality_failure_register.json`)
 - counterexample queue (`tmp/llm_quality_counterexample_queue.json`)
+- run manifest:
+  - `runId`
+  - provenance
+  - artifact paths
+  - slice ownership
   - benchmark version/hash
   - replay/perturbation report
   - must-pass fixture result
@@ -164,6 +182,7 @@
   - release-policy fail
 - strict runtime signals で `legacyTemplateHitRate/defaultCasualRate/followupQuestionIncludedRate/conciseModeAppliedRate/retrieveNeededRate/avgActionCount/directAnswerAppliedRate/avgRepeatRiskScore` 欠損（`runtime_signal_missing:*`）
 - runtime summary に `conversationQuality` が存在する場合、`conversation_continuity/clarification_quality/empathy/misunderstanding_recovery/latency_surface_efficiency` は signal 補正値で再評価し、precomputed dimension を過小評価として上書き可能（max merge）
+- runtime summary と report は add-only telemetry を前提とし、既存 artifact shape の破壊を避ける
 - strict gate / release policy が runtime summary の `qualityFramework` を candidate として使う場合、`procedural_utility/next_step_clarity/direct_answer_first/japanese_naturalness/keigo_distance` も同じ `conversationQuality` 補正値で max merge し、soft floor は補正後 score で判定する
 
 ## Required Audit Outputs

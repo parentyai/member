@@ -1,7 +1,12 @@
 'use strict';
 
 const path = require('node:path');
-const { parseArgs, readJson, writeJson } = require('./lib');
+const { parseArgs, readJson } = require('./lib');
+const {
+  resolveHarnessRunId,
+  resolveRunScopedArtifactGroup,
+  writeHarnessArtifact
+} = require('./harness_shared');
 const {
   classifyCounterexampleSignal,
   buildCounterexampleQueueFromSignalEntries
@@ -40,8 +45,13 @@ function main(argv) {
     latestFailureSnapshotId: register && register.latest ? register.latest.id : null,
     queue
   };
-  writeJson(outPath, payload);
-  process.stdout.write(`${JSON.stringify({ ok: true, outPath, queueSize: queue.length }, null, 2)}\n`);
+  const artifact = writeHarnessArtifact({
+    outputPath: outPath,
+    value: payload,
+    runId: resolveHarnessRunId({ env: process.env, sourceTag: 'counterexample-queue' }),
+    artifactGroup: resolveRunScopedArtifactGroup('queue')
+  });
+  process.stdout.write(`${JSON.stringify({ ok: true, outPath: artifact.outputPath, runScopedOutPath: artifact.runScopedPath, queueSize: queue.length }, null, 2)}\n`);
   return 0;
 }
 

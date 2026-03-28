@@ -7,15 +7,23 @@ function detectSpecificityCauses(context) {
   const runtimeSignals = context && context.runtimeSignals ? context.runtimeSignals : {};
   const out = [];
 
-  if ((issue.slice === 'city' || issue.category === 'city_specificity_missing' || CITY_SPECIFICITY_METRICS.includes(issue.metricKey))
+  if ((issue.slice === 'city'
+      || issue.category === 'city_specificity_missing'
+      || issue.category === 'city_scope_overclaim'
+      || CITY_SPECIFICITY_METRICS.includes(issue.metricKey)
+      || issue.metricKey === 'cityOverclaimRate')
     && (runtimeSignals.cityPackCandidateAvailable === true
       || runtimeSignals.knowledgeGroundingKinds.includes('city')
-      || runtimeSignals.knowledgeGroundingKinds.includes('city_pack'))) {
+      || runtimeSignals.knowledgeGroundingKinds.includes('city_pack')
+      || runtimeSignals.citySpecificitySatisfied === false)) {
     out.push({
-      causeType: ROOT_CAUSE_TYPE.citySpecificityGap,
+      causeType: issue.category === 'city_scope_overclaim'
+        ? ROOT_CAUSE_TYPE.specificityResolutionGap
+        : ROOT_CAUSE_TYPE.citySpecificityGap,
       supportingSignals: [
         'city_specificity_gap',
-        runtimeSignals.cityPackCandidateAvailable === true && runtimeSignals.cityPackUsedInAnswer !== true ? 'city_pack_available_but_unused' : null
+        runtimeSignals.cityPackCandidateAvailable === true && runtimeSignals.cityPackUsedInAnswer !== true ? 'city_pack_available_but_unused' : null,
+        runtimeSignals.citySpecificitySatisfied === false ? 'city_specificity_not_satisfied' : null
       ].filter(Boolean),
       supportingEvidence: (Array.isArray(context.supportingEvidence) ? context.supportingEvidence : []).slice(0, 3),
       evidenceGaps: context.evidenceGaps,

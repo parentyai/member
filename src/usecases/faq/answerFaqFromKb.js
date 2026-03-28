@@ -18,6 +18,10 @@ const { resolveLlmLegalPolicySnapshot } = require('../../domain/llm/policy/resol
 const { resolveIntentRiskTier } = require('../../domain/llm/policy/resolveIntentRiskTier');
 const { computeSourceReadiness } = require('../../domain/llm/knowledge/computeSourceReadiness');
 const { runAnswerReadinessGateV2 } = require('../../domain/llm/quality/runAnswerReadinessGateV2');
+const {
+  createResponseQualityContext,
+  createResponseQualityVerdict
+} = require('../../domain/llm/quality/responseQualityFoundation');
 const { resolveTelemetryCoverageSignals } = require('../../domain/llm/quality/resolveTelemetryCoverageSignals');
 const { refineSavedFaqReuseSignals } = require('./refineSavedFaqReuseSignals');
 const { buildKnowledgeReadinessCandidates } = require('./buildKnowledgeReadinessCandidates');
@@ -183,6 +187,8 @@ function buildBlocked(params) {
     readinessReasonCodes: Array.isArray(payload.readinessReasonCodes) ? payload.readinessReasonCodes : [],
     readinessSafeResponseMode: payload.readinessSafeResponseMode || null,
     answerReadinessVersion: payload.answerReadinessVersion || null,
+    responseQualityContextVersion: payload.responseQualityContextVersion || null,
+    responseQualityVerdictVersion: payload.responseQualityVerdictVersion || null,
     answerReadinessLogOnlyV2: payload.answerReadinessLogOnlyV2 === true,
     answerReadinessEnforcedV2: payload.answerReadinessEnforcedV2 === true,
     answerReadinessV2Mode: payload.answerReadinessV2Mode || null,
@@ -240,6 +246,14 @@ function buildFaqTelemetryFields(params) {
   const readinessV2Telemetry = answerReadinessGate.telemetry && typeof answerReadinessGate.telemetry === 'object'
     ? answerReadinessGate.telemetry
     : {};
+  const responseQualityContextVersion = payload.responseQualityContextVersion
+    || answerReadinessGate.responseQualityContextVersion
+    || readinessV2Telemetry.responseQualityContextVersion
+    || null;
+  const responseQualityVerdictVersion = payload.responseQualityVerdictVersion
+    || answerReadinessGate.responseQualityVerdictVersion
+    || readinessV2Telemetry.responseQualityVerdictVersion
+    || null;
   const telemetryCoverage = resolveTelemetryCoverageSignals({
     sourceAuthorityScore: sourceReadiness.sourceAuthorityScore,
     sourceFreshnessScore: sourceReadiness.sourceFreshnessScore,
@@ -326,6 +340,8 @@ function buildFaqTelemetryFields(params) {
     answerReadinessLogOnlyV2: answerReadinessGate.answerReadinessLogOnlyV2 === true,
     answerReadinessEnforcedV2: answerReadinessGate.answerReadinessEnforcedV2 === true,
     answerReadinessVersion: answerReadinessGate.answerReadinessVersion || null,
+    responseQualityContextVersion,
+    responseQualityVerdictVersion,
     answerReadinessV2Mode: answerReadinessGate.mode ? answerReadinessGate.mode.mode : null,
     answerReadinessV2Stage: answerReadinessGate.mode ? answerReadinessGate.mode.stage : null,
     answerReadinessV2EnforcementReason: answerReadinessGate.mode ? answerReadinessGate.mode.enforcementReason : null,
@@ -603,6 +619,14 @@ function buildAuditSummaryBase(params) {
   const readinessV2Telemetry = answerReadinessGate.telemetry && typeof answerReadinessGate.telemetry === 'object'
     ? answerReadinessGate.telemetry
     : {};
+  const responseQualityContextVersion = payload.responseQualityContextVersion
+    || answerReadinessGate.responseQualityContextVersion
+    || readinessV2Telemetry.responseQualityContextVersion
+    || null;
+  const responseQualityVerdictVersion = payload.responseQualityVerdictVersion
+    || answerReadinessGate.responseQualityVerdictVersion
+    || readinessV2Telemetry.responseQualityVerdictVersion
+    || null;
   return {
     purpose: 'faq',
     llmEnabled: payload.llmEnabled,
@@ -664,6 +688,8 @@ function buildAuditSummaryBase(params) {
     answerReadinessLogOnlyV2: answerReadinessGate.answerReadinessLogOnlyV2 === true,
     answerReadinessEnforcedV2: answerReadinessGate.answerReadinessEnforcedV2 === true,
     answerReadinessVersion: answerReadinessGate.answerReadinessVersion || null,
+    responseQualityContextVersion,
+    responseQualityVerdictVersion,
     answerReadinessV2Mode: answerReadinessGate.mode ? answerReadinessGate.mode.mode : null,
     answerReadinessV2Stage: answerReadinessGate.mode ? answerReadinessGate.mode.stage : null,
     answerReadinessV2EnforcementReason: answerReadinessGate.mode ? answerReadinessGate.mode.enforcementReason : null,
@@ -875,7 +901,7 @@ async function answerFaqFromKb(params, deps) {
     sourceReadiness,
     intentRiskTier: riskSnapshot.intentRiskTier
   });
-  const answerReadinessGate = runAnswerReadinessGateV2({
+  const responseQualityContext = createResponseQualityContext({
     entryType: typeof payload.entryType === 'string' && payload.entryType.trim()
       ? payload.entryType.trim()
       : 'faq',
@@ -903,6 +929,15 @@ async function answerFaqFromKb(params, deps) {
     savedFaqAuthorityScore: sourceReadiness.sourceAuthorityScore,
     sourceSnapshotRefs: savedFaqSignals.sourceSnapshotRefs,
     crossSystemConflictDetected: false
+  });
+  const answerReadinessGate = runAnswerReadinessGateV2({
+    entryType: responseQualityContext.entryType,
+    responseQualityContext
+  });
+  const responseQualityVerdict = createResponseQualityVerdict({
+    responseQualityContext,
+    readinessGate: answerReadinessGate,
+    replyText: ''
   });
   const answerReadiness = answerReadinessGate.readiness;
   const normalizedPersonalization = personalizationCheck.isAllowed
@@ -1088,6 +1123,9 @@ async function answerFaqFromKb(params, deps) {
     blocked.sanitizedCandidateCount = sanitizedCandidateCount;
     blocked.sanitizeBlockedReasons = sanitizeBlockedReasons.slice(0, 8);
     blocked.injectionFindings = injectionFindings;
+    blocked.answerReadinessVersion = answerReadinessGate.answerReadinessVersion || null;
+    blocked.responseQualityContextVersion = responseQualityContext.contractVersion;
+    blocked.responseQualityVerdictVersion = responseQualityVerdict.contractVersion;
   }
 
   if (blocked) {
@@ -1116,6 +1154,8 @@ async function answerFaqFromKb(params, deps) {
           sourceReadiness,
           answerReadiness,
           answerReadinessGate,
+          responseQualityContextVersion: responseQualityContext.contractVersion,
+          responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
           savedFaqSignals,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
@@ -1154,6 +1194,8 @@ async function answerFaqFromKb(params, deps) {
       sourceReadiness,
       answerReadiness,
       answerReadinessGate,
+      responseQualityContextVersion: responseQualityContext.contractVersion,
+      responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
       savedFaqSignals
     })), deps).catch(() => null);
     await appendDisclaimerRenderedAudit(
@@ -1178,6 +1220,8 @@ async function answerFaqFromKb(params, deps) {
         sourceReadiness,
         answerReadiness,
         answerReadinessGate,
+        responseQualityContextVersion: responseQualityContext.contractVersion,
+        responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
         savedFaqSignals
       }),
       { auditId }
@@ -1263,6 +1307,8 @@ async function answerFaqFromKb(params, deps) {
           sourceReadiness,
           answerReadiness,
           answerReadinessGate,
+          responseQualityContextVersion: responseQualityContext.contractVersion,
+          responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
           savedFaqSignals,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
@@ -1302,6 +1348,8 @@ async function answerFaqFromKb(params, deps) {
       sourceReadiness,
       answerReadiness,
       answerReadinessGate,
+      responseQualityContextVersion: responseQualityContext.contractVersion,
+      responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
       savedFaqSignals
     })), deps).catch(() => null);
     await appendDisclaimerRenderedAudit(
@@ -1326,6 +1374,8 @@ async function answerFaqFromKb(params, deps) {
         sourceReadiness,
         answerReadiness,
         answerReadinessGate,
+        responseQualityContextVersion: responseQualityContext.contractVersion,
+        responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
         savedFaqSignals
       }),
       { auditId }
@@ -1375,6 +1425,8 @@ async function answerFaqFromKb(params, deps) {
           sourceReadiness,
           answerReadiness,
           answerReadinessGate,
+          responseQualityContextVersion: responseQualityContext.contractVersion,
+          responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
           savedFaqSignals,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
@@ -1413,6 +1465,8 @@ async function answerFaqFromKb(params, deps) {
       sourceReadiness,
       answerReadiness,
       answerReadinessGate,
+      responseQualityContextVersion: responseQualityContext.contractVersion,
+      responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
       savedFaqSignals
     })), deps).catch(() => null);
     await appendDisclaimerRenderedAudit(
@@ -1436,6 +1490,8 @@ async function answerFaqFromKb(params, deps) {
         sourceReadiness,
         answerReadiness,
         answerReadinessGate,
+        responseQualityContextVersion: responseQualityContext.contractVersion,
+        responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
         savedFaqSignals
       }),
       { auditId }
@@ -1465,6 +1521,8 @@ async function answerFaqFromKb(params, deps) {
         sourceReadiness,
         answerReadiness,
         answerReadinessGate,
+        responseQualityContextVersion: responseQualityContext.contractVersion,
+        responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
         savedFaqSignals,
         disclaimerVersion: disclaimer.version,
         matchedArticleIds,
@@ -1504,6 +1562,8 @@ async function answerFaqFromKb(params, deps) {
     sourceReadiness,
     answerReadiness,
     answerReadinessGate,
+    responseQualityContextVersion: responseQualityContext.contractVersion,
+    responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
     savedFaqSignals
   })), deps).catch(() => null);
   await appendDisclaimerRenderedAudit(
@@ -1552,6 +1612,8 @@ async function answerFaqFromKb(params, deps) {
     sourceReadiness,
     answerReadiness,
     answerReadinessGate,
+    responseQualityContextVersion: responseQualityContext.contractVersion,
+    responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
     savedFaqSignals
   }));
 }

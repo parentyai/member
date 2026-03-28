@@ -159,3 +159,56 @@ test('phase856: human evidence stays privacy-safe and hides internal taxonomy', 
   assert.equal('debtCounts' in evidence.structuredSummary.historicalDebt, false);
   assert.equal(human.traceRefs.length, 0);
 });
+
+test('phase856: historical-only blocker reports do not surface top-level observation blockers when current runtime is healthy', () => {
+  const result = buildPatrolQueryResponse({
+    audience: 'operator',
+    mode: 'latest',
+    reviewUnits: [{ reviewUnitId: 'ru', slice: 'other', evidenceRefs: [], sourceCollections: ['llm_action_logs'] }],
+    evaluations: [],
+    metrics: {},
+    transcriptCoverage: { observedCount: 60, transcriptWriteOutcomeCounts: { written: 44 }, transcriptCoverageStatus: 'ready' },
+    decayAwareReadiness: buildDecayAwareReadiness(),
+    decayAwareOpsGate: buildDecayAwareOpsGate(),
+    kpiSummary: { overallStatus: 'warn' },
+    issues: [{
+      issueType: 'observation_blocker',
+      issueKey: 'issue_historical_observation_gap',
+      title: 'Historical observation gap',
+      summary: 'historical-only blocker',
+      severity: 'high',
+      status: 'watching',
+      category: 'observation_gap',
+      slice: 'other',
+      historicalOnly: true,
+      provenance: 'quality_patrol_detection',
+      observationBlockers: [
+        { code: 'missing_user_message', severity: 'high', message: 'Masked user message snapshot is unavailable.', source: 'conversation_review_snapshots' },
+        { code: 'transcript_not_reviewable', severity: 'high', message: 'Conversation transcript is not reviewable because required masked text is missing.', source: 'conversation_review_snapshots' }
+      ],
+      supportingEvidence: []
+    }],
+    rootCauseReports: [{
+      issueKey: 'issue_historical_observation_gap',
+      issueType: 'observation_blocker',
+      slice: 'other',
+      historicalOnly: true,
+      rootCauseSummary: 'Most likely cause: Observation coverage gap is blocking root-cause judgement.',
+      causeCandidates: [{ causeType: 'observation_gap', confidence: 'medium', rank: 1 }],
+      observationBlockers: [
+        { code: 'missing_user_message', severity: 'high', message: 'Masked user message snapshot is unavailable.', source: 'conversation_review_snapshots' },
+        { code: 'transcript_not_reviewable', severity: 'high', message: 'Conversation transcript is not reviewable because required masked text is missing.', source: 'conversation_review_snapshots' }
+      ],
+      analysisStatus: 'analyzed',
+      provenance: 'quality_patrol_root_cause_analysis',
+      sourceCollections: ['conversation_review_snapshots']
+    }],
+    recommendedPr: [],
+    planObservationBlockers: [],
+    planningStatus: 'planned',
+    sourceCollections: ['llm_action_logs']
+  });
+
+  assert.deepEqual(result.observationBlockers, []);
+  assert.equal(result.observationStatus, 'ready');
+});

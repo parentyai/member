@@ -48,6 +48,8 @@ test('phase809: usage summary exposes quality loop v2 integration KPIs and criti
         intentRiskTier: 'high',
         officialOnlySatisfied: true,
         answerReadinessVersion: 'v2',
+        responseQualityContextVersion: 'response_quality_context_v1',
+        responseQualityVerdictVersion: 'response_quality_verdict_v1',
         readinessDecisionV2: 'allow',
         cityPackGrounded: true,
         cityPackFreshnessScore: 0.92,
@@ -73,6 +75,10 @@ test('phase809: usage summary exposes quality loop v2 integration KPIs and criti
   assert.ok(quality.qualityLoopV2.criticalSlices.some((row) => row.sliceKey === 'journey_blocker_conflict'));
   assert.equal(typeof quality.qualityLoopV2.nogoGateMandatoryActive, 'boolean');
   assert.equal(typeof quality.qualityLoopV2.criticalSliceFailCount, 'number');
+  assert.ok(Array.isArray(quality.qualityLoopV2.readinessV2.responseQualityContextVersionBreakdown));
+  assert.ok(Array.isArray(quality.qualityLoopV2.readinessV2.responseQualityVerdictVersionBreakdown));
+  assert.equal(quality.qualityLoopV2.readinessV2.responseQualityContextVersionBreakdown[0].version, 'response_quality_context_v1');
+  assert.equal(quality.qualityLoopV2.readinessV2.responseQualityVerdictVersionBreakdown[0].version, 'response_quality_verdict_v1');
 });
 
 test('phase809: admin llm pane includes v2 integration sections and renderer hooks', () => {

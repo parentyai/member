@@ -5,7 +5,35 @@ const { test } = require('node:test');
 
 const { runPaidConversationOrchestrator } = require('../../src/domain/llm/orchestrator/runPaidConversationOrchestrator');
 
-test('phase731: orchestrator probes grounding before broad paid fallback', async () => {
+function futureIso(days) {
+  return new Date(Date.now() + (Number(days || 90) * 24 * 60 * 60 * 1000)).toISOString();
+}
+
+function buildSavedFaqDeps(overrides) {
+  const article = Object.assign({
+    id: 'phase731_saved_faq',
+    title: '着任後1か月の生活立ち上げ優先順位',
+    body: '最初の1か月は身分証、住居、金融、通信、医療導線の5領域を優先する。未完了タスクは期限と依存関係を明示し、週次でリスクを再評価する。',
+    sourceSnapshotRefs: ['phase731_official_source'],
+    linkRegistryIds: ['phase731_link_registry'],
+    allowedIntents: ['GENERAL', 'FAQ'],
+    validUntil: futureIso(180),
+    authorityLevel: 'state',
+    authorityTier: 'T2_PUBLIC_DATA',
+    bindingLevel: 'REFERENCE',
+    riskLevel: 'low',
+    status: 'active'
+  }, overrides || {});
+  return {
+    searchFaqFromKb: async () => ({
+      ok: true,
+      candidates: [{ articleId: article.id }]
+    }),
+    getFaqArticle: async () => article
+  };
+}
+
+test('phase731: orchestrator probes grounding and can prefer saved FAQ activation before concierge fallback', async () => {
   let groundedCalls = 0;
   const result = await runPaidConversationOrchestrator({
     lineUserId: 'U_PHASE731',
@@ -35,7 +63,8 @@ test('phase731: orchestrator probes grounding before broad paid fallback', async
         opportunityReasonKeys: ['general_fallback'],
         interventionBudget: 1,
         auditMeta: null
-      })
+      }),
+      ...buildSavedFaqDeps()
     }
   });
 
@@ -43,19 +72,21 @@ test('phase731: orchestrator probes grounding before broad paid fallback', async
   assert.equal(result.telemetry.strategy, 'grounded_answer');
   assert.equal(result.telemetry.retrieveNeeded, true);
   assert.match(result.telemetry.retrievalPermitReason || '', /broad_structured_grounding_probe/);
-  assert.equal(result.telemetry.selectedCandidateKind, 'domain_concierge_candidate');
-  assert.equal(result.telemetry.fallbackPriorityReason, 'fallback_to_domain_concierge_after_grounding_probe');
-  assert.equal(result.telemetry.verificationOutcome, 'clarify');
+  assert.equal(result.telemetry.selectedCandidateKind, 'saved_faq_candidate');
+  assert.equal(result.telemetry.fallbackPriorityReason, 'prefer_saved_faq_activation');
+  assert.equal(result.telemetry.verificationOutcome, 'passed');
   assert.equal(typeof result.telemetry.readinessDecision, 'string');
   assert.ok(Array.isArray(result.telemetry.readinessReasonCodes));
   assert.equal(result.telemetry.answerReadinessLogOnly, false);
   assert.equal(result.telemetry.actionClass, 'lookup');
   assert.equal(result.telemetry.actionGatewayDecision, 'bypass');
   assert.equal(result.telemetry.actionGatewayAllowed, true);
-  assert.equal(result.replyText.includes('対象を絞って案内したい'), true);
+  assert.equal(result.replyText.includes('FAQ候補'), false);
+  assert.equal(result.replyText.includes('根拠キー'), false);
+  assert.match(result.replyText, /最初の1か月|優先/);
 });
 
-test('phase731: orchestrator rejects legacy grounded candidate and prefers structured grounded output over generic fallback', async () => {
+test('phase731: orchestrator rejects legacy grounded template and prefers sanitized saved FAQ output over generic fallback', async () => {
   const result = await runPaidConversationOrchestrator({
     lineUserId: 'U_PHASE731',
     messageText: 'ビザ更新の必要書類を教えて',
@@ -108,13 +139,16 @@ test('phase731: orchestrator rejects legacy grounded candidate and prefers struc
         opportunityReasonKeys: ['general_fallback'],
         interventionBudget: 1,
         auditMeta: null
-      })
+      }),
+      ...buildSavedFaqDeps()
     }
   });
 
   assert.equal(result.telemetry.strategy, 'grounded_answer');
   assert.equal(result.telemetry.retrieveNeeded, true);
-  assert.equal(result.telemetry.judgeWinner, 'structured_answer_candidate');
+  assert.equal(result.telemetry.judgeWinner, 'saved_faq_candidate');
+  assert.equal(result.telemetry.selectedCandidateKind, 'saved_faq_candidate');
+  assert.equal(result.telemetry.fallbackPriorityReason, 'prefer_saved_faq_activation');
   assert.equal(result.telemetry.retrievalQuality, 'good');
   assert.equal(typeof result.telemetry.readinessDecision, 'string');
   assert.ok(Array.isArray(result.telemetry.readinessReasonCodes));

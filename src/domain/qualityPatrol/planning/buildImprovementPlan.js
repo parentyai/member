@@ -45,14 +45,27 @@ function mergePlans(plans) {
   });
 }
 
-function resolvePlanningStatus(reports, proposals) {
+function isHistoricalOnlyObservationPlan(entry) {
+  return entry
+    && entry.report
+    && entry.report.historicalOnly === true
+    && entry.mapped
+    && OBSERVATION_PROPOSAL_TYPES.includes(entry.mapped.proposalType);
+}
+
+function resolvePlanningStatus(reports, activeReports, proposals) {
   const sourceReports = Array.isArray(reports) ? reports : [];
+  const activeSourceReports = Array.isArray(activeReports) ? activeReports : [];
   if (!sourceReports.length) return 'insufficient_evidence';
+  if ((!Array.isArray(proposals) || proposals.length === 0)
+    && activeSourceReports.length === 0) {
+    return 'planned';
+  }
   if (!Array.isArray(proposals) || proposals.length === 0) return 'insufficient_evidence';
   const allObservation = proposals.every((item) => OBSERVATION_PROPOSAL_TYPES.includes(item.proposalType));
-  const allBlocked = sourceReports.every((item) => item.analysisStatus === 'blocked');
-  const allInsufficient = sourceReports.every((item) => item.analysisStatus === 'insufficient_evidence');
-  if (allBlocked || allObservation && sourceReports.some((item) => item.analysisStatus === 'blocked')) return 'blocked';
+  const allBlocked = activeSourceReports.every((item) => item.analysisStatus === 'blocked');
+  const allInsufficient = activeSourceReports.every((item) => item.analysisStatus === 'insufficient_evidence');
+  if (allBlocked || allObservation && activeSourceReports.some((item) => item.analysisStatus === 'blocked')) return 'blocked';
   if (allInsufficient) return 'insufficient_evidence';
   return 'planned';
 }
@@ -61,12 +74,28 @@ function buildImprovementPlan(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const rootCauseReports = Array.isArray(payload.rootCauseReports) ? payload.rootCauseReports : [];
   const generatedAt = toIso(payload.generatedAt);
-  const observationBlockers = rootCauseReports.flatMap((item) => Array.isArray(item && item.observationBlockers) ? item.observationBlockers : []);
-  const recommendedPr = mergePlans(rootCauseReports.flatMap((report) => {
+  const reportEntries = rootCauseReports.map((report) => {
     const topCause = Array.isArray(report && report.causeCandidates) ? report.causeCandidates[0] : null;
-    if (!topCause) return [];
+    if (!topCause) return {
+      report,
+      topCause: null,
+      mapped: null
+    };
     const mapped = mapCauseToProposal(report, topCause);
-    if (!mapped) return [];
+    return {
+      report,
+      topCause,
+      mapped
+    };
+  });
+  const activeEntries = reportEntries.filter((entry) => !isHistoricalOnlyObservationPlan(entry));
+  const activeReports = activeEntries.map((entry) => entry.report);
+  const observationBlockers = activeReports.flatMap((item) => Array.isArray(item && item.observationBlockers) ? item.observationBlockers : []);
+  const recommendedPr = mergePlans(activeEntries.flatMap((entry) => {
+    const report = entry && entry.report;
+    const topCause = entry && entry.topCause;
+    const mapped = entry && entry.mapped;
+    if (!topCause || !mapped) return [];
     return [buildRecommendedPr({ report, cause: topCause, mapped })];
   }));
 
@@ -80,7 +109,7 @@ function buildImprovementPlan(params) {
     },
     recommendedPr,
     observationBlockers,
-    planningStatus: resolvePlanningStatus(rootCauseReports, recommendedPr),
+    planningStatus: resolvePlanningStatus(rootCauseReports, activeReports, recommendedPr),
     provenance: IMPROVEMENT_PLANNER_PROVENANCE
   };
 }

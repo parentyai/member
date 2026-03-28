@@ -49,6 +49,8 @@ function prepareArtifacts(prefix) {
 test('phase777: release policy emits soft-floor warnings when soft-floor is not required', () => {
   const paths = prepareArtifacts('phase777_warn');
   const outPath = path.join(ROOT, 'tmp', 'phase777_release_policy_warn.json');
+  const runId = 'phase777-warn';
+  const mirrorPath = path.join(ROOT, 'tmp', 'llm_quality_runs', runId, 'policy', 'phase777_release_policy_warn.json');
 
   const run = runNode([
     'tools/llm_quality/enforce_release_policy.js',
@@ -57,11 +59,12 @@ test('phase777: release policy emits soft-floor warnings when soft-floor is not 
     '--mustPass', paths.mustPassPath,
     '--summary', 'tmp/phase777_summary_absent.json',
     '--output', path.relative(ROOT, outPath)
-  ]);
+  ], { LLM_QUALITY_RUN_ID: runId });
   assert.equal(run.status, 0, run.stderr || run.stdout);
 
   const payload = JSON.parse(fs.readFileSync(outPath, 'utf8'));
   assert.equal(payload.ok, true);
+  assert.equal(fs.existsSync(mirrorPath), true);
   assert.equal(payload.releaseGatePolicy.softFloorRequired, false);
   assert.equal(payload.releaseGatePolicy.softFloorValue, 0.8);
   assert.equal(payload.warnings.some((item) => String(item).startsWith('soft_floor_warning:')), true);

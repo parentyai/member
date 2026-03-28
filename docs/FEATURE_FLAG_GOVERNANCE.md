@@ -1,8 +1,8 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-21T03:29:51.808Z
-- gitCommit: b83a363c2754af852c1b118607dce4c7e7c63aa3
-- branch: UNOBSERVED_RUNTIME
+- generatedAt: 2026-03-28T02:24:29.943Z
+- gitCommit: 573a352653b40fb67239528c17389737015131f9
+- branch: codex/pr1092-rebase
 - flagCount: 93
 - source: src/**/*.js
 - check: `npm run feature-flags:check`

@@ -206,6 +206,8 @@ test('phase855: human patrol artifact removes internal taxonomy while keeping de
   assert.ok(!('transcriptWriteOutcomeCounts' in artifact.transcriptCoverage));
   assert.ok(artifact.decayAwareReadiness);
   assert.equal(artifact.decayAwareReadiness.overallReadinessStatus, 'readiness_deferred');
+  assert.ok(artifact.evidenceAvailability);
+  assert.equal(typeof artifact.evidenceAvailability.status, 'string');
   assert.ok(!('decisionReasonCode' in artifact.decayAwareOpsGate));
   assert.equal(artifact.decayAwareOpsGate.decision, 'NO_GO');
   assert.equal(artifact.decayAwareOpsGate.prDStatus, 'deferred');

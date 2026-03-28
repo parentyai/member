@@ -23,6 +23,12 @@ test('phase734: followup intent resolver detects docs/appointment/next-step inte
     domainIntent: 'school'
   });
   assert.equal(nextStep.followupIntent, 'next_step');
+
+  const typoDocs = resolveFollowupIntent({
+    messageText: '手続きに必要なしょるい',
+    domainIntent: 'school'
+  });
+  assert.equal(typoDocs.followupIntent, 'docs_required');
 });
 
 test('phase734: followup intent resolver avoids domain guess without domain context', () => {
@@ -31,6 +37,20 @@ test('phase734: followup intent resolver avoids domain guess without domain cont
     domainIntent: 'general'
   });
   assert.equal(unknown.followupIntent, null);
+});
+
+test('phase734: followup intent resolver keeps general planning continuations on next-step intent', () => {
+  const nextStep = resolveFollowupIntent({
+    messageText: 'それなら最初の5分は何をする？',
+    domainIntent: 'general'
+  });
+  assert.equal(nextStep.followupIntent, 'next_step');
+
+  const timeline = resolveFollowupIntent({
+    messageText: '今日・今週・今月の順で短く並べて。',
+    domainIntent: 'general'
+  });
+  assert.equal(timeline.followupIntent, 'next_step');
 });
 
 test('phase734: domain anchored short utterance needs carry context', () => {

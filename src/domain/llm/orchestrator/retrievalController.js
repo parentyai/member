@@ -24,11 +24,36 @@ function detectBroadGroundingSignals(messageText) {
   };
 }
 
+function resolveLocationHint(payload) {
+  if (payload && payload.locationHint && typeof payload.locationHint === 'object') {
+    return payload.locationHint;
+  }
+  if (payload && payload.requestContract && typeof payload.requestContract === 'object'
+    && payload.requestContract.locationHint && typeof payload.requestContract.locationHint === 'object') {
+    return payload.requestContract.locationHint;
+  }
+  return {};
+}
+
+function isCityScopedRequest(payload) {
+  const requestPayload = payload && typeof payload === 'object' ? payload : {};
+  const requestContract = requestPayload.requestContract && typeof requestPayload.requestContract === 'object'
+    ? requestPayload.requestContract
+    : {};
+  const knowledgeScope = normalizeText(requestPayload.knowledgeScope || requestContract.knowledgeScope).toLowerCase();
+  const locationHint = resolveLocationHint(requestPayload);
+  const locationHintKind = normalizeText(locationHint.kind).toLowerCase();
+  const requestedCityKey = normalizeText(requestPayload.requestedCityKey || locationHint.cityKey).toLowerCase();
+  return knowledgeScope === 'city' || locationHintKind === 'city' || Boolean(requestedCityKey);
+}
+
 function resolveRetrievalDecision(packet, strategyPlan) {
   const payload = packet && typeof packet === 'object' ? packet : {};
   const plan = strategyPlan && typeof strategyPlan === 'object' ? strategyPlan : {};
   const strategy = normalizeText(plan.strategy).toLowerCase();
+  const fallbackType = normalizeText(plan.fallbackType).toLowerCase();
   const domainIntent = normalizeText(payload.normalizedConversationIntent).toLowerCase() || 'general';
+  const requestShape = normalizeText(payload.requestShape || (payload.requestContract && payload.requestContract.requestShape)).toLowerCase();
   const genericFallbackSlice = normalizeText(payload.genericFallbackSlice).toLowerCase() || 'other';
   const followupIntent = normalizeText(payload.followupIntent).toLowerCase();
   const messageText = normalizeText(payload.messageText);
@@ -39,6 +64,21 @@ function resolveRetrievalDecision(packet, strategyPlan) {
     || strategy === 'clarify'
     || strategy === 'domain_concierge'
     || strategy === 'concierge';
+  const preserveDirectAnswerFallback = fallbackType === 'general_followup_direct_answer'
+    || fallbackType === 'service_plan_direct_answer'
+    || fallbackType === 'utility_transform_direct_answer'
+    || fallbackType === 'followup_direct_answer'
+    || fallbackType === 'history_followup_carry'
+    || fallbackType === 'mixed_domain_direct_answer';
+  const requestShapeDirectAnswer = [
+    'compare',
+    'correction',
+    'rewrite',
+    'summarize',
+    'message_template',
+    'criteria',
+    'followup_continue'
+  ].includes(requestShape);
   const blockedStrategies = new Set(['casual', 'clarify', 'domain_concierge', 'concierge']);
   const continuationContext = payload.priorContextUsed === true
     || payload.contextResume === true
@@ -60,6 +100,15 @@ function resolveRetrievalDecision(packet, strategyPlan) {
     && continuationContext
     && domainIntent !== 'general';
   const highRiskDomain = isHighRiskDomain(domainIntent);
+  const cityScopedFollowupOverride = blockedByDefault
+    && isCityScopedRequest(payload)
+    && continuationContext
+    && (requestShape === 'answer' || requestShape === 'followup_continue')
+    && (
+      fallbackType === 'general_followup_direct_answer'
+      || fallbackType === 'followup_direct_answer'
+      || fallbackType === 'history_followup_carry'
+    );
   const permitReason = [];
 
   if (strategy === 'recommendation') {
@@ -68,6 +117,26 @@ function resolveRetrievalDecision(packet, strategyPlan) {
       retrievalBlockedByStrategy: false,
       retrievalBlockReason: null,
       retrievalPermitReason: 'recommendation_strategy',
+      retrievalReenabledBySlice: null
+    };
+  }
+
+  if (blockedByDefault && preserveDirectAnswerFallback && cityScopedFollowupOverride !== true) {
+    return {
+      retrieveNeeded: false,
+      retrievalBlockedByStrategy: true,
+      retrievalBlockReason: `preserve_${fallbackType || strategy}`,
+      retrievalPermitReason: null,
+      retrievalReenabledBySlice: null
+    };
+  }
+
+  if (blockedByDefault && requestShapeDirectAnswer && cityScopedFollowupOverride !== true) {
+    return {
+      retrieveNeeded: false,
+      retrievalBlockedByStrategy: true,
+      retrievalBlockReason: `request_shape_${requestShape}`,
+      retrievalPermitReason: null,
       retrievalReenabledBySlice: null
     };
   }

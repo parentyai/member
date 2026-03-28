@@ -50,6 +50,7 @@ function collectRawBlockers(payload) {
   const rows = [];
 
   (Array.isArray(payload.rootCauseReports) ? payload.rootCauseReports : []).forEach((report) => {
+    if (report && report.historicalOnly === true) return;
     const slice = normalizeSlice(report && report.slice);
     (Array.isArray(report && report.observationBlockers) ? report.observationBlockers : []).forEach((blocker) => {
       rows.push({
@@ -73,6 +74,7 @@ function collectRawBlockers(payload) {
   });
 
   (Array.isArray(payload.issues) ? payload.issues : []).forEach((issue) => {
+    if (issue && issue.historicalOnly === true) return;
     const slice = normalizeSlice(issue && issue.slice);
     (Array.isArray(issue && issue.observationBlockers) ? issue.observationBlockers : []).forEach((blocker) => {
       rows.push({
@@ -120,6 +122,28 @@ function hasJoinLimitedSignal(payload) {
   );
   const faqSkipped = Number.isFinite(Number(diagnostics.faqOnlyRowsSkipped)) ? Number(diagnostics.faqOnlyRowsSkipped) : 0;
   return traceHydrationLimitedCount > 0 || limitedReviewUnit || (faqSkipped > 0 && missingTraceLike);
+}
+
+function hasTranscriptCoverageGap(payload) {
+  const coverage = payload.transcriptCoverage && typeof payload.transcriptCoverage === 'object'
+    ? payload.transcriptCoverage
+    : {};
+  const status = toCode(coverage.transcriptCoverageStatus);
+  if (!status || status === 'unavailable') {
+    return Number.isFinite(Number(coverage.observedCount)) ? Number(coverage.observedCount) <= 0 : true;
+  }
+  if (status !== 'ready') return true;
+  const outcomeCounts = coverage.transcriptWriteOutcomeCounts && typeof coverage.transcriptWriteOutcomeCounts === 'object'
+    ? coverage.transcriptWriteOutcomeCounts
+    : {};
+  const problematicOutcomes = [
+    'skipped_flag_disabled',
+    'skipped_missing_line_user_key',
+    'skipped_unreviewable_transcript',
+    'failed_repo_write',
+    'failed_unknown'
+  ];
+  return problematicOutcomes.some((key) => Number(outcomeCounts[key] || 0) > 0);
 }
 
 function buildObservationGapRow(payload, audience, rows) {
@@ -347,7 +371,7 @@ function buildObservationBlockerRows(params) {
     rows.push(buildObservationGapRow(payload, audience, rawBlockers));
   }
 
-  if (transcriptRows.length > 0) {
+  if (transcriptRows.length > 0 && hasTranscriptCoverageGap(payload)) {
     rows.push(buildTranscriptCoverageRow(payload, audience, transcriptRows));
   }
 

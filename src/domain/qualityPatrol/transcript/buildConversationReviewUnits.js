@@ -76,6 +76,27 @@ function compareCreatedDesc(left, right) {
   return (rightAt ? new Date(rightAt).getTime() : 0) - (leftAt ? new Date(leftAt).getTime() : 0);
 }
 
+function snapshotCoverageScore(row) {
+  const source = row && typeof row === 'object' ? row : null;
+  if (!source) return 0;
+  return [
+    source.userMessageAvailable === true ? 1 : 0,
+    source.assistantReplyAvailable === true ? 1 : 0,
+    source.priorContextSummaryAvailable === true ? 1 : 0
+  ].reduce((sum, value) => sum + value, 0);
+}
+
+function shouldPreferSnapshot(current, candidate) {
+  if (!current) return true;
+  const currentReviewable = current.userMessageAvailable === true && current.assistantReplyAvailable === true;
+  const candidateReviewable = candidate.userMessageAvailable === true && candidate.assistantReplyAvailable === true;
+  if (currentReviewable !== candidateReviewable) return candidateReviewable;
+  const currentScore = snapshotCoverageScore(current);
+  const candidateScore = snapshotCoverageScore(candidate);
+  if (currentScore !== candidateScore) return candidateScore > currentScore;
+  return compareCreatedDesc(current, candidate) > 0;
+}
+
 function buildAnchorKey(kind, row, index) {
   const traceId = normalizeText(row && row.traceId);
   if (traceId) return `trace:${traceId}`;
@@ -208,6 +229,20 @@ function buildTelemetrySignals(snapshot, latestAction) {
       hasOwn(latestAction, 'savedFaqUsedInAnswer') ? latestAction.savedFaqUsedInAnswer === true : null
     ),
     knowledgeGroundingKind: pickToken(latestAction && latestAction.knowledgeGroundingKind),
+    requestShape: pickToken(latestAction && latestAction.requestShape),
+    depthIntent: pickToken(latestAction && latestAction.depthIntent),
+    transformSource: pickToken(latestAction && latestAction.transformSource),
+    outputForm: pickToken(latestAction && latestAction.outputForm),
+    knowledgeScope: pickToken(latestAction && latestAction.knowledgeScope),
+    locationHintKind: pickToken(latestAction && latestAction.locationHintKind),
+    locationHintCityKey: pickToken(latestAction && latestAction.locationHintCityKey),
+    requestedCityKey: pickToken(latestAction && latestAction.requestedCityKey),
+    matchedCityKey: pickToken(latestAction && latestAction.matchedCityKey),
+    citySpecificitySatisfied: pickBoolean(
+      hasOwn(latestAction, 'citySpecificitySatisfied') ? latestAction.citySpecificitySatisfied === true : null
+    ),
+    citySpecificityReason: pickToken(latestAction && latestAction.citySpecificityReason),
+    violationCodes: pickStringList(latestAction && latestAction.violationCodes),
     readinessDecision: pickToken(latestAction && latestAction.readinessDecision, snapshot && snapshot.readinessDecision),
     replyTemplateFingerprint: pickString(latestAction && latestAction.replyTemplateFingerprint, snapshot && snapshot.replyTemplateFingerprint),
     repeatRiskScore: pickNumber(latestAction && latestAction.repeatRiskScore),
@@ -239,7 +274,7 @@ function buildConversationReviewAnchors(params) {
     const anchor = ensureAnchor(anchors, key);
     anchor.traceId = normalizeText(row && row.traceId) || anchor.traceId;
     const candidate = Object.assign({ id: row && row.id ? row.id : null }, row);
-    if (!anchor.snapshot || compareCreatedDesc(anchor.snapshot, candidate) > 0) {
+    if (shouldPreferSnapshot(anchor.snapshot, candidate)) {
       anchor.snapshot = candidate;
     }
   });
@@ -304,6 +339,8 @@ function buildReviewUnit(anchor, traceBundle, options) {
   const traceId = pickString(anchor.traceId, snapshot && snapshot.traceId, latestAction && latestAction.traceId, faqAnswerLogs[0] && faqAnswerLogs[0].traceId);
   const traceHydrationLimited = payload.traceHydrationLimited === true;
   const hasTraceEvidence = Boolean(traceBundle && traceBundle.ok === true && traceSummary && traceSummary.completeness > 0);
+  const expectsFaqEvidence = telemetrySignals.savedFaqUsedInAnswer === true
+    || telemetrySignals.selectedCandidateKind === 'saved_faq_candidate';
   const blockers = buildObservationBlockers({
     userMessageAvailable: snapshot ? snapshot.userMessageAvailable === true : false,
     assistantReplyAvailable: snapshot ? snapshot.assistantReplyAvailable === true : false,
@@ -311,9 +348,7 @@ function buildReviewUnit(anchor, traceBundle, options) {
     needsPriorContextSummary: telemetrySignals.priorContextUsed === true || telemetrySignals.followupResolvedFromHistory === true,
     hasTraceEvidence,
     hasActionLogEvidence: llmActions.length > 0,
-    expectsFaqEvidence: telemetrySignals.savedFaqUsedInAnswer === true
-      || telemetrySignals.savedFaqCandidateAvailable === true
-      || telemetrySignals.selectedCandidateKind === 'saved_faq_candidate',
+    expectsFaqEvidence,
     hasFaqEvidence: faqAnswerLogs.length > 0,
     traceHydrationLimited
   });
@@ -358,9 +393,7 @@ function buildReviewUnit(anchor, traceBundle, options) {
         : (traceHydrationLimited ? 'limited_by_trace_hydration' : 'missing_source'),
       faq: faqAnswerLogs.length > 0
         ? 'joined'
-        : (telemetrySignals.savedFaqUsedInAnswer === true
-          || telemetrySignals.savedFaqCandidateAvailable === true
-          || telemetrySignals.selectedCandidateKind === 'saved_faq_candidate'
+        : (expectsFaqEvidence
           ? 'missing_source'
           : 'not_expected')
     },

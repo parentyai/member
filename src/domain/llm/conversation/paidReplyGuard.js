@@ -17,6 +17,11 @@ function normalizeText(value) {
 function sanitizeLine(value) {
   return normalizeText(value)
     .replace(LEGACY_TEMPLATE_PATTERN, '')
+    .replace(/。{2,}/g, '。')
+    .replace(/？{2,}/g, '？')
+    .replace(/！{2,}/g, '！')
+    .replace(/。([？！])/g, '$1')
+    .replace(/([？！])。/g, '$1')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -60,6 +65,20 @@ function ensureSentence(line) {
   return `${normalized}。`;
 }
 
+function isQuestionLikeLine(line) {
+  const normalized = sanitizeLine(line);
+  if (!normalized) return false;
+  if (/[?？]$/.test(normalized)) return true;
+  return /(教えてください|教えてもらえますか|教えてもらえますでしょうか|決めましょうか|分かりますか|できますか|でしょうか|ますか|ませんか|ですか|いただけますか)/.test(normalized);
+}
+
+function looksLikeStatusLine(line) {
+  const normalized = sanitizeLine(line);
+  if (!normalized) return false;
+  return /^(了解です|承知しました|わかりました|分かりました|大丈夫です|ありがとうございます|ありがとう|そうですね|そうですか|状況を整理しながら進めます|整理しながら進めます)/.test(normalized)
+    || /ながら進めます/.test(normalized);
+}
+
 function toConciseActionLine(action) {
   const normalized = sanitizeLine(action);
   if (!normalized) return '';
@@ -69,13 +88,14 @@ function toConciseActionLine(action) {
 
 function looksLikeActionLine(line) {
   if (!line) return false;
+  if (isQuestionLikeLine(line) || looksLikeStatusLine(line)) return false;
   if (/^[\-・*\d０-９0-9.\)\(]/.test(line)) return true;
   return /(確認|整理|決める|準備|申請|提出|連絡|予約|確定|進める|絞る)/.test(line);
 }
 
 function pickSituationLine(lines, fallback) {
   const list = Array.isArray(lines) ? lines : [];
-  const picked = list.find((line) => line && !looksLikeActionLine(line) && !/[?？]$/.test(line));
+  const picked = list.find((line) => line && !looksLikeActionLine(line) && !isQuestionLikeLine(line));
   return picked || sanitizeLine(fallback) || DEFAULT_SITUATION_LINE;
 }
 
@@ -90,17 +110,28 @@ function pickPitfallLine(lines, fallback) {
 
 function pickQuestionLine(lines, fallback) {
   const list = Array.isArray(lines) ? lines : [];
-  const question = list.find((line) => /[?？]$/.test(line) || /ですか[?？]?$/.test(line));
+  const question = list.find((line) => isQuestionLikeLine(line));
   const normalized = sanitizeLine(question || fallback);
   if (!normalized) return null;
-  if (/[?？]$/.test(normalized)) return normalized;
+  if (isQuestionLikeLine(normalized)) return normalized;
   return `${normalized}。`;
+}
+
+function isRepeatedQuestionLine(line, hints) {
+  const normalized = sanitizeLine(line);
+  const rows = Array.isArray(hints) ? hints : [];
+  if (!normalized || !rows.length) return false;
+  return rows.some((item) => {
+    const hint = sanitizeLine(item);
+    if (!hint) return false;
+    return hint === normalized;
+  });
 }
 
 function extractActionLines(lines, fallbackActions, maxActions) {
   const sourceLines = Array.isArray(lines) ? lines : [];
   const parsed = sourceLines
-    .filter((line) => looksLikeActionLine(line) && !PITFALL_PATTERN.test(line) && !/[?？]$/.test(line))
+    .filter((line) => looksLikeActionLine(line) && !PITFALL_PATTERN.test(line) && !isQuestionLikeLine(line))
     .map((line) => stripActionPrefix(line));
   return dedupeLines(parsed.concat(Array.isArray(fallbackActions) ? fallbackActions : []), maxActions);
 }
@@ -111,10 +142,71 @@ function containsLegacyTemplateTerms(text) {
   return /(FAQ候補|CityPack候補|根拠キー|根拠\s*[:：]|score=|-\s*\[\]|関連情報です)/i.test(normalized);
 }
 
+function shouldPreserveStructuredConciergeReply(lines) {
+  const parsed = Array.isArray(lines) ? lines.filter(Boolean) : [];
+  if (parsed.length < 3) return false;
+  const joined = parsed.join('\n');
+  return /住むエリアと学区/.test(parsed[0])
+    && /住所証明/.test(joined)
+    && /(住居候補|学校候補|同じエリア軸)/.test(joined);
+}
+
 function sanitizePaidMainReply(text, options) {
   const payload = options && typeof options === 'object' ? options : {};
   const raw = normalizeText(text);
   const parsedLines = parseReplyLines(raw);
+  const conciseMode = payload.conciseMode === true;
+  const recentAssistantCommitments = dedupeLines(payload.recentAssistantCommitments, 8);
+  const repetitionPrevented = payload.repetitionPrevented === true;
+  const requestContract = payload.requestContract && typeof payload.requestContract === 'object'
+    ? payload.requestContract
+    : {};
+  const requestShape = normalizeText(requestContract.requestShape).toLowerCase();
+  const outputForm = normalizeText(requestContract.outputForm).toLowerCase() || 'default';
+  const formatLocked = outputForm !== 'default'
+    || ['rewrite', 'summarize', 'message_template', 'compare', 'criteria', 'correction', 'followup_continue'].includes(requestShape);
+  if (conciseMode && shouldPreserveStructuredConciergeReply(parsedLines)) {
+    const preservedText = parsedLines
+      .slice(0, 3)
+      .map((line) => sanitizeLine(line))
+      .filter(Boolean)
+      .join('\n')
+      .trim();
+    return {
+      text: preservedText || DEFAULT_SITUATION_LINE,
+      legacyTemplateHit: containsLegacyTemplateTerms(raw),
+      actionCount: 0,
+      pitfallIncluded: false,
+      followupQuestionIncluded: false,
+      insertedNextStepIntro: false,
+      templateKind: classifyReplyTemplateKind({
+        replyText: preservedText || DEFAULT_SITUATION_LINE,
+        conciseModeApplied: true
+      }),
+      replyTemplateFingerprint: buildReplyTemplateFingerprint(preservedText || DEFAULT_SITUATION_LINE)
+    };
+  }
+  if (formatLocked) {
+    const lockedText = parsedLines
+      .slice(0, outputForm === 'two_sentences' ? 2 : 3)
+      .map((line) => sanitizeLine(line))
+      .filter(Boolean)
+      .join('\n')
+      .trim();
+    return {
+      text: lockedText || sanitizeLine(payload.situationLine) || DEFAULT_SITUATION_LINE,
+      legacyTemplateHit: containsLegacyTemplateTerms(raw),
+      actionCount: 0,
+      pitfallIncluded: false,
+      followupQuestionIncluded: /[?？]/.test(lockedText),
+      insertedNextStepIntro: false,
+      templateKind: classifyReplyTemplateKind({
+        replyText: lockedText || DEFAULT_SITUATION_LINE,
+        conciseModeApplied: conciseMode
+      }),
+      replyTemplateFingerprint: buildReplyTemplateFingerprint(lockedText || DEFAULT_SITUATION_LINE)
+    };
+  }
   const situationLine = pickSituationLine(parsedLines, payload.situationLine);
   const nextActions = extractActionLines(parsedLines, payload.nextActions, payload.maxActions || 3);
   const pitfallLine = payload.disablePitfall === true
@@ -123,12 +215,14 @@ function sanitizePaidMainReply(text, options) {
   let followupQuestion = payload.disableFollowup === true
     ? null
     : pickQuestionLine(parsedLines, payload.followupQuestion);
+  if (repetitionPrevented && isRepeatedQuestionLine(followupQuestion, recentAssistantCommitments)) {
+    followupQuestion = null;
+  }
 
   if (!followupQuestion && nextActions.length === 0) {
     followupQuestion = sanitizeLine(payload.defaultQuestion || DEFAULT_QUESTION_LINE);
   }
 
-  const conciseMode = payload.conciseMode === true;
   const normalizedSituationLine = sanitizeLine(situationLine) || DEFAULT_SITUATION_LINE;
   const dedupedActions = nextActions.filter((action) => {
     const normalizedAction = sanitizeLine(action);

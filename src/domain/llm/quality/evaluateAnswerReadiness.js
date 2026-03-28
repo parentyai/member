@@ -160,6 +160,12 @@ function evaluateAnswerReadiness(params) {
   const cityPackGrounded = payload.cityPackGrounded === true;
   const cityPackAuthorityScore = clamp01(payload.cityPackAuthorityScore);
   const cityPackFreshnessScore = clamp01(payload.cityPackFreshnessScore);
+  const requestedCityKey = normalizeText(payload.requestedCityKey).toLowerCase() || null;
+  const matchedCityKey = normalizeText(payload.matchedCityKey).toLowerCase() || null;
+  const citySpecificitySatisfied = payload.citySpecificitySatisfied === true;
+  const citySpecificityReason = normalizeText(payload.citySpecificityReason).toLowerCase() || null;
+  const scopeDisclosureRequired = payload.scopeDisclosureRequired === true;
+  const knowledgeScope = normalizeText(payload.knowledgeScope).toLowerCase() || 'none';
   const savedFaqReused = payload.savedFaqReused === true;
   const savedFaqReusePass = payload.savedFaqReusePass === true;
   const savedFaqValid = typeof payload.savedFaqValid === 'boolean' ? payload.savedFaqValid : true;
@@ -169,6 +175,7 @@ function evaluateAnswerReadiness(params) {
   const thresholds = resolveThresholds(intentRiskTier);
   const highRisk = intentRiskTier === 'high';
   const mediumRisk = intentRiskTier === 'medium';
+  const cityScopedRequest = knowledgeScope === 'city' || Boolean(requestedCityKey);
 
   let decision = 'allow';
   let decisionSource = 'threshold_allow';
@@ -196,6 +203,8 @@ function evaluateAnswerReadiness(params) {
     applyDecision('refuse', 'emergency_official_source_missing', 'emergency_official_source_guard');
   } else if (requiredCityPackBlocked) {
     applyDecision('refuse', 'city_pack_required_source_blocked', 'city_pack_required_source_guard');
+  } else if (highRisk && cityScopedRequest && citySpecificitySatisfied !== true) {
+    applyDecision('clarify', 'official_or_specificity_not_satisfied', 'high_risk_city_specificity_guard');
   } else if (sourceReadinessDecision === 'refuse') {
     applyDecision('refuse', 'source_readiness_refuse', 'source_readiness_guard');
   } else if (highRisk && officialOnlySatisfiedObserved !== true) {
@@ -250,11 +259,29 @@ function evaluateAnswerReadiness(params) {
     }
   }
 
-  if (optionalCityPackHedge && decision === 'allow') {
+  if (
+    decision === 'allow'
+    && mediumRisk
+    && cityScopedRequest
+    && citySpecificitySatisfied !== true
+  ) {
+    applyDecision('hedged', 'city_specificity_not_satisfied', 'medium_risk_city_specificity_guard');
+  }
+  if (
+    decision === 'allow'
+    && !highRisk
+    && !mediumRisk
+    && cityScopedRequest
+    && citySpecificitySatisfied !== true
+  ) {
+    applyDecision('hedged', 'city_specificity_not_satisfied', 'low_risk_city_specificity_guard');
+  }
+  if (cityScopedRequest && optionalCityPackHedge && decision === 'allow') {
     applyDecision('hedged', 'city_pack_optional_source_stale', 'city_pack_optional_source_guard');
   }
   if (
     decision === 'allow'
+    && cityScopedRequest
     && hasCityPackSignals
     && (
       cityPackAuthorityScore > 0 && cityPackAuthorityScore < thresholds.minAuthorityHedge
@@ -358,6 +385,12 @@ function evaluateAnswerReadiness(params) {
       taskBlockerDetected,
       journeyAlignedAction,
       cityPackGrounded,
+      requestedCityKey,
+      matchedCityKey,
+      citySpecificitySatisfied,
+      citySpecificityReason,
+      scopeDisclosureRequired,
+      knowledgeScope,
       cityPackAuthorityScore,
       cityPackFreshnessScore,
       savedFaqReused,
@@ -367,7 +400,7 @@ function evaluateAnswerReadiness(params) {
       savedFaqAuthorityScore,
       crossSystemConflictDetected,
       policyTighteningVersion: 'r827',
-      readinessHardeningVersion: 'r829',
+      readinessHardeningVersion: 'r830',
       decisionSource
     },
     safeResponseMode: resolveSafeResponseMode(decision),

@@ -29,6 +29,10 @@ function toCandidate(item) {
     title: normalizeText(payload.name) || cityPackId,
     reason: normalizeText(payload.reason) || 'city_pack_match',
     packClass: normalizeText(payload.packClass) || null,
+    regionKey: normalizeText(payload.regionKey) || null,
+    regionCity: normalizeText(payload.regionCity) || null,
+    regionState: normalizeText(payload.regionState) || null,
+    sourceRefs: Array.isArray(payload.sourceRefs) ? payload.sourceRefs.slice(0, 8) : [],
     validUntil: payload.validUntil || null,
     updatedAt: payload.updatedAt || null
   };

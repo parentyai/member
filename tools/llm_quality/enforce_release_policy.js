@@ -4,6 +4,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { buildScorecard } = require('./lib');
 const { toCandidateMetricsFromQualitySummary } = require('./run_quality_gate');
+const {
+  buildConciergeReleaseSupport,
+  CONCIERGE_RUNTIME_SIGNAL_KEYS
+} = require('./concierge_quality');
+const harnessShared = require('./harness_shared');
 
 function parseArgs(argv) {
   const args = Array.isArray(argv) ? argv.slice(2) : [];
@@ -103,7 +108,14 @@ function readSummaryData(summaryPath) {
   try {
     const payload = readJson(summaryPath);
     if (payload && typeof payload === 'object' && payload.summary && typeof payload.summary === 'object') {
-      return payload.summary;
+      return Object.assign({}, payload.summary, {
+        runtimeSummarySource: typeof payload.runtimeSummarySource === 'string'
+          ? payload.runtimeSummarySource
+          : payload.summary.runtimeSummarySource,
+        preparedAt: typeof payload.preparedAt === 'string'
+          ? payload.preparedAt
+          : payload.summary.preparedAt
+      });
     }
     return payload && typeof payload === 'object' ? payload : null;
   } catch (_err) {
@@ -196,7 +208,8 @@ const STRICT_RUNTIME_SIGNAL_KEYS = Object.freeze([
   'retrieveNeededRate',
   'avgActionCount',
   'directAnswerAppliedRate',
-  'avgRepeatRiskScore'
+  'avgRepeatRiskScore',
+  ...CONCIERGE_RUNTIME_SIGNAL_KEYS
 ]);
 
 function main(argv) {
@@ -217,44 +230,31 @@ function main(argv) {
   const summaryPath = args.summary
     ? path.resolve(root, args.summary)
     : path.join(root, 'tmp', 'llm_usage_summary.json');
-  const requireAllSlicesPass = toBool(
-    args.requireAllSlicesPass,
-    toBool(process.env.LLM_QUALITY_REQUIRE_ALL_SLICES_PASS, false)
-  );
-  const requireStrictRuntimeSignals = toBool(
-    args.requireStrictRuntimeSignals,
-    toBool(process.env.LLM_QUALITY_REQUIRE_STRICT_RUNTIME_SIGNALS, false)
-  );
-  const requireCompatGovernance = toBool(
-    args.requireCompatGovernance,
-    toBool(process.env.LLM_QUALITY_REQUIRE_COMPAT_GOVERNANCE, false)
-  );
-  const requireLiveRuntimeAudit = toBool(
-    args.requireLiveRuntimeAudit,
-    toBool(process.env.LLM_QUALITY_REQUIRE_LIVE_RUNTIME_AUDIT, false)
-  );
-  const requireNoGoGateMandatory = toBool(
-    args.requireNoGoGateMandatory,
-    toBool(process.env.LLM_QUALITY_REQUIRE_NOGO_GATE_MANDATORY, false)
-  );
-  const maxCompatShare = parseRate(
-    args.maxCompatShare,
-    parseRate(process.env.LLM_QUALITY_MAX_COMPAT_SHARE, 0.15)
-  );
-  const requireSoftFloor = toBool(
-    args.requireSoftFloor,
-    toBool(process.env.LLM_QUALITY_REQUIRE_SOFT_FLOOR_080, false)
-  );
-  const softFloor = Number.isFinite(Number(args.softFloor))
-    ? Number(args.softFloor)
-    : Number.isFinite(Number(process.env.LLM_QUALITY_SOFT_FLOOR_VALUE))
-      ? Number(process.env.LLM_QUALITY_SOFT_FLOOR_VALUE)
-      : 0.8;
+  const policy = harnessShared.resolveQualityPolicyFlags({
+    env: process.env,
+    requireAllSlicesPass: args.requireAllSlicesPass,
+    requireStrictRuntimeSignals: args.requireStrictRuntimeSignals,
+    requireCompatGovernance: args.requireCompatGovernance,
+    requireLiveRuntimeAudit: args.requireLiveRuntimeAudit,
+    requireNoGoGateMandatory: args.requireNoGoGateMandatory,
+    requireSoftFloor: args.requireSoftFloor,
+    maxCompatShare: args.maxCompatShare,
+    softFloor: args.softFloor
+  });
+  const requireAllSlicesPass = policy.requireAllSlicesPass;
+  const requireStrictRuntimeSignals = policy.requireStrictRuntimeSignals;
+  const requireCompatGovernance = policy.requireCompatGovernance;
+  const requireLiveRuntimeAudit = policy.requireLiveRuntimeAudit;
+  const requireNoGoGateMandatory = policy.requireNoGoGateMandatory;
+  const maxCompatShare = policy.maxCompatShare;
+  const requireSoftFloor = policy.requireSoftFloor;
+  const softFloor = policy.softFloorValue;
+  const runId = harnessShared.resolveHarnessRunId({ env: process.env, sourceTag: 'release-policy' });
 
   const baseline = readJson(baselinePath);
   const precomputedCandidate = readJson(candidatePath);
   const mustPass = readJson(mustPassPath);
-  const summary = readSummaryData(summaryPath);
+  const summary = harnessShared.readSummaryData(summaryPath);
   const runtimeSummaryCandidate = buildCandidateScorecardFromSummary(summary, summaryPath);
   const candidate = runtimeSummaryCandidate || precomputedCandidate;
   const candidateSourceType = runtimeSummaryCandidate ? 'runtime_summary' : 'precomputed_scorecard';
@@ -264,6 +264,7 @@ function main(argv) {
   const runtimeSummarySource = summary && typeof summary.runtimeSummarySource === 'string'
     ? summary.runtimeSummarySource
     : null;
+  const conciergeSupport = buildConciergeReleaseSupport(summary);
 
   const baselineDimensionMap = toMap(baseline.dimensions, 'key');
   const candidateDimensionMap = toMap(candidate.dimensions, 'key');
@@ -288,6 +289,7 @@ function main(argv) {
     compatGovernanceRequired: requireCompatGovernance === true,
     liveRuntimeAuditRequired: requireLiveRuntimeAudit === true,
     noGoGateMandatoryRequired: requireNoGoGateMandatory === true,
+    unresolvedConciergeCriticalIssuesResolved: (requireStrictRuntimeSignals === true || requireNoGoGateMandatory === true),
     maxCompatShare,
     softFloorRequired: requireSoftFloor === true,
     softFloorValue: softFloor
@@ -368,8 +370,8 @@ function main(argv) {
     if (compatSlice.status !== 'pass') failures.push('compat_slice_not_pass');
   }
   if (requireLiveRuntimeAudit === true) {
-    if (!isLiveRuntimeSummaryProvenance(runtimeSummarySource)) {
-      failures.push(`live_runtime_audit_provenance_invalid:${normalizeRuntimeSummarySource(runtimeSummarySource) || 'unknown'}`);
+    if (!harnessShared.isLiveRuntimeSummaryProvenance(runtimeSummarySource)) {
+      failures.push(`live_runtime_audit_provenance_invalid:${harnessShared.normalizeRuntimeSummarySource(runtimeSummarySource) || 'unknown'}`);
     }
     if (!improvementLoop) {
       failures.push('quality_loop_v2_improvement_loop_missing');
@@ -395,6 +397,13 @@ function main(argv) {
       }
     }
   }
+
+  conciergeSupport.criticalIssues.forEach((issue) => {
+    if (!issue || issue.blocked !== true) return;
+    const code = `concierge_critical_issue_unresolved:${issue.issueCode}`;
+    if (requireNoGoGateMandatory === true || requireStrictRuntimeSignals === true) failures.push(code);
+    else warnings.push(code);
+  });
 
   const conversation = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
     ? summary.conversationQuality
@@ -428,7 +437,24 @@ function main(argv) {
       directAnswerMissRate: runtimeSignalRaw.directAnswerAppliedRate == null
         ? null
         : Math.max(0, 1 - runtimeSignalRaw.directAnswerAppliedRate),
-      avgRepeatRiskScore: runtimeSignalRaw.avgRepeatRiskScore
+      avgRepeatRiskScore: runtimeSignalRaw.avgRepeatRiskScore,
+      domainIntentConciergeRate: runtimeSignalRaw.domainIntentConciergeRate,
+      officialOnlySatisfiedRate: runtimeSignalRaw.officialOnlySatisfiedRate,
+      followupResolutionRate: runtimeSignalRaw.followupResolutionRate,
+      contextualResumeHandledRate: runtimeSignalRaw.contextualResumeHandledRate,
+      avgUnsupportedClaimCount: runtimeSignalRaw.avgUnsupportedClaimCount,
+      formatComplianceRate: runtimeSignalRaw.formatComplianceRate,
+      detailCarryRate: runtimeSignalRaw.detailCarryRate,
+      correctionRecoveryRate: runtimeSignalRaw.correctionRecoveryRate,
+      mixedDomainRetentionRate: runtimeSignalRaw.mixedDomainRetentionRate,
+      citySpecificityResolvedRate: runtimeSignalRaw.citySpecificityResolvedRate,
+      cityOverclaimRate: runtimeSignalRaw.cityOverclaimRate,
+      transformSourceCarryRate: runtimeSignalRaw.transformSourceCarryRate,
+      depthResetRate: runtimeSignalRaw.depthResetRate,
+      followupOveraskRate: runtimeSignalRaw.followupOveraskRate,
+      internalLabelLeakRate: runtimeSignalRaw.internalLabelLeakRate,
+      parrotEchoRate: runtimeSignalRaw.parrotEchoRate,
+      commandBoundaryCollisionRate: runtimeSignalRaw.commandBoundaryCollisionRate
     }
     : null;
   if (runtimeSignalCoverage.missingKeys.length > 0) {
@@ -456,6 +482,14 @@ function main(argv) {
       failures.push('runtime_signal_repeat_risk_too_high');
     }
   }
+  conciergeSupport.runtimeFailures.forEach((row) => {
+    if (!row || row.status !== 'fail') return;
+    const code = row.direction === 'max'
+      ? `concierge_runtime_signal_too_high:${row.signal}`
+      : `concierge_runtime_signal_too_low:${row.signal}`;
+    if (requireStrictRuntimeSignals === true) failures.push(code);
+    else warnings.push(code);
+  });
 
   if (!mustPass || mustPass.ok !== true) failures.push('must_pass_fixtures_failed');
 
@@ -495,6 +529,12 @@ function main(argv) {
     summaryPath,
     runtimeSignals,
     runtimeSignalCoverage,
+    conciergeRuntimeSignals: conciergeSupport.runtimeSignals,
+    conciergeRuntimeFailures: conciergeSupport.runtimeFailures,
+    conciergeCriticalIssues: conciergeSupport.criticalIssues,
+    conciergeCriticalIssueCodes: conciergeSupport.criticalIssueCodes,
+    conciergeSignalCoverage: conciergeSupport.signalCoverage,
+    conciergeCriticalIssueCount: conciergeSupport.criticalIssueCount,
     qualityLoopV2,
     improvementLoop,
     runtimeSummarySource,
@@ -512,7 +552,14 @@ function main(argv) {
     warnings: Array.from(new Set(warnings))
   };
 
-  writeJson(outPath, result);
+  const artifact = harnessShared.writeHarnessArtifact({
+    outputPath: outPath,
+    value: result,
+    runId,
+    artifactGroup: harnessShared.resolveRunScopedArtifactGroup('policy')
+  });
+  result.outputPath = artifact.outputPath;
+  result.runScopedOutputPath = artifact.runScopedPath;
   const target = result.ok ? process.stdout : process.stderr;
   target.write(`${JSON.stringify(result, null, 2)}\n`);
   return result.ok ? 0 : 1;

@@ -6,7 +6,14 @@ const { resolveAnswerReadinessV2Mode } = require('./resolveAnswerReadinessV2Mode
 
 function runAnswerReadinessGateV2(params) {
   const payload = params && typeof params === 'object' ? params : {};
-  const context = buildAnswerReadinessContext(payload);
+  const responseQualityContext = payload.responseQualityContext && typeof payload.responseQualityContext === 'object'
+    ? payload.responseQualityContext
+    : null;
+  const context = responseQualityContext && responseQualityContext.answerReadinessContext
+    ? responseQualityContext.answerReadinessContext
+    : (payload.answerReadinessContext && typeof payload.answerReadinessContext === 'object'
+      ? payload.answerReadinessContext
+      : buildAnswerReadinessContext(payload));
   const readinessLegacy = evaluateAnswerReadiness(context.legacyInput);
   const readinessV2 = evaluateAnswerReadiness(context.v2Input);
   const mode = resolveAnswerReadinessV2Mode({
@@ -24,6 +31,9 @@ function runAnswerReadinessGateV2(params) {
     answerReadinessEnforcedV2: mode.answerReadinessEnforcedV2,
     context,
     telemetry: {
+      responseQualityContextVersion: responseQualityContext && typeof responseQualityContext.contractVersion === 'string'
+        ? responseQualityContext.contractVersion
+        : null,
       answerReadinessVersion: 'v2',
       answerReadinessEntryType: mode.entryType,
       answerReadinessV2Stage: mode.stage,
@@ -61,6 +71,11 @@ function runAnswerReadinessGateV2(params) {
       cityPackRequiredSourcesSatisfied: context.knowledge.cityPackRequiredSourcesSatisfied,
       cityPackSourceSnapshot: context.knowledge.cityPackSourceSnapshot,
       cityPackPackId: context.knowledge.cityPackPackId,
+      requestedCityKey: context.knowledge.requestedCityKey || null,
+      matchedCityKey: context.knowledge.matchedCityKey || null,
+      citySpecificitySatisfied: context.knowledge.citySpecificitySatisfied === true,
+      citySpecificityReason: context.knowledge.citySpecificityReason || null,
+      scopeDisclosureRequired: context.knowledge.scopeDisclosureRequired === true,
       cityPackValidation: context.knowledge.cityPackValidation,
       savedFaqReused: context.knowledge.savedFaqReused,
       savedFaqReusePass: context.knowledge.savedFaqReusePass,

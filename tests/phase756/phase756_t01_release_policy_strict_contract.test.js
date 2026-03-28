@@ -50,7 +50,20 @@ test('phase756: strict release policy blocks strict runtime signal regressions e
         retrieveNeededRate: 0.2,
         avgActionCount: 2.6,
         directAnswerAppliedRate: 0.85,
-        avgRepeatRiskScore: 0.62
+        avgRepeatRiskScore: 0.62,
+        formatComplianceRate: 0.99,
+        detailCarryRate: 0.97,
+        correctionRecoveryRate: 0.96,
+        mixedDomainRetentionRate: 0.95,
+        followupOveraskRate: 0.01,
+        internalLabelLeakRate: 0,
+        parrotEchoRate: 0,
+        commandBoundaryCollisionRate: 0,
+        domainIntentConciergeRate: 0.92,
+        officialOnlySatisfiedRate: 0.94,
+        followupResolutionRate: 0.89,
+        contextualResumeHandledRate: 0.88,
+        avgUnsupportedClaimCount: 0.01
       }
     }
   }, null, 2)}\n`);
@@ -124,6 +137,152 @@ test('phase756: strict release policy fails when extended runtime conversation s
   assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('legacyTemplateHitRate'), true);
   assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('retrieveNeededRate'), true);
   assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('avgActionCount'), true);
+  assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('formatComplianceRate'), true);
+  assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('internalLabelLeakRate'), true);
+});
+
+test('phase756: strict release policy blocks concierge runtime regressions for format and label leaks', () => {
+  const baseline = runNode([
+    'tools/llm_quality/compute_scorecard.js',
+    '--input', 'tools/llm_quality/fixtures/baseline_metrics.v1.json',
+    '--output', 'tmp/phase756_baseline_scorecard_concierge_runtime.json'
+  ]);
+  assert.equal(baseline.status, 0, baseline.stderr || baseline.stdout);
+
+  const candidate = runNode([
+    'tools/llm_quality/compute_scorecard.js',
+    '--input', 'tools/llm_quality/fixtures/candidate_metrics.v1.json',
+    '--output', 'tmp/phase756_candidate_scorecard_concierge_runtime.json'
+  ]);
+  assert.equal(candidate.status, 0, candidate.stderr || candidate.stdout);
+
+  const mustPass = runNode([
+    'tools/llm_quality/run_must_pass_fixtures.js',
+    '--baseline', 'tools/llm_quality/fixtures/baseline_metrics.v1.json',
+    '--candidate', 'tools/llm_quality/fixtures/candidate_metrics.v1.json',
+    '--output', 'tmp/phase756_must_pass_concierge_runtime.json'
+  ]);
+  assert.equal(mustPass.status, 0, mustPass.stderr || mustPass.stdout);
+
+  const summaryPath = path.join(ROOT, 'tmp', 'phase756_concierge_runtime_summary.json');
+  fs.writeFileSync(summaryPath, `${JSON.stringify({
+    summary: {
+      conversationQuality: {
+        legacyTemplateHitRate: 0.003,
+        defaultCasualRate: 0.01,
+        followupQuestionIncludedRate: 0.1,
+        conciseModeAppliedRate: 0.08,
+        retrieveNeededRate: 0.2,
+        avgActionCount: 2.1,
+        directAnswerAppliedRate: 0.94,
+        avgRepeatRiskScore: 0.09,
+        formatComplianceRate: 0.9,
+        detailCarryRate: 0.97,
+        correctionRecoveryRate: 0.96,
+        mixedDomainRetentionRate: 0.95,
+        followupOveraskRate: 0.01,
+        internalLabelLeakRate: 0.02,
+        parrotEchoRate: 0,
+        commandBoundaryCollisionRate: 0,
+        domainIntentConciergeRate: 0.92,
+        officialOnlySatisfiedRate: 0.94,
+        followupResolutionRate: 0.89,
+        contextualResumeHandledRate: 0.88,
+        avgUnsupportedClaimCount: 0.01
+      }
+    }
+  }, null, 2)}\n`);
+
+  const strict = runNode([
+    'tools/llm_quality/enforce_release_policy.js',
+    '--baseline', 'tmp/phase756_baseline_scorecard_concierge_runtime.json',
+    '--candidate', 'tmp/phase756_candidate_scorecard_concierge_runtime.json',
+    '--mustPass', 'tmp/phase756_must_pass_concierge_runtime.json',
+    '--summary', 'tmp/phase756_concierge_runtime_summary.json',
+    '--requireAllSlicesPass', 'true',
+    '--requireStrictRuntimeSignals', 'true',
+    '--output', 'tmp/phase756_release_policy_concierge_runtime.json'
+  ]);
+  assert.notEqual(strict.status, 0);
+  const result = JSON.parse(fs.readFileSync(path.join(ROOT, 'tmp', 'phase756_release_policy_concierge_runtime.json'), 'utf8'));
+  assert.equal(result.ok, false);
+  assert.equal(result.failures.includes('concierge_runtime_signal_too_low:formatComplianceRate'), true);
+  assert.equal(result.failures.includes('concierge_runtime_signal_too_high:internalLabelLeakRate'), true);
+});
+
+test('phase756: strict release policy blocks city specificity and deep-response runtime regressions', () => {
+  const baseline = runNode([
+    'tools/llm_quality/compute_scorecard.js',
+    '--input', 'tools/llm_quality/fixtures/baseline_metrics.v1.json',
+    '--output', 'tmp/phase756_baseline_scorecard_city_runtime.json'
+  ]);
+  assert.equal(baseline.status, 0, baseline.stderr || baseline.stdout);
+
+  const candidate = runNode([
+    'tools/llm_quality/compute_scorecard.js',
+    '--input', 'tools/llm_quality/fixtures/candidate_metrics.v1.json',
+    '--output', 'tmp/phase756_candidate_scorecard_city_runtime.json'
+  ]);
+  assert.equal(candidate.status, 0, candidate.stderr || candidate.stdout);
+
+  const mustPass = runNode([
+    'tools/llm_quality/run_must_pass_fixtures.js',
+    '--baseline', 'tools/llm_quality/fixtures/baseline_metrics.v1.json',
+    '--candidate', 'tools/llm_quality/fixtures/candidate_metrics.v1.json',
+    '--output', 'tmp/phase756_must_pass_city_runtime.json'
+  ]);
+  assert.equal(mustPass.status, 0, mustPass.stderr || mustPass.stdout);
+
+  const summaryPath = path.join(ROOT, 'tmp', 'phase756_city_runtime_summary.json');
+  fs.writeFileSync(summaryPath, `${JSON.stringify({
+    summary: {
+      conversationQuality: {
+        legacyTemplateHitRate: 0.003,
+        defaultCasualRate: 0.01,
+        followupQuestionIncludedRate: 0.1,
+        conciseModeAppliedRate: 0.08,
+        retrieveNeededRate: 0.2,
+        avgActionCount: 2.1,
+        directAnswerAppliedRate: 0.94,
+        avgRepeatRiskScore: 0.09,
+        formatComplianceRate: 0.99,
+        detailCarryRate: 0.97,
+        correctionRecoveryRate: 0.96,
+        mixedDomainRetentionRate: 0.95,
+        citySpecificityResolvedRate: 0.5,
+        cityOverclaimRate: 0.02,
+        transformSourceCarryRate: 0.82,
+        depthResetRate: 0.4,
+        followupOveraskRate: 0.01,
+        internalLabelLeakRate: 0,
+        parrotEchoRate: 0,
+        commandBoundaryCollisionRate: 0,
+        domainIntentConciergeRate: 0.92,
+        officialOnlySatisfiedRate: 0.94,
+        followupResolutionRate: 0.89,
+        contextualResumeHandledRate: 0.88,
+        avgUnsupportedClaimCount: 0.01
+      }
+    }
+  }, null, 2)}\n`);
+
+  const strict = runNode([
+    'tools/llm_quality/enforce_release_policy.js',
+    '--baseline', 'tmp/phase756_baseline_scorecard_city_runtime.json',
+    '--candidate', 'tmp/phase756_candidate_scorecard_city_runtime.json',
+    '--mustPass', 'tmp/phase756_must_pass_city_runtime.json',
+    '--summary', 'tmp/phase756_city_runtime_summary.json',
+    '--requireAllSlicesPass', 'true',
+    '--requireStrictRuntimeSignals', 'true',
+    '--output', 'tmp/phase756_release_policy_city_runtime.json'
+  ]);
+  assert.notEqual(strict.status, 0);
+  const result = JSON.parse(fs.readFileSync(path.join(ROOT, 'tmp', 'phase756_release_policy_city_runtime.json'), 'utf8'));
+  assert.equal(result.ok, false);
+  assert.equal(result.failures.includes('concierge_runtime_signal_too_low:citySpecificityResolvedRate'), true);
+  assert.equal(result.failures.includes('concierge_runtime_signal_too_high:cityOverclaimRate'), true);
+  assert.equal(result.failures.includes('concierge_runtime_signal_too_low:transformSourceCarryRate'), true);
+  assert.equal(result.failures.includes('concierge_runtime_signal_too_high:depthResetRate'), true);
 });
 
 test('phase756: strict release policy enforces compat governance threshold', () => {

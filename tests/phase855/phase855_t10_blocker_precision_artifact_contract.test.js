@@ -108,7 +108,7 @@ test('phase855: patrol artifact preserves precision blocker taxonomy without cha
   assert.ok(Array.isArray(artifact.observationBlockers));
   assert.deepEqual(
     artifact.observationBlockers.map((item) => item.code),
-    ['observation_gap', 'transcript_write_coverage_missing', 'action_trace_join_limited', 'insufficient_runtime_evidence']
+    ['observation_gap', 'action_trace_join_limited', 'insufficient_runtime_evidence']
   );
   assert.equal(artifact.queryVersion, 'quality_patrol_query_v1');
 

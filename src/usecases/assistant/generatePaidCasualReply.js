@@ -182,6 +182,44 @@ function buildGeneralCasualReply(question, atoms, contextHint, followupIntent, r
   ].join('\n');
 }
 
+function buildContractDrivenCasualReply(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const requestContract = payload.requestContract && typeof payload.requestContract === 'object'
+    ? payload.requestContract
+    : {};
+  const requestShape = normalizeText(requestContract.requestShape).toLowerCase();
+  const outputForm = normalizeText(requestContract.outputForm).toLowerCase() || 'default';
+  const contextKey = normalizeContextHintKey(payload.contextHint);
+  if (!['rewrite', 'summarize', 'message_template', 'compare', 'criteria', 'correction', 'followup_continue'].includes(requestShape)) {
+    return '';
+  }
+  const lines = [];
+  if (requestShape === 'compare') {
+    lines.push('短く言うと、無料はFAQ検索中心で、有料は状況整理や次の一手の提案まで対応します。');
+  } else if (requestShape === 'message_template') {
+    lines.push('今進める順番を整理したいので、最初に何を優先すべきか教えてもらえると助かります。');
+  } else if (requestShape === 'rewrite') {
+    lines.push(outputForm === 'non_dogmatic'
+      ? 'もしよければ、まずは優先するものを1つだけ決める形で進めると無理が少ないです。'
+      : 'まずは優先するものを1つだけ決めると、進め方がかなり楽になります。');
+    if (outputForm === 'two_sentences') {
+      lines.push('そのあとで、必要書類か予約要否のどちらを見るか選べば十分です。');
+    }
+  } else if (requestShape === 'criteria') {
+    lines.push('制度・期限・必要書類・費用が変わりうる話なら、公式情報を確認する場面です。');
+  } else if (requestShape === 'correction') {
+    const label = CONTEXT_LABEL_MAP[contextKey] || 'その条件';
+    lines.push(`${label}を優先する前提で考え直します。`);
+  } else if (requestShape === 'summarize') {
+    lines.push('今日は最優先の1件の期限だけ確認して、必要書類か予約要否のどちらを見るか決めましょう。');
+  } else {
+    lines.push('その続きなら、次の一手を1つだけ決めると進めやすいです。');
+  }
+  if (!lines.length) return '';
+  if (outputForm === 'two_sentences') return trimForPaidLineMessage(lines.slice(0, 2).join('\n'));
+  return trimForPaidLineMessage(lines[0]);
+}
+
 function generatePaidCasualReply(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const messageText = normalizeText(payload.messageText);
@@ -193,6 +231,9 @@ function generatePaidCasualReply(params) {
   const suggestedAtoms = payload.suggestedAtoms && typeof payload.suggestedAtoms === 'object'
     ? payload.suggestedAtoms
     : { nextActions: [], pitfall: null, question: null };
+  const requestContract = payload.requestContract && typeof payload.requestContract === 'object'
+    ? payload.requestContract
+    : {};
   const posture = detectMessagePosture({ messageText });
 
   if (posture.isGreeting) {
@@ -207,6 +248,19 @@ function generatePaidCasualReply(params) {
       ok: true,
       mode: 'casual',
       replyText: trimForPaidLineMessage(buildSmalltalkReply())
+    };
+  }
+
+  const contractReply = buildContractDrivenCasualReply({
+    requestContract,
+    contextHint,
+    followupIntent
+  });
+  if (contractReply) {
+    return {
+      ok: true,
+      mode: 'casual',
+      replyText: contractReply
     };
   }
 

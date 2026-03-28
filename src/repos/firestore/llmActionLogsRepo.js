@@ -204,6 +204,15 @@ function normalizeRewardSignals(value) {
   };
 }
 
+function isSyntheticPatrolReplayRow(row) {
+  const traceId = normalizeString(row && row.traceId, '');
+  const requestId = normalizeString(row && row.requestId, '');
+  return traceId.startsWith('quality_patrol_cycle_')
+    || traceId.startsWith('quality_patrol_replay_')
+    || requestId.startsWith('quality_patrol_cycle_')
+    || requestId.startsWith('quality_patrol_replay_');
+}
+
 function normalizeConversationMode(value) {
   const normalized = normalizeString(value, '').toLowerCase();
   if (!normalized) return null;
@@ -619,6 +628,8 @@ async function appendLlmActionLog(params) {
     readinessReasonCodes: normalizeStringList(payload.readinessReasonCodes, 12),
     readinessSafeResponseMode: normalizeReadinessSafeResponseMode(payload.readinessSafeResponseMode),
     answerReadinessVersion: normalizeString(payload.answerReadinessVersion, null),
+    responseQualityContextVersion: normalizeString(payload.responseQualityContextVersion, null),
+    responseQualityVerdictVersion: normalizeString(payload.responseQualityVerdictVersion, null),
     answerReadinessLogOnlyV2: payload.answerReadinessLogOnlyV2 === true,
     answerReadinessEnforcedV2: payload.answerReadinessEnforcedV2 === true,
     answerReadinessV2Mode: normalizeString(payload.answerReadinessV2Mode, null),
@@ -757,6 +768,24 @@ async function appendLlmActionLog(params) {
     misunderstandingRecovered: payload.misunderstandingRecovered === true,
     contextCarryScore: Math.max(0, Math.min(1, normalizeNumber(payload.contextCarryScore, 0))),
     repeatRiskScore: Math.max(0, Math.min(1, normalizeNumber(payload.repeatRiskScore, 0))),
+    requestShape: normalizeString(payload.requestShape, null),
+    depthIntent: normalizeString(payload.depthIntent, null),
+    transformSource: normalizeString(payload.transformSource, null),
+    outputForm: normalizeString(payload.outputForm, null),
+    knowledgeScope: normalizeString(payload.knowledgeScope, null),
+    locationHintKind: normalizeString(payload.locationHintKind, null),
+    locationHintCityKey: normalizeString(payload.locationHintCityKey, null),
+    locationHintState: normalizeString(payload.locationHintState, null),
+    locationHintRegionKey: normalizeString(payload.locationHintRegionKey, null),
+    detailObligations: normalizeReasonList(payload.detailObligations, 12),
+    answerability: normalizeString(payload.answerability, null),
+    echoOfPriorAssistant: typeof payload.echoOfPriorAssistant === 'boolean' ? payload.echoOfPriorAssistant : null,
+    requestedCityKey: normalizeString(payload.requestedCityKey, null),
+    matchedCityKey: normalizeString(payload.matchedCityKey, null),
+    citySpecificitySatisfied: typeof payload.citySpecificitySatisfied === 'boolean' ? payload.citySpecificitySatisfied : null,
+    citySpecificityReason: normalizeString(payload.citySpecificityReason, null),
+    scopeDisclosureRequired: typeof payload.scopeDisclosureRequired === 'boolean' ? payload.scopeDisclosureRequired : null,
+    violationCodes: normalizeReasonList(payload.violationCodes, 16),
     sliceKey: normalizeQualitySliceKey(payload.sliceKey),
     judgeConfidence: Math.max(0, Math.min(1, normalizeNumber(payload.judgeConfidence, 0))),
     judgeDisagreement: Math.max(0, Math.min(1, normalizeNumber(payload.judgeDisagreement, 0))),
@@ -860,12 +889,16 @@ async function listLlmActionLogsByLineUserId(params) {
   const lineUserId = normalizeString(payload.lineUserId, '');
   if (!lineUserId) return [];
   const limit = Number.isFinite(Number(payload.limit)) ? Math.max(1, Math.min(300, Math.floor(Number(payload.limit)))) : 100;
+  const excludeSyntheticPatrolReplay = payload.excludeSyntheticPatrolReplay === true;
+  const queryLimit = excludeSyntheticPatrolReplay
+    ? Math.max(limit, Math.min(300, limit * 10))
+    : limit;
   const fromAt = toDate(payload.fromAt);
   const toAt = toDate(payload.toAt);
   const db = getDb();
-  const snap = await db.collection(COLLECTION).where('lineUserId', '==', lineUserId).limit(limit).get();
-  return snap.docs
+  const toRows = (snap) => (snap && Array.isArray(snap.docs) ? snap.docs : [])
     .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .filter((row) => !excludeSyntheticPatrolReplay || !isSyntheticPatrolReplayRow(row))
     .filter((row) => {
       const at = toDate(row && row.createdAt);
       if (!at) return false;
@@ -876,8 +909,23 @@ async function listLlmActionLogsByLineUserId(params) {
     .sort((a, b) => {
       const left = toDate(a && a.createdAt);
       const right = toDate(b && b.createdAt);
-      return (left ? left.getTime() : 0) - (right ? right.getTime() : 0);
-    });
+      return (right ? right.getTime() : 0) - (left ? left.getTime() : 0);
+    })
+    .slice(0, limit);
+
+  try {
+    const orderedSnap = await db.collection(COLLECTION)
+      .where('lineUserId', '==', lineUserId)
+      .orderBy('createdAt', 'desc')
+      .limit(queryLimit)
+      .get();
+    return toRows(orderedSnap);
+  } catch (_err) {
+    const fallbackSnap = await db.collection(COLLECTION)
+      .where('lineUserId', '==', lineUserId)
+      .get();
+    return toRows(fallbackSnap);
+  }
 }
 
 async function listLlmActionLogsByTraceId(params) {
@@ -897,6 +945,22 @@ async function listLlmActionLogsByTraceId(params) {
     .slice(0, limit);
 }
 
+async function getLlmActionLogByRequestId(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const requestId = normalizeString(payload.requestId, '');
+  if (!requestId) return null;
+  const limit = Number.isFinite(Number(payload.limit)) ? Math.max(1, Math.min(20, Math.floor(Number(payload.limit)))) : 5;
+  const db = getDb();
+  const snap = await db.collection(COLLECTION).where('requestId', '==', requestId).limit(limit).get();
+  return snap.docs
+    .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .sort((a, b) => {
+      const left = toDate(a && (a.createdAt || a.updatedAt));
+      const right = toDate(b && (b.createdAt || b.updatedAt));
+      return (right ? right.getTime() : 0) - (left ? left.getTime() : 0);
+    })[0] || null;
+}
+
 async function patchLlmActionLog(id, patch) {
   const docId = normalizeString(id, '');
   if (!docId) throw new Error('id required');
@@ -914,7 +978,9 @@ module.exports = {
   listPendingLlmActionLogs,
   listLlmActionLogsByLineUserId,
   listLlmActionLogsByTraceId,
+  getLlmActionLogByRequestId,
   patchLlmActionLog,
   toDate,
-  normalizeRewardSignals
+  normalizeRewardSignals,
+  isSyntheticPatrolReplayRow
 };

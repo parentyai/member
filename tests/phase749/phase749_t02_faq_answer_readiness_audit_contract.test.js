@@ -51,6 +51,8 @@ test('phase749: FAQ blocked audit includes enforced answer readiness fields', as
   assert.equal(typeof summary.readinessDecision, 'string');
   assert.ok(Array.isArray(summary.readinessReasonCodes));
   assert.equal(typeof summary.readinessSafeResponseMode, 'string');
+  assert.equal(summary.responseQualityContextVersion, 'response_quality_context_v1');
+  assert.equal(summary.responseQualityVerdictVersion, 'response_quality_verdict_v1');
   assert.ok(Number.isFinite(Number(summary.unsupportedClaimCount)));
   assert.equal(typeof summary.contradictionDetected, 'boolean');
 });

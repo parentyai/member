@@ -2,6 +2,7 @@
 
 const {
   ROOT_CAUSE_TYPE,
+  CONCIERGE_ISSUE_CODES,
   TRANSCRIPT_AVAILABILITY_METRICS,
   CONTEXT_BLOCKER_CODES,
   UNAVAILABLE_BLOCKER_CODES,
@@ -27,12 +28,19 @@ function detectObservationCauses(context) {
   const codes = blockerCodes(blockers);
   const metricKey = issue.metricKey;
   const metricStatus = issue.metricStatus || scopedMetric.status || 'unavailable';
-  const observationLike = issue.issueType === 'observation_blocker'
+  const conciergeIssueCode = typeof issue.category === 'string' && CONCIERGE_ISSUE_CODES.includes(issue.category)
+    ? issue.category
+    : '';
+  const conciergeIssueBlocksObservation = conciergeIssueCode && conciergeIssueCode !== 'trace_join_incomplete';
+  const observationLike = !conciergeIssueBlocksObservation && (
+    issue.issueType === 'observation_blocker'
     || metricStatus === 'blocked'
     || metricStatus === 'unavailable'
     || blockers.length > 0
     || OBSERVATION_BLOCKER_METRICS.includes(metricKey)
-    || TRANSCRIPT_AVAILABILITY_METRICS.includes(metricKey);
+    || TRANSCRIPT_AVAILABILITY_METRICS.includes(metricKey)
+    || conciergeIssueCode === 'trace_join_incomplete'
+  );
 
   if (!observationLike) return [];
 

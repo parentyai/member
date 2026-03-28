@@ -1,8 +1,8 @@
 {
-  "version": "bench-v1.0.0",
+  "version": "bench-v1.0.1",
   "frozen": true,
   "reviewerApprovalRequired": true,
-  "artifactHash": "sha256:benchv100",
+  "artifactHash": "sha256:benchv101-city-strict-r830",
   "fixtures": [
     {
       "id": "runtime_summary_snapshot",

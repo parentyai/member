@@ -33,6 +33,8 @@ const TOP_LEVEL_KEYS = new Set([
   'readinessDecision',
   'readinessReasonCodes',
   'answerReadinessVersion',
+  'responseQualityContextVersion',
+  'responseQualityVerdictVersion',
   'answerReadinessLogOnlyV2',
   'answerReadinessEnforcedV2',
   'answerReadinessV2Mode',

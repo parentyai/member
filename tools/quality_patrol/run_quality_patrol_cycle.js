@@ -20,6 +20,10 @@ const DEFAULT_PATHS = {
   verify: path.join(TMP_DIR, 'quality_patrol_cycle_verify.json')
 };
 
+function writeJson(pathname, payload) {
+  fs.writeFileSync(pathname, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
 function normalizeString(value, fallback) {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
@@ -75,10 +79,96 @@ function formatDecisionSummary(summary) {
   ].join('\n');
 }
 
+function synchronizeBacklogSeparation(artifact, verifyArtifact, audience) {
+  const base = artifact && typeof artifact === 'object' ? artifact : {};
+  const verify = verifyArtifact && typeof verifyArtifact === 'object' ? verifyArtifact : {};
+  if (!verify.currentRuntime && !verify.historicalDebt && !verify.backlogSeparationGate) return base;
+  return {
+    contractVersion: base.backlogSeparation && base.backlogSeparation.contractVersion
+      ? base.backlogSeparation.contractVersion
+      : 'quality_patrol_backlog_separation_v1',
+    audience: audience || (base.backlogSeparation && base.backlogSeparation.audience) || 'operator',
+    currentRuntime: verify.currentRuntime || (base.backlogSeparation && base.backlogSeparation.currentRuntime) || {},
+    historicalDebt: verify.historicalDebt || (base.backlogSeparation && base.backlogSeparation.historicalDebt) || {},
+    backlogSeparationGate: verify.backlogSeparationGate || (base.backlogSeparation && base.backlogSeparation.backlogSeparationGate) || {}
+  };
+}
+
+function shouldClearActiveCycleSurface(verifyArtifact) {
+  const verify = verifyArtifact && typeof verifyArtifact === 'object' ? verifyArtifact : {};
+  const gate = verify.backlogSeparationGate && typeof verify.backlogSeparationGate === 'object'
+    ? verify.backlogSeparationGate
+    : {};
+  const currentRuntime = verify.currentRuntime && typeof verify.currentRuntime === 'object'
+    ? verify.currentRuntime
+    : {};
+  const historicalDebt = verify.historicalDebt && typeof verify.historicalDebt === 'object'
+    ? verify.historicalDebt
+    : {};
+  return gate.decision === 'GO'
+    && currentRuntime.status === 'healthy'
+    && Number(historicalDebt.totalDebtCount || 0) <= 0;
+}
+
+function defaultSyncedFinding(audience, issueCount) {
+  if (audience === 'human') {
+    return issueCount > 0
+      ? `現在の runtime は健全で、残っているのは監視中の履歴課題 ${issueCount} 件です。`
+      : '現在の runtime は健全で、追加の改善提案はありません。';
+  }
+  return issueCount > 0
+    ? `verified-current: proposals=0 issues=${issueCount}`
+    : 'verified-current: no active blockers and no active proposals';
+}
+
+function filterBlockedFindings(findings) {
+  return (Array.isArray(findings) ? findings : []).filter((line) => {
+    const text = typeof line === 'string' ? line : '';
+    return !/blocker-first|Observation blockers are elevated|still preventing confident conclusions|観測不足が残っているため|証跡不足が重なっている|改善提案より先に証跡の回収を優先/.test(text);
+  });
+}
+
+function synchronizeArtifactWithVerify(artifact, verifyArtifact, audience) {
+  const base = artifact && typeof artifact === 'object' ? artifact : {};
+  const synced = Object.assign({}, base, {
+    backlogSeparation: synchronizeBacklogSeparation(base, verifyArtifact, audience),
+    verificationSummary: buildDecisionSummary(verifyArtifact)
+  });
+  if (!shouldClearActiveCycleSurface(verifyArtifact)) return synced;
+  const issueCount = Array.isArray(synced.issues) ? synced.issues.length : 0;
+  const topFindings = filterBlockedFindings(synced.summary && synced.summary.topFindings);
+  return Object.assign({}, synced, {
+    planningStatus: 'planned',
+    observationBlockers: [],
+    recommendedPr: [],
+    summary: Object.assign({}, synced.summary, {
+      overallStatus: issueCount > 0 ? 'warning' : 'ok',
+      topFindings: topFindings.length > 0 ? topFindings : [defaultSyncedFinding(audience, issueCount)],
+      topPriorityCount: 0,
+      observationBlockerCount: 0
+    })
+  });
+}
+
+function persistSyncedArtifact(pathname, artifact) {
+  if (!pathname) return;
+  writeJson(pathname, artifact);
+}
+
 function appendGitHubStepSummary(text) {
   const summaryPath = normalizeString(process.env.GITHUB_STEP_SUMMARY, null);
   if (!summaryPath) return;
   fs.appendFileSync(summaryPath, `${text}\n`);
+}
+
+function buildReplayWindowArgs(replayResult) {
+  const recentWindow = replayResult && replayResult.recentWindow && typeof replayResult.recentWindow === 'object'
+    ? replayResult.recentWindow
+    : {};
+  const fromAt = normalizeString(recentWindow.fromAt, null);
+  const toAt = normalizeString(recentWindow.toAt, null);
+  if (!fromAt || !toAt) return [];
+  return ['--fromAt', fromAt, '--toAt', toAt];
 }
 
 async function runQualityPatrolCycle(input, deps) {
@@ -99,10 +189,12 @@ async function runQualityPatrolCycle(input, deps) {
     prefix: options.prefix,
     output: options.paths.replay
   });
+  const replayWindowArgs = buildReplayWindowArgs(replayResult);
 
   const metricsResult = await resolvedDeps.runMetrics([
     'node',
     'tools/run_quality_patrol_metrics.js',
+    ...replayWindowArgs,
     '--output',
     options.paths.metrics
   ]);
@@ -112,6 +204,7 @@ async function runQualityPatrolCycle(input, deps) {
     'tools/run_quality_patrol.js',
     '--mode',
     'latest',
+    ...replayWindowArgs,
     '--output',
     options.paths.latest
   ]);
@@ -121,6 +214,7 @@ async function runQualityPatrolCycle(input, deps) {
     'tools/run_quality_patrol.js',
     '--mode',
     'newly-detected-improvements',
+    ...replayWindowArgs,
     '--output',
     options.paths.operator
   ]);
@@ -132,6 +226,7 @@ async function runQualityPatrolCycle(input, deps) {
     'newly-detected-improvements',
     '--audience',
     'human',
+    ...replayWindowArgs,
     '--output',
     options.paths.human
   ]);
@@ -154,6 +249,12 @@ async function runQualityPatrolCycle(input, deps) {
   ]);
 
   const summary = buildDecisionSummary(verifyResult.artifact);
+  latestResult.artifact = synchronizeArtifactWithVerify(latestResult.artifact, verifyResult.artifact, 'operator');
+  operatorResult.artifact = synchronizeArtifactWithVerify(operatorResult.artifact, verifyResult.artifact, 'operator');
+  humanResult.artifact = synchronizeArtifactWithVerify(humanResult.artifact, verifyResult.artifact, 'human');
+  persistSyncedArtifact(options.paths.latest, latestResult.artifact);
+  persistSyncedArtifact(options.paths.operator, operatorResult.artifact);
+  persistSyncedArtifact(options.paths.human, humanResult.artifact);
   const summaryText = formatDecisionSummary(summary);
   appendGitHubStepSummary(summaryText);
 
@@ -208,5 +309,7 @@ module.exports = {
   resolveGitMergeFacts,
   buildDecisionSummary,
   formatDecisionSummary,
+  buildReplayWindowArgs,
+  synchronizeArtifactWithVerify,
   runQualityPatrolCycle
 };

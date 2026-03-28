@@ -9,7 +9,15 @@ function buildHumanReadableFindings(params) {
   const blockers = Array.isArray(payload.observationBlockers) ? payload.observationBlockers : [];
   const issues = Array.isArray(payload.issues) ? payload.issues : [];
   const recommendedPr = Array.isArray(payload.recommendedPr) ? payload.recommendedPr : [];
+  const planningStatus = typeof payload.planningStatus === 'string' ? payload.planningStatus : 'unavailable';
   const mode = typeof payload.mode === 'string' ? payload.mode : 'latest';
+  const hasActiveSurface = blockers.length > 0 || issues.length > 0 || recommendedPr.length > 0;
+
+  if (planningStatus === 'insufficient_evidence' && hasActiveSurface === false) {
+    findings.push(audience === 'human'
+      ? '直近の自然な会話証跡がまだ足りないため、改善提案は保留です。'
+      : 'organic current runtime evidence is unavailable; waiting for fresh reviewable traffic before proposing changes.');
+  }
 
   if (blockers.length > 0) {
     findings.push(audience === 'human'

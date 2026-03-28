@@ -67,3 +67,34 @@ test('phase720: paid webhook path keeps free retrieval out of blocked fallback b
   assert.ok(source.includes('guardPaidMainReplyText('));
   assert.equal(source.includes('shouldFallbackToFree'), false);
 });
+
+test('phase720: paid reply guard suppresses repeated followup question when repetition prevention is active', () => {
+  const result = sanitizePaidMainReply([
+    '了解です。状況を短く整理しながら進めます。',
+    '優先したい手続きがあれば1つだけ教えてください。'
+  ].join('\n'), {
+    conciseMode: true,
+    repetitionPrevented: true,
+    recentAssistantCommitments: ['優先したい手続きがあれば1つだけ教えてください。'],
+    defaultQuestion: '対象を絞って案内したいので、いま一番気になっている手続きを1つ教えてください。'
+  });
+
+  assert.equal(result.text.includes('優先したい手続きがあれば1つだけ教えてください。'), false);
+  assert.equal(result.text.includes('対象を絞って案内したいので'), true);
+  assert.equal(result.followupQuestionIncluded, true);
+});
+
+test('phase720: paid reply guard normalizes mixed punctuation drift', () => {
+  const result = sanitizePaidMainReply([
+    '学校手続きですね。',
+    '次は学区と対象校の条件を確認する。',
+    '学年と希望エリアが分かれば、次の一手を具体化できます。？'
+  ].join('\n'), {
+    conciseMode: false,
+    defaultQuestion: ''
+  });
+
+  assert.equal(result.text.includes('。？'), false);
+  assert.equal(result.text.includes('？。'), false);
+  assert.match(result.text, /次の一手を具体化できます？/);
+});

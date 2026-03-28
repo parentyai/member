@@ -61,3 +61,15 @@ test('phase855: patrol job cli parses mode, audience, outputs, and writes main a
 
   cleanupPaths(outputPath, metricsPath, detectionPath, planningPath);
 });
+
+test('phase855: patrol job cli defaults traceLimit to the current review limit', () => {
+  const args = parsePatrolArgs([
+    'node',
+    'tools/run_quality_patrol.js',
+    '--limit',
+    '120'
+  ]);
+
+  assert.equal(args.limit, 120);
+  assert.equal(args.traceLimit, 120);
+});

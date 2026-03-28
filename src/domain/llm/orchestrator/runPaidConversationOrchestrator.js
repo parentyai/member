@@ -26,6 +26,7 @@ const { runAnswerReadinessGateV2 } = require('../quality/runAnswerReadinessGateV
 const { resolveJourneyActionSignals } = require('../quality/resolveJourneyActionSignals');
 const { resolveRuntimeCityPackSignals } = require('../quality/resolveRuntimeCityPackSignals');
 const { resolveRuntimeEmergencySignals } = require('../quality/resolveRuntimeEmergencySignals');
+const { createResponseQualityContext } = require('../quality/responseQualityFoundation');
 const { enforceActionGateway } = require('../../../v1/action_gateway/actionGateway');
 const { resolveActionClass } = require('../../../v1/policy_graph/resolveActionClass');
 
@@ -141,6 +142,111 @@ function applyCoreFactsGateToReadiness(readiness, gate) {
     decision: 'clarify',
     safeResponseMode: 'clarify',
     reasonCodes
+  });
+}
+
+function shouldPreserveDirectAnswerFlow(packet, strategyPlan, selected) {
+  const payload = packet && typeof packet === 'object' ? packet : {};
+  const plan = strategyPlan && typeof strategyPlan === 'object' ? strategyPlan : {};
+  const candidate = selected && typeof selected === 'object' ? selected : {};
+  const domainIntent = normalizeText(payload.normalizedConversationIntent).toLowerCase();
+  const requestShape = normalizeText(payload.requestShape).toLowerCase();
+  const knowledgeScope = normalizeText(payload.knowledgeScope).toLowerCase() || 'none';
+  const genericFallbackSlice = normalizeText(payload.genericFallbackSlice).toLowerCase();
+  const strategy = normalizeText(plan.strategy).toLowerCase();
+  const fallbackType = normalizeText(plan.fallbackType).toLowerCase();
+  const selectedKind = normalizeText(candidate.kind).toLowerCase();
+  const requestShapeDirectAnswer = ['compare', 'correction', 'rewrite', 'summarize', 'message_template', 'criteria', 'followup_continue'].includes(requestShape)
+    && (selectedKind === 'domain_concierge_candidate' || selectedKind === 'continuation_candidate' || selectedKind === 'structured_answer_candidate');
+  const generalDirectAnswer = domainIntent === 'general'
+    && (strategy === 'domain_concierge' || strategy === 'concierge')
+    && (
+      normalizeText(payload.followupIntent).toLowerCase() === 'next_step'
+      || fallbackType === 'general_followup_direct_answer'
+      || fallbackType === 'service_plan_direct_answer'
+    )
+    && (selectedKind === 'continuation_candidate' || selectedKind === 'domain_concierge_candidate');
+  const utilityTransformDirectAnswer = fallbackType === 'utility_transform_direct_answer'
+    && strategy === 'domain_concierge'
+    && (selectedKind === 'domain_concierge_candidate' || selectedKind === 'continuation_candidate');
+  const mixedDomainDirectAnswer = fallbackType === 'mixed_domain_direct_answer'
+    && strategy === 'domain_concierge'
+    && (selectedKind === 'domain_concierge_candidate' || selectedKind === 'continuation_candidate');
+  const broadKickoffDirectAnswer = domainIntent === 'general'
+    && requestShape === 'answer'
+    && knowledgeScope === 'general'
+    && genericFallbackSlice === 'broad'
+    && strategy === 'grounded_answer'
+    && [
+      'domain_concierge_candidate',
+      'grounded_candidate',
+      'structured_answer_candidate',
+      'knowledge_backed_candidate',
+      'saved_faq_candidate',
+      'housing_knowledge_candidate'
+    ].includes(selectedKind);
+  return requestShapeDirectAnswer === true
+    || generalDirectAnswer === true
+    || utilityTransformDirectAnswer === true
+    || mixedDomainDirectAnswer === true
+    || broadKickoffDirectAnswer === true;
+}
+
+function resolveMixedDomainCanonicalReply(replyText, packet, strategyPlan) {
+  const original = normalizeText(replyText);
+  if (!original) return original;
+  const payload = packet && typeof packet === 'object' ? packet : {};
+  const plan = strategyPlan && typeof strategyPlan === 'object' ? strategyPlan : {};
+  const fallbackType = normalizeText(plan.fallbackType).toLowerCase();
+  const messageText = normalizeText(payload.messageText);
+  if (fallbackType !== 'mixed_domain_direct_answer' || !messageText) return original;
+  const hasHousingSignal = /(引っ越し|引越し|住まい|住居|部屋|賃貸|housing|move|moving)/i.test(messageText);
+  const hasSchoolSignal = /(学校|学区|入学|転校|school|district)/i.test(messageText);
+  const hasOrderingCue = /(何から|順番|確認|不安|手続き)/i.test(messageText);
+  if (!(hasHousingSignal && hasSchoolSignal && hasOrderingCue)) return original;
+  if (/(学区|学校)/.test(original) && /(住むエリア|住居|住まい)/.test(original)) return original;
+  return [
+    '順番は、住むエリアと学区の関係を先に確認することです。',
+    '次に、住所証明など共通で使う書類をまとめます。',
+    'そのうえで、住居候補と学校候補を同じエリア軸で絞り込みましょう。'
+  ].join('\n');
+}
+
+function enforceMixedDomainSelectedCandidate(selected, packet, strategyPlan) {
+  const current = selected && typeof selected === 'object' ? selected : null;
+  if (!current) return current;
+  const canonicalReply = resolveMixedDomainCanonicalReply(current.replyText, packet, strategyPlan);
+  if (!canonicalReply || canonicalReply === normalizeText(current.replyText)) return current;
+  return Object.assign({}, current, {
+    replyText: canonicalReply,
+    preserveReplyText: true,
+    atoms: Object.assign({}, current.atoms || {}, {
+      situationLine: canonicalReply.split('\n')[0] || canonicalReply,
+      nextActions: [],
+      pitfall: '',
+      followupQuestion: ''
+    })
+  });
+}
+
+function enforceMixedDomainFinalReply(replyText, packet, strategyPlan) {
+  return resolveMixedDomainCanonicalReply(replyText, packet, strategyPlan);
+}
+
+function preserveDirectAnswerReadiness(readiness, packet, strategyPlan, selected) {
+  const base = readiness && typeof readiness === 'object'
+    ? readiness
+    : {
+      decision: 'allow',
+      reasonCodes: [],
+      safeResponseMode: 'answer',
+      qualitySnapshot: {}
+    };
+  if (shouldPreserveDirectAnswerFlow(packet, strategyPlan, selected) !== true || base.decision !== 'clarify') return base;
+  return Object.assign({}, base, {
+    decision: 'allow',
+    safeResponseMode: 'answer',
+    reasonCodes: uniqueReasonCodes([].concat(base.reasonCodes || [], 'general_direct_answer_preserved'))
   });
 }
 
@@ -570,8 +676,12 @@ function buildDomainCandidate(result, packet) {
       interventionBudget: Number.isFinite(Number(result.interventionBudget)) ? Number(result.interventionBudget) : 1
     },
     followupIntent: typeof result.followupIntent === 'string' ? result.followupIntent : null,
-    directAnswerCandidate: typeof result.followupIntent === 'string' && result.followupIntent.trim().length > 0,
+    directAnswerCandidate: (
+      (typeof result.followupIntent === 'string' && result.followupIntent.trim().length > 0)
+      || result.preserveReplyText === true
+    ),
     conciseModeApplied: result.conciseModeApplied === true,
+    preserveReplyText: result.preserveReplyText === true,
     raw: result,
     atoms: result.atoms && typeof result.atoms === 'object' ? result.atoms : {}
   };
@@ -590,12 +700,17 @@ function buildContinuationCandidate(result, packet) {
 function shouldBuildContinuationCandidate(packet, strategyPlan) {
   const payload = packet && typeof packet === 'object' ? packet : {};
   const plan = strategyPlan && typeof strategyPlan === 'object' ? strategyPlan : {};
-  return (
-    payload.priorContextUsed === true
+  const continuationContext = payload.priorContextUsed === true
     || payload.followupResolvedFromHistory === true
-    || Boolean(payload.followupIntent)
+    || payload.contextResume === true;
+  return (
+    continuationContext
+    || (Boolean(payload.followupIntent) && continuationContext)
     || normalizeText(plan.fallbackType).toLowerCase() === 'followup_grounding_probe'
-  ) && normalizeText(payload.normalizedConversationIntent).toLowerCase() !== 'general';
+    || normalizeText(plan.fallbackType).toLowerCase() === 'general_followup_direct_answer'
+    || normalizeText(plan.fallbackType).toLowerCase() === 'utility_transform_direct_answer'
+    || normalizeText(plan.fallbackType).toLowerCase() === 'service_plan_direct_answer'
+  );
 }
 
 async function buildCandidateSet(packet, strategyPlan, deps, options) {
@@ -629,6 +744,7 @@ async function buildCandidateSet(packet, strategyPlan, deps, options) {
       followupIntent: packet.followupIntent,
       recentFollowupIntents: packet.recentFollowupIntents,
       recentResponseHints: packet.recentResponseHints,
+      requestContract: packet.requestContract,
       recoverySignal: packet.recoverySignal === true,
       blockedReason: groundedResult && groundedResult.blockedReason ? groundedResult.blockedReason : null
     });
@@ -641,6 +757,7 @@ async function buildCandidateSet(packet, strategyPlan, deps, options) {
       contextHint: packet.contextResumeDomain || packet.normalizedConversationIntent,
       followupIntent: packet.followupIntent,
       recentResponseHints: packet.recentResponseHints,
+      requestContract: packet.requestContract,
       suggestedAtoms: { nextActions: [], pitfall: null, question: null }
     });
     candidates.push(buildCasualCandidate(casualReply, packet));
@@ -707,6 +824,7 @@ async function buildCandidateSet(packet, strategyPlan, deps, options) {
       contextHint: packet.contextResumeDomain || packet.normalizedConversationIntent,
       followupIntent: packet.followupIntent,
       recentResponseHints: packet.recentResponseHints,
+      requestContract: packet.requestContract,
       suggestedAtoms: { nextActions: [], pitfall: null, question: null }
     });
     pushUniqueCandidate(buildCasualCandidate(casualReply, packet));
@@ -726,6 +844,7 @@ async function buildCandidateSet(packet, strategyPlan, deps, options) {
       followupIntent: packet.followupIntent,
       recentFollowupIntents: packet.recentFollowupIntents,
       recentResponseHints: packet.recentResponseHints,
+      requestContract: packet.requestContract,
       recoverySignal: packet.recoverySignal === true,
       blockedReason: groundedResult && groundedResult.blockedReason ? groundedResult.blockedReason : null
     });
@@ -814,6 +933,21 @@ function resolveLoopSafeCandidate(packet, selected, candidates) {
     repetitionPrevented: true,
     repeatRiskScore
   };
+}
+
+function buildCandidateVerificationQueue(primaryCandidate, rankedCandidates) {
+  const queue = [];
+  const pushUnique = (candidate) => {
+    if (!candidate || typeof candidate !== 'object') return;
+    const key = `${normalizeText(candidate.id)}:${normalizeText(candidate.kind)}:${normalizeText(candidate.replyText)}`;
+    if (queue.some((item) => `${normalizeText(item.id)}:${normalizeText(item.kind)}:${normalizeText(item.replyText)}` === key)) {
+      return;
+    }
+    queue.push(candidate);
+  };
+  pushUnique(primaryCandidate);
+  (Array.isArray(rankedCandidates) ? rankedCandidates : []).forEach((candidate) => pushUnique(candidate));
+  return queue;
 }
 
 async function runPaidConversationOrchestrator(params) {
@@ -937,11 +1071,33 @@ async function runPaidConversationOrchestrator(params) {
   if (knowledgeCanAnswer && (effectiveEvidenceSufficiency === 'clarify' || effectiveEvidenceSufficiency === 'answer_with_hedge')) {
     effectiveEvidenceSufficiency = selectedForReadiness.retrievalQuality === 'good' ? 'answer' : 'answer_with_hedge';
   }
-  const verified = verifyCandidate({
-    packet,
-    selected: loopResolved.selected,
-    evidenceSufficiency: effectiveEvidenceSufficiency
-  });
+  if (
+    shouldPreserveDirectAnswerFlow(packet, strategyPlan, loopResolved.selected)
+    && effectiveEvidenceSufficiency === 'clarify'
+  ) {
+    effectiveEvidenceSufficiency = 'answer';
+  }
+  const verificationQueue = buildCandidateVerificationQueue(loopResolved.selected, judged.rankedCandidates);
+  let verified = null;
+  for (const candidate of verificationQueue) {
+    const attempt = verifyCandidate({
+      packet,
+      selected: candidate,
+      evidenceSufficiency: effectiveEvidenceSufficiency,
+      knowledgeTelemetry: candidateSet.knowledgeTelemetry || null
+    });
+    if (!attempt || typeof attempt !== 'object') continue;
+    verified = attempt;
+    if (!Array.isArray(attempt.blockingViolationCodes) || attempt.blockingViolationCodes.length === 0) break;
+  }
+  if (!verified) {
+    verified = verifyCandidate({
+      packet,
+      selected: null,
+      evidenceSufficiency: effectiveEvidenceSufficiency,
+      knowledgeTelemetry: candidateSet.knowledgeTelemetry || null
+    });
+  }
   const evidenceCoverage = selectedHasKnowledgeReadiness && Number.isFinite(Number(selectedForReadiness.evidenceCoverage))
     ? Number(selectedForReadiness.evidenceCoverage)
     : (groundedResult && groundedResult.assistantQuality
@@ -982,7 +1138,7 @@ async function runPaidConversationOrchestrator(params) {
       contextSnapshot: packet.contextSnapshot
     })
   ]);
-  const readinessGate = runAnswerReadinessGateV2({
+  const responseQualityContext = createResponseQualityContext({
     entryType: 'orchestrator',
     lawfulBasis: legalSnapshot.lawfulBasis,
     consentVerified: legalSnapshot.consentVerified,
@@ -1028,9 +1184,26 @@ async function runPaidConversationOrchestrator(params) {
     cityPackRequiredSourcesSatisfied: cityPackSignals.cityPackRequiredSourcesSatisfied,
     cityPackSourceSnapshot: cityPackSignals.cityPackSourceSnapshot || null,
     cityPackPackId: cityPackSignals.cityPackPackId || null,
+    requestedCityKey: cityPackSignals.requestedCityKey
+      || (candidateSet.knowledgeTelemetry ? candidateSet.knowledgeTelemetry.requestedCityKey || null : null),
+    matchedCityKey: cityPackSignals.matchedCityKey
+      || (candidateSet.knowledgeTelemetry ? candidateSet.knowledgeTelemetry.matchedCityKey || null : null),
+    citySpecificitySatisfied: cityPackSignals.citySpecificitySatisfied === true
+      || (candidateSet.knowledgeTelemetry ? candidateSet.knowledgeTelemetry.citySpecificitySatisfied === true : false),
+    citySpecificityReason: cityPackSignals.citySpecificityReason
+      || (candidateSet.knowledgeTelemetry ? candidateSet.knowledgeTelemetry.citySpecificityReason || null : null),
+    scopeDisclosureRequired: cityPackSignals.scopeDisclosureRequired === true,
     cityPackValidation: cityPackSignals.cityPackValidation,
+    knowledgeScope: packet.knowledgeScope || 'general',
+    requestShape: packet.requestContract && packet.requestContract.requestShape,
+    outputForm: packet.requestContract && packet.requestContract.outputForm,
+    transformSource: packet.requestContract && packet.requestContract.transformSource,
     savedFaqContext: false,
     crossSystemConflictDetected: false
+  });
+  const readinessGate = runAnswerReadinessGateV2({
+    entryType: 'orchestrator',
+    responseQualityContext
   });
   const readinessResult = readinessGate.readiness;
   const actionGatewayEnabled = payload.llmFlags && payload.llmFlags.actionGatewayEnabled === true;
@@ -1042,18 +1215,37 @@ async function runPaidConversationOrchestrator(params) {
   });
   const withCoreFactsGate = applyCoreFactsGateToReadiness(readinessResult, requiredCoreFacts);
   const effectiveReadiness = applyActionGatewayToReadiness(withCoreFactsGate, actionGatewayDecision, actionGatewayEnabled);
-  const readinessClarifyText = effectiveReadiness.decision === 'clarify'
+  const preservedReadiness = preserveDirectAnswerReadiness(
+    effectiveReadiness,
+    packet,
+    strategyPlan,
+    verified.selected
+  );
+  const readinessClarifyText = preservedReadiness.decision === 'clarify'
     ? resolveReadinessClarifyText(verified.selected, requiredCoreFacts)
     : '';
+  const finalizationCandidate = enforceMixedDomainSelectedCandidate(
+    verified.selected,
+    packet,
+    strategyPlan
+  );
   const finalized = finalizeCandidate({
-    selected: verified.selected,
+    selected: finalizationCandidate,
     verificationOutcome: verified.verificationOutcome,
     contradictionFlags: verified.contradictionFlags,
-    readinessDecision: effectiveReadiness.decision,
-    readinessSafeResponseMode: effectiveReadiness.safeResponseMode,
+    violationCodes: verified.violationCodes,
+    requestContract: packet.requestContract,
+    recentAssistantCommitments: packet.recentAssistantCommitments,
+    repetitionPrevented: loopResolved.repetitionPrevented === true,
+    readinessDecision: preservedReadiness.decision,
+    readinessReasonCodes: preservedReadiness.reasonCodes,
+    readinessSafeResponseMode: preservedReadiness.safeResponseMode,
     readinessClarifyText,
-    fallbackText: '状況を整理しながら進めます。優先する手続きを1つ決めましょう。'
+    fallbackText: '状況を整理しながら進めます。優先する手続きを1つ決めましょう。',
+    responseQualityContext,
+    readinessGate
   });
+  const finalReplyText = enforceMixedDomainFinalReply(finalized.replyText, packet, strategyPlan);
   const retrievalBlockedByStrategy = retrievalDecision.retrievalBlockedByStrategy === true;
   const retrievalBlockReason = strategyPlan.retrieveNeeded === true
     ? null
@@ -1061,7 +1253,7 @@ async function runPaidConversationOrchestrator(params) {
   const knowledgeCandidateCountBySource = buildKnowledgeCandidateCountBySource(candidateSet);
   const fallbackPriorityReason = resolveFallbackPriorityReason(packet, loopResolved.selected, candidateSet.candidates);
 
-  const selected = verified.selected && typeof verified.selected === 'object' ? verified.selected : {};
+  const selected = finalizationCandidate && typeof finalizationCandidate === 'object' ? finalizationCandidate : {};
   const knowledgeUsageMeta = buildKnowledgeUsageMeta(selected);
   const assistantQuality = groundedResult && groundedResult.assistantQuality
     ? groundedResult.assistantQuality
@@ -1092,7 +1284,7 @@ async function runPaidConversationOrchestrator(params) {
     || (Boolean(followupIntent) && selectedKind !== 'clarify_candidate');
   const conciseModeApplied = selected && selected.conciseModeApplied === true
     ? true
-    : isConciseReplyText(finalized.replyText);
+    : isConciseReplyText(finalReplyText);
   const misunderstandingRecovered = packet.recoverySignal === true
     && (
       directAnswerApplied
@@ -1106,7 +1298,7 @@ async function runPaidConversationOrchestrator(params) {
     handled: true,
     packet,
     strategyPlan,
-    replyText: finalized.replyText,
+    replyText: finalReplyText,
     blockedReason,
     assistantQuality,
     conversationMode: strategyPlan.conversationMode,
@@ -1126,6 +1318,18 @@ async function runPaidConversationOrchestrator(params) {
       strategyPriorityVersion: strategyPlan.strategyPriorityVersion || 'v2',
       fallbackPriorityReason,
       directAnswerApplied,
+      requestShape: packet.requestShape || null,
+      depthIntent: packet.depthIntent || null,
+      transformSource: packet.transformSource || null,
+      outputForm: packet.outputForm || null,
+      knowledgeScope: packet.knowledgeScope || null,
+      locationHintKind: packet.locationHint && typeof packet.locationHint.kind === 'string' ? packet.locationHint.kind : null,
+      locationHintCityKey: packet.locationHint && typeof packet.locationHint.cityKey === 'string' ? packet.locationHint.cityKey : null,
+      locationHintState: packet.locationHint && typeof packet.locationHint.state === 'string' ? packet.locationHint.state : null,
+      locationHintRegionKey: packet.locationHint && typeof packet.locationHint.regionKey === 'string' ? packet.locationHint.regionKey : null,
+      detailObligations: Array.isArray(packet.detailObligations) ? packet.detailObligations.slice(0, 8) : [],
+      answerability: packet.answerability || null,
+      echoOfPriorAssistant: packet.echoOfPriorAssistant === true,
       selectedCandidateKind: finalized.finalMeta && finalized.finalMeta.candidateKind
         ? finalized.finalMeta.candidateKind
         : null,
@@ -1172,6 +1376,18 @@ async function runPaidConversationOrchestrator(params) {
       cityPackCandidateAvailable: candidateSet.knowledgeTelemetry
         ? candidateSet.knowledgeTelemetry.cityPackCandidateAvailable === true
         : false,
+      requestedCityKey: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.requestedCityKey || null
+        : (packet.locationHint && packet.locationHint.cityKey ? packet.locationHint.cityKey : null),
+      matchedCityKey: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.matchedCityKey || null
+        : null,
+      citySpecificitySatisfied: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.citySpecificitySatisfied === true
+        : false,
+      citySpecificityReason: candidateSet.knowledgeTelemetry
+        ? candidateSet.knowledgeTelemetry.citySpecificityReason || null
+        : null,
       cityPackRejectedReason: candidateSet.knowledgeTelemetry
         ? candidateSet.knowledgeTelemetry.cityPackRejectedReason || null
         : null,
@@ -1191,9 +1407,9 @@ async function runPaidConversationOrchestrator(params) {
       sourceReadinessReasons: readinessSourceReasons,
       misunderstandingRecovered,
       officialOnlySatisfied: readinessOfficialOnlySatisfied,
-      readinessDecision: effectiveReadiness.decision,
-      readinessReasonCodes: effectiveReadiness.reasonCodes,
-      readinessSafeResponseMode: effectiveReadiness.safeResponseMode,
+      readinessDecision: preservedReadiness.decision,
+      readinessReasonCodes: preservedReadiness.reasonCodes,
+      readinessSafeResponseMode: preservedReadiness.safeResponseMode,
       answerReadinessVersion: readinessGate.answerReadinessVersion,
       answerReadinessLogOnlyV2: readinessGate.answerReadinessLogOnlyV2 === true,
       answerReadinessEnforcedV2: readinessGate.answerReadinessEnforcedV2 === true,
@@ -1232,6 +1448,7 @@ async function runPaidConversationOrchestrator(params) {
       cityPackRequiredSourcesSatisfied: typeof readinessGate.telemetry.cityPackRequiredSourcesSatisfied === 'boolean'
         ? readinessGate.telemetry.cityPackRequiredSourcesSatisfied
         : null,
+      scopeDisclosureRequired: readinessGate.telemetry.scopeDisclosureRequired === true,
       cityPackSourceSnapshot: readinessGate.telemetry.cityPackSourceSnapshot || null,
       cityPackPackId: readinessGate.telemetry.cityPackPackId || null,
       cityPackValidation: readinessGate.telemetry.cityPackValidation || null,
@@ -1263,6 +1480,7 @@ async function runPaidConversationOrchestrator(params) {
       judgeScores: judged.judgeScores,
       verificationOutcome: finalized.finalMeta.verificationOutcome,
       contradictionFlags: finalized.finalMeta.contradictionFlags,
+      violationCodes: Array.isArray(finalized.finalMeta.violationCodes) ? finalized.finalMeta.violationCodes : [],
       candidateCount: Array.isArray(candidateSet.candidates) ? candidateSet.candidates.length : 0,
       committedNextActions: finalized.finalMeta.committedNextActions,
       committedFollowupQuestion: finalized.finalMeta.committedFollowupQuestion

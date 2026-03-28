@@ -2,7 +2,12 @@
 
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { parseArgs, readJson, writeJson } = require('./lib');
+const { parseArgs, readJson } = require('./lib');
+const {
+  resolveHarnessRunId,
+  resolveRunScopedArtifactGroup,
+  writeHarnessArtifact
+} = require('./harness_shared');
 
 const REGISTER_VERSION = 'v1';
 const DEFAULT_MAX_HISTORY = 30;
@@ -66,6 +71,14 @@ function isMaterialFailureEntry(entry) {
     const threshold = resolveValueThreshold(category, row.signal);
     return toNumber(row.value, 0) > threshold;
   }
+  if (category === 'concierge_runtime_failure') {
+    return Number.isFinite(toNumber(row.value, null))
+      ? (row.direction === 'max' ? toNumber(row.value, 0) > toNumber(row.threshold, 0) : toNumber(row.value, 0) < toNumber(row.threshold, 0))
+      : row.available !== false;
+  }
+  if (category === 'critical_unresolved_issue') {
+    return String(row.signal || '').trim() !== '' && toNumber(row.count, 0) > 0;
+  }
   return false;
 }
 
@@ -113,6 +126,25 @@ function normalizeEntries(report, limit) {
     available: !(row && row.available === false),
     severity: index < 3 ? 'high' : 'medium'
   }));
+  const conciergeRuntime = toRecordList('concierge_runtime_failure', payload.top_10_concierge_runtime_failures, (row, index) => ({
+    rank: index + 1,
+    signal: row && row.signal ? String(row.signal) : 'unknown',
+    metric: 'concierge_runtime',
+    value: Number(toNumber(row && row.value, 0).toFixed(4)),
+    threshold: Number.isFinite(Number(row && row.threshold)) ? Number(row.threshold) : null,
+    direction: row && row.direction ? String(row.direction) : 'min',
+    available: !(row && row.available === false),
+    severity: index < 3 ? 'high' : 'medium'
+  }));
+  const criticalUnresolvedIssues = toRecordList('critical_unresolved_issue', payload.critical_unresolved_issues, (row, index) => ({
+    rank: index + 1,
+    signal: row && row.issueCode ? String(row.issueCode) : 'unknown',
+    metric: row && row.sourceMetric ? String(row.sourceMetric) : 'critical_issue',
+    count: 1,
+    issueCode: row && row.issueCode ? String(row.issueCode) : 'unknown',
+    blocked: row && row.blocked === true,
+    severity: row && row.blocked === true ? 'high' : (index < 3 ? 'high' : 'medium')
+  }));
   const runtimeSignalGap = toRecordList('runtime_signal_gap', [{
     missingSignalCount: toNumber(signalCoverage.missingSignalCount, 0),
     missingSignals: Array.isArray(signalCoverage.missingSignals) ? signalCoverage.missingSignals : []
@@ -125,7 +157,7 @@ function normalizeEntries(report, limit) {
   }));
 
   return quality
-    .concat(loops, contextLoss, runtimeSignalGap, jpService, lineFit)
+    .concat(loops, contextLoss, runtimeSignalGap, jpService, lineFit, conciergeRuntime, criticalUnresolvedIssues)
     .filter((row) => isMaterialFailureEntry(row))
     .slice(0, max * 5);
 }
@@ -211,8 +243,13 @@ function main(argv) {
     latest,
     history
   };
-  writeJson(outPath, register);
-  process.stdout.write(`${JSON.stringify({ ok: true, outPath, latest }, null, 2)}\n`);
+  const artifact = writeHarnessArtifact({
+    outputPath: outPath,
+    value: register,
+    runId: resolveHarnessRunId({ env: process.env, sourceTag: 'failure-register' }),
+    artifactGroup: resolveRunScopedArtifactGroup('register')
+  });
+  process.stdout.write(`${JSON.stringify({ ok: true, outPath: artifact.outputPath, runScopedOutPath: artifact.runScopedPath, latest }, null, 2)}\n`);
   return 0;
 }
 

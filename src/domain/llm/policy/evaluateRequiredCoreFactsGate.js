@@ -176,6 +176,8 @@ function evaluateRequiredCoreFactsGate(params) {
   const explicitEnforce = payload.enforce === true;
   const explicitLogOnly = payload.logOnly === true;
   const snapshotPresent = Boolean(contextSnapshot && Object.keys(contextSnapshot).length > 0);
+  const generalConciergeAdvisory = domainIntent === 'general'
+    && (strategy === 'domain_concierge' || strategy === 'concierge');
 
   const factValues = resolveFactValues(contextSnapshot || {});
   const missingFacts = REQUIRED_CORE_FACTS.filter((factKey) => !hasValue(factValues[factKey]));
@@ -186,10 +188,12 @@ function evaluateRequiredCoreFactsGate(params) {
     ? Math.round((presentFacts.length / REQUIRED_CORE_FACTS.length) * 10000) / 10000
     : 1;
 
-  const intentNeedsHardFacts = intentRiskTier === 'high'
+  const intentNeedsHardFacts = generalConciergeAdvisory !== true && (
+    intentRiskTier === 'high'
     || actionClass === 'assist'
     || strategy === 'grounded_answer'
-    || followupIntent === 'appointment_needed';
+    || followupIntent === 'appointment_needed'
+  );
   const shouldEvaluate = snapshotPresent === true;
   const shouldEnforce = explicitEnforce === true || (intentNeedsHardFacts && explicitLogOnly !== true);
 
