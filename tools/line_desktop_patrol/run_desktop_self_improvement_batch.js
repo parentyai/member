@@ -14,6 +14,17 @@ const {
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_BATCH_PATH = path.join(__dirname, 'scenarios', 'strategic_self_improvement_batch_v1.json');
+const DEFAULT_POLICY_PATH = path.join(ROOT, 'tools', 'line_desktop_patrol', 'config', 'policy.local.json');
+const STOP_BATCH_ERROR_CODES = new Set([
+  'blocked_hours',
+  'desktop_target_title_guard',
+  'failure_streak_threshold_reached',
+  'kill_switch_on',
+  'policy_disabled',
+  'rate_limited',
+  'send_mode_not_allowed',
+  'target_confirmation_required',
+]);
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -56,6 +67,39 @@ function normalizeText(value) {
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+function resolvePolicyPath() {
+  const candidates = [
+    process.env.LINE_DESKTOP_PATROL_POLICY_PATH,
+    DEFAULT_POLICY_PATH,
+  ].filter((item) => typeof item === 'string' && item.trim());
+  for (const item of candidates) {
+    const resolved = path.resolve(item);
+    if (fs.existsSync(resolved)) {
+      return resolved;
+    }
+  }
+  return null;
+}
+
+function loadPolicyBudget() {
+  const policyPath = resolvePolicyPath();
+  if (!policyPath) {
+    return {
+      ok: false,
+      code: 'policy_path_missing',
+      policyPath: null,
+    };
+  }
+  const payload = readJson(policyPath);
+  return {
+    ok: true,
+    policyPath,
+    maxRunsPerHour: Number(payload.max_runs_per_hour),
+    failureStreakThreshold: Number(payload.failure_streak_threshold),
+    enabled: payload.enabled === true,
+  };
 }
 
 function loadStrategicBatch(batchPath = DEFAULT_BATCH_PATH) {
@@ -261,6 +305,171 @@ function deriveArtifactPaths(runId) {
   };
 }
 
+function listRecentTraceArtifacts(hours = 1) {
+  const runRoot = path.join(ROOT, 'artifacts', 'line_desktop_patrol', 'runs');
+  const cutoff = Date.now() - hours * 60 * 60 * 1000;
+  if (!fs.existsSync(runRoot)) return [];
+  const rows = [];
+  for (const entry of fs.readdirSync(runRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const tracePath = path.join(runRoot, entry.name, 'trace.json');
+    if (!fs.existsSync(tracePath)) continue;
+    try {
+      const trace = readJson(tracePath);
+      const finishedAt = normalizeText(trace.finished_at);
+      const finishedAtMs = finishedAt ? Date.parse(finishedAt) : NaN;
+      if (Number.isFinite(finishedAtMs) && finishedAtMs >= cutoff) {
+        rows.push(trace);
+      }
+    } catch (_error) {
+      continue;
+    }
+  }
+  rows.sort((left, right) => String(left.finished_at || left.started_at || '').localeCompare(String(right.finished_at || right.started_at || '')));
+  return rows;
+}
+
+function consecutiveFailureCount(rows) {
+  let count = 0;
+  for (let index = rows.length - 1; index >= 0; index -= 1) {
+    if (normalizeText(rows[index] && rows[index].failure_reason)) {
+      count += 1;
+      continue;
+    }
+    break;
+  }
+  return count;
+}
+
+function buildBatchPreflight(batch, sendMode) {
+  if (normalizeText(sendMode) !== 'execute') {
+    return {
+      ok: true,
+      sendMode,
+      stage: 'budget_preflight',
+      skipped: true,
+      reason: 'send_mode_not_execute',
+    };
+  }
+  const policy = loadPolicyBudget();
+  if (!policy.ok) {
+    return {
+      ok: false,
+      stage: 'budget_preflight',
+      code: policy.code,
+      error: 'local policy path could not be resolved for strategic batch preflight',
+      policyPath: policy.policyPath,
+    };
+  }
+  const recentRuns = listRecentTraceArtifacts(1);
+  const recentRunCount = recentRuns.length;
+  const remainingSlots = Math.max(policy.maxRunsPerHour - recentRunCount, 0);
+  const failureStreakCount = consecutiveFailureCount(recentRuns);
+  if (policy.enabled !== true) {
+    return {
+      ok: false,
+      stage: 'budget_preflight',
+      code: 'policy_disabled',
+      error: 'local patrol policy is disabled',
+      policyPath: policy.policyPath,
+      recentRunCount,
+      remainingSlots,
+      maxRunsPerHour: policy.maxRunsPerHour,
+      failureStreakCount,
+      failureStreakThreshold: policy.failureStreakThreshold,
+      requiredSlots: batch.fixedCaseCount,
+    };
+  }
+  if (remainingSlots < batch.fixedCaseCount) {
+    return {
+      ok: false,
+      stage: 'budget_preflight',
+      code: 'insufficient_hourly_budget',
+      error: `remaining hourly budget ${remainingSlots} is below required fixed batch size ${batch.fixedCaseCount}`,
+      policyPath: policy.policyPath,
+      recentRunCount,
+      remainingSlots,
+      maxRunsPerHour: policy.maxRunsPerHour,
+      failureStreakCount,
+      failureStreakThreshold: policy.failureStreakThreshold,
+      requiredSlots: batch.fixedCaseCount,
+    };
+  }
+  if (failureStreakCount >= policy.failureStreakThreshold) {
+    return {
+      ok: false,
+      stage: 'budget_preflight',
+      code: 'failure_streak_threshold_reached',
+      error: 'failure streak threshold reached before the fixed batch started',
+      policyPath: policy.policyPath,
+      recentRunCount,
+      remainingSlots,
+      maxRunsPerHour: policy.maxRunsPerHour,
+      failureStreakCount,
+      failureStreakThreshold: policy.failureStreakThreshold,
+      requiredSlots: batch.fixedCaseCount,
+    };
+  }
+  return {
+    ok: true,
+    stage: 'budget_preflight',
+    policyPath: policy.policyPath,
+    recentRunCount,
+    remainingSlots,
+    maxRunsPerHour: policy.maxRunsPerHour,
+    failureStreakCount,
+    failureStreakThreshold: policy.failureStreakThreshold,
+    requiredSlots: batch.fixedCaseCount,
+  };
+}
+
+function buildBlockedCaseResult(caseDefinition, blocker, index, batchSize) {
+  return {
+    caseId: caseDefinition.caseId,
+    strategicGoal: caseDefinition.strategicGoal,
+    improvementAxis: caseDefinition.improvementAxis,
+    userInput: caseDefinition.userInput,
+    loopOk: false,
+    loopVerdict: 'blocked',
+    caseVerdict: 'fail',
+    runId: null,
+    artifactPaths: { runRoot: null, tracePath: null, resultPath: null },
+    loopPayload: {
+      ok: false,
+      code: blocker.code,
+      error: blocker.error,
+      blockedAfterCaseIndex: index,
+      batchSize,
+    },
+    loopErrorCode: blocker.code,
+    loopError: blocker.error,
+    replyContract: {
+      replyText: '',
+      lineCount: 0,
+      charCount: 0,
+      containsQuestion: false,
+      mustIncludeMatched: false,
+      forbiddenHit: false,
+      maxLinesOk: false,
+      maxCharsOk: false,
+      questionPolicyOk: caseDefinition.replyContract.disallowQuestion ? true : true,
+      verdict: false,
+    },
+    planningStatus: 'unavailable',
+    analysisStatus: 'unavailable',
+    observationStatus: 'unavailable',
+    planningProposals: [],
+    evalResult: {
+      ok: false,
+      error: blocker.code,
+      mainOutputPath: null,
+      planningOutputPath: null,
+      mainArtifact: null,
+      planningArtifact: null,
+    },
+  };
+}
+
 function summarizeRound(batch, caseResults) {
   const strategicAxes = {};
   const proposals = [];
@@ -341,8 +550,29 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
       return payload;
     }
 
+    const batchPreflight = buildBatchPreflight(batch, sendMode);
+    if (!batchPreflight.ok) {
+      const payload = {
+        ok: false,
+        batchRunId,
+        batchId: batch.batchId,
+        stage: 'budget_preflight',
+        readiness,
+        readinessResult,
+        batchPreflight,
+      };
+      writeJson(path.join(batchRoot, 'summary.json'), payload);
+      return payload;
+    }
+
     const caseResults = [];
-    for (const caseDefinition of batch.cases) {
+    let stopBlocker = null;
+    for (let index = 0; index < batch.cases.length; index += 1) {
+      const caseDefinition = batch.cases[index];
+      if (stopBlocker) {
+        caseResults.push(buildBlockedCaseResult(caseDefinition, stopBlocker, index, batch.cases.length));
+        continue;
+      }
       const loop = await callTool(client, nextRequestId, {
         name: 'desktop_run_conversation_loop',
         arguments: buildCaseLoopArguments({
@@ -373,6 +603,8 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
       const loopVerdict = loopPayload.result && loopPayload.result.evaluatorScores
         ? normalizeText(loopPayload.result.evaluatorScores.verdict)
         : (loop.ok ? 'pass' : 'fail');
+      const loopErrorCode = loop.ok ? null : normalizeText(loopPayload.code || loopPayload.errorCode);
+      const loopError = loop.ok ? null : normalizeText(loopPayload.error || loopPayload.message);
       const caseVerdict = loop.ok && loopVerdict === 'pass' && replyContract.verdict === true ? 'pass' : 'fail';
       caseResults.push({
         caseId: caseDefinition.caseId,
@@ -385,6 +617,8 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
         runId,
         artifactPaths,
         loopPayload,
+        loopErrorCode,
+        loopError,
         replyContract,
         planningStatus: evalResult.mainArtifact ? normalizeText(evalResult.mainArtifact.planningStatus) : 'unavailable',
         analysisStatus: evalResult.mainArtifact ? normalizeText(evalResult.mainArtifact.analysisStatus) : 'unavailable',
@@ -392,6 +626,12 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
         planningProposals,
         evalResult,
       });
+      if (loop.ok !== true && STOP_BATCH_ERROR_CODES.has(loopErrorCode)) {
+        stopBlocker = {
+          code: loopErrorCode,
+          error: loopError || 'batch stopped after a blocking local patrol error',
+        };
+      }
     }
 
     const roundSummary = summarizeRound(batch, caseResults);
@@ -406,6 +646,7 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
       futureAutomationGoal: batch.futureAutomationGoal,
       readiness,
       readinessResult,
+      batchPreflight,
       roundSummary,
       cases: caseResults.map((result) => ({
         caseId: result.caseId,
@@ -413,6 +654,9 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
         improvementAxis: result.improvementAxis,
         caseVerdict: result.caseVerdict,
         loopVerdict: result.loopVerdict,
+        loopOk: result.loopOk,
+        loopErrorCode: result.loopErrorCode,
+        loopError: result.loopError,
         runId: result.runId,
         planningStatus: result.planningStatus,
         analysisStatus: result.analysisStatus,
@@ -456,9 +700,15 @@ if (require.main === module) {
 
 module.exports = {
   buildCaseLoopArguments,
+  buildBatchPreflight,
+  buildBlockedCaseResult,
+  consecutiveFailureCount,
   extractLatestAssistantReply,
+  listRecentTraceArtifacts,
   loadStrategicBatch,
+  loadPolicyBudget,
   parseArgs,
+  resolvePolicyPath,
   runStrategicSelfImprovementBatch,
   scoreReplyContract,
   summarizeRound,

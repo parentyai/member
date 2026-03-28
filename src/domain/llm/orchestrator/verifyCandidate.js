@@ -1,6 +1,7 @@
 'use strict';
 
 const {
+  buildStrategicHumanReplyLines,
   buildMessageTemplateFromSource,
   buildNonDogmaticRewriteFromSource,
   buildConversationalRewriteFromSource,
@@ -118,6 +119,20 @@ function buildConstrainedFallbackReply(packet) {
   const messageText = normalizeText(payload.messageText);
   const primaryDomainIntent = normalizeText(payload.primaryDomainIntent || payload.normalizedConversationIntent).toLowerCase() || 'general';
   const sourceReplyText = normalizeText(payload.sourceReplyText || (payload.requestContract && payload.requestContract.sourceReplyText));
+  const strategicReplyLines = buildStrategicHumanReplyLines({
+    messageText,
+    domainIntent: primaryDomainIntent,
+    contextResumeDomain: payload.contextResumeDomain || payload.normalizedConversationIntent,
+    requestContract: payload.requestContract
+  });
+  if (strategicReplyLines.length > 0) {
+    const shaped = (outputForm === 'two_sentences' ? strategicReplyLines.slice(0, 2) : strategicReplyLines.slice(0, 1))
+      .map(ensureSentence)
+      .filter(Boolean);
+    if (shaped.length > 0) {
+      return shaped.join('\n');
+    }
+  }
   if (depthIntent === 'deepen' && sourceReplyText) {
     const deepenLines = buildDeepenReplyFromSource(sourceReplyText, primaryDomainIntent, payload.messageText);
     if (Array.isArray(deepenLines) && deepenLines.length > 0) {

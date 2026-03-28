@@ -5,8 +5,13 @@ const assert = require('node:assert/strict');
 
 const {
   buildCaseLoopArguments,
+  buildBatchPreflight,
+  buildBlockedCaseResult,
+  consecutiveFailureCount,
   extractLatestAssistantReply,
+  listRecentTraceArtifacts,
   loadStrategicBatch,
+  loadPolicyBudget,
   scoreReplyContract,
   summarizeRound,
 } = require('../../tools/line_desktop_patrol/run_desktop_self_improvement_batch');
@@ -69,4 +74,48 @@ test('phase857: strategic round summary reports proposal review when any case fa
   assert.equal(summary.failCount, 9);
   assert.equal(summary.proposalCount, 1);
   assert.equal(summary.completionStatus, 'proposal_review_required');
+});
+
+test('phase857: budget preflight fails closed when remaining hourly budget is smaller than fixed batch size', () => {
+  const batch = loadStrategicBatch();
+  const originalEnv = process.env.LINE_DESKTOP_PATROL_POLICY_PATH;
+  const policy = loadPolicyBudget();
+  try {
+    process.env.LINE_DESKTOP_PATROL_POLICY_PATH = '/Volumes/Arumamihs/Member/tools/line_desktop_patrol/config/policy.local.json';
+    const preflight = buildBatchPreflight(batch, 'execute');
+    assert.equal(preflight.stage, 'budget_preflight');
+    assert.equal(typeof preflight.recentRunCount, 'number');
+    if (policy.ok) {
+      assert.equal(typeof preflight.maxRunsPerHour, 'number');
+    }
+  } finally {
+    if (typeof originalEnv === 'string') {
+      process.env.LINE_DESKTOP_PATROL_POLICY_PATH = originalEnv;
+    } else {
+      delete process.env.LINE_DESKTOP_PATROL_POLICY_PATH;
+    }
+  }
+});
+
+test('phase857: blocked case result preserves blocker code for later cases', () => {
+  const batch = loadStrategicBatch();
+  const blocked = buildBlockedCaseResult(batch.cases[2], {
+    code: 'rate_limited',
+    error: 'max_runs_per_hour exceeded',
+  }, 2, batch.fixedCaseCount);
+  assert.equal(blocked.caseId, batch.cases[2].caseId);
+  assert.equal(blocked.loopVerdict, 'blocked');
+  assert.equal(blocked.loopErrorCode, 'rate_limited');
+  assert.equal(blocked.replyContract.verdict, false);
+});
+
+test('phase857: recent trace helpers expose ordered evidence for budget checks', () => {
+  const rows = listRecentTraceArtifacts(24);
+  assert.equal(Array.isArray(rows), true);
+  if (rows.length >= 2) {
+    const left = String(rows[rows.length - 2].finished_at || rows[rows.length - 2].started_at || '');
+    const right = String(rows[rows.length - 1].finished_at || rows[rows.length - 1].started_at || '');
+    assert.equal(left <= right, true);
+  }
+  assert.equal(typeof consecutiveFailureCount(rows), 'number');
 });

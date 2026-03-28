@@ -1,6 +1,7 @@
 'use strict';
 
 const { detectMessagePosture } = require('./opportunity/detectMessagePosture');
+const { buildStrategicHumanReplyLines } = require('./generatePaidDomainConciergeReply');
 
 const CONTEXT_LABEL_MAP = Object.freeze({
   school: '学校手続き',
@@ -58,6 +59,13 @@ function trimForPaidLineMessage(value) {
   const text = normalizeText(value);
   if (!text) return '';
   return text.length > 420 ? `${text.slice(0, 420)}…` : text;
+}
+
+function ensureSentence(value) {
+  const text = normalizeText(value);
+  if (!text) return '';
+  if (/[。！？!?]$/.test(text)) return text;
+  return `${text}。`;
 }
 
 function buildGreetingReply() {
@@ -190,8 +198,25 @@ function buildContractDrivenCasualReply(params) {
   const requestShape = normalizeText(requestContract.requestShape).toLowerCase();
   const outputForm = normalizeText(requestContract.outputForm).toLowerCase() || 'default';
   const contextKey = normalizeContextHintKey(payload.contextHint);
+  const primaryDomainIntent = normalizeContextHintKey(
+    requestContract.primaryDomainIntent || payload.contextHint || payload.followupIntent
+  );
   if (!['rewrite', 'summarize', 'message_template', 'compare', 'criteria', 'correction', 'followup_continue'].includes(requestShape)) {
     return '';
+  }
+  const strategicReplyLines = buildStrategicHumanReplyLines({
+    messageText: payload.messageText,
+    domainIntent: primaryDomainIntent,
+    contextResumeDomain: contextKey,
+    requestContract
+  });
+  if (strategicReplyLines.length > 0) {
+    const strategicLines = (outputForm === 'two_sentences' ? strategicReplyLines.slice(0, 2) : strategicReplyLines.slice(0, 1))
+      .map((line) => ensureSentence(line))
+      .filter(Boolean);
+    if (strategicLines.length > 0) {
+      return trimForPaidLineMessage(strategicLines.join('\n'));
+    }
   }
   const lines = [];
   if (requestShape === 'compare') {
@@ -252,6 +277,7 @@ function generatePaidCasualReply(params) {
   }
 
   const contractReply = buildContractDrivenCasualReply({
+    messageText,
     requestContract,
     contextHint,
     followupIntent

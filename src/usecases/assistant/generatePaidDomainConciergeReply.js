@@ -588,11 +588,169 @@ function buildCityScopedAnswerLines(requestContract, domainIntent) {
       'その3点が見えると、次に何を優先するかかなり決めやすくなります'
     ];
   }
+  if (domainIntent === 'housing' && (kind === 'city' || kind === 'regionkey')) {
+    return [
+      '市が分かっているなら、市の住宅窓口を最初に確認すると進めやすいです',
+      'そこから必要書類や受付条件を絞りやすくなります'
+    ];
+  }
+  if (domainIntent === 'general' && (kind === 'city' || kind === 'regionkey')) {
+    return [
+      '市が分かっているなら、市の公式窓口を最初に確認すると進めやすいです',
+      'そこから必要書類と受付期限を絞りやすくなります'
+    ];
+  }
   if (domainIntent === 'school' && kind === 'state') {
     return [
       '州だけ分かっている段階なら、まず対象の市区ごとの教育窓口、必要書類、受付期限の3点を確認すると進めやすいです',
       '市区が決まると、次の一手をかなり具体化できます'
     ];
+  }
+  return [];
+}
+
+function isTwoPointInitialCheckPrompt(messageText) {
+  return /((最初に確認すること|最初の確認事項).*((2つ|二つ|2点|二点)だけ|2つだけ|二つだけ|2点だけ|二点だけ))/i.test(normalizeText(messageText));
+}
+
+function isSinglePriorityPickPrompt(messageText) {
+  return /((その2点|その二点).*(先に確認する方|先に見る方).*((1つ|一つ)だけ))/i.test(normalizeText(messageText));
+}
+
+function isSingleCityCheckpointPrompt(messageText) {
+  return /((市だとしたら|市なら|ニューヨーク市|city).*(最初の確認先|確認先を(1つ|一つ)だけ))|((最初の確認先|確認先を(1つ|一つ)だけ).*(市だとしたら|市なら|ニューヨーク市|city))/i.test(normalizeText(messageText));
+}
+
+function isOfficialSinglePointPrompt(messageText) {
+  return /((公式確認が必要になる点|公式確認が必要な点).*((1つ|一つ)だけ))/i.test(normalizeText(messageText));
+}
+
+function isDocumentPairPrompt(messageText) {
+  return /((必要書類|必要な書類).*((2つ|二つ|2点|二点)だけ|2つだけ|二つだけ|2点だけ|二点だけ))/i.test(normalizeText(messageText));
+}
+
+function isReservationPointerPrompt(messageText) {
+  return /((予約が必要かどうか).*(どこを見れば分かる|どこを見ればわかる).*(1文|一文))|((どこを見れば分かる|どこを見ればわかる).*(予約が必要かどうか).*(1文|一文))/i.test(normalizeText(messageText));
+}
+
+function isSingleTodoImperativePrompt(messageText) {
+  return /((今日やること).*((1個|一個|1つ|一つ)だけ).*(命令形))/i.test(normalizeText(messageText));
+}
+
+function isTwoLineClosePrompt(messageText) {
+  return /((最後に).*(今日やる順番).*(2行|二行)でまとめて)/i.test(normalizeText(messageText));
+}
+
+function isParentFriendlyOneLinePrompt(messageText) {
+  return /((小学生の保護者向け).*(やさしい日本語).*(1文|一文))/i.test(normalizeText(messageText));
+}
+
+function buildInitialCheckPairLine(domainIntent) {
+  if (domainIntent === 'school') return '最初に確認するのは、受付期限と必要書類の2点です';
+  if (domainIntent === 'housing') return '最初に確認するのは、契約条件と住所証明の2点です';
+  if (domainIntent === 'ssn') return '最初に確認するのは、必要書類と窓口予約の2点です';
+  if (domainIntent === 'banking') return '最初に確認するのは、必要書類と来店予約の2点です';
+  return '最初に確認するのは、期限と必要書類の2点です';
+}
+
+function buildSinglePriorityPickLine(domainIntent) {
+  if (domainIntent === 'housing') return '先に確認するのは契約条件です';
+  return '先に確認するのは期限です';
+}
+
+function buildSingleCityCheckpointLine(domainIntent) {
+  if (domainIntent === 'school') return '市が分かっているなら、市の教育窓口を最初に確認してください';
+  if (domainIntent === 'housing') return '市が分かっているなら、市の住宅窓口を最初に確認してください';
+  return '市が分かっているなら、市の公式窓口を最初に確認してください';
+}
+
+function buildOfficialSinglePointLine(domainIntent) {
+  if (domainIntent === 'housing') {
+    return 'あとで公式確認が必要なのは、契約条件が公式窓口の案内と一致しているかです';
+  }
+  return 'あとで公式確認が必要なのは、受付期限が公式窓口の案内と一致しているかです';
+}
+
+function buildDocumentPairLine(domainIntent) {
+  if (domainIntent === 'school') return '住所証明と予防接種記録です';
+  if (domainIntent === 'housing') return '住所証明と本人確認書類です';
+  if (domainIntent === 'ssn') return '本人確認書類と在留資格書類です';
+  if (domainIntent === 'banking') return '本人確認書類と住所証明です';
+  return '住所証明と身分証です';
+}
+
+function buildReservationPointerLine(domainIntent) {
+  if (domainIntent === 'school') return '予約要否は、学校か教育窓口の公式案内ページを見れば分かります';
+  if (domainIntent === 'housing') return '予約要否は、住宅窓口か物件案内ページを見れば分かります';
+  return '予約要否は、公式窓口の案内ページを見れば分かります';
+}
+
+function buildSingleTodoImperativeLine(domainIntent) {
+  if (domainIntent === 'school') return '受付期限を先に確認してください';
+  if (domainIntent === 'housing') return '契約条件を先に確認してください';
+  if (domainIntent === 'ssn') return '必要書類を先にそろえてください';
+  if (domainIntent === 'banking') return '必要書類を先に確認してください';
+  return '期限を先に確認してください';
+}
+
+function buildTwoLineCloseLines(domainIntent) {
+  if (domainIntent === 'school') {
+    return ['先に受付期限を確認する', '次に必要書類か予約要否を確認する'];
+  }
+  if (domainIntent === 'housing') {
+    return ['先に契約条件を確認する', '次に必要書類か内見予約を確認する'];
+  }
+  return ['先に期限を確認する', '次に必要書類か予約要否を確認する'];
+}
+
+function buildParentFriendlyOneLine(domainIntent) {
+  if (domainIntent === 'school') {
+    return '最初に期限を見てから、必要な書類を決めれば大丈夫です';
+  }
+  if (domainIntent === 'housing') {
+    return '最初に条件を見てから、必要な書類を決めれば進めやすいです';
+  }
+  return '最初に期限を見てから、必要な書類を決めれば進めやすいです';
+}
+
+function buildStrategicHumanReplyLines(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const messageText = normalizeText(payload.messageText);
+  const domainIntent = resolveDomainIntent(payload.domainIntent, payload.contextResumeDomain);
+  const requestContract = payload.requestContract && typeof payload.requestContract === 'object'
+    ? payload.requestContract
+    : {};
+  const locationHint = requestContract.locationHint && typeof requestContract.locationHint === 'object'
+    ? requestContract.locationHint
+    : {};
+  const locationHintKind = normalizeText(locationHint.kind).toLowerCase();
+
+  if (isSingleCityCheckpointPrompt(messageText) || ((locationHintKind === 'city' || locationHintKind === 'regionkey') && /(最初の確認先|確認先を(1つ|一つ)だけ)/i.test(messageText))) {
+    return [buildSingleCityCheckpointLine(domainIntent)];
+  }
+  if (isSinglePriorityPickPrompt(messageText)) {
+    return [buildSinglePriorityPickLine(domainIntent)];
+  }
+  if (isTwoPointInitialCheckPrompt(messageText)) {
+    return [buildInitialCheckPairLine(domainIntent)];
+  }
+  if (isOfficialSinglePointPrompt(messageText)) {
+    return [buildOfficialSinglePointLine(domainIntent)];
+  }
+  if (isParentFriendlyOneLinePrompt(messageText)) {
+    return [buildParentFriendlyOneLine(domainIntent)];
+  }
+  if (isSingleTodoImperativePrompt(messageText)) {
+    return [buildSingleTodoImperativeLine(domainIntent)];
+  }
+  if (isDocumentPairPrompt(messageText)) {
+    return [buildDocumentPairLine(domainIntent)];
+  }
+  if (isReservationPointerPrompt(messageText)) {
+    return [buildReservationPointerLine(domainIntent)];
+  }
+  if (isTwoLineClosePrompt(messageText)) {
+    return buildTwoLineCloseLines(domainIntent);
   }
   return [];
 }
@@ -616,8 +774,16 @@ function buildContractReply(params) {
   const domainSignals = Array.isArray(requestContract.domainSignals) ? requestContract.domainSignals : [];
   const sourceReplyText = normalizeText(requestContract.sourceReplyText || payload.sourceReplyText);
   const lines = [];
+  const strategicReplyLines = buildStrategicHumanReplyLines({
+    messageText,
+    domainIntent,
+    contextResumeDomain: payload.contextResumeDomain,
+    requestContract
+  });
 
-  if (followupIntent === 'docs_required' && domainIntent === 'school' && /(必要|書類|しょるい|提出物)/.test(messageText)) {
+  if (strategicReplyLines.length > 0) {
+    lines.push(...strategicReplyLines);
+  } else if (followupIntent === 'docs_required' && domainIntent === 'school' && /(必要|書類|しょるい|提出物)/.test(messageText)) {
     lines.push('学校手続きで先にそろえるのは、住所証明と予防接種記録です');
   } else if (depthIntent === 'deepen' && sourceReplyText) {
     lines.push(...buildDeepenReplyFromSource(sourceReplyText, domainIntent, messageText));
@@ -916,6 +1082,11 @@ function resolvePresetReply(params) {
   const messageText = normalizeText(payload.messageText);
   if (!messageText) return null;
   const conversationHits = detectConversationIntentHits(messageText);
+  const strategicReplyLines = buildStrategicHumanReplyLines({
+    messageText,
+    domainIntent: conversationHits.school === true ? 'school' : (conversationHits.housing === true ? 'housing' : 'general'),
+    requestContract: null
+  });
 
   if (/(無料プラン|有料プラン|プランの違い|プラン.*違い|プラン比較|subscription|plan)/i.test(messageText)) {
     return buildPresetReply({
@@ -935,7 +1106,34 @@ function resolvePresetReply(params) {
     });
   }
 
-  if (conversationHits.housing === true && conversationHits.school === true && /(何から|順番|確認|不安|手続き)/i.test(messageText)) {
+  if (strategicReplyLines.length > 0) {
+    return buildPresetReply({
+      primaryLine: strategicReplyLines[0],
+      secondaryLine: strategicReplyLines[1] || '',
+      tertiaryLine: strategicReplyLines[2] || ''
+    });
+  }
+
+  if (/((学校じゃなくて|学校ではなく|学校より).*(住まい|住居|住宅|引っ越し|家探し|部屋探し))|(住まい優先で考え直して)/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '了解です。住まい優先で見るなら、希望エリアと入居時期を先に固定しましょう',
+      secondaryLine: '次に、内見候補を3件までに絞って必要書類を確認すると進めやすいです'
+    });
+  }
+
+  if (/(((住まい|住居|住宅|引っ越し|家探し|部屋探し).*(じゃなくて|ではなく|より).*(学校|学区|入学|転校))|(学校優先で考え直して|学校優先))/i.test(messageText)) {
+    return buildPresetReply({
+      primaryLine: '了解です。学校優先で見るなら、学区と対象校の条件を先に確認しましょう',
+      secondaryLine: '次に、住所証明や予防接種記録など必要書類をまとめると進めやすいです'
+    });
+  }
+
+  if (
+    conversationHits.housing === true
+    && conversationHits.school === true
+    && /(何から|順番|確認|不安|手続き)/i.test(messageText)
+    && !/(じゃなくて|ではなく|優先で考え直して|言い直して)/i.test(messageText)
+  ) {
     return buildPresetReply({
       primaryLine: '順番は、住むエリアと学区の関係を先に確認することです',
       secondaryLine: '次に、住所証明など共通で使う書類をまとめます',
@@ -1036,20 +1234,6 @@ function resolvePresetReply(params) {
   if (/(事務的すぎない|やさしくしたいんじゃなくて.*事務的すぎない|事務的じゃない)/i.test(messageText)) {
     return buildPresetReply({
       primaryLine: 'よければ、まずは優先するものを1つだけ決めて、順番を一緒に整理していきましょう'
-    });
-  }
-
-  if (/((学校じゃなくて|学校ではなく|学校より).*(住まい|住居|住宅|引っ越し|家探し|部屋探し))|(住まい優先で考え直して)/i.test(messageText)) {
-    return buildPresetReply({
-      primaryLine: '了解です。住まい優先で見るなら、希望エリアと入居時期を先に固定しましょう',
-      secondaryLine: '次に、内見候補を3件までに絞って必要書類を確認すると進めやすいです'
-    });
-  }
-
-  if (/(((住まい|住居|住宅|引っ越し|家探し|部屋探し).*(じゃなくて|ではなく|より).*(学校|学区|入学|転校))|(学校優先で考え直して|学校優先))/i.test(messageText)) {
-    return buildPresetReply({
-      primaryLine: '了解です。学校優先で見るなら、学区と対象校の条件を先に確認しましょう',
-      secondaryLine: '次に、住所証明や予防接種記録など必要書類をまとめると進めやすいです'
     });
   }
 
@@ -1279,6 +1463,7 @@ function generatePaidDomainConciergeReply(params) {
 module.exports = {
   generatePaidDomainConciergeReply,
   FORBIDDEN_REPLY_PATTERN,
+  buildStrategicHumanReplyLines,
   buildMessageTemplateFromSource,
   buildNonDogmaticRewriteFromSource,
   buildConversationalRewriteFromSource,
