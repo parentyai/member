@@ -7,10 +7,15 @@
 - kill switch は「送信副作用の最終停止装置」
 - traceId は監査の主キー（Trace Search で追えること）
 
-## LINE Desktop Patrol scaffold
-- `tools/line_desktop_patrol/` は local-only harness で、tracked sample config では送信導線を持たない。
-- local policy の既定値は `enabled=false` / `dry_run_default=true`。
-- 将来 desktop execute path が追加されても、最終停止は既存 kill switch を優先する。
+## LINE Desktop Patrol（local MCP）
+- `tools/line_desktop_patrol/` は local-only MCP sidecar で、Codex から guarded `send_text` と `desktop_run_conversation_loop` を呼べる。
+- 実行前確認は `desktop_readiness` を使い、Accessibility / LINE起動 / target title match を先に見る。
+- 日常運用では `desktop-self-test` を優先し、readiness 成功後だけ desktop conversation loop を進める。
+- `desktop_run_conversation_loop` は signed-in LINE Desktop ユーザーとして送信し、返信観測と local proposal queue まで回す。
+- desktop UI 対象は `expected_chat_title` に `メンバー` を含む whitelist target のみ。
+- local policy の既定値は `enabled=false` / `dry_run_default=true`。sample target は `dry_run` のまま維持する。
+- execute mode は whitelist target + target confirmation + blocked hours + failure streak + existing kill switch を前提にする。
+- API-backed `send_text` は target-scoped LINE user id env を使うが、desktop UI loop では不要。
 - 運用確認は `docs/RUNBOOK_LINE_DESKTOP_PATROL.md` を参照する。
 - operator bundle の正式順序は `doctor -> open-target -> execute-once -> loop-execute -> acceptance-gate` で、`send` は debug-only に降格している。
 - `open-target` が `open_target_ready` 以外なら execute に進まず、`open_target_mismatch_stop` は preflight 診断として扱う。

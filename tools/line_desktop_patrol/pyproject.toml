@@ -4,18 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "member-line-desktop-patrol"
-version = "0.1.0"
-description = "Local-only scaffold for the Member LINE Desktop patrol sidecar"
+version = "0.3.0"
+description = "Local-only MCP patrol sidecar for LINE API and desktop UI self-evaluation loops"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = []
 
 [project.scripts]
-member-line-desktop-patrol-manifest = "member_line_patrol.mcp_server:main"
-member-line-desktop-patrol-probe = "member_line_patrol.macos_adapter:main"
-member-line-desktop-patrol-dry-run = "member_line_patrol.dry_run_harness:main"
-member-line-desktop-patrol-loop = "member_line_patrol.patrol_loop:main"
-member-line-desktop-patrol-enqueue-proposals = "member_line_patrol.enqueue_eval_proposals:main"
+member-line-desktop-patrol = "member_line_patrol.mcp_server:serve_main"
+member-line-desktop-patrol-manifest = "member_line_patrol.mcp_server:manifest_main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
