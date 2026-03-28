@@ -119,7 +119,7 @@ function detectOutputForm(messageText) {
   if (/(失礼なく|丁寧に|やわらかい敬語|失礼のない)/i.test(text)) return 'polite_template';
   if (/(断定しすぎない|断定せずに|言い切らない|やわらかく提案)/i.test(text)) return 'non_dogmatic';
   if (/(判断基準だけ|確認する項目名だけ|何を確認すべきかだけ|項目名だけ並べて)/i.test(text)) return 'criteria_only';
-  if (/(1行にして|一行にして|1行だけ|一行だけ|1文で|一文で|一文にして|一文だけ)/i.test(text)) return 'one_line';
+  if (/(1行にして|一行にして|1行だけ|一行だけ|1文で|一文で|1文にして|一文にして|1文だけ|一文だけ)/i.test(text)) return 'one_line';
   if (/(2文にして|二文にして|2文だけ|二文だけ|2行で|二行で)/i.test(text)) return 'two_sentences';
   if (/(事務的すぎない|事務的じゃない|少し硬い|人に話す感じ|やさしくしたい)/i.test(text)) return 'softer';
   return 'default';
@@ -159,6 +159,9 @@ function detectRequestShape(messageText, options) {
   const payload = options && typeof options === 'object' ? options : {};
   const text = normalizeText(messageText);
   if (!text) return 'answer';
+  if (/(小学生の保護者向け).*(やさしい日本語).*(1文|一文)/i.test(text)) {
+    return 'rewrite';
+  }
   if (/(相手に送る文面だけ|文面だけ|返信文だけ|家族に送れる|家族に送る用|一文にして|短文を1つ作って|短文だけ|文章だけ|文面を作って)/i.test(text)) {
     return 'message_template';
   }
