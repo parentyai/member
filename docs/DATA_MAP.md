@@ -226,6 +226,7 @@ Purpose: reserve the local-only contract for future macOS LINE Desktop observati
 Typical files:
 - `artifacts/line_desktop_patrol/runs/<run_id>/trace.json`
 - `artifacts/line_desktop_patrol/evals/<run_id>/desktop_patrol_eval.json`
+- `artifacts/line_desktop_patrol/runs/<run_id>/result.json`
 - `artifacts/line_desktop_patrol/runs/<run_id>/before.png`
 - `artifacts/line_desktop_patrol/runs/<run_id>/after.png`
 - `artifacts/line_desktop_patrol/runs/<run_id>/before.ax.json`
@@ -391,8 +392,8 @@ Notes:
 - PR16 adds `artifacts/line_desktop_patrol/runtime/execute.lock.json` for overlap protection in scheduled execute mode.
 - PR18 adds `artifacts/line_desktop_patrol/acceptance/latest.json` for KPI + manual soak completion gating.
 - PR18 acceptance summary keeps `attemptedSendCount` on `send_attempted=true` runs only and adds diagnostics such as `openTargetRunCount` and `openTargetMismatchCount` so open-target preflight can be observed without inflating send KPIs.
-
-Notes:
+- current patrol emits local trace/result artifacts and a latest summary file.
+- desktop UI loops may emit add-only header OCR evidence and transcript deltas inside `result.json`; screenshot files are emitted only when local policy enables `store_screenshots`.
 - PR2 adds local dry-run trace emission through `member_line_patrol.dry_run_harness`.
 - raw desktop evidence remains local-only and is not written to Firestore in PR1.
 - PR2 keeps `screenshot_*` and `ax_tree_*` null in the default dry-run harness because capture/read steps are still deferred.
