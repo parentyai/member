@@ -18,9 +18,9 @@ Local-only runbook for the LINE patrol MCP harness.
 3. `npm run line-desktop-patrol:targets`
 4. `npm run line-desktop-patrol:desktop-readiness -- --target-alias <alias>`
 5. `npm run line-desktop-patrol:desktop-self-test -- --target-alias <alias> --text '...' --send-mode dry_run`
-5. `python3 -m compileall tools/line_desktop_patrol/src`
-6. `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.mcp_server --manifest`
-7. `tools/line_desktop_patrol/run_mcp_server.sh` が起動することを確認
+6. `python3 -m compileall tools/line_desktop_patrol/src`
+7. `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.mcp_server --manifest`
+8. `tools/line_desktop_patrol/run_mcp_server.sh` が起動することを確認
 
 ## Execute path
 1. set `LINE_DESKTOP_PATROL_POLICY_PATH` to a local override with `enabled=true`
@@ -43,6 +43,18 @@ Local-only runbook for the LINE patrol MCP harness.
    - optional `expected_reply_substrings[]` / `forbidden_reply_substrings[]`
 9. for the safest operator flow, prefer `desktop-self-test`, which aborts before send when `desktop_readiness.ready` is not true
 
+## Operator safe sequence
+1. `npm run line-desktop-patrol:doctor`
+2. `npm run line-desktop-patrol:open-target`
+3. `npm run line-desktop-patrol:execute-once`
+4. `npm run line-desktop-patrol:loop-execute`
+5. `npm run line-desktop-patrol:acceptance-gate`
+
+Debug-only:
+- `line-desktop-patrol:send` is outside the formal safe sequence and should stay debug-only.
+- `open_target_mismatch_stop` means the `メンバー` target did not verify cleanly; stop before `execute-once`.
+- `generic LINE shell only` means `frontmost=true`, `window_name="LINE"`, `visible_item_count=0`, and header OCR empty-or-timeout.
+
 ## Expected outputs
 - validate command:
   - confirms schema files exist
@@ -60,6 +72,7 @@ Local-only runbook for the LINE patrol MCP harness.
   - desktop loops include add-only header OCR evidence and transcript deltas in `result.json`
   - `desktop_readiness` returns `ready`, `accessibilityTrusted`, `lineRunning`, `contextResolved`, and optional title-match evidence
   - `desktop-self-test` returns both `readiness` and `loop` payloads, so operators can confirm the gate that allowed the send
+  - admin summary surfaces add-only `desktopPatrolSummary.promotion.latestArtifactKind`, `desktopPatrolSummary.promotion.latestArtifactStatus`, `desktopPatrolSummary.promotion.latestDraftPrRef`, and `desktopPatrolSummary.promotion.updatedAt`
 
 ## Stop and rollback
 - immediate stop:

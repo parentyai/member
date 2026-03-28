@@ -15,4 +15,8 @@ if [[ -z "${LINE_DESKTOP_PATROL_POLICY_PATH:-}" && -r "${SCRIPT_DIR}/config/poli
   export LINE_DESKTOP_PATROL_POLICY_PATH="${SCRIPT_DIR}/config/policy.local.json"
 fi
 
+if [[ "$#" -eq 0 ]]; then
+  exec python3 "${SCRIPT_DIR}/src/member_line_patrol/mcp_server.py" --serve
+fi
+
 exec python3 "${SCRIPT_DIR}/src/member_line_patrol/mcp_server.py" "$@"

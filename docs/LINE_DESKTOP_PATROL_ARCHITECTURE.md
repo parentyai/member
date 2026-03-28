@@ -66,7 +66,12 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness。exe
   - `artifacts/line_desktop_patrol/runs/<run_id>/trace.json`
   - `artifacts/line_desktop_patrol/runs/<run_id>/result.json`
   - `artifacts/line_desktop_patrol/proposals/queue.jsonl`
+  - `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`
   - `tmp/line_desktop_patrol_latest.json`
+
+## Admin Read Surface
+- admin quality patrol remains read-only and can surface add-only `desktopPatrolSummary.promotion.latestArtifactKind`, `desktopPatrolSummary.promotion.latestArtifactStatus`, `desktopPatrolSummary.promotion.latestDraftPrRef`, and `desktopPatrolSummary.promotion.updatedAt`
+- promotion summary is derived from the latest local promotion artifact only and does not mutate the queue or runtime state
 
 ## Non-goals
 - no always-on scheduler

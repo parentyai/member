@@ -40,9 +40,27 @@ Local-only LINE patrol harness for Codex. The current execution path is MCP over
 - `npm run line-desktop-patrol:desktop-readiness -- --target-alias sample-self-test`
 - `npm run line-desktop-patrol:desktop-self-test -- --target-alias sample-self-test --text '...' --send-mode dry_run`
 - `npm run line-desktop-patrol:tool -- desktop-loop --target-alias sample-self-test --text '...' --send-mode dry_run`
+- `npm run line-desktop-patrol:doctor`
+- `npm run line-desktop-patrol:open-target`
+- `npm run line-desktop-patrol:execute-once`
+- `npm run line-desktop-patrol:loop-execute`
+- `npm run line-desktop-patrol:acceptance-gate`
 - `python3 -m compileall tools/line_desktop_patrol/src`
 - `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.mcp_server --manifest`
 - `tools/line_desktop_patrol/run_mcp_server.sh`
+
+## Safe execute sequence
+1. `npm run line-desktop-patrol:doctor`
+2. `npm run line-desktop-patrol:open-target`
+3. `npm run line-desktop-patrol:execute-once`
+4. `npm run line-desktop-patrol:loop-execute`
+5. `npm run line-desktop-patrol:acceptance-gate`
+
+If `open-target` returns `open_target_mismatch_stop`, stop before send and correct the pinned `メンバー` title match first.
+Treat `generic LINE shell only` as a fail-closed preflight state: the LINE shell is frontmost, but the member-only chat is not yet resolved.
+
+## Debug commands
+- `line-desktop-patrol:send` is debug-only and stays outside the formal safe execute sequence.
 
 ## Layout
 - `config/`
@@ -55,3 +73,4 @@ Local-only LINE patrol harness for Codex. The current execution path is MCP over
 - `desktop-self-test` runs `desktop_readiness` first and only then executes `desktop_run_conversation_loop` in the same local MCP session.
 - `desktop_run_conversation_loop` sends from the signed-in desktop LINE account, waits for a reply, captures transcript evidence, and enqueues a local proposal when the loop fails.
 - execute mode still respects blocked hours, local rate limits, failure streak stop, target confirmation, and the existing global kill switch.
+- the quicker local MCP path is `desktop-self-test`, but the formal operator bundle still uses `doctor -> open-target -> execute-once -> loop-execute -> acceptance-gate`.

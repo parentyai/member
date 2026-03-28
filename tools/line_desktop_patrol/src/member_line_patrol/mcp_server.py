@@ -82,7 +82,7 @@ def _tool_specs() -> tuple[ToolSpec, ...]:
             description="Append-only queue for Codex proposal generation based on patrol evidence.",
             mutating=True,
             exposure="internal_only",
-            status="mcp_ready",
+            status="proposal_queue_ready",
             input_schema={
                 "type": "object",
                 "required": ["entry"],
@@ -97,7 +97,7 @@ def _tool_specs() -> tuple[ToolSpec, ...]:
             description="Guarded LINE send path for Codex. Uses the existing LINE Messaging API push path, not desktop UI automation.",
             mutating=True,
             exposure="guarded_local_only",
-            status="mcp_ready",
+            status="execute_ready",
             input_schema={
                 "type": "object",
                 "required": ["target_alias", "text"],
@@ -198,6 +198,229 @@ def _tool_specs() -> tuple[ToolSpec, ...]:
 TOOL_SPECS = _tool_specs()
 
 
+def _compat_manifest_specs() -> tuple[ToolSpec, ...]:
+    return (
+        ToolSpec(
+            name="validate_target",
+            description="Compatibility manifest entry for guarded target validation before execute mode.",
+            mutating=False,
+            exposure="guarded_local_only",
+            status="execute_ready",
+            input_schema={
+                "type": "object",
+                "required": ["target_alias"],
+                "properties": {
+                    "target_alias": {"type": "string", "minLength": 3, "maxLength": 64},
+                    "target_confirmation": {"type": "string", "minLength": 3, "maxLength": 128},
+                    "scenario_id": {"type": "string", "minLength": 3, "maxLength": 128},
+                    "session_id": {"type": "string", "minLength": 3, "maxLength": 128},
+                },
+                "additionalProperties": False,
+            },
+        ),
+        ToolSpec(
+            name="open_test_chat",
+            description="Compatibility manifest entry for opening the whitelisted desktop LINE target before execute mode.",
+            mutating=True,
+            exposure="guarded_local_only",
+            status="execute_ready",
+            input_schema={
+                "type": "object",
+                "required": ["target_alias"],
+                "properties": {
+                    "target_alias": {"type": "string", "minLength": 3, "maxLength": 64},
+                    "target_confirmation": {"type": "string", "minLength": 3, "maxLength": 128},
+                    "scenario_id": {"type": "string", "minLength": 3, "maxLength": 128},
+                    "session_id": {"type": "string", "minLength": 3, "maxLength": 128},
+                },
+                "additionalProperties": False,
+            },
+        ),
+        ToolSpec(
+            name="run_execute_scenario",
+            description="Compatibility manifest entry for the legacy execute-once scenario wrapper.",
+            mutating=True,
+            exposure="guarded_local_only",
+            status="execute_ready",
+            input_schema={
+                "type": "object",
+                "required": ["target_alias", "text"],
+                "properties": {
+                    "target_alias": {"type": "string", "minLength": 3, "maxLength": 64},
+                    "text": {"type": "string", "minLength": 1, "maxLength": 1000},
+                    "target_confirmation": {"type": "string", "minLength": 3, "maxLength": 128},
+                    "scenario_id": {"type": "string", "minLength": 3, "maxLength": 128},
+                    "session_id": {"type": "string", "minLength": 3, "maxLength": 128},
+                },
+                "additionalProperties": False,
+            },
+        ),
+        ToolSpec(
+            name="run_guarded_patrol_loop",
+            description="Compatibility manifest entry for the legacy guarded desktop loop wrapper.",
+            mutating=True,
+            exposure="guarded_local_only",
+            status="guarded_loop_ready",
+            input_schema={
+                "type": "object",
+                "required": ["target_alias", "text"],
+                "properties": {
+                    "target_alias": {"type": "string", "minLength": 3, "maxLength": 64},
+                    "text": {"type": "string", "minLength": 1, "maxLength": 1000},
+                    "target_confirmation": {"type": "string", "minLength": 3, "maxLength": 128},
+                    "scenario_id": {"type": "string", "minLength": 3, "maxLength": 128},
+                    "session_id": {"type": "string", "minLength": 3, "maxLength": 128},
+                },
+                "additionalProperties": False,
+            },
+        ),
+        ToolSpec(
+            name="capture_screenshot",
+            description="Compatibility manifest entry for the bounded screenshot observation command.",
+            mutating=False,
+            exposure="internal_only",
+            status="observation_ready",
+            input_schema={
+                "type": "object",
+                "required": ["output_path"],
+                "properties": {
+                    "output_path": {"type": "string", "minLength": 1},
+                },
+                "additionalProperties": False,
+            },
+        ),
+        ToolSpec(
+            name="dump_ax_tree",
+            description="Compatibility manifest entry for the bounded AX summary observation command.",
+            mutating=False,
+            exposure="internal_only",
+            status="ax_summary_ready",
+            input_schema={
+                "type": "object",
+                "required": ["output_path"],
+                "properties": {
+                    "output_path": {"type": "string", "minLength": 1},
+                },
+                "additionalProperties": False,
+            },
+        ),
+        ToolSpec(
+            name="read_visible_messages",
+            description="Compatibility manifest entry for the bounded visible-message observation command.",
+            mutating=False,
+            exposure="internal_only",
+            status="visible_text_ready",
+            input_schema={
+                "type": "object",
+                "required": ["output_path"],
+                "properties": {
+                    "output_path": {"type": "string", "minLength": 1},
+                },
+                "additionalProperties": False,
+            },
+        ),
+        ToolSpec(
+            name="promote_proposal_to_draft_pr",
+            description="Compatibility manifest entry for local proposal promotion into a draft-PR-ready packet.",
+            mutating=True,
+            exposure="internal_only",
+            status="draft_pr_ready",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+        ),
+        ToolSpec(
+            name="synthesize_patch_bundle",
+            description="Compatibility manifest entry for patch-task synthesis.",
+            mutating=True,
+            exposure="internal_only",
+            status="patch_task_ready",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+        ),
+        ToolSpec(
+            name="synthesize_code_patch_bundle",
+            description="Compatibility manifest entry for code patch bundle synthesis.",
+            mutating=True,
+            exposure="internal_only",
+            status="code_patch_bundle_ready",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+        ),
+        ToolSpec(
+            name="synthesize_code_edit_task",
+            description="Compatibility manifest entry for code edit task synthesis.",
+            mutating=True,
+            exposure="internal_only",
+            status="code_edit_task_ready",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+        ),
+        ToolSpec(
+            name="synthesize_code_diff_draft",
+            description="Compatibility manifest entry for code diff draft synthesis.",
+            mutating=True,
+            exposure="internal_only",
+            status="code_diff_draft_ready",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+        ),
+        ToolSpec(
+            name="synthesize_code_edit_bundle",
+            description="Compatibility manifest entry for code edit bundle synthesis.",
+            mutating=True,
+            exposure="internal_only",
+            status="code_edit_bundle_ready",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+        ),
+        ToolSpec(
+            name="synthesize_code_apply_draft",
+            description="Compatibility manifest entry for code apply draft synthesis.",
+            mutating=True,
+            exposure="internal_only",
+            status="code_apply_draft_ready",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+        ),
+        ToolSpec(
+            name="synthesize_code_apply_task",
+            description="Compatibility manifest entry for code apply task synthesis.",
+            mutating=True,
+            exposure="internal_only",
+            status="code_apply_task_ready",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+        ),
+        ToolSpec(
+            name="synthesize_code_review_packet",
+            description="Compatibility manifest entry for code review packet synthesis.",
+            mutating=True,
+            exposure="internal_only",
+            status="code_review_packet_ready",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+        ),
+        ToolSpec(
+            name="synthesize_code_apply_evidence",
+            description="Compatibility manifest entry for code apply evidence synthesis.",
+            mutating=True,
+            exposure="internal_only",
+            status="code_apply_evidence_ready",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+        ),
+        ToolSpec(
+            name="synthesize_code_apply_signoff",
+            description="Compatibility manifest entry for code apply signoff synthesis.",
+            mutating=True,
+            exposure="internal_only",
+            status="code_apply_signoff_ready",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+        ),
+        ToolSpec(
+            name="synthesize_code_apply_record",
+            description="Compatibility manifest entry for code apply record synthesis.",
+            mutating=True,
+            exposure="internal_only",
+            status="code_apply_record_ready",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+        ),
+    )
+
+
+MANIFEST_TOOL_SPECS = TOOL_SPECS + _compat_manifest_specs()
+
+
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[4]
 
@@ -232,10 +455,13 @@ def build_server_manifest() -> dict:
             "auto_apply_level": "none",
             "requires_whitelist": True,
         },
-        "tools": [asdict(tool) for tool in TOOL_SPECS],
+        "tools": [asdict(tool) for tool in MANIFEST_TOOL_SPECS],
         "notes": [
             "send_text uses the existing LINE Messaging API push path and requires target-scoped LINE user id env vars.",
             "desktop_snapshot and desktop_run_conversation_loop use local macOS Accessibility plus OCR evidence and require expected_chat_title containing メンバー.",
+            "PR9 wires AX summary dump into the dry-run harness when local policy explicitly enables store_ax_tree.",
+            "PR10 adds a standalone bounded visible message read command for local observation only.",
+            "PR11 wires visible message read into the dry-run harness while keeping speaker attribution conservative.",
         ],
     }
 
@@ -1039,7 +1265,9 @@ def handle_request(message: dict) -> None:
         write_error(request_id, -32601, f"Method not found: {method}")
 
 
-def serve_stdio() -> int:
+def serve_stdio(initial_message: dict | None = None) -> int:
+    if initial_message is not None:
+        handle_request(initial_message)
     while True:
         message = read_message()
         if message is None:
@@ -1059,7 +1287,12 @@ def serve_main() -> int:
 def main() -> int:
     if len(sys.argv) > 1 and sys.argv[1] == "--manifest":
         return manifest_main()
-    return serve_main()
+    if len(sys.argv) > 1 and sys.argv[1] == "--serve":
+        return serve_main()
+    first_message = read_message()
+    if first_message is None:
+        return manifest_main()
+    return serve_stdio(first_message)
 
 
 if __name__ == "__main__":
