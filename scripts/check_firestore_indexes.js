@@ -23,6 +23,7 @@ function parseArgs(argv, env) {
   const opts = {
     check: false,
     plan: false,
+    apply: false,
     contractsOnly: false,
     projectId: (sourceEnv.FIRESTORE_PROJECT_ID || sourceEnv.GCP_PROJECT_ID || '').trim(),
     requiredFile: DEFAULT_REQUIRED_PATH
@@ -36,6 +37,10 @@ function parseArgs(argv, env) {
     }
     if (arg === '--plan') {
       opts.plan = true;
+      continue;
+    }
+    if (arg === '--apply') {
+      opts.apply = true;
       continue;
     }
     if (arg === '--contracts-only') {
@@ -277,6 +282,50 @@ function buildCreateCommand(projectId, spec) {
   return args.join(' ');
 }
 
+function buildCreateExecArgs(projectId, spec, options) {
+  const payload = options && typeof options === 'object' ? options : {};
+  const args = [
+    'firestore',
+    'indexes',
+    'composite',
+    'create',
+    '--project',
+    projectId,
+    '--collection-group',
+    spec.collectionGroup,
+    '--query-scope',
+    spec.queryScope
+  ];
+  spec.fields.forEach((field) => {
+    if (field.order) {
+      args.push('--field-config', `field-path=${field.fieldPath},order=${field.order.toLowerCase()}`);
+      return;
+    }
+    args.push('--field-config', `field-path=${field.fieldPath},array-config=${field.arrayConfig.toLowerCase()}`);
+  });
+  if (payload.async) args.push('--async');
+  return args;
+}
+
+function applyMissingIndexes(projectId, missing, execFileSyncFn) {
+  const list = Array.isArray(missing) ? missing : [];
+  const execSync = execFileSyncFn || childProcess.execFileSync;
+  if (!list.length) {
+    process.stdout.write('[firestore-indexes] apply skipped (no missing indexes)\n');
+    return;
+  }
+  process.stdout.write(`[firestore-indexes] apply missing composite indexes count=${list.length}\n`);
+  list.forEach((spec) => {
+    process.stdout.write(`[firestore-indexes] create ${spec.id}\n`);
+    try {
+      execSync('gcloud', buildCreateExecArgs(projectId, spec, { async: true }), { encoding: 'utf8' });
+    } catch (err) {
+      const message = err && err.message ? String(err.message) : String(err);
+      throw new Error(`gcloud firestore indexes composite create failed for ${spec.id}: ${message}`);
+    }
+  });
+}
+
 function readRequiredPayload(requiredFile) {
   if (!fs.existsSync(requiredFile)) {
     throw new Error(`required file not found: ${toPosix(path.relative(ROOT, requiredFile))}`);
@@ -444,6 +493,13 @@ function run(argv, env, execFileSyncFn) {
     diff = diffIndexes(requiredComposite, actual);
     printDiffSummary(projectId, opts.requiredFile, required, requiredComposite, actual, diff);
     if (opts.plan) printCreatePlan(projectId, diff.missing);
+    if (opts.apply) {
+      applyMissingIndexes(projectId, diff.missing, execSync);
+      actual = listActualIndexes(projectId, execSync);
+      diff = diffIndexes(requiredComposite, actual);
+      process.stdout.write('[firestore-indexes] post-apply verification\n');
+      printDiffSummary(projectId, opts.requiredFile, required, requiredComposite, actual, diff);
+    }
   }
   printContractErrors(contractErrors);
 
@@ -483,6 +539,8 @@ module.exports = {
   createIndexSignature,
   diffIndexes,
   buildCreateCommand,
+  buildCreateExecArgs,
+  applyMissingIndexes,
   readRequiredPayload,
   readRequiredDefinition,
   validateCriticalContracts,
