@@ -471,6 +471,9 @@ async function runQualityPatrolPipeline(input, deps) {
   };
   const reviewUnits = Array.isArray(extractorStage.result.reviewUnits) ? extractorStage.result.reviewUnits : [];
   const llmActionLogs = Array.isArray(extractorStage.result.llmActionLogs) ? extractorStage.result.llmActionLogs : [];
+  const traceBundles = extractorStage.result && extractorStage.result.traceBundles
+    ? extractorStage.result.traceBundles
+    : [];
   const sourceWindow = extractorStage.result.sourceWindow || createSourceWindow(options);
 
   const evaluationStage = await runStage(
@@ -525,7 +528,8 @@ async function runQualityPatrolPipeline(input, deps) {
       reviewUnits,
       evaluations,
       kpiResult,
-      detectionResult
+      detectionResult,
+      traceBundles
     }), deps),
     () => createEmptyRootCauseResult()
   );
@@ -544,6 +548,7 @@ async function runQualityPatrolPipeline(input, deps) {
       kpiResult,
       detectionResult,
       rootCauseResult,
+      traceBundles,
       generatedAt
     }), deps),
     () => createEmptyPlanResult(generatedAt)
