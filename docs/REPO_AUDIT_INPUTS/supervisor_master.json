@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-27T21:43:18-04:00",
-  "gitCommit": "c61c4eff366d0037b3d76c379ba83bfad6ab0ab2",
+  "generatedAt": "2026-03-27T22:03:40-04:00",
+  "gitCommit": "26ea5e7c040223d9e6f1ca208d35f99f1eb38d7a",
   "branch": "codex/pr1092-rebase",
-  "sourceDigest": "6486a144c96c04c3c43c07c80fd8bccfb3c3623d9ab2f72d2e4189d5165dcc4b",
+  "sourceDigest": "ad02a070406d8d128066fe0b1bcae3372bbd78a92694d9bb7f69cbb54e9eb8d2",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
