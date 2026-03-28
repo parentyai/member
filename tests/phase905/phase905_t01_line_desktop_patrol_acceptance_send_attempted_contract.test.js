@@ -150,3 +150,71 @@ print(json.dumps(automatic))
   assert.equal(automatic.metrics.sentCount, 1);
   assert.equal(automatic.metrics.openTargetRunCount, 0);
 });
+
+test('phase905: acceptance gate counts execute success from sibling result artifacts when trace.json is sparse', (t) => {
+  const tempRoot = makeTempRoot('phase905-acceptance-result-bridge-');
+  t.after(() => fs.rmSync(tempRoot, { recursive: true, force: true }));
+
+  const outputRoot = path.join(tempRoot, 'artifacts');
+  const runRoot = path.join(outputRoot, 'runs', 'line-patrol-result-bridge');
+  const manualReportPath = path.join(tempRoot, 'acceptance.manual.json');
+  const outputPath = path.join(outputRoot, 'acceptance', 'latest.json');
+
+  writeJson(path.join(runRoot, 'trace.json'), {
+    run_id: 'line-patrol-result-bridge',
+    target_id: 'sample-self-test',
+    sent_text: 'result bridge message',
+    visible_before: [],
+    visible_after: [],
+  });
+  writeJson(path.join(runRoot, 'result.json'), {
+    ok: true,
+    result: {
+      mode: 'execute',
+      targetMatchedHeuristic: true,
+      replyObserved: true,
+      visibleAfter: [
+        { role: 'visible_text', text: '09:27 Arumamih$ result bridge message' },
+        { role: 'visible_text', text: '09:27 メンバー result bridge reply' },
+      ],
+      evaluatorScores: {
+        sentVisible: true,
+        replyObserved: true,
+      },
+    },
+  });
+  writeJson(manualReportPath, {
+    generated_at: '2026-03-28T14:00:00.000Z',
+    accessibility_granted: true,
+    screen_recording_granted: true,
+    self_test_target_ready: true,
+    execute_once_attempted: 10,
+    execute_once_passed: 10,
+    scheduled_execute_attempted: 50,
+    scheduled_execute_passed: 50,
+  });
+
+  const code = `
+import json
+from member_line_patrol.acceptance_gate import run_acceptance_gate
+
+result = run_acceptance_gate(
+    output_root=${JSON.stringify(outputRoot)},
+    manual_report_path=${JSON.stringify(manualReportPath)},
+    output_path=${JSON.stringify(outputPath)},
+)
+print(json.dumps(result))
+`;
+
+  const result = JSON.parse(runPythonCode(code));
+  const written = readJson(outputPath);
+
+  assert.equal(result.overallStatus, 'ready');
+  assert.equal(result.automatic.metrics.executeRunCount, 1);
+  assert.equal(result.automatic.metrics.attemptedSendCount, 1);
+  assert.equal(result.automatic.metrics.validatedAttemptedSendCount, 1);
+  assert.equal(result.automatic.metrics.sentCount, 1);
+  assert.equal(result.automatic.metrics.successfulValidatedSendCount, 1);
+  assert.equal(result.automatic.metrics.replyCorrelationUsableCount, 1);
+  assert.equal(written.automatic.latestTracePath.endsWith('/trace.json'), true);
+});

@@ -20,10 +20,109 @@ function reviewUnitIdFor(seed) {
   return `review_unit_${crypto.createHash('sha256').update(seed, 'utf8').digest('hex').slice(0, 24)}`;
 }
 
+function readJsonIfExists(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    if (error && error.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+function normalizeSendMode(value) {
+  const normalized = normalizeToken(value);
+  if (normalized === 'execute') return 'execute_once';
+  return normalized;
+}
+
+function normalizeVisibleRowsFromTranscript(transcript) {
+  const text = normalizeText(transcript);
+  if (!text) return [];
+  return text
+    .split(/\r?\n/)
+    .map((line) => normalizeText(line))
+    .filter(Boolean)
+    .map((line) => ({ role: 'visible_text', text: line }));
+}
+
+function normalizeDesktopResultPayload(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+  const nested = payload.result && typeof payload.result === 'object' ? payload.result : {};
+  const evaluatorScores = nested.evaluatorScores && typeof nested.evaluatorScores === 'object'
+    ? nested.evaluatorScores
+    : {};
+  const visibleBefore = Array.isArray(nested.visibleBefore) && nested.visibleBefore.length > 0
+    ? nested.visibleBefore
+    : normalizeVisibleRowsFromTranscript(nested.transcriptBefore);
+  const visibleAfter = Array.isArray(nested.visibleAfter) && nested.visibleAfter.length > 0
+    ? nested.visibleAfter
+    : normalizeVisibleRowsFromTranscript(nested.transcriptAfterReply || nested.transcriptAfterSend);
+  return {
+    raw: payload,
+    nested,
+    mode: normalizeSendMode(nested.mode || payload.mode),
+    targetMatchedHeuristic: nested.targetMatchedHeuristic === true || payload.targetMatchedHeuristic === true,
+    targetMismatchObserved: nested.targetMatchedHeuristic === false || payload.targetMatchedHeuristic === false,
+    replyObserved: nested.replyObserved === true || payload.replyObserved === true || evaluatorScores.replyObserved === true,
+    sentVisible: evaluatorScores.sentVisible === true || evaluatorScores.transcriptChanged === true,
+    visibleBefore,
+    visibleAfter,
+    transcriptBefore: normalizeText(nested.transcriptBefore),
+    transcriptAfterSend: normalizeText(nested.transcriptAfterSend),
+    transcriptAfterReply: normalizeText(nested.transcriptAfterReply),
+    evaluatorScores
+  };
+}
+
+function hydrateTraceWithResult(trace, resultPayload, tracePath, resultPath) {
+  const normalizedResult = normalizeDesktopResultPayload(resultPayload);
+  if (!normalizedResult) {
+    return Object.assign({}, trace, { __tracePath: tracePath, __resultPath: null, __resultPayload: null });
+  }
+  const sendMode = normalizeSendMode(trace && trace.send_mode) || normalizedResult.mode || null;
+  const sendResult = trace && trace.send_result && typeof trace.send_result === 'object'
+    ? trace.send_result
+    : ((sendMode === 'execute_once' || sendMode === 'send_only') && normalizedResult.sentVisible === true
+      ? { result: { status: 'sent' } }
+      : null);
+  const targetValidation = trace && trace.target_validation && typeof trace.target_validation === 'object'
+    ? trace.target_validation
+    : (normalizedResult.targetMatchedHeuristic === true || normalizedResult.targetMismatchObserved === true
+      ? {
+        matched: normalizedResult.targetMatchedHeuristic === true,
+        reason: normalizedResult.targetMatchedHeuristic === true ? 'desktop_result_bridge' : 'desktop_result_unmatched'
+      }
+      : null);
+  const correlationStatus = normalizeToken(trace && trace.correlation_status)
+    || ((sendMode === 'execute_once' || sendMode === 'send_only')
+      ? (normalizedResult.replyObserved === true ? 'reply_observed' : (sendResult ? 'post_send_reply_missing' : null))
+      : null);
+  const visibleBefore = normalizeVisibleRows(trace && trace.visible_before).length > 0
+    ? trace.visible_before
+    : normalizedResult.visibleBefore;
+  const visibleAfter = normalizeVisibleRows(trace && trace.visible_after).length > 0
+    ? trace.visible_after
+    : normalizedResult.visibleAfter;
+
+  return Object.assign({}, trace, {
+    send_mode: sendMode,
+    send_result: sendResult,
+    target_validation: targetValidation,
+    correlation_status: correlationStatus,
+    visible_before: visibleBefore,
+    visible_after: visibleAfter,
+    __tracePath: tracePath,
+    __resultPath: resultPath,
+    __resultPayload: normalizedResult
+  });
+}
+
 function readTraceFile(tracePath) {
   const resolved = path.resolve(process.cwd(), tracePath);
   const payload = JSON.parse(fs.readFileSync(resolved, 'utf8'));
-  return Object.assign({}, payload, { __tracePath: resolved });
+  const resultPath = path.join(path.dirname(resolved), 'result.json');
+  const resultPayload = readJsonIfExists(resultPath);
+  return hydrateTraceWithResult(payload, resultPayload, resolved, resultPath);
 }
 
 function normalizeVisibleRows(rows) {
@@ -35,8 +134,61 @@ function normalizeVisibleRows(rows) {
     .filter((row) => row.text);
 }
 
+function inferMessageRole(explicitRole, speakerLabel) {
+  const normalizedRole = normalizeToken(explicitRole);
+  if (normalizedRole === 'assistant' || normalizedRole === 'user') return normalizedRole;
+  const label = normalizeText(speakerLabel);
+  if (!label) return 'unknown';
+  if (label.includes('メンバー')) return 'assistant';
+  return 'user';
+}
+
+function buildVisibleMessages(rows) {
+  const source = normalizeVisibleRows(rows);
+  const messages = [];
+  let current = null;
+  source.forEach((row) => {
+    const text = normalizeText(row && row.text);
+    if (!text) return;
+    if (/^\d{4}\.\d{2}\.\d{2}\b/u.test(text)) {
+      current = null;
+      return;
+    }
+    const timestamped = text.match(/^(\d{1,2}:\d{2})\s+(\S+)\s+(.+)$/u);
+    if (timestamped) {
+      current = {
+        role: inferMessageRole(row && row.role, timestamped[2]),
+        speaker: normalizeText(timestamped[2]),
+        text: normalizeText(timestamped[3])
+      };
+      if (current.text) messages.push(current);
+      return;
+    }
+    if (row && (normalizeToken(row.role) === 'assistant' || normalizeToken(row.role) === 'user')) {
+      current = {
+        role: inferMessageRole(row.role, null),
+        speaker: null,
+        text
+      };
+      messages.push(current);
+      return;
+    }
+    if (current) {
+      current.text = normalizeText(`${current.text}\n${text}`);
+      return;
+    }
+    current = {
+      role: inferMessageRole(row && row.role, null),
+      speaker: null,
+      text
+    };
+    messages.push(current);
+  });
+  return messages.filter((row) => normalizeText(row && row.text));
+}
+
 function isExecuteMode(trace) {
-  const mode = normalizeToken(trace && trace.send_mode);
+  const mode = normalizeSendMode(trace && trace.send_mode) || normalizeSendMode(trace && trace.__resultPayload && trace.__resultPayload.mode);
   return mode === 'execute_once' || mode === 'send_only' || mode === 'open_target';
 }
 
@@ -45,9 +197,21 @@ function diffVisibleRows(beforeRows, afterRows) {
   return normalizeVisibleRows(afterRows).filter((row) => !beforeTexts.has(row.text));
 }
 
+function matchesSentText(candidate, sentText) {
+  const normalizedCandidate = normalizeText(candidate).replace(/\s+/gu, ' ');
+  const normalizedSentText = normalizeText(sentText).replace(/\s+/gu, ' ');
+  if (!normalizedCandidate || !normalizedSentText) return false;
+  return normalizedCandidate === normalizedSentText || normalizedCandidate.endsWith(normalizedSentText);
+}
+
 function deriveExecuteUserMessage(trace) {
   const sentText = normalizeText(trace && trace.sent_text);
   if (!sentText) return '';
+  const afterMessages = buildVisibleMessages(trace && trace.visible_after);
+  for (let index = afterMessages.length - 1; index >= 0; index -= 1) {
+    const message = afterMessages[index];
+    if (message.role === 'user' && matchesSentText(message.text, sentText)) return message.text;
+  }
   const afterRows = normalizeVisibleRows(trace && trace.visible_after);
   const beforeRows = normalizeVisibleRows(trace && trace.visible_before);
   const afterHasSent = afterRows.some((row) => row.text === sentText);
@@ -62,6 +226,18 @@ function deriveExecuteUserMessage(trace) {
 
 function deriveExecuteAssistantReply(trace) {
   const sentText = normalizeText(trace && trace.sent_text);
+  const afterMessages = buildVisibleMessages(trace && trace.visible_after);
+  for (let index = afterMessages.length - 1; index >= 0; index -= 1) {
+    const message = afterMessages[index];
+    if (message.role !== 'user' || !matchesSentText(message.text, sentText)) continue;
+    for (let replyIndex = index + 1; replyIndex < afterMessages.length; replyIndex += 1) {
+      if (afterMessages[replyIndex].role === 'assistant') return afterMessages[replyIndex].text;
+    }
+    break;
+  }
+  for (let index = afterMessages.length - 1; index >= 0; index -= 1) {
+    if (afterMessages[index].role === 'assistant') return afterMessages[index].text;
+  }
   const newRows = diffVisibleRows(trace && trace.visible_before, trace && trace.visible_after);
   const candidate = newRows.find((row) => row.text && row.text !== sentText);
   return candidate ? candidate.text : '';
@@ -96,7 +272,7 @@ function deriveExecuteBlockerCodes(trace) {
 
 function pickLatestMessage(rows, role) {
   const normalizedRole = normalizeToken(role);
-  const source = normalizeVisibleRows(rows);
+  const source = buildVisibleMessages(rows);
   for (let index = source.length - 1; index >= 0; index -= 1) {
     if (source[index].role === normalizedRole) return source[index].text;
   }
@@ -115,7 +291,7 @@ function deriveSlice(trace) {
 }
 
 function derivePriorContextSummary(trace) {
-  const rows = normalizeVisibleRows(trace && trace.visible_before).slice(-4);
+  const rows = buildVisibleMessages(trace && trace.visible_before).slice(-4);
   if (rows.length <= 0) {
     return {
       text: '',
@@ -177,6 +353,16 @@ function buildEvidenceRefs(trace) {
       traceId: normalizeText(trace && trace.run_id) || null,
       createdAt: toIso(trace && trace.finished_at),
       summary: 'after_ax_tree'
+    });
+  }
+  if (normalizeText(trace && trace.__resultPath)) {
+    refs.push({
+      source: 'line_desktop_patrol_result',
+      kind: 'desktop_result',
+      refId: normalizeText(trace && trace.__resultPath),
+      traceId: normalizeText(trace && trace.run_id) || null,
+      createdAt: toIso(trace && trace.finished_at),
+      summary: normalizeText(trace && trace.__resultPayload && trace.__resultPayload.mode) || 'desktop_result'
     });
   }
   return refs;
@@ -250,11 +436,48 @@ function buildTranscriptCoverage(reviewUnit) {
   return diagnostics;
 }
 
+function buildSyntheticTraceBundle(trace) {
+  const traceId = normalizeText(trace && trace.run_id);
+  if (!traceId) return null;
+  const resultMode = normalizeText(trace && trace.__resultPayload && trace.__resultPayload.mode);
+  return {
+    ok: true,
+    traceId,
+    summary: {
+      retrievalBlockReasons: [],
+      retrievalPermitReasons: [],
+      knowledgeRejectedReasons: [],
+      cityPackRejectedReasons: [],
+      savedFaqRejectedReasons: [],
+      sourceReadinessDecisionSources: resultMode ? [`desktop_result:${resultMode}`] : ['line_desktop_patrol_trace'],
+      fallbackTemplateKinds: [],
+      finalizerTemplateKinds: [],
+      replyTemplateFingerprints: []
+    },
+    traceJoinSummary: {
+      completeness: 1,
+      expectedDomains: ['line_desktop_patrol'],
+      joinedDomains: ['line_desktop_patrol'],
+      missingDomains: [],
+      criticalMissingDomains: [],
+      joinCounts: {
+        lineDesktopPatrol: 1
+      }
+    }
+  };
+}
+
 async function buildConversationReviewUnitsFromDesktopTrace(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const trace = payload.trace && typeof payload.trace === 'object'
-    ? payload.trace
+    ? hydrateTraceWithResult(
+      payload.trace,
+      payload.result && typeof payload.result === 'object' ? payload.result : null,
+      normalizeText(payload.tracePath) || null,
+      null
+    )
     : readTraceFile(payload.tracePath);
+  const syntheticTraceBundle = buildSyntheticTraceBundle(trace);
 
   const sourceWindow = {
     fromAt: toIso(trace && trace.started_at),
@@ -266,6 +489,14 @@ async function buildConversationReviewUnitsFromDesktopTrace(params) {
   const priorContextSummary = derivePriorContextSummary(trace);
   const telemetrySignals = buildTelemetrySignals(trace, slice, priorContextSummary, assistantReply);
   const executeBlockerCodes = isExecuteMode(trace) ? deriveExecuteBlockerCodes(trace) : [];
+  const hasResultBridgeEvidence = Boolean(
+    trace
+    && trace.__resultPayload
+    && (
+      normalizeText(trace.__resultPayload.transcriptAfterReply)
+      || normalizeVisibleRows(trace.__resultPayload.visibleAfter).length > 0
+    )
+  );
   const hasTraceEvidence = Boolean(
     normalizeText(trace && trace.ax_tree_after)
     || normalizeText(trace && trace.screenshot_after)
@@ -277,14 +508,20 @@ async function buildConversationReviewUnitsFromDesktopTrace(params) {
     priorContextSummaryAvailable: priorContextSummary.available === true,
     needsPriorContextSummary: slice === 'follow-up',
     hasTraceEvidence,
-    hasActionLogEvidence: false,
+    hasActionLogEvidence: hasResultBridgeEvidence,
     expectsFaqEvidence: false,
     hasFaqEvidence: false,
     traceHydrationLimited: false,
     extraBlockerCodes: executeBlockerCodes
   });
   const evidenceRefs = buildEvidenceRefs(trace);
-  const sourceCollections = Array.from(new Set(evidenceRefs.map((item) => item.source).concat(['line_desktop_patrol_trace'])));
+  const sourceCollections = Array.from(new Set(
+    evidenceRefs
+      .map((item) => item.source)
+      .concat(['line_desktop_patrol_trace'])
+      .concat(hasResultBridgeEvidence ? ['line_desktop_patrol_result'] : [])
+      .concat(syntheticTraceBundle ? ['trace_bundle'] : [])
+  ));
   const reviewUnit = {
     reviewUnitId: reviewUnitIdFor([
       normalizeText(trace && trace.run_id) || 'desktop_trace',
@@ -314,7 +551,7 @@ async function buildConversationReviewUnitsFromDesktopTrace(params) {
       replyObservationStatus: normalizeText(trace && trace.correlation_status) || null,
     } : null,
     evidenceJoinStatus: {
-      actionLog: 'missing_source',
+      actionLog: hasResultBridgeEvidence ? 'result_bridge' : 'missing_source',
       trace: hasTraceEvidence ? 'joined' : 'missing_source',
       faq: 'not_expected'
     },
@@ -328,6 +565,7 @@ async function buildConversationReviewUnitsFromDesktopTrace(params) {
     sourceWindow,
     reviewUnits: [reviewUnit],
     llmActionLogs: [],
+    traceBundles: syntheticTraceBundle ? { bundles: [syntheticTraceBundle] } : { bundles: [] },
     transcriptCoverage: buildTranscriptCoverage(reviewUnit),
     sourceCollections,
     counts: {
@@ -335,7 +573,7 @@ async function buildConversationReviewUnitsFromDesktopTrace(params) {
       reviewUnits: 1,
       llmActionLogs: 0,
       faqAnswerLogs: 0,
-      traceBundles: hasTraceEvidence ? 1 : 0
+      traceBundles: syntheticTraceBundle ? 1 : 0
     },
     joinDiagnostics: {
       faqOnlyRowsSkipped: 0,

@@ -33,6 +33,16 @@ def _normalize_text(value: Any) -> str | None:
     return text or None
 
 
+def _normalize_send_mode(value: Any) -> str | None:
+    text = _normalize_text(value)
+    if text is None:
+        return None
+    lowered = text.lower()
+    if lowered == "execute":
+        return "execute_once"
+    return lowered
+
+
 def _read_json_if_exists(path_value: str | Path | None) -> dict[str, Any] | None:
     if not path_value:
         return None
@@ -40,6 +50,75 @@ def _read_json_if_exists(path_value: str | Path | None) -> dict[str, Any] | None
     if not path_obj.exists():
         return None
     return json.loads(path_obj.read_text(encoding="utf-8"))
+
+
+def _unwrap_result_payload(payload: dict[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        return {}
+    nested = payload.get("result")
+    if not isinstance(nested, dict):
+        nested = {}
+    evaluator_scores = nested.get("evaluatorScores")
+    if not isinstance(evaluator_scores, dict):
+        evaluator_scores = {}
+    return {
+        "mode": _normalize_send_mode(nested.get("mode") or payload.get("mode")),
+        "replyObserved": bool(
+            nested.get("replyObserved") is True
+            or payload.get("replyObserved") is True
+            or evaluator_scores.get("replyObserved") is True
+        ),
+        "targetMatchedHeuristic": True if (
+            nested.get("targetMatchedHeuristic") is True or payload.get("targetMatchedHeuristic") is True
+        ) else (False if (nested.get("targetMatchedHeuristic") is False or payload.get("targetMatchedHeuristic") is False) else None),
+        "sentVisible": bool(
+            evaluator_scores.get("sentVisible") is True
+            or evaluator_scores.get("transcriptChanged") is True
+        ),
+        "visibleAfter": nested.get("visibleAfter"),
+        "visibleBefore": nested.get("visibleBefore"),
+    }
+
+
+def _hydrate_execute_trace(payload: dict[str, Any], trace_path: Path) -> dict[str, Any]:
+    trace = dict(payload)
+    result_payload = _read_json_if_exists(trace_path.with_name("result.json"))
+    result = _unwrap_result_payload(result_payload)
+    send_mode = _normalize_send_mode(trace.get("send_mode")) or result.get("mode")
+    if send_mode is not None:
+        trace["send_mode"] = send_mode
+    if trace.get("send_attempted") is None and send_mode in EXECUTE_MODES and result.get("mode") in EXECUTE_MODES:
+        trace["send_attempted"] = True
+    if not isinstance(trace.get("target_validation"), dict) and result.get("targetMatchedHeuristic") is not None:
+        trace["target_validation"] = {
+            "matched": result.get("targetMatchedHeuristic") is True,
+            "reason": "desktop_result_bridge" if result.get("targetMatchedHeuristic") is True else "desktop_result_unmatched",
+        }
+    if not isinstance(trace.get("send_result"), dict) and send_mode in EXECUTE_MODES and result.get("sentVisible") is True:
+        trace["send_result"] = {"result": {"status": "sent"}}
+    if _normalize_text(trace.get("correlation_status")) is None and send_mode in EXECUTE_MODES:
+        if result.get("replyObserved") is True:
+            trace["correlation_status"] = "reply_observed"
+        elif isinstance(trace.get("send_result"), dict):
+            trace["correlation_status"] = "post_send_reply_missing"
+    if (
+        (
+            not isinstance(trace.get("visible_after"), list)
+            or len(trace.get("visible_after") or []) <= 0
+        )
+        and isinstance(result.get("visibleAfter"), list)
+    ):
+        trace["visible_after"] = result.get("visibleAfter")
+    if (
+        (
+            not isinstance(trace.get("visible_before"), list)
+            or len(trace.get("visible_before") or []) <= 0
+        )
+        and isinstance(result.get("visibleBefore"), list)
+    ):
+        trace["visible_before"] = result.get("visibleBefore")
+    trace["__trace_path"] = str(trace_path.resolve())
+    return trace
 
 
 def _write_json(path_value: str | Path, payload: dict[str, Any]) -> str:
@@ -62,9 +141,9 @@ def _discover_execute_traces(output_root: Path) -> list[dict[str, Any]]:
         payload = _read_json_if_exists(trace_path)
         if not isinstance(payload, dict):
             continue
-        if _normalize_text(payload.get("send_mode")) not in EXECUTE_MODES:
+        payload = _hydrate_execute_trace(payload, trace_path)
+        if _normalize_send_mode(payload.get("send_mode")) not in EXECUTE_MODES:
             continue
-        payload["__trace_path"] = str(trace_path.resolve())
         traces.append(payload)
     return traces
 

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-28T03:45:23-04:00",
-  "gitCommit": "8903320e75559d609095aaf848cd2ae6d2f2231a",
-  "branch": "codex/line-desktop-ui-self-test-clean",
-  "sourceDigest": "40d4bdb2b582e5e87928077d0194c22a8bf21cea847f946a0e21ee4026c5c04b",
+  "generatedAt": "2026-03-28T09:44:36-04:00",
+  "gitCommit": "766f49380dea94390fab0b9a8cb0e03b0d10d4bb",
+  "branch": "codex/line-open-target-runtime-fix",
+  "sourceDigest": "b1f1acd739edf2c2665435c156202bd20d74dc7067611fa004271c0a94b2ca5c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

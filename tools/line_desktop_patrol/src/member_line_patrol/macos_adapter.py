@@ -1448,6 +1448,7 @@ do {
         target_process_name: str = LINE_APP_NAME,
         timeout_seconds: float = DEFAULT_AX_TIMEOUT_SECONDS,
     ) -> dict[str, Any]:
+        resolved_text = _normalize_text(candidate_text)
         probe = self.probe_host()
         plan = self._plan_click_target_candidate(
             candidate_text,
