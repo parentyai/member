@@ -99,6 +99,9 @@ Deploy workflow は Cloud Run deploy 前に、runtime SA へ必要 Secret の
   - `npm run firestore-indexes:check -- --project-id <PROJECT_ID>`
 - 不足indexの作成コマンドを確認したい場合:
   - `npm run firestore-indexes:plan -- --project-id <PROJECT_ID>`
+- 不足indexを GitHub Actions 側の OIDC 権限で適用する場合:
+  - `Firestore Indexes Apply` workflow を `workflow_dispatch` で起動する
+  - workflow は `docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json` の missing diff のみを作成し、最後に `npm run firestore-indexes:check -- --project-id <PROJECT_ID>` を実行して verify する
 - `audit.yml` の required check `audit` は aggregate gate として動作し、`docs / firestore-indexes / audit-run` のいずれか失敗時に必ず失敗する。
 - Branch protection の Required status checks は `audit` を必須にすれば index ドリフトも確実にブロックされる（`firestore-indexes` 単独必須化は任意）。
 
