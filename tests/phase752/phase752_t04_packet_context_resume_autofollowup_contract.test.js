@@ -308,3 +308,35 @@ test('phase752: criteria-only list request avoids stale school continuation afte
   assert.equal(packet.contextResume, false);
   assert.equal(packet.normalizedConversationIntent, 'general');
 });
+
+test('phase752: direct low-friction prompts mark avoid_question_back without losing school intent', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_DIRECT_LOW_FRICTION',
+    messageText: 'ニューヨークの学校手続きで最初に確認することを2点だけ教えて。',
+    routerReason: 'default_casual',
+    llmFlags: {}
+  });
+
+  assert.equal(packet.requestShape, 'summarize');
+  assert.equal(packet.normalizedConversationIntent, 'school');
+  assert.equal(packet.detailObligations.includes('avoid_question_back'), true);
+});
+
+test('phase752: two-line close prompt maps to two-sentence output form and suppresses ask-back', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_TWO_LINE_CLOSE',
+    messageText: '最後に、今日やる順番を2行でまとめて。',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'school',
+        replyText: '最初に確認するのは、受付期限と必要書類の2点です。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.outputForm, 'two_sentences');
+  assert.equal(packet.detailObligations.includes('avoid_question_back'), true);
+});

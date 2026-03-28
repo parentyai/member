@@ -1,0 +1,249 @@
+{
+  "batch_id": "strategic_desktop_self_improvement_v1",
+  "description": "Fixed ten-case desktop self-improvement batch focused on human-natural replies, direct answers, correction recovery, city specificity, and low-friction next steps.",
+  "fixed_case_count": 10,
+  "auto_apply_mode": "proposal_only",
+  "future_automation_goal": "Upgrade this fixed batch into an unattended patch-and-retest loop once proposal-to-code application is safe enough.",
+  "cases": [
+    {
+      "case_id": "direct_answer_school_start",
+      "strategic_goal": "Give the answer first and keep the first reply frictionless.",
+      "improvement_axis": "direct_answer_first",
+      "user_input": "ニューヨークの学校手続きで最初に確認することを2点だけ教えて。",
+      "expected_reply_substrings": [
+        "期限",
+        "必要"
+      ],
+      "forbidden_reply_substrings": [
+        "何ですか？"
+      ],
+      "reply_contract": {
+        "must_include_any": [
+          "期限",
+          "必要"
+        ],
+        "max_lines": 2,
+        "max_chars": 90,
+        "disallow_question": true
+      }
+    },
+    {
+      "case_id": "priority_pick_without_wobble",
+      "strategic_goal": "When the user asks for one next decision, choose one and avoid opening new branches.",
+      "improvement_axis": "prioritization",
+      "user_input": "その2点のうち、先に確認する方を1つだけ決めて。",
+      "expected_reply_substrings": [
+        "期限",
+        "先"
+      ],
+      "forbidden_reply_substrings": [
+        "2つ"
+      ],
+      "reply_contract": {
+        "must_include_any": [
+          "期限",
+          "先"
+        ],
+        "max_lines": 1,
+        "max_chars": 70,
+        "disallow_question": true
+      }
+    },
+    {
+      "case_id": "correction_recovery_housing",
+      "strategic_goal": "Drop the old topic immediately when the user corrects the domain.",
+      "improvement_axis": "correction_recovery",
+      "user_input": "学校ではなく住居手続きだった。最初の確認事項を2点だけ言い直して。",
+      "expected_reply_substrings": [
+        "住所",
+        "契約",
+        "住居"
+      ],
+      "forbidden_reply_substrings": [
+        "学校"
+      ],
+      "reply_contract": {
+        "must_include_any": [
+          "住所",
+          "契約",
+          "住居"
+        ],
+        "max_lines": 2,
+        "max_chars": 90,
+        "disallow_question": true
+      }
+    },
+    {
+      "case_id": "city_specificity_new_york_city",
+      "strategic_goal": "Tighten the reply when the city is known and reduce vague regional language.",
+      "improvement_axis": "city_specificity",
+      "user_input": "ニューヨーク市だとしたら、最初の確認先を1つだけ言って。",
+      "expected_reply_substrings": [
+        "窓口",
+        "市"
+      ],
+      "forbidden_reply_substrings": [
+        "州だけ"
+      ],
+      "reply_contract": {
+        "must_include_any": [
+          "窓口",
+          "市"
+        ],
+        "max_lines": 1,
+        "max_chars": 70,
+        "disallow_question": true
+      }
+    },
+    {
+      "case_id": "official_confirmation_guard",
+      "strategic_goal": "Point the user to a single official confirmation point without sounding evasive.",
+      "improvement_axis": "official_grounding",
+      "user_input": "あとで公式確認が必要になる点を1つだけ教えて。",
+      "expected_reply_substrings": [
+        "公式",
+        "窓口",
+        "期限"
+      ],
+      "forbidden_reply_substrings": [
+        "たくさん"
+      ],
+      "reply_contract": {
+        "must_include_any": [
+          "公式",
+          "窓口",
+          "期限"
+        ],
+        "max_lines": 1,
+        "max_chars": 75,
+        "disallow_question": true
+      }
+    },
+    {
+      "case_id": "parent_friendly_rephrase",
+      "strategic_goal": "Rewrite in simple language so a parent can read it without feeling talked down to.",
+      "improvement_axis": "plain_language",
+      "user_input": "小学生の保護者向けに、やさしい日本語で1文にして。",
+      "expected_reply_substrings": [
+        "確認",
+        "見る",
+        "決め"
+      ],
+      "forbidden_reply_substrings": [
+        "補足"
+      ],
+      "reply_contract": {
+        "must_include_any": [
+          "確認",
+          "見る",
+          "決め"
+        ],
+        "max_lines": 1,
+        "max_chars": 80,
+        "disallow_question": true
+      }
+    },
+    {
+      "case_id": "single_todo_now",
+      "strategic_goal": "Reduce anxiety by narrowing the answer to one immediate action.",
+      "improvement_axis": "single_next_action",
+      "user_input": "今日やることを1個だけ、命令形で言って。",
+      "expected_reply_substrings": [
+        "確認",
+        "集め",
+        "見る",
+        "決め"
+      ],
+      "forbidden_reply_substrings": [
+        "1つだけ教えて"
+      ],
+      "reply_contract": {
+        "must_include_any": [
+          "確認",
+          "集め",
+          "見る",
+          "決め"
+        ],
+        "max_lines": 1,
+        "max_chars": 45,
+        "disallow_question": true
+      }
+    },
+    {
+      "case_id": "document_pair_specificity",
+      "strategic_goal": "Use concrete document nouns instead of abstract paperwork phrasing.",
+      "improvement_axis": "document_specificity",
+      "user_input": "必要書類を2つだけ挙げて。",
+      "expected_reply_substrings": [
+        "住所",
+        "予防接種",
+        "身分"
+      ],
+      "forbidden_reply_substrings": [
+        "いろいろ"
+      ],
+      "reply_contract": {
+        "must_include_any": [
+          "住所",
+          "予防接種",
+          "身分"
+        ],
+        "max_lines": 2,
+        "max_chars": 70,
+        "disallow_question": true
+      }
+    },
+    {
+      "case_id": "reservation_pointer",
+      "strategic_goal": "Answer the booking question directly and point to where the answer lives.",
+      "improvement_axis": "booking_check",
+      "user_input": "予約が必要かどうかは、どこを見れば分かる？1文で。",
+      "expected_reply_substrings": [
+        "窓口",
+        "公式",
+        "予約",
+        "案内"
+      ],
+      "forbidden_reply_substrings": [
+        "複数"
+      ],
+      "reply_contract": {
+        "must_include_any": [
+          "窓口",
+          "公式",
+          "予約",
+          "案内"
+        ],
+        "max_lines": 1,
+        "max_chars": 70,
+        "disallow_question": true
+      }
+    },
+    {
+      "case_id": "close_with_two_line_plan",
+      "strategic_goal": "Close the sequence with a calm two-step plan instead of another clarification turn.",
+      "improvement_axis": "two_step_close",
+      "user_input": "最後に、今日やる順番を2行でまとめて。",
+      "expected_reply_substrings": [
+        "期限",
+        "書類",
+        "窓口",
+        "予約"
+      ],
+      "forbidden_reply_substrings": [
+        "何ですか？"
+      ],
+      "reply_contract": {
+        "must_include_any": [
+          "期限",
+          "書類",
+          "窓口",
+          "予約"
+        ],
+        "max_lines": 2,
+        "max_chars": 90,
+        "disallow_question": true
+      }
+    }
+  ]
+}

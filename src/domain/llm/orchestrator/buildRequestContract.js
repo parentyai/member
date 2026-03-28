@@ -119,10 +119,16 @@ function detectOutputForm(messageText) {
   if (/(失礼なく|丁寧に|やわらかい敬語|失礼のない)/i.test(text)) return 'polite_template';
   if (/(断定しすぎない|断定せずに|言い切らない|やわらかく提案)/i.test(text)) return 'non_dogmatic';
   if (/(判断基準だけ|確認する項目名だけ|何を確認すべきかだけ|項目名だけ並べて)/i.test(text)) return 'criteria_only';
-  if (/(1行にして|一行にして|1行だけ|一行だけ|一文にして|一文だけ)/i.test(text)) return 'one_line';
-  if (/(2文にして|二文にして|2文だけ|二文だけ)/i.test(text)) return 'two_sentences';
+  if (/(1行にして|一行にして|1行だけ|一行だけ|1文で|一文で|一文にして|一文だけ)/i.test(text)) return 'one_line';
+  if (/(2文にして|二文にして|2文だけ|二文だけ|2行で|二行で)/i.test(text)) return 'two_sentences';
   if (/(事務的すぎない|事務的じゃない|少し硬い|人に話す感じ|やさしくしたい)/i.test(text)) return 'softer';
   return 'default';
+}
+
+function isLowFrictionDirectPrompt(messageText) {
+  const text = normalizeText(messageText);
+  if (!text) return false;
+  return /((最初に確認すること|最初の確認事項|最初の確認先).*((2つ|二つ|2点|二点)|(1つ|一つ)))|((その2点|その二点).*(先に確認する方).*((1つ|一つ)だけ))|((公式確認が必要になる点).*((1つ|一つ)だけ))|((必要書類).*((2つ|二つ|2点|二点)だけ))|((予約が必要かどうか).*(どこを見れば).*(1文|一文))|((今日やること).*((1個|一個|1つ|一つ)だけ).*(命令形))|((最後に).*(2行|二行)でまとめて)/i.test(text);
 }
 
 function referencesPriorAssistantText(messageText, options) {
@@ -207,6 +213,12 @@ function detectDetailObligations(messageText, options) {
   if (payload.outputForm === 'one_line') obligations.push('one_line_only');
   if (payload.outputForm === 'two_sentences') obligations.push('two_sentences_only');
   if (payload.requestShape === 'message_template' || payload.requestShape === 'rewrite' || payload.requestShape === 'summarize') {
+    obligations.push('avoid_question_back');
+  }
+  if (payload.requestShape === 'answer' && isLowFrictionDirectPrompt(text)) {
+    obligations.push('avoid_question_back');
+  }
+  if (payload.requestShape === 'correction' && isLowFrictionDirectPrompt(text)) {
     obligations.push('avoid_question_back');
   }
   if (payload.echoOfPriorAssistant === true) obligations.push('avoid_question_back');

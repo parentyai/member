@@ -19,6 +19,7 @@ const REQUIRED_FILES = [
   path.join(TOOL_ROOT, 'config', 'policy.example.json'),
   path.join(TOOL_ROOT, 'config', 'allowed_targets.example.json'),
   path.join(TOOL_ROOT, 'scenarios', 'smoke_dry_run.example.json'),
+  path.join(TOOL_ROOT, 'scenarios', 'strategic_self_improvement_batch_v1.json'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', '__init__.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'policy.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'runtime_state.py'),
@@ -30,7 +31,8 @@ const REQUIRED_FILES = [
   path.join(TOOL_ROOT, 'desktop_ui_bridge.swift'),
   path.join(TOOL_ROOT, 'send_text_bridge.js'),
   path.join(TOOL_ROOT, 'run_mcp_server.sh'),
-  path.join(TOOL_ROOT, 'run_local_mcp_tool.js')
+  path.join(TOOL_ROOT, 'run_local_mcp_tool.js'),
+  path.join(TOOL_ROOT, 'run_desktop_self_improvement_batch.js')
 ];
 
 function assert(condition, message) {
@@ -56,6 +58,7 @@ function runValidation() {
   const policy = readJson(path.join(TOOL_ROOT, 'config', 'policy.example.json'));
   const allowedTargets = readJson(path.join(TOOL_ROOT, 'config', 'allowed_targets.example.json'));
   const scenario = readJson(path.join(TOOL_ROOT, 'scenarios', 'smoke_dry_run.example.json'));
+  const strategicBatch = readJson(path.join(TOOL_ROOT, 'scenarios', 'strategic_self_improvement_batch_v1.json'));
 
   assert(policy.enabled === false, 'policy.example enabled must stay false');
   assert(policy.dry_run_default === true, 'policy.example dry_run_default must stay true');
@@ -68,12 +71,19 @@ function runValidation() {
   assert(allowedTargets.every((target) => Array.isArray(target.allowed_send_modes) && target.allowed_send_modes.every((mode) => mode === 'dry_run')), 'allowed_targets.example must stay dry_run-only');
   assert(typeof scenario.scenario_id === 'string' && scenario.scenario_id.length > 0, 'scenario example needs scenario_id');
   assert(Array.isArray(scenario.expected_behavior) && scenario.expected_behavior.length > 0, 'scenario example needs expected_behavior');
+  assert(strategicBatch.fixed_case_count === 10, 'strategic self improvement batch must stay fixed at 10 cases');
+  assert(Array.isArray(strategicBatch.cases) && strategicBatch.cases.length === 10, 'strategic self improvement batch needs exactly 10 cases');
+  assert(strategicBatch.cases.every((item) => typeof item.case_id === 'string' && item.case_id.length > 0), 'strategic batch cases need case_id');
+  assert(strategicBatch.cases.every((item) => typeof item.strategic_goal === 'string' && item.strategic_goal.length > 0), 'strategic batch cases need strategic_goal');
+  assert(strategicBatch.cases.every((item) => typeof item.improvement_axis === 'string' && item.improvement_axis.length > 0), 'strategic batch cases need improvement_axis');
+  assert(strategicBatch.cases.every((item) => item.reply_contract && Array.isArray(item.reply_contract.must_include_any) && item.reply_contract.must_include_any.length > 0), 'strategic batch cases need reply_contract.must_include_any');
 
   return {
     ok: true,
     schemaCount: schemas.length,
     sampleTargetCount: allowedTargets.length,
-    scenarioId: scenario.scenario_id
+    scenarioId: scenario.scenario_id,
+    strategicBatchId: strategicBatch.batch_id
   };
 }
 
