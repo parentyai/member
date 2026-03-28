@@ -15,6 +15,8 @@ const {
 const ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_BATCH_PATH = path.join(__dirname, 'scenarios', 'strategic_self_improvement_batch_v1.json');
 const DEFAULT_POLICY_PATH = path.join(ROOT, 'tools', 'line_desktop_patrol', 'config', 'policy.local.json');
+const DEFAULT_QUEUE_ROOT = path.join(ROOT, 'artifacts', 'line_desktop_patrol', 'proposals');
+const DEFAULT_BASE_REF = 'origin/main';
 const STOP_BATCH_ERROR_CODES = new Set([
   'blocked_hours',
   'desktop_target_title_guard',
@@ -83,7 +85,7 @@ function resolvePolicyPath() {
   return null;
 }
 
-function loadPolicyBudget() {
+function loadPolicyRuntime() {
   const policyPath = resolvePolicyPath();
   if (!policyPath) {
     return {
@@ -99,7 +101,31 @@ function loadPolicyBudget() {
     maxRunsPerHour: Number(payload.max_runs_per_hour),
     failureStreakThreshold: Number(payload.failure_streak_threshold),
     enabled: payload.enabled === true,
+    proposalMode: normalizeText(payload.proposal_mode) || 'off',
+    autoApplyLevel: normalizeText(payload.auto_apply_level) || 'none',
   };
+}
+
+function loadPolicyBudget() {
+  return loadPolicyRuntime();
+}
+
+function buildPythonEnv(extraEnv) {
+  const pythonRoot = path.join(ROOT, 'tools', 'line_desktop_patrol', 'src');
+  const inheritedPythonPath = normalizeText(process.env.PYTHONPATH);
+  return {
+    ...process.env,
+    ...(extraEnv && typeof extraEnv === 'object' ? extraEnv : {}),
+    PYTHONPATH: inheritedPythonPath
+      ? `${pythonRoot}${path.delimiter}${inheritedPythonPath}`
+      : pythonRoot,
+  };
+}
+
+function parseJsonOutput(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return null;
+  return JSON.parse(normalized);
 }
 
 function loadStrategicBatch(batchPath = DEFAULT_BATCH_PATH) {
@@ -281,6 +307,237 @@ function runDesktopEval(tracePath, outputRoot, caseId) {
     planningOutputPath,
     mainArtifact: readJson(mainOutputPath),
     planningArtifact: readJson(planningOutputPath),
+  };
+}
+
+function runEvalProposalQueue(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const queueRoot = path.resolve(payload.queueRoot || DEFAULT_QUEUE_ROOT);
+  const args = [
+    '-m',
+    'member_line_patrol.enqueue_eval_proposals',
+    '--trace',
+    String(payload.tracePath),
+    '--planning-output',
+    String(payload.planningOutputPath),
+    '--queue-root',
+    queueRoot,
+  ];
+  if (payload.mainOutputPath) {
+    args.push('--main-output', String(payload.mainOutputPath));
+  }
+  const completed = (payload.runner || spawnSync)(
+    'python3',
+    args,
+    {
+      cwd: ROOT,
+      encoding: 'utf8',
+      env: buildPythonEnv(),
+    }
+  );
+  const stdout = normalizeText(completed.stdout);
+  const stderr = normalizeText(completed.stderr);
+  if (completed.status !== 0) {
+    return {
+      ok: false,
+      status: completed.status,
+      queueRoot,
+      error: stderr || stdout || 'enqueue_eval_proposals failed',
+      stdout,
+      stderr,
+    };
+  }
+  try {
+    return {
+      ok: true,
+      status: completed.status,
+      queueRoot,
+      result: parseJsonOutput(stdout),
+      stdout,
+      stderr,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: completed.status,
+      queueRoot,
+      error: error && error.message ? error.message : 'json_parse_failed',
+      stdout,
+      stderr,
+    };
+  }
+}
+
+function runPatchDraftSynthesis(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const proposalIds = Array.from(new Set(
+    (Array.isArray(payload.proposalIds) ? payload.proposalIds : [])
+      .map((item) => normalizeText(String(item)))
+      .filter(Boolean)
+  ));
+  if (proposalIds.length === 0) {
+    return {
+      ok: true,
+      generatedCount: 0,
+      proposalIds: [],
+      results: [],
+      failedIds: [],
+    };
+  }
+  const runner = payload.runner || spawnSync;
+  const queueRoot = path.resolve(payload.queueRoot || DEFAULT_QUEUE_ROOT);
+  const repoRoot = path.resolve(payload.repoRoot || ROOT);
+  const baseRef = normalizeText(payload.baseRef) || DEFAULT_BASE_REF;
+  const results = [];
+  const failedIds = [];
+  proposalIds.forEach((proposalId) => {
+    const completed = runner(
+      'python3',
+      [
+        '-m',
+        'member_line_patrol.synthesize_code_edit_task',
+        '--proposal-id',
+        proposalId,
+        '--queue-root',
+        queueRoot,
+        '--repo-root',
+        repoRoot,
+        '--base-ref',
+        baseRef,
+      ],
+      {
+        cwd: ROOT,
+        encoding: 'utf8',
+        env: buildPythonEnv(),
+      }
+    );
+    const stdout = normalizeText(completed.stdout);
+    const stderr = normalizeText(completed.stderr);
+    if (completed.status !== 0) {
+      failedIds.push(proposalId);
+      results.push({
+        ok: false,
+        proposalId,
+        status: completed.status,
+        error: stderr || stdout || 'synthesize_code_edit_task failed',
+      });
+      return;
+    }
+    try {
+      results.push({
+        ok: true,
+        proposalId,
+        status: completed.status,
+        result: parseJsonOutput(stdout),
+      });
+    } catch (error) {
+      failedIds.push(proposalId);
+      results.push({
+        ok: false,
+        proposalId,
+        status: completed.status,
+        error: error && error.message ? error.message : 'json_parse_failed',
+      });
+    }
+  });
+  return {
+    ok: failedIds.length === 0,
+    generatedCount: results.filter((item) => item.ok === true).length,
+    proposalIds,
+    results,
+    failedIds,
+  };
+}
+
+function runPromotionPipeline(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const planningProposals = Array.isArray(payload.planningProposals) ? payload.planningProposals : [];
+  const policyRuntime = payload.policyRuntime && typeof payload.policyRuntime === 'object'
+    ? payload.policyRuntime
+    : loadPolicyRuntime();
+  if (planningProposals.length === 0) {
+    return {
+      ok: true,
+      status: 'skipped_no_proposals',
+      proposalIds: [],
+      queueResult: null,
+      patchDraftResult: null,
+    };
+  }
+  if (!policyRuntime.ok) {
+    return {
+      ok: false,
+      status: 'policy_unresolved',
+      error: policyRuntime.code || 'policy_unresolved',
+      proposalIds: [],
+      queueResult: null,
+      patchDraftResult: null,
+    };
+  }
+  if (policyRuntime.proposalMode !== 'local_queue') {
+    return {
+      ok: true,
+      status: `skipped_proposal_mode_${policyRuntime.proposalMode || 'off'}`,
+      proposalIds: [],
+      queueResult: null,
+      patchDraftResult: null,
+    };
+  }
+  if (!payload.tracePath || !payload.planningOutputPath) {
+    return {
+      ok: false,
+      status: 'promotion_artifacts_missing',
+      error: 'tracePath and planningOutputPath are required',
+      proposalIds: [],
+      queueResult: null,
+      patchDraftResult: null,
+    };
+  }
+  const queueRun = runEvalProposalQueue({
+    tracePath: payload.tracePath,
+    planningOutputPath: payload.planningOutputPath,
+    mainOutputPath: payload.mainOutputPath,
+    queueRoot: payload.queueRoot,
+    runner: payload.runner,
+  });
+  if (!queueRun.ok) {
+    return {
+      ok: false,
+      status: 'queue_failed',
+      error: queueRun.error,
+      proposalIds: [],
+      queueResult: queueRun,
+      patchDraftResult: null,
+    };
+  }
+  const queueResult = queueRun.result || {};
+  const proposalIds = Array.from(new Set([
+    ...(Array.isArray(queueResult.queuedProposalIds) ? queueResult.queuedProposalIds : []),
+    ...(Array.isArray(queueResult.duplicateProposalIds) ? queueResult.duplicateProposalIds : []),
+  ]));
+  if (policyRuntime.autoApplyLevel !== 'patch_draft') {
+    return {
+      ok: true,
+      status: policyRuntime.autoApplyLevel === 'docs_only' ? 'queued_docs_only' : 'queued',
+      proposalIds,
+      queueResult,
+      patchDraftResult: null,
+    };
+  }
+  const patchDraftResult = runPatchDraftSynthesis({
+    proposalIds,
+    queueRoot: payload.queueRoot,
+    repoRoot: payload.repoRoot,
+    baseRef: payload.baseRef,
+    runner: payload.runner,
+  });
+  return {
+    ok: patchDraftResult.ok,
+    status: patchDraftResult.ok ? 'queued_and_patch_draft_ready' : 'patch_draft_failed',
+    error: patchDraftResult.ok ? null : 'patch_draft_failed',
+    proposalIds,
+    queueResult,
+    patchDraftResult,
   };
 }
 
@@ -473,6 +730,12 @@ function buildBlockedCaseResult(caseDefinition, blocker, index, batchSize) {
 function summarizeRound(batch, caseResults) {
   const strategicAxes = {};
   const proposals = [];
+  const promotionSummary = {
+    statusCounts: {},
+    queuedProposalCount: 0,
+    patchDraftReadyCount: 0,
+    blockedCaseIds: [],
+  };
   let passCount = 0;
   let replyContractPassCount = 0;
   let loopPassCount = 0;
@@ -493,6 +756,19 @@ function summarizeRound(batch, caseResults) {
       proposalCount += 1;
       proposals.push(Object.assign({ caseId: result.caseId }, proposal));
     }
+    const promotionStatus = normalizeText(result.promotionResult && result.promotionResult.status) || 'unavailable';
+    promotionSummary.statusCounts[promotionStatus] = (promotionSummary.statusCounts[promotionStatus] || 0) + 1;
+    promotionSummary.queuedProposalCount += Array.isArray(result.promotionResult && result.promotionResult.proposalIds)
+      ? result.promotionResult.proposalIds.length
+      : 0;
+    promotionSummary.patchDraftReadyCount += Number(
+      result.promotionResult
+      && result.promotionResult.patchDraftResult
+      && result.promotionResult.patchDraftResult.generatedCount
+    ) || 0;
+    if (result.promotionResult && result.promotionResult.ok === false) {
+      promotionSummary.blockedCaseIds.push(result.caseId);
+    }
   }
   return {
     batchId: batch.batchId,
@@ -504,10 +780,15 @@ function summarizeRound(batch, caseResults) {
     proposalCount,
     failingCaseIds,
     strategicAxes,
+    promotionSummary,
     proposals,
-    completionStatus: passCount === batch.fixedCaseCount && proposalCount === 0
-      ? 'stable_no_improvement_needed'
-      : 'proposal_review_required',
+    completionStatus: promotionSummary.blockedCaseIds.length > 0
+      ? 'promotion_blocked'
+      : (
+        passCount === batch.fixedCaseCount && proposalCount === 0
+          ? 'stable_no_improvement_needed'
+          : 'proposal_review_required'
+      ),
   };
 }
 
@@ -524,6 +805,7 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
   const sendMode = normalizeText(args.sendMode) || 'execute';
   const observeSeconds = toInt(args.observeSeconds, 25);
   const pollSeconds = toInt(args.pollSeconds, 2);
+  const policyRuntime = loadPolicyRuntime();
   const batchRunId = `desktop-self-improve-${crypto.randomUUID()}`;
   const batchRoot = path.join(ROOT, 'artifacts', 'line_desktop_patrol', 'self_improvement_runs', batchRunId);
   const client = createClient(deps);
@@ -606,6 +888,17 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
       const loopErrorCode = loop.ok ? null : normalizeText(loopPayload.code || loopPayload.errorCode);
       const loopError = loop.ok ? null : normalizeText(loopPayload.error || loopPayload.message);
       const caseVerdict = loop.ok && loopVerdict === 'pass' && replyContract.verdict === true ? 'pass' : 'fail';
+      const promotionResult = runPromotionPipeline({
+        planningProposals,
+        tracePath: evalResult.mainOutputPath ? artifactPaths.tracePath : null,
+        planningOutputPath: evalResult.planningOutputPath,
+        mainOutputPath: evalResult.mainOutputPath,
+        policyRuntime,
+        queueRoot: deps && deps.queueRoot ? deps.queueRoot : DEFAULT_QUEUE_ROOT,
+        repoRoot: deps && deps.repoRoot ? deps.repoRoot : ROOT,
+        baseRef: deps && deps.baseRef ? deps.baseRef : DEFAULT_BASE_REF,
+        runner: deps && deps.runner ? deps.runner : spawnSync,
+      });
       caseResults.push({
         caseId: caseDefinition.caseId,
         strategicGoal: caseDefinition.strategicGoal,
@@ -624,6 +917,7 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
         analysisStatus: evalResult.mainArtifact ? normalizeText(evalResult.mainArtifact.analysisStatus) : 'unavailable',
         observationStatus: evalResult.mainArtifact ? normalizeText(evalResult.mainArtifact.observationStatus) : 'unavailable',
         planningProposals,
+        promotionResult,
         evalResult,
       });
       if (loop.ok !== true && STOP_BATCH_ERROR_CODES.has(loopErrorCode)) {
@@ -644,6 +938,16 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
       sendMode,
       autoApplyMode: batch.autoApplyMode,
       futureAutomationGoal: batch.futureAutomationGoal,
+      policyRuntime: policyRuntime.ok
+        ? {
+          policyPath: policyRuntime.policyPath,
+          proposalMode: policyRuntime.proposalMode,
+          autoApplyLevel: policyRuntime.autoApplyLevel,
+        }
+        : {
+          policyPath: policyRuntime.policyPath,
+          error: policyRuntime.code,
+        },
       readiness,
       readinessResult,
       batchPreflight,
@@ -663,12 +967,21 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
         observationStatus: result.observationStatus,
         replyContract: result.replyContract,
         planningProposals: result.planningProposals,
+        promotionResult: result.promotionResult,
         tracePath: result.artifactPaths.tracePath,
         resultPath: result.artifactPaths.resultPath,
       })),
       nextAction: roundSummary.completionStatus === 'stable_no_improvement_needed'
         ? 'No patch proposal is required for this fixed batch.'
-        : 'Review the aggregated proposals before any code patch is auto-applied.',
+        : (
+          roundSummary.completionStatus === 'promotion_blocked'
+            ? 'Review the promotion blockers before any code patch preparation continues.'
+            : (
+              roundSummary.promotionSummary.patchDraftReadyCount > 0
+                ? 'Review the prepared human code edit tasks before any apply_patch step.'
+                : 'Review the queued proposals before any code patch is prepared.'
+            )
+        ),
     };
     writeJson(path.join(batchRoot, 'summary.json'), summary);
     return summary;
@@ -707,8 +1020,12 @@ module.exports = {
   listRecentTraceArtifacts,
   loadStrategicBatch,
   loadPolicyBudget,
+  loadPolicyRuntime,
   parseArgs,
   resolvePolicyPath,
+  runEvalProposalQueue,
+  runPatchDraftSynthesis,
+  runPromotionPipeline,
   runStrategicSelfImprovementBatch,
   scoreReplyContract,
   summarizeRound,
