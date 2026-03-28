@@ -41,6 +41,12 @@ LLM 統合機能を advisory-only のまま安全に運用する。
   - `policySnapshotVersion`
   - `regulatoryProfile`
 
+## Response Quality / Artifact Policy
+- shared response-quality contract は runtime と harness の両方で同じ reason code / provenance を出す前提で運用する。
+- run-scoped quality artifacts は `tmp/llm_quality_runs/<runId>/...` を正とし、`tmp/llm_quality_*.json` は compatibility only として扱う。
+- `tmp/llm_quality_failure_register.json` と `tmp/llm_quality_counterexample_queue.json` は report 由来の運用証跡として確認する。
+- admin / audit で telemetry を追加する場合は add-only とし、既存 key の削除や改名は行わない。
+
 ## Failure Modes
 - schema mismatch / citation mismatch / allow-list violation => fallback へ退避。
 - provider timeout / error => fallback へ退避。
@@ -117,6 +123,7 @@ LLM 統合機能を advisory-only のまま安全に運用する。
 5. `GET /api/admin/llm/config/status` で `effectiveEnabled: true` を確認。
 6. deploy workflow の `Verify LLM runtime state (strict)` が success であることを確認（`envFlag=true/systemFlag=true/effectiveEnabled=true/blockingReason=null`）。
 7. `audit_logs` で `action='llm_faq_answer_blocked'` が減少していることを確認。
+8. quality-framework の run-scoped artifact と counterexample queue を確認し、runtime provenance が report と一致していることを確認する。
 
 ### LLM Config 適用 JSON（固定デフォルト）
 `legitimate_interest / consentVerified=false / crossBorder=true` を固定値として使う。

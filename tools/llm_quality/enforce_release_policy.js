@@ -8,6 +8,7 @@ const {
   buildConciergeReleaseSupport,
   CONCIERGE_RUNTIME_SIGNAL_KEYS
 } = require('./concierge_quality');
+const harnessShared = require('./harness_shared');
 
 function parseArgs(argv) {
   const args = Array.isArray(argv) ? argv.slice(2) : [];
@@ -229,44 +230,31 @@ function main(argv) {
   const summaryPath = args.summary
     ? path.resolve(root, args.summary)
     : path.join(root, 'tmp', 'llm_usage_summary.json');
-  const requireAllSlicesPass = toBool(
-    args.requireAllSlicesPass,
-    toBool(process.env.LLM_QUALITY_REQUIRE_ALL_SLICES_PASS, false)
-  );
-  const requireStrictRuntimeSignals = toBool(
-    args.requireStrictRuntimeSignals,
-    toBool(process.env.LLM_QUALITY_REQUIRE_STRICT_RUNTIME_SIGNALS, false)
-  );
-  const requireCompatGovernance = toBool(
-    args.requireCompatGovernance,
-    toBool(process.env.LLM_QUALITY_REQUIRE_COMPAT_GOVERNANCE, false)
-  );
-  const requireLiveRuntimeAudit = toBool(
-    args.requireLiveRuntimeAudit,
-    toBool(process.env.LLM_QUALITY_REQUIRE_LIVE_RUNTIME_AUDIT, false)
-  );
-  const requireNoGoGateMandatory = toBool(
-    args.requireNoGoGateMandatory,
-    toBool(process.env.LLM_QUALITY_REQUIRE_NOGO_GATE_MANDATORY, false)
-  );
-  const maxCompatShare = parseRate(
-    args.maxCompatShare,
-    parseRate(process.env.LLM_QUALITY_MAX_COMPAT_SHARE, 0.15)
-  );
-  const requireSoftFloor = toBool(
-    args.requireSoftFloor,
-    toBool(process.env.LLM_QUALITY_REQUIRE_SOFT_FLOOR_080, false)
-  );
-  const softFloor = Number.isFinite(Number(args.softFloor))
-    ? Number(args.softFloor)
-    : Number.isFinite(Number(process.env.LLM_QUALITY_SOFT_FLOOR_VALUE))
-      ? Number(process.env.LLM_QUALITY_SOFT_FLOOR_VALUE)
-      : 0.8;
+  const policy = harnessShared.resolveQualityPolicyFlags({
+    env: process.env,
+    requireAllSlicesPass: args.requireAllSlicesPass,
+    requireStrictRuntimeSignals: args.requireStrictRuntimeSignals,
+    requireCompatGovernance: args.requireCompatGovernance,
+    requireLiveRuntimeAudit: args.requireLiveRuntimeAudit,
+    requireNoGoGateMandatory: args.requireNoGoGateMandatory,
+    requireSoftFloor: args.requireSoftFloor,
+    maxCompatShare: args.maxCompatShare,
+    softFloor: args.softFloor
+  });
+  const requireAllSlicesPass = policy.requireAllSlicesPass;
+  const requireStrictRuntimeSignals = policy.requireStrictRuntimeSignals;
+  const requireCompatGovernance = policy.requireCompatGovernance;
+  const requireLiveRuntimeAudit = policy.requireLiveRuntimeAudit;
+  const requireNoGoGateMandatory = policy.requireNoGoGateMandatory;
+  const maxCompatShare = policy.maxCompatShare;
+  const requireSoftFloor = policy.requireSoftFloor;
+  const softFloor = policy.softFloorValue;
+  const runId = harnessShared.resolveHarnessRunId({ env: process.env, sourceTag: 'release-policy' });
 
   const baseline = readJson(baselinePath);
   const precomputedCandidate = readJson(candidatePath);
   const mustPass = readJson(mustPassPath);
-  const summary = readSummaryData(summaryPath);
+  const summary = harnessShared.readSummaryData(summaryPath);
   const runtimeSummaryCandidate = buildCandidateScorecardFromSummary(summary, summaryPath);
   const candidate = runtimeSummaryCandidate || precomputedCandidate;
   const candidateSourceType = runtimeSummaryCandidate ? 'runtime_summary' : 'precomputed_scorecard';
@@ -382,8 +370,8 @@ function main(argv) {
     if (compatSlice.status !== 'pass') failures.push('compat_slice_not_pass');
   }
   if (requireLiveRuntimeAudit === true) {
-    if (!isLiveRuntimeSummaryProvenance(runtimeSummarySource)) {
-      failures.push(`live_runtime_audit_provenance_invalid:${normalizeRuntimeSummarySource(runtimeSummarySource) || 'unknown'}`);
+    if (!harnessShared.isLiveRuntimeSummaryProvenance(runtimeSummarySource)) {
+      failures.push(`live_runtime_audit_provenance_invalid:${harnessShared.normalizeRuntimeSummarySource(runtimeSummarySource) || 'unknown'}`);
     }
     if (!improvementLoop) {
       failures.push('quality_loop_v2_improvement_loop_missing');
@@ -564,7 +552,14 @@ function main(argv) {
     warnings: Array.from(new Set(warnings))
   };
 
-  writeJson(outPath, result);
+  const artifact = harnessShared.writeHarnessArtifact({
+    outputPath: outPath,
+    value: result,
+    runId,
+    artifactGroup: harnessShared.resolveRunScopedArtifactGroup('policy')
+  });
+  result.outputPath = artifact.outputPath;
+  result.runScopedOutputPath = artifact.runScopedPath;
   const target = result.ok ? process.stdout : process.stderr;
   target.write(`${JSON.stringify(result, null, 2)}\n`);
   return result.ok ? 0 : 1;

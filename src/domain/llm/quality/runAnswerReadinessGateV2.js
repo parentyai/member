@@ -6,7 +6,14 @@ const { resolveAnswerReadinessV2Mode } = require('./resolveAnswerReadinessV2Mode
 
 function runAnswerReadinessGateV2(params) {
   const payload = params && typeof params === 'object' ? params : {};
-  const context = buildAnswerReadinessContext(payload);
+  const responseQualityContext = payload.responseQualityContext && typeof payload.responseQualityContext === 'object'
+    ? payload.responseQualityContext
+    : null;
+  const context = responseQualityContext && responseQualityContext.answerReadinessContext
+    ? responseQualityContext.answerReadinessContext
+    : (payload.answerReadinessContext && typeof payload.answerReadinessContext === 'object'
+      ? payload.answerReadinessContext
+      : buildAnswerReadinessContext(payload));
   const readinessLegacy = evaluateAnswerReadiness(context.legacyInput);
   const readinessV2 = evaluateAnswerReadiness(context.v2Input);
   const mode = resolveAnswerReadinessV2Mode({
@@ -24,6 +31,9 @@ function runAnswerReadinessGateV2(params) {
     answerReadinessEnforcedV2: mode.answerReadinessEnforcedV2,
     context,
     telemetry: {
+      responseQualityContextVersion: responseQualityContext && typeof responseQualityContext.contractVersion === 'string'
+        ? responseQualityContext.contractVersion
+        : null,
       answerReadinessVersion: 'v2',
       answerReadinessEntryType: mode.entryType,
       answerReadinessV2Stage: mode.stage,

@@ -1,12 +1,18 @@
 'use strict';
 
-const fs = require('node:fs');
 const path = require('node:path');
+const { readJson } = require('./lib');
 const {
   buildConciergeReleaseSupport,
   buildConciergeRuntimeFailures: buildConciergeRuntimeFailuresFromSupport,
   CONCIERGE_RUNTIME_SIGNAL_KEYS
 } = require('./concierge_quality');
+const {
+  resolveHarnessRunId,
+  resolveRunScopedArtifactGroup,
+  readSummaryData,
+  writeHarnessArtifact
+} = require('./harness_shared');
 
 function parseArgs(argv) {
   const args = Array.isArray(argv) ? argv.slice(2) : [];
@@ -19,15 +25,6 @@ function parseArgs(argv) {
     if (next && !next.startsWith('--')) i += 1;
   }
   return out;
-}
-
-function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-}
-
-function writeJson(filePath, payload) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`);
 }
 
 function toMap(rows, keyField) {
@@ -238,10 +235,7 @@ function main(argv) {
 
   const baseline = readJson(baselinePath);
   const candidate = readJson(candidatePath);
-  const summaryPayload = summaryPath ? readJson(summaryPath) : null;
-  const summary = summaryPayload && typeof summaryPayload === 'object'
-    ? (summaryPayload.summary && typeof summaryPayload.summary === 'object' ? summaryPayload.summary : summaryPayload)
-    : {};
+  const summary = readSummaryData(summaryPath) || {};
   const conciergeSupport = buildConciergeReleaseSupport(summary);
 
   const baselineDimensions = toMap(baseline.dimensions, 'key');
@@ -286,8 +280,13 @@ function main(argv) {
     }
   };
 
-  writeJson(outPath, report);
-  process.stdout.write(`${JSON.stringify({ ok: true, outPath, report }, null, 2)}\n`);
+  const artifact = writeHarnessArtifact({
+    outputPath: outPath,
+    value: report,
+    runId: resolveHarnessRunId({ env: process.env, sourceTag: 'quality-report' }),
+    artifactGroup: resolveRunScopedArtifactGroup('report')
+  });
+  process.stdout.write(`${JSON.stringify({ ok: true, outPath: artifact.outputPath, runScopedOutPath: artifact.runScopedPath, report }, null, 2)}\n`);
   return 0;
 }
 

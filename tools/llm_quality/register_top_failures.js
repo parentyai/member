@@ -2,7 +2,12 @@
 
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { parseArgs, readJson, writeJson } = require('./lib');
+const { parseArgs, readJson } = require('./lib');
+const {
+  resolveHarnessRunId,
+  resolveRunScopedArtifactGroup,
+  writeHarnessArtifact
+} = require('./harness_shared');
 
 const REGISTER_VERSION = 'v1';
 const DEFAULT_MAX_HISTORY = 30;
@@ -238,8 +243,13 @@ function main(argv) {
     latest,
     history
   };
-  writeJson(outPath, register);
-  process.stdout.write(`${JSON.stringify({ ok: true, outPath, latest }, null, 2)}\n`);
+  const artifact = writeHarnessArtifact({
+    outputPath: outPath,
+    value: register,
+    runId: resolveHarnessRunId({ env: process.env, sourceTag: 'failure-register' }),
+    artifactGroup: resolveRunScopedArtifactGroup('register')
+  });
+  process.stdout.write(`${JSON.stringify({ ok: true, outPath: artifact.outputPath, runScopedOutPath: artifact.runScopedPath, latest }, null, 2)}\n`);
   return 0;
 }
 

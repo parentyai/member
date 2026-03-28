@@ -628,6 +628,8 @@ async function appendLlmActionLog(params) {
     readinessReasonCodes: normalizeStringList(payload.readinessReasonCodes, 12),
     readinessSafeResponseMode: normalizeReadinessSafeResponseMode(payload.readinessSafeResponseMode),
     answerReadinessVersion: normalizeString(payload.answerReadinessVersion, null),
+    responseQualityContextVersion: normalizeString(payload.responseQualityContextVersion, null),
+    responseQualityVerdictVersion: normalizeString(payload.responseQualityVerdictVersion, null),
     answerReadinessLogOnlyV2: payload.answerReadinessLogOnlyV2 === true,
     answerReadinessEnforcedV2: payload.answerReadinessEnforcedV2 === true,
     answerReadinessV2Mode: normalizeString(payload.answerReadinessV2Mode, null),

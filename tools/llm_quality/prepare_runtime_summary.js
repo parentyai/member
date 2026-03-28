@@ -2,6 +2,11 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const {
+  resolveHarnessRunId,
+  resolveRunScopedArtifactGroup,
+  writeHarnessArtifact
+} = require('./harness_shared');
 
 function parseArgs(argv) {
   const out = {};
@@ -210,12 +215,18 @@ function main(argv) {
     preparedAt: new Date().toISOString(),
     runtimeSummarySource: mode
   });
-  writeJson(outPath, outputPayload);
+  const artifact = writeHarnessArtifact({
+    outputPath: outPath,
+    value: outputPayload,
+    runId: resolveHarnessRunId({ env: process.env, sourceTag: 'runtime-summary' }),
+    artifactGroup: resolveRunScopedArtifactGroup('summary')
+  });
 
   process.stdout.write(`${JSON.stringify({
     ok: true,
     mode,
-    outputPath: outPath,
+    outputPath: artifact.outputPath,
+    runScopedOutputPath: artifact.runScopedPath,
     seedPath,
     strictRuntime,
     maxAgeMinutes

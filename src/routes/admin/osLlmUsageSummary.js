@@ -2337,12 +2337,22 @@ function buildQualityLoopV2Summary(data) {
   const readinessStageBreakdown = new Map();
   const readinessDecisionSourceBreakdown = new Map();
   const readinessHardeningVersionBreakdown = new Map();
+  const responseQualityContextVersionBreakdown = new Map();
+  const responseQualityVerdictVersionBreakdown = new Map();
   readinessV2Rows.forEach((row) => {
     incrementCount(readinessDecisionV2Breakdown, row && row.readinessDecisionV2 ? row.readinessDecisionV2 : 'none');
     incrementCount(readinessModeBreakdown, row && row.answerReadinessV2Mode ? row.answerReadinessV2Mode : 'unknown');
     incrementCount(readinessStageBreakdown, row && row.answerReadinessV2Stage ? row.answerReadinessV2Stage : 'unknown');
     incrementCount(readinessDecisionSourceBreakdown, row && row.readinessDecisionSourceV2 ? row.readinessDecisionSourceV2 : 'unknown');
     incrementCount(readinessHardeningVersionBreakdown, row && row.readinessHardeningVersion ? row.readinessHardeningVersion : 'none');
+    incrementCount(
+      responseQualityContextVersionBreakdown,
+      row && row.responseQualityContextVersion ? row.responseQualityContextVersion : 'none'
+    );
+    incrementCount(
+      responseQualityVerdictVersionBreakdown,
+      row && row.responseQualityVerdictVersion ? row.responseQualityVerdictVersion : 'none'
+    );
   });
   const nogoGateMandatoryCount = countWhere(readinessV2Rows, (row) => row && row.answerReadinessV2Stage === 'nogo_gate_mandatory');
   const hardEnforcedCount = countWhere(
@@ -2380,6 +2390,8 @@ function buildQualityLoopV2Summary(data) {
       stageBreakdown: sortCountEntries(readinessStageBreakdown, 'stage', 10),
       decisionSourceBreakdown: sortCountEntries(readinessDecisionSourceBreakdown, 'decisionSource', 10),
       hardeningVersionBreakdown: sortCountEntries(readinessHardeningVersionBreakdown, 'version', 10),
+      responseQualityContextVersionBreakdown: sortCountEntries(responseQualityContextVersionBreakdown, 'version', 10),
+      responseQualityVerdictVersionBreakdown: sortCountEntries(responseQualityVerdictVersionBreakdown, 'version', 10),
       hardEnforcedCount,
       softEnforcedCount,
       logOnlyCount,

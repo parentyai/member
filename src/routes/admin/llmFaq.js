@@ -142,6 +142,8 @@ async function handleAdminLlmFaqAnswer(req, res, body, deps) {
       readinessSafeResponseMode: result && result.readinessSafeResponseMode ? result.readinessSafeResponseMode : null,
       answerReadinessLogOnly: result ? result.answerReadinessLogOnly === true : false,
       answerReadinessVersion: result && result.answerReadinessVersion ? result.answerReadinessVersion : null,
+      responseQualityContextVersion: result && result.responseQualityContextVersion ? result.responseQualityContextVersion : null,
+      responseQualityVerdictVersion: result && result.responseQualityVerdictVersion ? result.responseQualityVerdictVersion : null,
       answerReadinessLogOnlyV2: result ? result.answerReadinessLogOnlyV2 === true : false,
       answerReadinessEnforcedV2: result ? result.answerReadinessEnforcedV2 === true : false,
       answerReadinessV2Mode: result && result.answerReadinessV2Mode ? result.answerReadinessV2Mode : null,

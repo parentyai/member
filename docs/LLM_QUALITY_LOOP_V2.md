@@ -10,6 +10,14 @@
   - saved FAQ / KB reuse
   - cross-system trace join and operator UX
 
+## Shared Response-Quality Foundation
+- runtime, readback, and evaluation surfaces should reference the same internal contract family:
+  - `ResponseQualityContext`
+  - `ResponseQualityVerdict`
+  - `QualityRunManifest`
+- reason codes, provenance, and telemetry version fields must be add-only so runtime and harness can be compared without shape drift.
+- run-scoped artifacts are primary; `tmp/llm_quality_*.json` remains a compatibility surface only.
+
 ## Start Guard
 - Work must start from a clean branch created from `origin/main`.
 - Dirty unrelated diffs are blocked and must be isolated before PR creation.
@@ -53,6 +61,7 @@ The following slices are release blockers even if global quality remains `pass`.
   - `savedFaqAllowedIntent`
   - `savedFaqAuthorityScore`
   - `crossSystemConflictDetected`
+- new add-only telemetry surfaces may include response-quality version markers and run provenance fields, provided existing keys remain intact.
 
 ## Integration KPI
 | KPI | No-Go |
@@ -103,6 +112,7 @@ The following slices are release blockers even if global quality remains `pass`.
 - strict gates must require:
   - live runtime summary provenance
   - `qualityLoopV2.improvementLoop.runtimeAuditUnavailable=false`
+- strict gates should compare runtime and harness against the same `runId` / artifact provenance when available.
 
 ## Replay / Golden Coverage
 - `city-pack-informed answer`

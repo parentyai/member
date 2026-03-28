@@ -12,7 +12,10 @@ const {
   buildReplyTemplateFingerprint,
   classifyReplyTemplateKind
 } = require('../conversation/replyTemplateTelemetry');
-const { applyAnswerReadinessDecision } = require('../quality/applyAnswerReadinessDecision');
+const {
+  createResponseQualityContext,
+  createResponseQualityVerdict
+} = require('../quality/responseQualityFoundation');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -123,17 +126,28 @@ function finalizeCandidate(params) {
     ? (trimForPaidLineMessage(normalizeText(selected.replyText)) || fallbackText)
     : (trimForPaidLineMessage(normalizeText(guardResult && guardResult.text) || fallbackText) || fallbackText);
   const recoveredReplyText = recoverReplyTextFromContract(guardedReplyText, requestContract) || guardedReplyText;
-  const readinessApplied = applyAnswerReadinessDecision({
-    decision: readinessDecision,
+  const responseQualityContext = payload.responseQualityContext && typeof payload.responseQualityContext === 'object'
+    ? payload.responseQualityContext
+    : createResponseQualityContext({
+      entryType: 'orchestrator',
+      requestShape: normalizeText(requestContract.requestShape).toLowerCase(),
+      outputForm: normalizeText(requestContract.outputForm).toLowerCase(),
+      transformSource: normalizeText(requestContract.transformSource).toLowerCase(),
+      knowledgeScope: normalizeText(requestContract.knowledgeScope).toLowerCase()
+    });
+  const responseQualityVerdict = createResponseQualityVerdict({
+    responseQualityContext,
+    readinessGate: payload.readinessGate,
+    readinessOverride: {
+      decision: readinessDecision,
+      reasonCodes: payload.readinessReasonCodes,
+      safeResponseMode: readinessSafeResponseMode
+    },
     replyText: recoveredReplyText,
     clarifyText: readinessClarifyText || 'まず対象手続きと期限を1つずつ教えてください。そこから次の一手を絞ります。',
-    refuseText: 'この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを整理します。',
-    requestShape: normalizeText(requestContract.requestShape).toLowerCase(),
-    outputForm: normalizeText(requestContract.outputForm).toLowerCase(),
-    transformSource: normalizeText(requestContract.transformSource).toLowerCase(),
-    knowledgeScope: normalizeText(requestContract.knowledgeScope).toLowerCase()
+    refuseText: 'この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを整理します。'
   });
-  const replyText = trimForPaidLineMessage(readinessApplied.replyText) || fallbackText;
+  const replyText = trimForPaidLineMessage(responseQualityVerdict.replyText) || fallbackText;
   const fallbackTemplateKind = guardResult && typeof guardResult.templateKind === 'string'
     ? guardResult.templateKind
     : classifyReplyTemplateKind({
@@ -144,7 +158,7 @@ function finalizeCandidate(params) {
   const finalizerTemplateKind = classifyReplyTemplateKind({
     replyText,
     candidateKind: selected.kind || null,
-    readinessDecision: readinessApplied.decision,
+    readinessDecision: responseQualityVerdict.readiness.decision,
     conciseModeApplied: selected.conciseModeApplied === true
   });
 
@@ -165,10 +179,13 @@ function finalizeCandidate(params) {
       fallbackTemplateKind,
       finalizerTemplateKind,
       replyTemplateFingerprint: buildReplyTemplateFingerprint(replyText),
-      readinessDecision: readinessApplied.decision,
+      readinessDecision: responseQualityVerdict.readiness.decision,
       readinessSafeResponseMode,
-      readinessEnforced: readinessApplied.enforced === true
-    }
+      readinessEnforced: responseQualityVerdict.enforced === true,
+      responseQualityContextVersion: responseQualityContext.contractVersion,
+      responseQualityVerdictVersion: responseQualityVerdict.contractVersion
+    },
+    responseQualityVerdict
   };
 }
 

@@ -87,6 +87,8 @@ test('phase805: shared readiness returns v2 shadow decision for saved FAQ high-r
   assert.equal(result.readinessV2.decision, 'refuse');
   assert.equal(result.answerReadinessVersion, 'v2');
   assert.equal(result.answerReadinessLogOnlyV2, true);
+  assert.equal(result.responseQualityContextVersion, 'response_quality_context_v1');
+  assert.equal(result.responseQualityVerdictVersion, 'response_quality_verdict_v1');
   assert.equal(result.readinessTelemetryV2.savedFaqReused, true);
   assert.equal(result.readinessTelemetryV2.savedFaqReusePass, false);
 });
@@ -100,24 +102,34 @@ test('phase805: webhook and audit sinks preserve v2 readiness shadow fields', ()
 
   assert.ok(webhookRoute.includes('readinessDecisionV2'));
   assert.ok(webhookRoute.includes('answerReadinessVersion'));
+  assert.ok(webhookRoute.includes('responseQualityContextVersion'));
+  assert.ok(webhookRoute.includes('responseQualityVerdictVersion'));
   assert.ok(webhookRoute.includes('crossSystemConflictDetected'));
 
   assert.ok(appendGate.includes("'readinessDecisionV2'"));
+  assert.ok(appendGate.includes("'responseQualityContextVersion'"));
+  assert.ok(appendGate.includes("'responseQualityVerdictVersion'"));
   assert.ok(appendGate.includes("'answerReadinessV2Mode'"));
   assert.ok(appendGate.includes("'cityPackGrounded'"));
   assert.ok(appendGate.includes("'savedFaqValid'"));
 
   assert.ok(llmAuditGuard.includes("'readinessDecisionV2'"));
+  assert.ok(llmAuditGuard.includes("'responseQualityContextVersion'"));
+  assert.ok(llmAuditGuard.includes("'responseQualityVerdictVersion'"));
   assert.ok(llmAuditGuard.includes("'answerReadinessV2Stage'"));
   assert.ok(llmAuditGuard.includes("'journeyPhase'"));
   assert.ok(llmAuditGuard.includes("'crossSystemConflictDetected'"));
 
   assert.ok(faqAuditGuard.includes("'readinessDecisionV2'"));
+  assert.ok(faqAuditGuard.includes("'responseQualityContextVersion'"));
+  assert.ok(faqAuditGuard.includes("'responseQualityVerdictVersion'"));
   assert.ok(faqAuditGuard.includes("'answerReadinessV2EnforcementReason'"));
   assert.ok(faqAuditGuard.includes("'savedFaqValid'"));
   assert.ok(faqAuditGuard.includes("'cityPackAuthorityScore'"));
 
   assert.ok(llmActionRepo.includes('readinessDecisionV2: normalizeReadinessDecision(payload.readinessDecisionV2)'));
+  assert.ok(llmActionRepo.includes('responseQualityContextVersion: normalizeString(payload.responseQualityContextVersion, null)'));
+  assert.ok(llmActionRepo.includes('responseQualityVerdictVersion: normalizeString(payload.responseQualityVerdictVersion, null)'));
   assert.ok(llmActionRepo.includes('answerReadinessV2Stage: normalizeString(payload.answerReadinessV2Stage, null)'));
   assert.ok(llmActionRepo.includes('cityPackGrounded: payload.cityPackGrounded === true'));
   assert.ok(llmActionRepo.includes('crossSystemConflictDetected: payload.crossSystemConflictDetected === true'));
