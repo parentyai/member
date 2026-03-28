@@ -13,11 +13,12 @@ PRESERVE_STREAK_DECISIONS = frozenset({
     "blocked_hours_skip",
     "max_runs_per_hour_skip",
     "failure_streak_stop",
+    "open_target_mismatch_stop",
+    "open_target_ready",
 })
 RESET_STREAK_DECISIONS = frozenset({
     "",
     "dry_run_only_skip",
-    "open_target_ready",
     "execute_sent",
     "execute_evaluated",
     "execute_queued",
@@ -54,6 +55,7 @@ class RecentRun:
     finished_at: str
     decision: str | None
     target_id: str | None
+    send_attempted: bool
     counted_towards_hourly_cap: bool
 
     @classmethod
@@ -64,6 +66,7 @@ class RecentRun:
             finished_at=str(payload.get("finished_at") or ""),
             decision=_normalize_text(payload.get("decision")),
             target_id=_normalize_text(payload.get("target_id")),
+            send_attempted=bool(payload.get("send_attempted")),
             counted_towards_hourly_cap=bool(payload.get("counted_towards_hourly_cap")),
         )
 
@@ -74,6 +77,7 @@ class RecentRun:
             "finished_at": self.finished_at,
             "decision": self.decision,
             "target_id": self.target_id,
+            "send_attempted": self.send_attempted,
             "counted_towards_hourly_cap": self.counted_towards_hourly_cap,
         }
 
@@ -153,9 +157,11 @@ def _trim_recent_runs(rows: list[RecentRun]) -> list[RecentRun]:
     return ordered[-RECENT_RUN_LIMIT:]
 
 
-def _next_failure_streak(previous: int, decision: str | None) -> int:
+def _next_failure_streak(previous: int, decision: str | None, *, send_attempted: bool) -> int:
     normalized = _normalize_text(decision) or ""
     if normalized in PRESERVE_STREAK_DECISIONS:
+        return previous
+    if not send_attempted:
         return previous
     if normalized in RESET_STREAK_DECISIONS:
         return 0
@@ -171,12 +177,13 @@ def update_loop_state(
     finished_at: str,
     decision: str | None,
     target_id: str | None,
+    send_attempted: bool,
     counted_towards_hourly_cap: bool,
     allowed: bool,
     note: str | None = None,
 ) -> dict[str, Any]:
     current = load_loop_state(output_root)
-    next_failure_streak = _next_failure_streak(current.failure_streak, decision)
+    next_failure_streak = _next_failure_streak(current.failure_streak, decision, send_attempted=send_attempted)
     recent_runs = list(current.recent_runs)
     recent_runs.append(RecentRun(
         run_id=run_id,
@@ -184,6 +191,7 @@ def update_loop_state(
         finished_at=finished_at,
         decision=_normalize_text(decision),
         target_id=_normalize_text(target_id),
+        send_attempted=send_attempted,
         counted_towards_hourly_cap=counted_towards_hourly_cap,
     ))
     updated = PatrolLoopState(
@@ -195,6 +203,7 @@ def update_loop_state(
         last_decision={
             "decision": _normalize_text(decision),
             "allowed": bool(allowed),
+            "send_attempted": send_attempted,
             "counted_towards_hourly_cap": counted_towards_hourly_cap,
             "at": now.astimezone(timezone.utc).isoformat(),
             "target_id": _normalize_text(target_id),

@@ -101,8 +101,22 @@ def _has_post_observation(trace: dict[str, Any]) -> bool:
     return False
 
 
+def _trace_send_attempted(trace: dict[str, Any]) -> bool:
+    if "send_attempted" in trace:
+        return bool(trace.get("send_attempted"))
+    send_result = trace.get("send_result")
+    if isinstance(send_result, dict) and isinstance(send_result.get("result"), dict):
+        return _normalize_text(send_result["result"].get("status")) is not None
+    return False
+
+
 def _build_automatic_section(traces: list[dict[str, Any]], promotions: list[dict[str, Any]]) -> dict[str, Any]:
-    attempted_runs = [trace for trace in traces if _normalize_text(trace.get("send_mode")) in {"execute_once", "send_only"}]
+    attempted_runs = [trace for trace in traces if _trace_send_attempted(trace)]
+    open_target_runs = [trace for trace in traces if _normalize_text(trace.get("send_mode")) == "open_target"]
+    open_target_mismatch_runs = [
+        trace for trace in open_target_runs
+        if _normalize_text(trace.get("failure_reason")) == "open_target_mismatch_stop"
+    ]
     validated_attempts = [
         trace for trace in attempted_runs
         if isinstance(trace.get("target_validation"), dict) and trace["target_validation"].get("matched") is True
@@ -117,7 +131,7 @@ def _build_automatic_section(traces: list[dict[str, Any]], promotions: list[dict
         trace for trace in sent_runs
         if isinstance(trace.get("target_validation"), dict) and trace["target_validation"].get("matched") is True
     ]
-    off_whitelist_send_incidents = [
+    target_mismatch_false_negatives = [
         trace for trace in sent_runs
         if not (isinstance(trace.get("target_validation"), dict) and trace["target_validation"].get("matched") is True)
     ]
@@ -140,12 +154,14 @@ def _build_automatic_section(traces: list[dict[str, Any]], promotions: list[dict
 
     metrics = {
         "executeRunCount": len(traces),
+        "openTargetRunCount": len(open_target_runs),
+        "openTargetMismatchCount": len(open_target_mismatch_runs),
         "attemptedSendCount": len(attempted_runs),
         "validatedAttemptedSendCount": len(validated_attempts),
         "sentCount": len(sent_runs),
         "successfulValidatedSendCount": len(successful_validated_sends),
-        "offWhitelistSendIncidents": len(off_whitelist_send_incidents),
-        "targetMismatchFalseNegativeCount": len(off_whitelist_send_incidents),
+        "offWhitelistSendIncidents": len(target_mismatch_false_negatives),
+        "targetMismatchFalseNegativeCount": len(target_mismatch_false_negatives),
         "observeSuccessCount": len(observe_success_runs),
         "replyCorrelationUsableCount": len(reply_correlation_usable_runs),
         "promotionRecordCount": len(promotions),

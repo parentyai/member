@@ -46,6 +46,8 @@ class FakeAdapter(MacOSLineDesktopAdapter):
                 "matched": matched,
                 "reason": "matched" if matched else "insufficient_identity_signals",
                 "matched_signals": ["chat_title"] if matched else [],
+                "frontmost": True,
+                "window_title_ok": True,
             },
         }
 

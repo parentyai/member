@@ -280,7 +280,7 @@ Typical fields:
   - `ax_tree_before`, `ax_tree_after`
   - `model_config`, `retrieval_refs`, `evaluator_scores`
   - `failure_reason`, `proposal_id`
-  - optional execute fields: `send_mode`, `target_validation`, `send_result`
+  - optional execute fields: `send_mode`, `send_attempted`, `target_validation`, `target_resolution`, `open_target`, `send_result`
   - optional execute fields: `pre_observation`, `post_observation`, `correlation_status`
   - optional execute fields: `reply_wait_window_ms`, `execute_guard_reason`
 - policy:
@@ -360,7 +360,7 @@ Typical fields:
   - `desktopPatrolSummary.promotion.updatedAt`
 - loop state:
   - `updated_at`, `failure_streak`, `last_run_id`, `last_failure_reason`
-  - `recent_runs[]`, `last_decision`
+  - `recent_runs[]`, `last_decision`, `recent_runs[].send_attempted`, `last_decision.send_attempted`
 - Codex packet:
   - `contract_version`, `proposal_id`, `queue_entry`
   - `trace_ref`, `evaluation_ref`, `proposal`
@@ -373,6 +373,7 @@ Notes:
 - PR9 allows `ax_tree_after` to point at `artifacts/line_desktop_patrol/runs/<run_id>/after.ax.json` when a local override enables `store_ax_tree=true`.
 - PR11 allows `visible_after` plus `observation_artifacts.read_visible_messages.output_path` to point at `artifacts/line_desktop_patrol/runs/<run_id>/after.visible.json` when a local override enables `store_ax_tree=true`.
 - PR13 adds execute trace fields for send/validation/correlation while preserving the original required trace schema.
+- PR13 execute traces can emit `open_target_mismatch_stop` alongside `open_target_ready`; preflight failures remain diagnostic and do not imply a sent message.
 - PR15 adds promotion metadata under `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.json`.
 - PR19 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_draft.md` so proposal promotion can stop at a reviewable patch intent before any code diff exists.
 - PR20 adds `artifacts/line_desktop_patrol/proposals/promotions/<proposal_id>.patch_request.json` and `.patch_request.md` so operators can hand a proposal to a human patch workflow without widening runtime authority.
@@ -389,6 +390,7 @@ Notes:
 - PR31 adds read-only `desktopPatrolSummary.promotion.*` fields so Admin can surface the latest promotion/apply-record artifact kind, status, draft PR ref, and timestamp without mutating the local queue.
 - PR16 adds `artifacts/line_desktop_patrol/runtime/execute.lock.json` for overlap protection in scheduled execute mode.
 - PR18 adds `artifacts/line_desktop_patrol/acceptance/latest.json` for KPI + manual soak completion gating.
+- PR18 acceptance summary keeps `attemptedSendCount` on `send_attempted=true` runs only and adds diagnostics such as `openTargetRunCount` and `openTargetMismatchCount` so open-target preflight can be observed without inflating send KPIs.
 
 Notes:
 - PR2 adds local dry-run trace emission through `member_line_patrol.dry_run_harness`.
