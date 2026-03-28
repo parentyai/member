@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-28T14:26:12-04:00",
-  "gitCommit": "0703c9228e9c46ed55ff195dc3846d1e70872dc3",
-  "branch": "codex/desktop-self-improvement-loop",
-  "sourceDigest": "793f95f994c0c2f356dc595f8ed9bb405486362c119485c568cb369a24e74069",
+  "generatedAt": "2026-03-28T15:18:02-04:00",
+  "gitCommit": "bbb5e1a9d918c9f480a48bb0e131f4533255b947",
+  "branch": "HEAD",
+  "sourceDigest": "a04968b1203fccfdaafaf89a47c0efbf39a650649bee76d4711d1cb6f2ad0409",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

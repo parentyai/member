@@ -340,3 +340,23 @@ test('phase752: two-line close prompt maps to two-sentence output form and suppr
   assert.equal(packet.outputForm, 'two_sentences');
   assert.equal(packet.detailObligations.includes('avoid_question_back'), true);
 });
+
+test('phase752: parent-friendly one-line rewrite keeps rewrite contract even with prior housing context', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_PARENT_FRIENDLY',
+    messageText: '小学生の保護者向けに、やさしい日本語で1文にして。',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'housing',
+        replyText: '住まい探しでは、同じ書類確認なら、次は不足しやすい書類を1つずつ潰すのが最短です。\n次は不足しやすい書類を1つずつ確認しましょう。\n希望エリアと入居時期を教えてもらえますか？'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.requestShape, 'rewrite');
+  assert.equal(packet.outputForm, 'one_line');
+  assert.equal(packet.detailObligations.includes('avoid_question_back'), true);
+});

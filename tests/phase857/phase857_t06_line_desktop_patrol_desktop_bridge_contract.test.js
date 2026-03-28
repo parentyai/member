@@ -48,6 +48,41 @@ test('phase857: desktop bridge evaluation passes when reply is observed and expe
   assert.equal(scores.verdict, 'pass');
 });
 
+test('phase857: desktop bridge forbidden tokens only inspect appended assistant reply when available', () => {
+  const scores = evaluateConversationLoop({
+    sendMode: 'execute',
+    targetMatchedHeuristic: true,
+    searchQueryApplied: true,
+    sentText: 'その2点のうち、先に確認する方を1つだけ決めて。',
+    beforeTranscript: '',
+    afterSendTranscript: 'その2点のうち、先に確認する方を1つだけ決めて。',
+    finalTranscript: 'その2点のうち、先に確認する方を1つだけ決めて。\n先に確認するのは期限です。',
+    replyObserved: true,
+    expectedReplySubstrings: ['期限'],
+    forbiddenReplySubstrings: ['1つだけ'],
+  });
+  assert.equal(scores.expectedReplyMatched, true);
+  assert.equal(scores.forbiddenReplyHit, false);
+  assert.equal(scores.verdict, 'pass');
+});
+
+test('phase857: desktop bridge expected tokens do not pass from user prompt alone when reply scope is available', () => {
+  const scores = evaluateConversationLoop({
+    sendMode: 'execute',
+    targetMatchedHeuristic: true,
+    searchQueryApplied: true,
+    sentText: '期限を教えて。',
+    beforeTranscript: '',
+    afterSendTranscript: '期限を教えて。',
+    finalTranscript: '期限を教えて。\n了解しました。',
+    replyObserved: true,
+    expectedReplySubstrings: ['期限'],
+    forbiddenReplySubstrings: [],
+  });
+  assert.equal(scores.expectedReplyMatched, false);
+  assert.equal(scores.verdict, 'fail');
+});
+
 test('phase857: desktop bridge evaluation and proposal fail closed when reply is missing', () => {
   const evaluatorScores = evaluateConversationLoop({
     sendMode: 'execute',
