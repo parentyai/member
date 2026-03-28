@@ -216,7 +216,9 @@ function attachFaqEvidenceFromTraceBundles(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const anchors = payload.anchors instanceof Map ? payload.anchors : new Map();
   const traceBundles = payload.traceBundles && typeof payload.traceBundles === 'object' ? payload.traceBundles : {};
-  const sourceWindow = hasWindow(payload.sourceWindow) ? payload.sourceWindow : null;
+  const sourceWindow = payload.respectSourceWindow === true && hasWindow(payload.sourceWindow)
+    ? payload.sourceWindow
+    : null;
   const attached = [];
 
   anchors.forEach((anchor) => {
@@ -338,7 +340,8 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
   const bundleFaqAnswerLogs = attachFaqEvidenceFromTraceBundles({
     anchors: anchorBuild.anchors,
     traceBundles,
-    sourceWindow
+    sourceWindow,
+    respectSourceWindow: explicitSourceWindow
   });
   const mergedFaqAnswerLogs = mergeRowsById(faqAnswerLogs, bundleFaqAnswerLogs);
   const reviewUnits = buildConversationReviewUnits({
