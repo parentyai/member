@@ -115,6 +115,7 @@
     "audit:consistency:status": "node scripts/report_consistency_status.js",
     "firestore-indexes:check": "node scripts/check_firestore_indexes.js --check",
     "firestore-indexes:plan": "node scripts/check_firestore_indexes.js --plan",
+    "firestore-indexes:apply": "node scripts/check_firestore_indexes.js --apply",
     "audit-core:generate": "node scripts/generate_audit_core_maps.js",
     "audit-core:check": "node scripts/check_audit_core_maps.js",
     "llm:quality:gate:strict": "npm run llm:quality:runtime-summary:prepare:strict && LLM_QUALITY_REQUIRE_ALL_SLICES_PASS=true LLM_QUALITY_REQUIRE_RUNTIME_SUMMARY=true LLM_QUALITY_REQUIRE_RUNTIME_PROVENANCE=true LLM_QUALITY_REQUIRE_COMPAT_GOVERNANCE=true LLM_QUALITY_REQUIRE_NOGO_GATE_MANDATORY=true LLM_QUALITY_MAX_COMPAT_SHARE=0.15 node tools/llm_quality/run_quality_gate.js --baseline tools/llm_quality/fixtures/baseline_metrics.v1.json --candidate tools/llm_quality/fixtures/candidate_metrics.v1.json --adjudication tools/llm_quality/fixtures/human_adjudication_set.v1.json --manifest benchmarks/registry/manifest.v1.json --output tmp/llm_quality_gate_result.json",
