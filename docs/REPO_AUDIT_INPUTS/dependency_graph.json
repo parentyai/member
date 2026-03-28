@@ -444,6 +444,7 @@
       "emergencySnapshotsRepo",
       "emergencyUnmappedEventsRepo",
       "eventsRepo",
+      "faqAnswerLogsRepo",
       "journeyGraphCatalogRepo",
       "journeyParamVersionsRepo",
       "journeyPolicyRepo",

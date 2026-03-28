@@ -212,12 +212,18 @@ function buildDeltaFromPreviousFullWindow(fullWindow, previousFullWindow) {
 function resolveRecentWindowStatus(snapshot) {
   const row = snapshot && typeof snapshot === 'object' ? snapshot : emptyWindow();
   if (row.observedCount <= 0) return 'unavailable';
+  const transcriptHealthy = row.skipped_unreviewable_transcript <= 0
+    && row.assistant_reply_missing <= 0;
+  const joinHealthy = row.faqOnlyRowsSkipped <= 0
+    && row.traceHydrationLimitedCount <= 0;
+  const observationOnlyResidue = row.blockerCount > 0
+    && transcriptHealthy
+    && joinHealthy
+    && hasOnlyObservationOnlyBlockers(row);
   if (
-    row.skipped_unreviewable_transcript <= 0
-    && row.assistant_reply_missing <= 0
-    && row.faqOnlyRowsSkipped <= 0
-    && row.traceHydrationLimitedCount <= 0
-    && row.blockerCount <= 0
+    transcriptHealthy
+    && joinHealthy
+    && (row.blockerCount <= 0 || observationOnlyResidue)
   ) {
     return 'healthy';
   }
@@ -250,13 +256,19 @@ function computeHistoricalDebtCounts(fullWindow, recentWindow) {
 function resolveHistoricalBacklogStatus(fullWindow, recentWindow, deltaFromPreviousFullWindow) {
   const recentStatus = resolveRecentWindowStatus(recentWindow);
   const full = fullWindow && typeof fullWindow === 'object' ? fullWindow : emptyWindow();
+  const recent = recentWindow && typeof recentWindow === 'object' ? recentWindow : emptyWindow();
   const debt = computeHistoricalDebtCounts(fullWindow, recentWindow);
   const hasTranscriptOrJoinDebt = debt.transcriptDebtCount > 0 || debt.joinDebtCount > 0;
   const hasAnyBlockers = Number(full.blockerCount || 0) > 0 || uniqueStrings(full.blockerCodes).length > 0;
   const hasHistoricalDebt = hasTranscriptOrJoinDebt || hasAnyBlockers;
   if (!hasHistoricalDebt) return 'cleared';
   if (recentStatus !== 'healthy') return 'current_runtime_overlap';
-  if (!hasTranscriptOrJoinDebt && hasOnlyObservationOnlyBlockers(full)) return 'cleared';
+  if (!hasTranscriptOrJoinDebt && hasOnlyObservationOnlyBlockers(full)) {
+    const recentObservationOnlyResidue = Number(recent.blockerCount || 0) > 0
+      && hasOnlyObservationOnlyBlockers(recent);
+    if (recentObservationOnlyResidue && debt.blockerCount > 0) return 'decaying';
+    return 'cleared';
+  }
   if (deltaFromPreviousFullWindow && deltaFromPreviousFullWindow.status === 'improving') return 'decaying';
   return 'stagnating';
 }

@@ -105,6 +105,7 @@ function summarizeRecentActionRows(rows) {
   let latestAssistantReplyText = '';
   let latestAssistantDomainIntent = '';
   let latestAssistantFollowupIntent = '';
+  let latestAssistantOutputForm = '';
 
   ordered.forEach((row) => {
     if (!row || typeof row !== 'object') return;
@@ -142,6 +143,9 @@ function summarizeRecentActionRows(rows) {
     if (!latestAssistantReplyText && replyText) latestAssistantReplyText = replyText;
     if (!latestAssistantDomainIntent && domainIntent) latestAssistantDomainIntent = domainIntent;
     if (!latestAssistantFollowupIntent && followupIntent) latestAssistantFollowupIntent = followupIntent;
+    if (!latestAssistantOutputForm && normalizeText(row.outputForm)) {
+      latestAssistantOutputForm = normalizeText(row.outputForm).toLowerCase();
+    }
   });
 
   return {
@@ -153,7 +157,8 @@ function summarizeRecentActionRows(rows) {
     recentReplyRows: recentReplyRows.slice(0, 6),
     latestAssistantReplyText: latestAssistantReplyText || null,
     latestAssistantDomainIntent: latestAssistantDomainIntent || null,
-    latestAssistantFollowupIntent: latestAssistantFollowupIntent || null
+    latestAssistantFollowupIntent: latestAssistantFollowupIntent || null,
+    latestAssistantOutputForm: latestAssistantOutputForm || null
   };
 }
 
@@ -256,6 +261,7 @@ function buildConversationPacket(params) {
     latestAssistantReplyText: recentHistory.latestAssistantReplyText,
     latestAssistantDomainIntent: recentHistory.latestAssistantDomainIntent,
     latestAssistantFollowupIntent: recentHistory.latestAssistantFollowupIntent,
+    latestAssistantOutputForm: recentHistory.latestAssistantOutputForm,
     lowInformationMessage,
     contextResumeCue,
     recoverySignal,
@@ -300,6 +306,7 @@ function buildConversationPacket(params) {
     latestAssistantReplyText: recentHistory.latestAssistantReplyText,
     latestAssistantDomainIntent: recentHistory.latestAssistantDomainIntent,
     latestAssistantFollowupIntent: recentHistory.latestAssistantFollowupIntent,
+    latestAssistantOutputForm: recentHistory.latestAssistantOutputForm,
     lowInformationMessage,
     contextResumeCue,
     recoverySignal,

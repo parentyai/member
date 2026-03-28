@@ -3106,6 +3106,10 @@ async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
       const left = existing && typeof existing === 'object' ? existing : {};
       const right = incoming && typeof incoming === 'object' ? incoming : {};
       return Object.assign({}, left, right, {
+        __sourcePriority: Math.max(
+          Number.isFinite(Number(left.__sourcePriority)) ? Number(left.__sourcePriority) : 0,
+          Number.isFinite(Number(right.__sourcePriority)) ? Number(right.__sourcePriority) : 0
+        ),
         replyText: normalizeReplyText(right.replyText) || normalizeReplyText(left.replyText),
         committedNextActions: (
           Array.isArray(right.committedNextActions) && right.committedNextActions.length > 0
@@ -3166,13 +3170,20 @@ async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
       seenRows.set(key, mergeRows(seenRows.get(key), row));
     };
     (Array.isArray(storedRows) ? storedRows : [])
+      .map((row) => Object.assign({}, row, { __sourcePriority: 2 }))
       .filter((row) => !isSyntheticPatrolReplayRow(row))
       .forEach(pushRow);
     (Array.isArray(cachedRows) ? cachedRows : [])
+      .map((row) => Object.assign({}, row, { __sourcePriority: 1 }))
       .filter((row) => !isSyntheticPatrolReplayRow(row))
       .forEach(pushRow);
     seenRows.forEach((row) => deduped.push(row));
-    deduped.sort((left, right) => toMillis(right && right.createdAt) - toMillis(left && left.createdAt));
+    deduped.sort((left, right) => {
+      const leftPriority = Number.isFinite(Number(left && left.__sourcePriority)) ? Number(left.__sourcePriority) : 0;
+      const rightPriority = Number.isFinite(Number(right && right.__sourcePriority)) ? Number(right.__sourcePriority) : 0;
+      if (rightPriority !== leftPriority) return rightPriority - leftPriority;
+      return toMillis(right && right.createdAt) - toMillis(left && left.createdAt);
+    });
     return deduped.slice(0, limit);
   } catch (_err) {
     return (Array.isArray(cachedRows) ? cachedRows : [])

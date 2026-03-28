@@ -285,6 +285,37 @@ function resolveSourceReplyText(requestShape, matchedPriorReply, latestAssistant
   return '';
 }
 
+function resolveSourceReplyRow(sourceReplyText, matchedPriorReply, recentReplyRows) {
+  const source = normalizeText(sourceReplyText);
+  if (matchedPriorReply && typeof matchedPriorReply === 'object') {
+    const normalizedMatched = normalizeReplyRow(matchedPriorReply);
+    if (!source || extractReplyCandidates(normalizedMatched).includes(source)) {
+      return normalizedMatched;
+    }
+  }
+  const rows = Array.isArray(recentReplyRows) ? recentReplyRows : [];
+  if (!source || rows.length <= 0) return matchedPriorReply && typeof matchedPriorReply === 'object'
+    ? normalizeReplyRow(matchedPriorReply)
+    : null;
+  let best = null;
+  rows.slice(0, 6).forEach((row, index) => {
+    const normalized = normalizeReplyRow(row);
+    const similarity = extractReplyCandidates(normalized)
+      .reduce((max, candidateText) => Math.max(max, candidateText === source ? 1 : similarityScore(source, candidateText)), 0);
+    if (similarity < 0.98) return;
+    if (!best || similarity > best.similarity || (similarity === best.similarity && index < best.index)) {
+      best = {
+        index,
+        similarity,
+        row: normalized
+      };
+    }
+  });
+  return best ? best.row : (matchedPriorReply && typeof matchedPriorReply === 'object'
+    ? normalizeReplyRow(matchedPriorReply)
+    : null);
+}
+
 function detectDepthIntent(messageText, options) {
   const payload = options && typeof options === 'object' ? options : {};
   const text = normalizeText(messageText);
@@ -336,7 +367,7 @@ function buildRequestContract(params) {
     ? false
     : (Boolean(matchedPriorReply) || detectEchoOfPriorAssistant(messageText, recentResponseHints));
   const currentTurnHasExplicitDomain = explicitDomainSignals.length > 0;
-  const outputForm = detectOutputForm(messageText);
+  const detectedOutputForm = detectOutputForm(messageText);
   const highRiskIntent = payload.highRiskIntent === true;
   const requestShape = detectRequestShape(messageText, {
     recoverySignal: payload.recoverySignal === true,
@@ -350,12 +381,29 @@ function buildRequestContract(params) {
     recoverySignal: payload.recoverySignal === true,
     echoOfPriorAssistant,
     currentTurnHasExplicitDomain,
-    outputForm
+    outputForm: detectedOutputForm
   });
   const depthIntent = detectDepthIntent(messageText, {
     requestShape,
     sourceReplyText
   });
+  const sourceReplyRow = resolveSourceReplyRow(sourceReplyText, matchedPriorReply, payload.recentReplyRows);
+  const sourceOutputForm = normalizeText(
+    (sourceReplyRow && sourceReplyRow.outputForm) || payload.latestAssistantOutputForm
+  ).toLowerCase();
+  const outputForm = detectedOutputForm !== 'default'
+    ? detectedOutputForm
+    : (
+      sourceOutputForm
+      && (
+        depthIntent === 'deepen'
+        || requestShape === 'followup_continue'
+        || requestShape === 'rewrite'
+        || requestShape === 'message_template'
+      )
+        ? sourceOutputForm
+        : detectedOutputForm
+    );
   const transformSource = resolveTransformSource(depthIntent, sourceReplyText);
   const knowledgeScope = detectKnowledgeScope(messageText, {
     requestShape,
@@ -364,10 +412,10 @@ function buildRequestContract(params) {
   });
   const sourceReplySignals = detectExplicitDomainSignals(sourceReplyText);
   const sourceDomainIntent = normalizeText(
-    (matchedPriorReply && matchedPriorReply.domainIntent) || payload.latestAssistantDomainIntent
+    (sourceReplyRow && sourceReplyRow.domainIntent) || payload.latestAssistantDomainIntent
   ).toLowerCase();
   const sourceFollowupIntent = normalizeText(
-    (matchedPriorReply && matchedPriorReply.followupIntent) || payload.latestAssistantFollowupIntent
+    (sourceReplyRow && sourceReplyRow.followupIntent) || payload.latestAssistantFollowupIntent
   ).toLowerCase();
   const echoGeneralMixedContinuation = requestShape === 'followup_continue'
     && echoOfPriorAssistant === true

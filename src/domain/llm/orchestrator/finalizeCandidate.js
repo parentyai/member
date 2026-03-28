@@ -62,7 +62,11 @@ function recoverReplyTextFromContract(replyText, requestContract) {
   ) {
     const deepenLines = buildDeepenReplyFromSource(sourceReplyText, primaryDomainIntent, contract.messageText || '');
     if (Array.isArray(deepenLines) && deepenLines.length > 0) {
-      return deepenLines.slice(0, outputForm === 'two_sentences' ? 2 : 2).map((line) => normalizeText(line)).filter(Boolean).join('\n');
+      return deepenLines
+        .slice(0, outputForm === 'two_sentences' ? 2 : 1)
+        .map((line) => normalizeText(line))
+        .filter(Boolean)
+        .join('\n');
     }
   }
 
