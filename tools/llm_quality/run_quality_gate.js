@@ -7,6 +7,7 @@ const { evaluateRisk } = require('./contamination_guard');
 const { summarize } = require('./judge_calibration');
 const { evaluateSliceGate } = require('./slice_gate');
 const { evaluateFrontier } = require('./frontier_eval');
+const harnessShared = require('./harness_shared');
 
 function clamp01(value) {
   const num = Number(value);
@@ -338,34 +339,24 @@ function main(argv) {
   const outPath = args.output
     ? path.resolve(process.cwd(), args.output)
     : path.join(process.cwd(), 'tmp', 'llm_quality_gate_result.json');
-  const requireAllSlicesPass = toBool(
-    args.requireAllSlicesPass,
-    toBool(process.env.LLM_QUALITY_REQUIRE_ALL_SLICES_PASS, false)
-  );
-  const requireRuntimeSummary = toBool(
-    args.requireRuntimeSummary,
-    toBool(process.env.LLM_QUALITY_REQUIRE_RUNTIME_SUMMARY, false)
-  );
-  const requireRuntimeProvenance = toBool(
-    args.requireRuntimeProvenance,
-    toBool(process.env.LLM_QUALITY_REQUIRE_RUNTIME_PROVENANCE, false)
-  );
-  const requireCompatGovernance = toBool(
-    args.requireCompatGovernance,
-    toBool(process.env.LLM_QUALITY_REQUIRE_COMPAT_GOVERNANCE, false)
-  );
-  const requireLiveRuntimeAudit = toBool(
-    args.requireLiveRuntimeAudit,
-    toBool(process.env.LLM_QUALITY_REQUIRE_LIVE_RUNTIME_AUDIT, false)
-  );
-  const requireNoGoGateMandatory = toBool(
-    args.requireNoGoGateMandatory,
-    toBool(process.env.LLM_QUALITY_REQUIRE_NOGO_GATE_MANDATORY, false)
-  );
-  const maxCompatShare = parseRate(
-    args.maxCompatShare,
-    parseRate(process.env.LLM_QUALITY_MAX_COMPAT_SHARE, 0.15)
-  );
+  const policy = harnessShared.resolveQualityPolicyFlags({
+    env: process.env,
+    requireAllSlicesPass: args.requireAllSlicesPass,
+    requireRuntimeSummary: args.requireRuntimeSummary,
+    requireRuntimeProvenance: args.requireRuntimeProvenance,
+    requireCompatGovernance: args.requireCompatGovernance,
+    requireLiveRuntimeAudit: args.requireLiveRuntimeAudit,
+    requireNoGoGateMandatory: args.requireNoGoGateMandatory,
+    maxCompatShare: args.maxCompatShare
+  });
+  const requireAllSlicesPass = policy.requireAllSlicesPass;
+  const requireRuntimeSummary = policy.requireRuntimeSummary;
+  const requireRuntimeProvenance = policy.requireRuntimeProvenance;
+  const requireCompatGovernance = policy.requireCompatGovernance;
+  const requireLiveRuntimeAudit = policy.requireLiveRuntimeAudit;
+  const requireNoGoGateMandatory = policy.requireNoGoGateMandatory;
+  const maxCompatShare = policy.maxCompatShare;
+  const runId = harnessShared.resolveHarnessRunId({ env: process.env, sourceTag: 'quality-gate' });
 
   const baselineMetrics = readJson(baselineMetricsPath);
   const candidateResolved = resolveCandidateMetrics({
@@ -378,7 +369,7 @@ function main(argv) {
   const candidateSourceType = candidateResolved.sourceType || 'candidate_metrics_fallback';
   const runtimeSummarySource = candidateResolved.runtimeSummarySource;
   const sourceSummary = candidateResolved.summary;
-  const qualityLoopV2 = extractQualityLoopV2(sourceSummary);
+  const qualityLoopV2 = harnessShared.extractQualityLoopV2(sourceSummary);
   const improvementLoop = extractImprovementLoop(sourceSummary);
   const compatShareWindow = resolveCompatShareWindow(sourceSummary);
   const runtimeSummaryReadable = candidateResolved.runtimeSummaryReadable === true;
@@ -420,7 +411,7 @@ function main(argv) {
   const warnings = [];
 
   if (benchmarkRegistry.ok !== true) failures.push('benchmark_registry_invalid');
-  if (toBool(manifest.frozen, false) !== true) failures.push('benchmark_not_frozen');
+  if (harnessShared.toBool(manifest.frozen, false) !== true) failures.push('benchmark_not_frozen');
   const highRiskMixedIntoHardGate = Array.isArray(contamination.excludedFixtureIds)
     && contamination.excludedFixtureIds.some((id) => (contamination.hardGateEligibleFixtureIds || []).includes(id));
   if (highRiskMixedIntoHardGate) failures.push('contamination_high_risk_mixed_into_hard_gate');
@@ -439,15 +430,15 @@ function main(argv) {
   if (requireRuntimeProvenance === true) {
     if (candidateSourceType !== 'runtime_summary') {
       failures.push('runtime_summary_provenance_missing');
-    } else if (!isRuntimeSummaryProvenanceAccepted(runtimeSummarySource)) {
-      failures.push(`runtime_summary_provenance_invalid:${normalizeRuntimeSummarySource(runtimeSummarySource) || 'unknown'}`);
+    } else if (!harnessShared.isRuntimeSummaryProvenanceAccepted(runtimeSummarySource)) {
+      failures.push(`runtime_summary_provenance_invalid:${harnessShared.normalizeRuntimeSummarySource(runtimeSummarySource) || 'unknown'}`);
     }
   }
   if (requireLiveRuntimeAudit === true) {
     if (candidateSourceType !== 'runtime_summary') {
       failures.push('live_runtime_audit_required_but_runtime_summary_missing');
-    } else if (!isLiveRuntimeSummaryProvenance(runtimeSummarySource)) {
-      failures.push(`live_runtime_audit_provenance_invalid:${normalizeRuntimeSummarySource(runtimeSummarySource) || 'unknown'}`);
+    } else if (!harnessShared.isLiveRuntimeSummaryProvenance(runtimeSummarySource)) {
+      failures.push(`live_runtime_audit_provenance_invalid:${harnessShared.normalizeRuntimeSummarySource(runtimeSummarySource) || 'unknown'}`);
     }
     if (!improvementLoop) {
       failures.push('quality_loop_v2_improvement_loop_missing');
@@ -525,9 +516,30 @@ function main(argv) {
     warnings: Array.from(new Set(warnings))
   };
 
-  writeJson(path.join(process.cwd(), 'tmp', 'llm_quality_baseline_scorecard.json'), baselineScorecard);
-  writeJson(path.join(process.cwd(), 'tmp', 'llm_quality_candidate_scorecard.json'), candidateScorecard);
-  writeJson(outPath, result);
+  const baselineArtifact = harnessShared.writeHarnessArtifact({
+    outputPath: path.join(process.cwd(), 'tmp', 'llm_quality_baseline_scorecard.json'),
+    value: baselineScorecard,
+    runId,
+    artifactGroup: harnessShared.resolveRunScopedArtifactGroup('scorecard')
+  });
+  const candidateArtifact = harnessShared.writeHarnessArtifact({
+    outputPath: path.join(process.cwd(), 'tmp', 'llm_quality_candidate_scorecard.json'),
+    value: candidateScorecard,
+    runId,
+    artifactGroup: harnessShared.resolveRunScopedArtifactGroup('scorecard')
+  });
+  const resultArtifact = harnessShared.writeHarnessArtifact({
+    outputPath: outPath,
+    value: result,
+    runId,
+    artifactGroup: harnessShared.resolveRunScopedArtifactGroup('gate')
+  });
+  result.baselineScorecardPath = baselineArtifact.outputPath;
+  result.baselineRunScopedScorecardPath = baselineArtifact.runScopedPath;
+  result.candidateScorecardPath = candidateArtifact.outputPath;
+  result.candidateRunScopedScorecardPath = candidateArtifact.runScopedPath;
+  result.outputPath = resultArtifact.outputPath;
+  result.runScopedOutputPath = resultArtifact.runScopedPath;
 
   const target = result.ok ? process.stdout : process.stderr;
   target.write(`${JSON.stringify(result, null, 2)}\n`);

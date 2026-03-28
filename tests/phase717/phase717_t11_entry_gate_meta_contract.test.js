@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const { test } = require('node:test');
 
 const {
+  appendLlmGateDecision,
   sanitizeSummaryInput,
   normalizeEntryType,
   normalizeGatesApplied
@@ -45,6 +46,8 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
     readinessDecision: 'clarify',
     readinessReasonCodes: ['source_readiness_clarify'],
     readinessSafeResponseMode: 'clarify',
+    responseQualityContextVersion: 'response_quality_context_v1',
+    responseQualityVerdictVersion: 'response_quality_verdict_v1',
     routeKind: 'canonical',
     routerReasonObserved: true,
     compatFallbackReason: null,
@@ -93,6 +96,8 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
   assert.equal(sanitized.readinessDecision, 'clarify');
   assert.deepEqual(sanitized.readinessReasonCodes, ['source_readiness_clarify']);
   assert.equal(sanitized.readinessSafeResponseMode, 'clarify');
+  assert.equal(sanitized.responseQualityContextVersion, 'response_quality_context_v1');
+  assert.equal(sanitized.responseQualityVerdictVersion, 'response_quality_verdict_v1');
   assert.equal(sanitized.routeKind, 'canonical');
   assert.equal(sanitized.routerReasonObserved, true);
   assert.equal(sanitized.compatFallbackReason, null);
@@ -121,6 +126,42 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
   assert.deepEqual(sanitized.responseContractErrors, []);
   assert.equal(sanitized.responseContractFallbackApplied, false);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized, 'unknownField'), false);
+});
+
+test('phase717: llm gate writer preserves allowlisted top-level readiness telemetry without payloadSummary wrapper', async () => {
+  const auditCalls = [];
+
+  await appendLlmGateDecision({
+    actor: 'phase717_test',
+    lineUserId: 'U_TOP_LEVEL',
+    plan: 'admin',
+    status: 'ok',
+    intent: 'ops_explain',
+    decision: 'allow',
+    readinessDecision: 'allow',
+    readinessReasonCodes: ['readiness_allow'],
+    readinessSafeResponseMode: 'answer',
+    answerReadinessVersion: 'v2',
+    responseQualityContextVersion: 'response_quality_context_v1',
+    responseQualityVerdictVersion: 'response_quality_verdict_v1',
+    readinessDecisionV2: 'allow',
+    readinessReasonCodesV2: ['readiness_allow'],
+    readinessSafeResponseModeV2: 'answer'
+  }, {
+    appendAuditLog: async (entry) => {
+      auditCalls.push(entry);
+      return { id: 'audit_phase717_top_level' };
+    }
+  });
+
+  assert.equal(auditCalls.length, 1);
+  assert.equal(auditCalls[0].action, 'llm_gate.decision');
+  assert.equal(auditCalls[0].payloadSummary.lineUserId, 'U_TOP_LEVEL');
+  assert.equal(auditCalls[0].payloadSummary.readinessDecision, 'allow');
+  assert.equal(auditCalls[0].payloadSummary.answerReadinessVersion, 'v2');
+  assert.equal(auditCalls[0].payloadSummary.responseQualityContextVersion, 'response_quality_context_v1');
+  assert.equal(auditCalls[0].payloadSummary.responseQualityVerdictVersion, 'response_quality_verdict_v1');
+  assert.equal(auditCalls[0].payloadSummary.readinessDecisionV2, 'allow');
 });
 
 test('phase717: gate baseline aggregates entryType, gates coverage, and entry quality signals', () => {

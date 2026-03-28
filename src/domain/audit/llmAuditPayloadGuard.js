@@ -98,6 +98,8 @@ const LLM_GATE_KEYS = new Set([
   'readinessReasonCodes',
   'readinessSafeResponseMode',
   'answerReadinessVersion',
+  'responseQualityContextVersion',
+  'responseQualityVerdictVersion',
   'answerReadinessLogOnlyV2',
   'answerReadinessEnforcedV2',
   'answerReadinessV2Mode',

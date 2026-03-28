@@ -32,7 +32,11 @@ const {
 } = require('../domain/llm/policy/resolveLlmLegalPolicySnapshot');
 const { resolveIntentRiskTier } = require('../domain/llm/policy/resolveIntentRiskTier');
 const { runAnswerReadinessGateV2 } = require('../domain/llm/quality/runAnswerReadinessGateV2');
-const { applyAnswerReadinessDecision } = require('../domain/llm/quality/applyAnswerReadinessDecision');
+const {
+  createResponseQualityContext,
+  createResponseQualityVerdict,
+  normalizeResponseQualityReasonCodes
+} = require('../domain/llm/quality/responseQualityFoundation');
 const { resolveJourneyActionSignals } = require('../domain/llm/quality/resolveJourneyActionSignals');
 const { resolveRuntimeCityPackSignals } = require('../domain/llm/quality/resolveRuntimeCityPackSignals');
 const { resolveRuntimeEmergencySignals } = require('../domain/llm/quality/resolveRuntimeEmergencySignals');
@@ -1793,7 +1797,7 @@ function resolveAnswerReadinessTelemetry(params) {
   const sourceFreshnessScore = hasMetric(payload.sourceFreshnessScore)
     ? Number(payload.sourceFreshnessScore)
     : evidenceCoverage;
-  const readinessGate = runAnswerReadinessGateV2({
+  const responseQualityContext = createResponseQualityContext({
     entryType: normalizeReplyText(payload.entryType) || 'webhook',
     lawfulBasis: payload.legalSnapshot && payload.legalSnapshot.lawfulBasis,
     consentVerified: payload.legalSnapshot && payload.legalSnapshot.consentVerified === true,
@@ -1843,39 +1847,17 @@ function resolveAnswerReadinessTelemetry(params) {
     sourceSnapshotRefs: payload.sourceSnapshotRefs,
     crossSystemConflictDetected: payload.crossSystemConflictDetected === true
   });
+  const readinessGate = runAnswerReadinessGateV2({
+    entryType: responseQualityContext.entryType,
+    responseQualityContext
+  });
   const explicitDecision = normalizeReplyText(payload.readinessDecision).toLowerCase();
   const hasExplicitDecision = explicitDecision === 'allow'
     || explicitDecision === 'hedged'
     || explicitDecision === 'clarify'
     || explicitDecision === 'refuse';
-  const explicitReasonCodes = Array.isArray(payload.readinessReasonCodes)
-    ? payload.readinessReasonCodes
-      .map((item) => normalizeReplyText(item).toLowerCase().replace(/\s+/g, '_'))
-      .filter(Boolean)
-      .slice(0, 12)
-    : [];
+  const explicitReasonCodes = normalizeResponseQualityReasonCodes(payload.readinessReasonCodes);
   const explicitSafeResponseMode = normalizeReplyText(payload.readinessSafeResponseMode).toLowerCase();
-  const readiness = hasExplicitDecision
-    ? Object.assign({}, readinessGate.readiness, {
-      decision: explicitDecision,
-      reasonCodes: explicitReasonCodes.length ? explicitReasonCodes : readinessGate.readiness.reasonCodes,
-      safeResponseMode: explicitSafeResponseMode || readinessGate.readiness.safeResponseMode
-    })
-    : readinessGate.readiness;
-  if (!hasExplicitDecision) {
-    const legalBlocked = payload.legalSnapshot && payload.legalSnapshot.legalDecision === 'blocked';
-    const sourceSignalPresent = hasMetric(payload.sourceAuthorityScore)
-      || hasMetric(payload.sourceFreshnessScore)
-      || normalizeReplyText(payload.sourceReadinessDecision).length > 0;
-    const riskTier = payload.riskSnapshot && typeof payload.riskSnapshot.intentRiskTier === 'string'
-      ? payload.riskSnapshot.intentRiskTier.toLowerCase()
-      : 'low';
-    if (!legalBlocked && !sourceSignalPresent && !contradictionDetected && unsupportedClaimCount === 0 && riskTier !== 'high') {
-      readiness.decision = 'allow';
-      readiness.safeResponseMode = 'answer';
-      readiness.reasonCodes = ['readiness_signal_missing_allow'];
-    }
-  }
   const telemetryCoverageSignals = resolveTelemetryCoverageSignals(Object.assign({}, payload, {
     evidenceCoverage,
     unsupportedClaimCount,
@@ -1893,8 +1875,25 @@ function resolveAnswerReadinessTelemetry(params) {
     savedFaqReused: payload.savedFaqReused === true,
     sourceSnapshotRefs: payload.sourceSnapshotRefs
   }));
+  const responseQualityVerdict = createResponseQualityVerdict({
+    responseQualityContext,
+    readinessGate,
+    readinessDecision: hasExplicitDecision ? explicitDecision : null,
+    readinessReasonCodes: hasExplicitDecision ? explicitReasonCodes : null,
+    readinessSafeResponseMode: hasExplicitDecision ? explicitSafeResponseMode : null,
+    allowWhenSignalsMissing: hasExplicitDecision !== true,
+    legalSnapshot: payload.legalSnapshot,
+    riskSnapshot: payload.riskSnapshot,
+    contradictionFlags,
+    contradictionDetected,
+    unsupportedClaimCount,
+    sourceAuthorityScore: payload.sourceAuthorityScore,
+    sourceFreshnessScore: payload.sourceFreshnessScore,
+    sourceReadinessDecision: payload.sourceReadinessDecision,
+    telemetryAdditions: telemetryCoverageSignals
+  });
   return {
-    readiness,
+    readiness: responseQualityVerdict.readiness,
     readinessV2: readinessGate.readinessV2,
     answerReadinessVersion: readinessGate.answerReadinessVersion,
     answerReadinessLogOnlyV2: readinessGate.answerReadinessLogOnlyV2,
@@ -1902,7 +1901,11 @@ function resolveAnswerReadinessTelemetry(params) {
     answerReadinessV2Mode: readinessGate.mode ? readinessGate.mode.mode : null,
     answerReadinessV2Stage: readinessGate.mode ? readinessGate.mode.stage : null,
     answerReadinessV2EnforcementReason: readinessGate.mode ? readinessGate.mode.enforcementReason : null,
-    readinessTelemetryV2: Object.assign({}, readinessGate.telemetry || {}, telemetryCoverageSignals),
+    responseQualityContextVersion: responseQualityContext.contractVersion,
+    responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
+    responseQualityContext,
+    responseQualityVerdict,
+    readinessTelemetryV2: responseQualityVerdict.telemetry,
     unsupportedClaimCount,
     contradictionDetected
   };
@@ -2161,6 +2164,8 @@ async function appendLlmGateDecisionBestEffort(data) {
         readinessReasonCodes: readinessTelemetry.readiness.reasonCodes,
         readinessSafeResponseMode: readinessTelemetry.readiness.safeResponseMode,
         answerReadinessVersion: readinessTelemetry.answerReadinessVersion,
+        responseQualityContextVersion: readinessTelemetry.readinessTelemetryV2.responseQualityContextVersion || null,
+        responseQualityVerdictVersion: readinessTelemetry.readinessTelemetryV2.responseQualityVerdictVersion || null,
         answerReadinessLogOnlyV2: readinessTelemetry.answerReadinessLogOnlyV2 === true,
         answerReadinessEnforcedV2: readinessTelemetry.answerReadinessEnforcedV2 === true,
         answerReadinessV2Mode: readinessTelemetry.answerReadinessV2Mode || null,
@@ -2745,6 +2750,8 @@ async function appendLlmActionLogBestEffort(data) {
       readinessReasonCodes: readinessTelemetry.readiness.reasonCodes,
       readinessSafeResponseMode: readinessTelemetry.readiness.safeResponseMode,
       answerReadinessVersion: readinessTelemetry.answerReadinessVersion,
+      responseQualityContextVersion: readinessTelemetry.readinessTelemetryV2.responseQualityContextVersion || null,
+      responseQualityVerdictVersion: readinessTelemetry.readinessTelemetryV2.responseQualityVerdictVersion || null,
       answerReadinessLogOnlyV2: readinessTelemetry.answerReadinessLogOnlyV2 === true,
       answerReadinessEnforcedV2: readinessTelemetry.answerReadinessEnforcedV2 === true,
       answerReadinessV2Mode: readinessTelemetry.answerReadinessV2Mode || null,
@@ -5314,14 +5321,15 @@ async function handleAssistantMessage(params) {
     cityPackValidation: cityPackSignals.cityPackValidation,
     crossSystemConflictDetected: false
   });
-  const readinessApplied = applyAnswerReadinessDecision({
-    decision: readinessTelemetry.readiness.decision,
+  const responseQualityVerdict = createResponseQualityVerdict({
+    responseQualityContext: readinessTelemetry.responseQualityContext,
+    readinessOverride: readinessTelemetry.readiness,
     replyText: guardedMainReply.replyText,
     clarifyText: 'まず対象手続きと期限を1つずつ教えてください。そこから具体的な次の一手を整理します。',
     refuseText: 'この内容は安全に断定できないため、公式窓口で最終確認をお願いします。必要なら確認項目を整理します。'
   });
   const semanticReplyEnvelope = buildSemanticReplyEnvelope({
-    replyText: readinessApplied.replyText,
+    replyText: responseQualityVerdict.replyText,
     domainIntent: normalizedConversationIntent,
     conversationMode: (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath)
       ? opportunityDecision.conversationMode

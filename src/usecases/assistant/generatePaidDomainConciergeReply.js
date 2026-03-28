@@ -519,7 +519,8 @@ function buildDeepenReplyFromSource(sourceReplyText, domainIntent, messageText) 
   if (/対象地域の窓口|必要書類|受付期限/.test(source) || /確認するのは/.test(sourceLine)) {
     if (domainIntent === 'school') {
       return [
-        '具体的には、教育窓口のページで対象校の条件、必要書類、受付期限の3点だけ見れば十分です'
+        '具体的には、教育窓口のページで対象校の条件、必要書類、受付期限の3点だけ見れば十分です',
+        'この3点が見えると、次に問い合わせる内容までかなり具体化できます'
       ];
     }
     return [

@@ -3,6 +3,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const {
+  resolveHarnessRunId,
+  resolveRunScopedArtifactGroup,
+  writeHarnessArtifact
+} = require('./harness_shared');
 
 function parseArgs(argv) {
   const args = Array.isArray(argv) ? argv.slice(2) : [];
@@ -172,9 +177,17 @@ function main(argv) {
     criticalFailureCount: criticalFailures.length
   };
 
-  writeJson(outPath, result);
+  const artifact = writeHarnessArtifact({
+    outputPath: outPath,
+    value: result,
+    runId: resolveHarnessRunId({ env: process.env, sourceTag: 'must-pass' }),
+    artifactGroup: resolveRunScopedArtifactGroup('must-pass')
+  });
   const target = result.ok ? process.stdout : process.stderr;
-  target.write(`${JSON.stringify(result, null, 2)}\n`);
+  target.write(`${JSON.stringify(Object.assign({}, result, {
+    outputPath: artifact.outputPath,
+    runScopedOutputPath: artifact.runScopedPath
+  }), null, 2)}\n`);
   return result.ok ? 0 : 1;
 }
 

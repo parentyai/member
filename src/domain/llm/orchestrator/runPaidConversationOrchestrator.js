@@ -26,6 +26,7 @@ const { runAnswerReadinessGateV2 } = require('../quality/runAnswerReadinessGateV
 const { resolveJourneyActionSignals } = require('../quality/resolveJourneyActionSignals');
 const { resolveRuntimeCityPackSignals } = require('../quality/resolveRuntimeCityPackSignals');
 const { resolveRuntimeEmergencySignals } = require('../quality/resolveRuntimeEmergencySignals');
+const { createResponseQualityContext } = require('../quality/responseQualityFoundation');
 const { enforceActionGateway } = require('../../../v1/action_gateway/actionGateway');
 const { resolveActionClass } = require('../../../v1/policy_graph/resolveActionClass');
 
@@ -1137,7 +1138,7 @@ async function runPaidConversationOrchestrator(params) {
       contextSnapshot: packet.contextSnapshot
     })
   ]);
-  const readinessGate = runAnswerReadinessGateV2({
+  const responseQualityContext = createResponseQualityContext({
     entryType: 'orchestrator',
     lawfulBasis: legalSnapshot.lawfulBasis,
     consentVerified: legalSnapshot.consentVerified,
@@ -1194,8 +1195,15 @@ async function runPaidConversationOrchestrator(params) {
     scopeDisclosureRequired: cityPackSignals.scopeDisclosureRequired === true,
     cityPackValidation: cityPackSignals.cityPackValidation,
     knowledgeScope: packet.knowledgeScope || 'general',
+    requestShape: packet.requestContract && packet.requestContract.requestShape,
+    outputForm: packet.requestContract && packet.requestContract.outputForm,
+    transformSource: packet.requestContract && packet.requestContract.transformSource,
     savedFaqContext: false,
     crossSystemConflictDetected: false
+  });
+  const readinessGate = runAnswerReadinessGateV2({
+    entryType: 'orchestrator',
+    responseQualityContext
   });
   const readinessResult = readinessGate.readiness;
   const actionGatewayEnabled = payload.llmFlags && payload.llmFlags.actionGatewayEnabled === true;
@@ -1230,9 +1238,12 @@ async function runPaidConversationOrchestrator(params) {
     recentAssistantCommitments: packet.recentAssistantCommitments,
     repetitionPrevented: loopResolved.repetitionPrevented === true,
     readinessDecision: preservedReadiness.decision,
+    readinessReasonCodes: preservedReadiness.reasonCodes,
     readinessSafeResponseMode: preservedReadiness.safeResponseMode,
     readinessClarifyText,
-    fallbackText: '状況を整理しながら進めます。優先する手続きを1つ決めましょう。'
+    fallbackText: '状況を整理しながら進めます。優先する手続きを1つ決めましょう。',
+    responseQualityContext,
+    readinessGate
   });
   const finalReplyText = enforceMixedDomainFinalReply(finalized.replyText, packet, strategyPlan);
   const retrievalBlockedByStrategy = retrievalDecision.retrievalBlockedByStrategy === true;

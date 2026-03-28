@@ -9,7 +9,7 @@ const { spawnSync } = require('node:child_process');
 const ROOT = path.resolve(__dirname, '..', '..');
 const SEED_PATH = path.join(ROOT, 'tools', 'llm_quality', 'fixtures', 'usage_summary_candidate.v1.json');
 
-function runGate(summaryPath, outputPath) {
+function runGate(summaryPath, outputPath, env) {
   return spawnSync('node', [
     'tools/llm_quality/run_quality_gate.js',
     '--baseline', 'tools/llm_quality/fixtures/baseline_metrics.v1.json',
@@ -22,7 +22,8 @@ function runGate(summaryPath, outputPath) {
     '--requireAllSlicesPass', 'true'
   ], {
     cwd: ROOT,
-    encoding: 'utf8'
+    encoding: 'utf8',
+    env: Object.assign({}, process.env, env || {})
   });
 }
 
@@ -45,13 +46,16 @@ test('phase776: runtime gate uplifts continuity/recovery dimensions from convers
 
   const summaryPath = path.join(ROOT, 'tmp', 'phase776_runtime_summary_enriched.json');
   const outputPath = path.join(ROOT, 'tmp', 'phase776_runtime_gate_result.json');
+  const runId = 'phase776-runtime';
+  const mirrorPath = path.join(ROOT, 'tmp', 'llm_quality_runs', runId, 'gate', 'phase776_runtime_gate_result.json');
   fs.writeFileSync(summaryPath, `${JSON.stringify(mutated, null, 2)}\n`);
 
-  const run = runGate(summaryPath, outputPath);
+  const run = runGate(summaryPath, outputPath, { LLM_QUALITY_RUN_ID: runId });
   assert.equal(run.status, 0, run.stderr || run.stdout);
 
   const payload = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
   const candidate = payload.candidateScorecard;
+  assert.equal(fs.existsSync(mirrorPath), true);
   assert.equal(payload.candidateSourceType, 'runtime_summary');
   assert.equal(candidate.overallScore > 88.5, true);
   assert.equal(getDimension(candidate, 'conversation_continuity') >= 0.85, true);

@@ -1,7 +1,7 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-21T20:54:06.489Z
-- gitCommit: d9096118d09552ea83d3b2d261c657ad38124e3e
+- generatedAt: 2026-03-28T00:49:23.083Z
+- gitCommit: aa0d52595ea2cb771dd64857ea486947c0bfc374
 - branch: codex/quality-patrol-prA-T001
 - flagCount: 93
 - source: src/**/*.js

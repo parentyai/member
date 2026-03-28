@@ -29,7 +29,10 @@ const { evaluateCounterfactualChoice } = require('../../../domain/llm/bandit/cou
 const { resolveIntentRiskTier } = require('../../../domain/llm/policy/resolveIntentRiskTier');
 const { computeSourceReadiness } = require('../../../domain/llm/knowledge/computeSourceReadiness');
 const { runAnswerReadinessGateV2 } = require('../../../domain/llm/quality/runAnswerReadinessGateV2');
-const { applyAnswerReadinessDecision } = require('../../../domain/llm/quality/applyAnswerReadinessDecision');
+const {
+  createResponseQualityContext,
+  createResponseQualityVerdict
+} = require('../../../domain/llm/quality/responseQualityFoundation');
 const { resolveJourneyActionSignals } = require('../../../domain/llm/quality/resolveJourneyActionSignals');
 const { resolveTelemetryCoverageSignals } = require('../../../domain/llm/quality/resolveTelemetryCoverageSignals');
 
@@ -416,7 +419,7 @@ async function composeConciergeReply(params) {
     const row = item && typeof item === 'object' ? item : {};
     return normalizeText(row.source).toLowerCase() === 'city_pack_source_ref';
   });
-  const readinessGate = runAnswerReadinessGateV2({
+  const responseQualityContext = createResponseQualityContext({
     entryType: 'concierge',
     lawfulBasis: payload && payload.legalSnapshot && typeof payload.legalSnapshot.lawfulBasis === 'string'
       ? payload.legalSnapshot.lawfulBasis
@@ -466,6 +469,10 @@ async function composeConciergeReply(params) {
     cityPackValidation: cityPackCandidatePresent ? { blocked: false, sourceRefs: ranked.selected.slice(0, 8) } : null,
     savedFaqContext: false,
     crossSystemConflictDetected: false
+  });
+  const readinessGate = runAnswerReadinessGateV2({
+    entryType: 'concierge',
+    responseQualityContext
   });
   const readinessResult = readinessGate.readiness;
 
@@ -698,13 +705,14 @@ async function composeConciergeReply(params) {
   });
 
   const lintedReplyText = trimForLineMessage(lintResult.text || mergedReply);
-  const readinessApplied = applyAnswerReadinessDecision({
-    decision: readinessResult.decision,
+  const responseQualityVerdict = createResponseQualityVerdict({
+    responseQualityContext,
+    readinessGate,
     replyText: lintedReplyText,
     clarifyText: 'まず対象手続きと期限を1つずつ教えてください。そこから次の一手を具体化します。',
     refuseText: 'この内容は安全に断定できないため、公式窓口で最終確認してください。必要なら確認ポイントを整理します。'
   });
-  const replyText = trimForLineMessage(readinessApplied.replyText || lintedReplyText);
+  const replyText = trimForLineMessage(responseQualityVerdict.replyText || lintedReplyText);
   const featureHash = buildFeatureHash({
     contextVersion: CONTEXT_VERSION,
     phase: contextSnapshot && contextSnapshot.phase,
@@ -762,6 +770,8 @@ async function composeConciergeReply(params) {
     answerReadinessV2Mode: readinessGate.mode ? readinessGate.mode.mode : null,
     answerReadinessV2Stage: readinessGate.mode ? readinessGate.mode.stage : null,
     answerReadinessV2EnforcementReason: readinessGate.mode ? readinessGate.mode.enforcementReason : null,
+    responseQualityContextVersion: responseQualityContext.contractVersion,
+    responseQualityVerdictVersion: responseQualityVerdict.contractVersion,
     readinessDecisionSource: readinessResult.decisionSource || null,
     readinessDecisionSourceV2: readinessGate.readinessV2.decisionSource || null,
     readinessHardeningVersion: readinessGate.telemetry.readinessHardeningVersion || null,

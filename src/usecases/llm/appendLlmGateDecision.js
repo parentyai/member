@@ -80,6 +80,8 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'readinessReasonCodes',
   'readinessSafeResponseMode',
   'answerReadinessVersion',
+  'responseQualityContextVersion',
+  'responseQualityVerdictVersion',
   'answerReadinessLogOnlyV2',
   'answerReadinessEnforcedV2',
   'answerReadinessV2Mode',
@@ -294,36 +296,51 @@ function sanitizeSummaryInput(value) {
 
 async function appendLlmGateDecision(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
+  const summaryFromTopLevel = sanitizeSummaryInput(payload);
   const auditFn = deps && typeof deps.appendAuditLog === 'function' ? deps.appendAuditLog : resolveAppendAuditLog();
   const summaryFromInput = sanitizeSummaryInput(payload.payloadSummary);
   const gatesApplied = normalizeGatesApplied(
-    summaryFromInput.gatesApplied !== undefined ? summaryFromInput.gatesApplied : payload.gatesApplied
+    summaryFromInput.gatesApplied !== undefined
+      ? summaryFromInput.gatesApplied
+      : (summaryFromTopLevel.gatesApplied !== undefined ? summaryFromTopLevel.gatesApplied : payload.gatesApplied)
   );
   const entryType = normalizeEntryType(
-    summaryFromInput.entryType !== undefined ? summaryFromInput.entryType : payload.entryType
+    summaryFromInput.entryType !== undefined
+      ? summaryFromInput.entryType
+      : (summaryFromTopLevel.entryType !== undefined ? summaryFromTopLevel.entryType : payload.entryType)
   );
   const assistantQuality = summaryFromInput.assistantQuality !== undefined
     ? normalizeAssistantQuality(summaryFromInput.assistantQuality)
-    : normalizeAssistantQuality(payload.assistantQuality);
-  const sanitizeApplied = summaryFromInput.sanitizeApplied === true || payload.sanitizeApplied === true;
+    : normalizeAssistantQuality(summaryFromTopLevel.assistantQuality !== undefined
+      ? summaryFromTopLevel.assistantQuality
+      : payload.assistantQuality);
+  const sanitizeApplied = summaryFromInput.sanitizeApplied === true
+    || summaryFromTopLevel.sanitizeApplied === true
+    || payload.sanitizeApplied === true;
   const sanitizedCandidateCount = Number.isFinite(Number(summaryFromInput.sanitizedCandidateCount))
     ? Number(summaryFromInput.sanitizedCandidateCount)
-    : (Number.isFinite(Number(payload.sanitizedCandidateCount)) ? Number(payload.sanitizedCandidateCount) : 0);
+    : (Number.isFinite(Number(summaryFromTopLevel.sanitizedCandidateCount))
+      ? Number(summaryFromTopLevel.sanitizedCandidateCount)
+      : (Number.isFinite(Number(payload.sanitizedCandidateCount)) ? Number(payload.sanitizedCandidateCount) : 0));
 
-  const summary = Object.assign(summaryFromInput, {
-    lineUserId: summaryFromInput.lineUserId || payload.lineUserId || null,
-    plan: summaryFromInput.plan || payload.plan || 'unknown',
-    status: summaryFromInput.status || payload.status || 'unknown',
-    intent: summaryFromInput.intent || payload.intent || 'unknown',
-    decision: summaryFromInput.decision || payload.decision || 'blocked',
-    blockedReason: summaryFromInput.blockedReason || payload.blockedReason || null,
+  const summary = Object.assign({}, summaryFromTopLevel, summaryFromInput, {
+    lineUserId: summaryFromInput.lineUserId || summaryFromTopLevel.lineUserId || payload.lineUserId || null,
+    plan: summaryFromInput.plan || summaryFromTopLevel.plan || payload.plan || 'unknown',
+    status: summaryFromInput.status || summaryFromTopLevel.status || payload.status || 'unknown',
+    intent: summaryFromInput.intent || summaryFromTopLevel.intent || payload.intent || 'unknown',
+    decision: summaryFromInput.decision || summaryFromTopLevel.decision || payload.decision || 'blocked',
+    blockedReason: summaryFromInput.blockedReason || summaryFromTopLevel.blockedReason || payload.blockedReason || null,
     tokenUsed: Number.isFinite(Number(summaryFromInput.tokenUsed))
       ? Number(summaryFromInput.tokenUsed)
-      : (Number.isFinite(Number(payload.tokenUsed)) ? Number(payload.tokenUsed) : 0),
+      : (Number.isFinite(Number(summaryFromTopLevel.tokenUsed))
+        ? Number(summaryFromTopLevel.tokenUsed)
+        : (Number.isFinite(Number(payload.tokenUsed)) ? Number(payload.tokenUsed) : 0)),
     costEstimate: Number.isFinite(Number(summaryFromInput.costEstimate))
       ? Number(summaryFromInput.costEstimate)
-      : (Number.isFinite(Number(payload.costEstimate)) ? Number(payload.costEstimate) : null),
-    model: summaryFromInput.model || payload.model || null,
+      : (Number.isFinite(Number(summaryFromTopLevel.costEstimate))
+        ? Number(summaryFromTopLevel.costEstimate)
+        : (Number.isFinite(Number(payload.costEstimate)) ? Number(payload.costEstimate) : null)),
+    model: summaryFromInput.model || summaryFromTopLevel.model || payload.model || null,
     entryType,
     gatesApplied,
     assistantQuality,

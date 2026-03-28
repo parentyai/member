@@ -112,6 +112,8 @@ async function handleOpsNextActions(req, res) {
     result.readinessReasonCodes = sharedReadiness.readiness.reasonCodes;
     result.readinessSafeResponseMode = sharedReadiness.readiness.safeResponseMode;
     result.intentRiskTier = sharedReadiness.intentRiskTier;
+    result.responseQualityContextVersion = sharedReadiness.responseQualityContextVersion || null;
+    result.responseQualityVerdictVersion = sharedReadiness.responseQualityVerdictVersion || null;
     await appendLlmGateDecision({
       actor,
       traceId,
@@ -143,6 +145,8 @@ async function handleOpsNextActions(req, res) {
       readinessSafeResponseMode: sharedReadiness.readiness.safeResponseMode,
       answerReadinessLogOnly: false,
       answerReadinessVersion: sharedReadiness.answerReadinessVersion,
+      responseQualityContextVersion: sharedReadiness.responseQualityContextVersion || null,
+      responseQualityVerdictVersion: sharedReadiness.responseQualityVerdictVersion || null,
       answerReadinessLogOnlyV2: sharedReadiness.answerReadinessLogOnlyV2,
       answerReadinessEnforcedV2: sharedReadiness.answerReadinessEnforcedV2,
       answerReadinessV2Mode: sharedReadiness.answerReadinessV2Mode,

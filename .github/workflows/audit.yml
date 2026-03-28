@@ -154,6 +154,7 @@ jobs:
 
       - name: Run LLM quality gate
         run: |
+          export LLM_QUALITY_RUN_ID="quality-framework-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-0}"
           npm run llm:quality:baseline
           npm run llm:quality:candidate
           npm run llm:quality:diff
@@ -171,6 +172,7 @@ jobs:
         with:
           name: llm-quality-artifacts
           path: |
+            tmp/llm_quality_runs/**
             tmp/llm_quality_gate_result.json
             tmp/llm_quality_baseline_scorecard.json
             tmp/llm_quality_candidate_scorecard.json

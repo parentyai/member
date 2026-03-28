@@ -1,7 +1,12 @@
 'use strict';
 
 const path = require('node:path');
-const { parseArgs, readJson, writeJson, buildScorecard } = require('./lib');
+const { parseArgs, readJson, buildScorecard } = require('./lib');
+const {
+  resolveHarnessRunId,
+  resolveRunScopedArtifactGroup,
+  writeHarnessArtifact
+} = require('./harness_shared');
 
 function main(argv) {
   const args = parseArgs(argv);
@@ -14,8 +19,20 @@ function main(argv) {
 
   const metrics = readJson(inputPath);
   const scorecard = buildScorecard(metrics, { source: inputPath });
-  writeJson(outPath, scorecard);
-  process.stdout.write(`${JSON.stringify({ ok: true, inputPath, outPath, overallScore: scorecard.overallScore, hardGate: scorecard.hardGate }, null, 2)}\n`);
+  const artifact = writeHarnessArtifact({
+    outputPath: outPath,
+    value: scorecard,
+    runId: resolveHarnessRunId({ env: process.env, sourceTag: 'compute-scorecard' }),
+    artifactGroup: resolveRunScopedArtifactGroup('scorecard')
+  });
+  process.stdout.write(`${JSON.stringify({
+    ok: true,
+    inputPath,
+    outPath: artifact.outputPath,
+    runScopedOutPath: artifact.runScopedPath,
+    overallScore: scorecard.overallScore,
+    hardGate: scorecard.hardGate
+  }, null, 2)}\n`);
   return 0;
 }
 
