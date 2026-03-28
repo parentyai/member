@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-28T09:44:36-04:00",
-  "gitCommit": "766f49380dea94390fab0b9a8cb0e03b0d10d4bb",
-  "branch": "codex/line-open-target-runtime-fix",
-  "sourceDigest": "b1f1acd739edf2c2665435c156202bd20d74dc7067611fa004271c0a94b2ca5c",
+  "generatedAt": "2026-03-28T14:26:12-04:00",
+  "gitCommit": "0703c9228e9c46ed55ff195dc3846d1e70872dc3",
+  "branch": "codex/desktop-self-improvement-loop",
+  "sourceDigest": "793f95f994c0c2f356dc595f8ed9bb405486362c119485c568cb369a24e74069",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
