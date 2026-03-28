@@ -76,3 +76,8 @@ Local-only runbook for the LINE patrol MCP harness.
 - screenshot retention follows `store_screenshots`; default local policy keeps it off
 - no promotion into backlog collections
 - no patrol-originated Firestore write path
+
+## Optional operator check
+1. Run `npm run line-desktop-patrol:desktop-readiness -- --target-alias <alias>` and confirm `ready=true`.
+2. Run `npm run line-desktop-patrol:desktop-self-test -- --target-alias <alias> --text '...' --send-mode dry_run`.
+3. Confirm `tmp/line_desktop_patrol_latest.json` points at the latest run and `result.json` contains header OCR evidence for the `メンバー` target.
