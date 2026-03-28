@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-27T22:11:42-04:00",
-  "gitCommit": "573a352653b40fb67239528c17389737015131f9",
-  "branch": "codex/pr1092-rebase",
-  "sourceDigest": "018db5533c2c156440d038a41b7dc01a0a8a1ac13c782b706c0cab05a599285f",
+  "generatedAt": "2026-03-28T03:45:23-04:00",
+  "gitCommit": "8903320e75559d609095aaf848cd2ae6d2f2231a",
+  "branch": "codex/line-desktop-ui-self-test-clean",
+  "sourceDigest": "40d4bdb2b582e5e87928077d0194c22a8bf21cea847f946a0e21ee4026c5c04b",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

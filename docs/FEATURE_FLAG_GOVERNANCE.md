@@ -1,8 +1,8 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-28T02:24:29.943Z
-- gitCommit: 573a352653b40fb67239528c17389737015131f9
-- branch: codex/pr1092-rebase
+- generatedAt: 2026-03-28T07:46:38.447Z
+- gitCommit: 8903320e75559d609095aaf848cd2ae6d2f2231a
+- branch: codex/line-desktop-ui-self-test-clean
 - flagCount: 93
 - source: src/**/*.js
 - check: `npm run feature-flags:check`
