@@ -610,3 +610,27 @@ test('phase734: finalizer recovers city-school answer from location hint when ge
   assert.equal(finalized.replyText.includes('学校手続きですね'), false);
   assert.equal(finalized.replyText.includes('具体化できます？'), false);
 });
+
+test('phase734: finalizer recovers parent-friendly one-line rewrite when multiline housing fallback leaks through', () => {
+  const finalized = finalizeCandidate({
+    selected: {
+      kind: 'housing_knowledge_candidate',
+      replyText: '最初の1か月は身分証、住居、金融、通信、医療導線の5領域を優先する。\nまずは次の一手です。\n・希望条件を2つまで固定する\n入居時期か希望エリアは決まっていますか？'
+    },
+    requestContract: {
+      messageText: '小学生の保護者向けに、やさしい日本語で1文にして。',
+      requestShape: 'rewrite',
+      depthIntent: 'transform',
+      outputForm: 'one_line',
+      primaryDomainIntent: 'housing',
+      knowledgeScope: 'general',
+      sourceReplyText: 'あとで公式確認が必要なのは、契約条件が公式窓口の案内と一致しているかです。'
+    },
+    readinessDecision: 'allow',
+    verificationOutcome: 'passed'
+  });
+
+  assert.equal(finalized.replyText, '最初に条件を見てから、必要な書類を決めれば進めやすいです');
+  assert.equal(finalized.replyText.includes('\n'), false);
+  assert.equal(/[?？]$/.test(finalized.replyText), false);
+});
