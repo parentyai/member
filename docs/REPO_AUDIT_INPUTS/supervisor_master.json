@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-28T15:41:06-04:00",
-  "gitCommit": "26d91b819ae25e64bc3a85e4bdce78e0489d76ff",
-  "branch": "codex/parent-friendly-finalizer-fix",
-  "sourceDigest": "3d75f5e2b20a876e0a800e213a31ed17e896d63850428e70b37ec3f2c47efb00",
+  "generatedAt": "2026-03-28T16:40:33-04:00",
+  "gitCommit": "fda82c580b1482df4c3c10dd7fff42f8ee5e175f",
+  "branch": "codex/firestore-index-apply-workflow",
+  "sourceDigest": "979cc9af28fd47fd9a31e66b507173e5467d0991a1861d4e6a9dba4e8a8791e6",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
