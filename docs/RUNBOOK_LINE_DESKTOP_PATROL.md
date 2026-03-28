@@ -18,6 +18,7 @@ Local-only runbook for the LINE patrol MCP harness.
 3. `npm run line-desktop-patrol:targets`
 4. `npm run line-desktop-patrol:desktop-readiness -- --target-alias <alias>`
 5. `npm run line-desktop-patrol:desktop-self-test -- --target-alias <alias> --text '...' --send-mode dry_run`
+6. `npm run line-desktop-patrol:desktop-self-improvement -- --target-alias <alias> --send-mode execute`
 6. `python3 -m compileall tools/line_desktop_patrol/src`
 7. `PYTHONPATH=tools/line_desktop_patrol/src python3 -m member_line_patrol.mcp_server --manifest`
 8. `tools/line_desktop_patrol/run_mcp_server.sh` が起動することを確認
@@ -42,6 +43,7 @@ Local-only runbook for the LINE patrol MCP harness.
    - `send_mode=execute` only when intentional
    - optional `expected_reply_substrings[]` / `forbidden_reply_substrings[]`
 9. for the safest operator flow, prefer `desktop-self-test`, which aborts before send when `desktop_readiness.ready` is not true
+10. for the fixed self-improvement loop, prefer `desktop-self-improvement`, which sends the tracked strategic 10-case batch and writes one aggregated review summary under `artifacts/line_desktop_patrol/self_improvement_runs/<batch_run_id>/summary.json`
 
 ## Operator safe sequence
 1. `npm run line-desktop-patrol:doctor`
@@ -72,6 +74,7 @@ Debug-only:
   - desktop loops include add-only header OCR evidence and transcript deltas in `result.json`
   - `desktop_readiness` returns `ready`, `accessibilityTrusted`, `lineRunning`, `contextResolved`, and optional title-match evidence
   - `desktop-self-test` returns both `readiness` and `loop` payloads, so operators can confirm the gate that allowed the send
+  - `desktop-self-improvement` writes per-case patrol eval artifacts plus one aggregated summary that reports pass/fail by strategic axis and proposal-only next steps for future auto-improvement
   - admin summary surfaces add-only `desktopPatrolSummary.promotion.latestArtifactKind`, `desktopPatrolSummary.promotion.latestArtifactStatus`, `desktopPatrolSummary.promotion.latestDraftPrRef`, and `desktopPatrolSummary.promotion.updatedAt`
 
 ## Stop and rollback
@@ -94,3 +97,4 @@ Debug-only:
 1. Run `npm run line-desktop-patrol:desktop-readiness -- --target-alias <alias>` and confirm `ready=true`.
 2. Run `npm run line-desktop-patrol:desktop-self-test -- --target-alias <alias> --text '...' --send-mode dry_run`.
 3. Confirm `tmp/line_desktop_patrol_latest.json` points at the latest run and `result.json` contains header OCR evidence for the `メンバー` target.
+4. When the goal is reply quality iteration, run `npm run line-desktop-patrol:desktop-self-improvement -- --target-alias <alias> --send-mode execute` and review the aggregated strategic summary before deciding whether to patch the runtime.
