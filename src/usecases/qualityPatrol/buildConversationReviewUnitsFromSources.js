@@ -45,6 +45,10 @@ function normalizeText(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+function hasOwn(object, key) {
+  return Boolean(object) && Object.prototype.hasOwnProperty.call(object, key);
+}
+
 function hasWindow(range) {
   return Boolean(range && (range.fromAt || range.toAt));
 }
@@ -247,7 +251,9 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
   const explicitSourceWindow = hasExplicitSourceWindow(payload);
   const snapshotsRepo = deps && deps.conversationReviewSnapshotsRepo ? deps.conversationReviewSnapshotsRepo : conversationReviewSnapshotsRepo;
   const actionRepo = deps && deps.llmActionLogsRepo ? deps.llmActionLogsRepo : llmActionLogsRepo;
-  const faqRepo = deps && deps.faqAnswerLogsRepo ? deps.faqAnswerLogsRepo : faqAnswerLogsRepo;
+  const faqRepo = hasOwn(deps, 'faqAnswerLogsRepo')
+    ? deps.faqAnswerLogsRepo
+    : (deps ? null : faqAnswerLogsRepo);
   const getTraceBundleUsecase = deps && deps.getTraceBundle ? deps.getTraceBundle : getTraceBundle;
 
   const rawLlmActionLogs = await actionRepo.listLlmActionLogsByCreatedAtRange({
@@ -291,11 +297,13 @@ async function buildConversationReviewUnitsFromSources(params, deps) {
       toAt: sourceWindow.toAt,
       limit: readLimits.snapshotReadLimit
     }),
-    faqRepo.listFaqAnswerLogsByCreatedAtRange({
-      fromAt: sourceWindow.fromAt,
-      toAt: sourceWindow.toAt,
-      limit: readLimits.faqReadLimit
-    })
+    faqRepo && typeof faqRepo.listFaqAnswerLogsByCreatedAtRange === 'function'
+      ? faqRepo.listFaqAnswerLogsByCreatedAtRange({
+        fromAt: sourceWindow.fromAt,
+        toAt: sourceWindow.toAt,
+        limit: readLimits.faqReadLimit
+      })
+      : []
   ]);
 
   const rawSnapshots = filterSyntheticPatrolReplayRows(payload, fetchedSnapshots);
