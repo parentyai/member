@@ -483,6 +483,7 @@ function buildRequestContract(params) {
     echoOfPriorAssistant
   });
   return {
+    messageText,
     primaryDomainIntent,
     domainSignals,
     requestShape,

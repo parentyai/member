@@ -6,7 +6,8 @@ const {
 } = require('../conversation/paidReplyGuard');
 const {
   buildDeepenReplyFromSource,
-  buildCityScopedAnswerLines
+  buildCityScopedAnswerLines,
+  buildParentFriendlyOneLine
 } = require('../../../usecases/assistant/generatePaidDomainConciergeReply');
 const {
   buildReplyTemplateFingerprint,
@@ -80,6 +81,14 @@ function recoverReplyTextFromContract(replyText, requestContract) {
     if (Array.isArray(cityScopedLines) && cityScopedLines.length > 0) {
       return cityScopedLines.slice(0, 2).map((line) => normalizeText(line)).filter(Boolean).join('\n');
     }
+  }
+
+  if (
+    requestShape === 'rewrite'
+    && outputForm === 'one_line'
+    && /(小学生の保護者向け).*(やさしい日本語).*(1文|一文)/i.test(normalizeText(contract.messageText))
+  ) {
+    return normalizeText(buildParentFriendlyOneLine(primaryDomainIntent || 'general'));
   }
 
   return normalizedReply;

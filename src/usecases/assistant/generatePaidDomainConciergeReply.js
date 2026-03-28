@@ -1463,6 +1463,7 @@ function generatePaidDomainConciergeReply(params) {
 module.exports = {
   generatePaidDomainConciergeReply,
   FORBIDDEN_REPLY_PATTERN,
+  buildParentFriendlyOneLine,
   buildStrategicHumanReplyLines,
   buildMessageTemplateFromSource,
   buildNonDogmaticRewriteFromSource,

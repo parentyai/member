@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-28T15:18:02-04:00",
-  "gitCommit": "bbb5e1a9d918c9f480a48bb0e131f4533255b947",
-  "branch": "HEAD",
-  "sourceDigest": "a04968b1203fccfdaafaf89a47c0efbf39a650649bee76d4711d1cb6f2ad0409",
+  "generatedAt": "2026-03-28T15:41:06-04:00",
+  "gitCommit": "26d91b819ae25e64bc3a85e4bdce78e0489d76ff",
+  "branch": "codex/parent-friendly-finalizer-fix",
+  "sourceDigest": "3d75f5e2b20a876e0a800e213a31ed17e896d63850428e70b37ec3f2c47efb00",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

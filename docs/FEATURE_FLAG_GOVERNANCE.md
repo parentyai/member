@@ -1,8 +1,8 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-28T18:51:54.885Z
-- gitCommit: 0703c9228e9c46ed55ff195dc3846d1e70872dc3
-- branch: codex/desktop-self-improvement-loop
+- generatedAt: 2026-03-28T19:42:41.346Z
+- gitCommit: 26d91b819ae25e64bc3a85e4bdce78e0489d76ff
+- branch: codex/parent-friendly-finalizer-fix
 - flagCount: 93
 - source: src/**/*.js
 - check: `npm run feature-flags:check`
