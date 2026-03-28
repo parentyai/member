@@ -5,6 +5,14 @@ on:
     - cron: "*/5 * * * *"
   workflow_dispatch:
     inputs:
+      firestore_indexes_apply:
+        description: "Apply missing Firestore composite indexes instead of running the snapshot job"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
       dry_run:
         description: "Run in dry-run mode"
         required: false
@@ -21,6 +29,7 @@ on:
 
 env:
   GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
   GCP_REGION: ${{ vars.GCP_REGION }}
   SERVICE_NAME: ${{ vars.SERVICE_NAME }}
   GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
@@ -33,6 +42,7 @@ permissions:
 
 jobs:
   ops-system-snapshot:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.firestore_indexes_apply != 'true' }}
     runs-on: ubuntu-latest
     environment: stg
     concurrency:
@@ -144,3 +154,92 @@ jobs:
           name: ops-system-snapshot-build-${{ github.run_id }}
           path: artifacts/ops-system-snapshot-build
           if-no-files-found: warn
+
+  firestore-indexes-apply:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.firestore_indexes_apply == 'true' }}
+    runs-on: ubuntu-latest
+    environment: stg
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
+      - name: Validate required variables
+        run: |
+          REQUIRED_VARS=(
+            GCP_WIF_PROVIDER
+            DEPLOY_SA_EMAIL
+          )
+          MISSING=0
+          for VAR_NAME in "${REQUIRED_VARS[@]}"; do
+            if [ -z "${!VAR_NAME}" ]; then
+              echo "::error title=Missing workflow variable::${VAR_NAME} is empty"
+              MISSING=1
+            fi
+          done
+          if [ -z "${FIRESTORE_PROJECT_ID}" ] && [ -z "${GCP_PROJECT_ID}" ]; then
+            echo "::error title=Missing workflow variable::FIRESTORE_PROJECT_ID or GCP_PROJECT_ID must be set"
+            MISSING=1
+          fi
+          if [ "$MISSING" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Auth (OIDC)
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: access_token
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ env.FIRESTORE_PROJECT_ID || env.GCP_PROJECT_ID }}
+
+      - name: Apply missing Firestore composite indexes
+        env:
+          PROJECT_ID: ${{ env.FIRESTORE_PROJECT_ID || env.GCP_PROJECT_ID }}
+        run: |
+          node <<'NODE'
+          const childProcess = require('child_process');
+          const path = require('path');
+          const root = process.cwd();
+          const projectId = process.env.PROJECT_ID;
+          if (!projectId) {
+            throw new Error('PROJECT_ID is required');
+          }
+          const {
+            readRequiredPayload,
+            isCompositeRequiredIndex,
+            listActualIndexes,
+            diffIndexes,
+            buildCreateCommand
+          } = require(path.join(root, 'scripts', 'check_firestore_indexes.js'));
+
+          const payload = readRequiredPayload(path.join(root, 'docs', 'REPO_AUDIT_INPUTS', 'firestore_required_indexes.json'));
+          const requiredComposite = payload.indexes.filter(isCompositeRequiredIndex);
+          const actual = listActualIndexes(projectId, childProcess.execFileSync);
+          const diff = diffIndexes(requiredComposite, actual);
+
+          if (!diff.missing.length) {
+            console.log('No missing Firestore composite indexes.');
+            process.exit(0);
+          }
+
+          console.log(`Applying ${diff.missing.length} missing Firestore composite indexes...`);
+          for (const item of diff.missing) {
+            const command = buildCreateCommand(projectId, item);
+            console.log(command);
+            childProcess.execFileSync(command, {
+              shell: true,
+              stdio: 'inherit'
+            });
+          }
+          NODE
+
+      - name: Verify Firestore composite indexes
+        run: npm run firestore-indexes:check -- --project-id "${FIRESTORE_PROJECT_ID:-$GCP_PROJECT_ID}"
