@@ -6,12 +6,8 @@ const path = require('node:path');
 const { resolveAudienceView } = require('../../domain/qualityPatrol/query/resolveAudienceView');
 
 const QUERY_VERSION = 'line_desktop_patrol_summary_v1';
-const PROMOTION_REVIEW_ARTIFACT_ORDER = Object.freeze([
-  { kind: 'code_apply_record', markdownSuffix: '.code_apply_record.md', jsonSuffix: '.code_apply_record.json' },
-  { kind: 'code_apply_signoff', markdownSuffix: '.code_apply_signoff.md', jsonSuffix: '.code_apply_signoff.json' },
-  { kind: 'code_apply_evidence', markdownSuffix: '.code_apply_evidence.md', jsonSuffix: '.code_apply_evidence.json' },
+const PROMOTION_REVIEW_DISPLAY_ORDER = Object.freeze([
   { kind: 'code_review_packet', markdownSuffix: '.code_review_packet.md', jsonSuffix: '.code_review_packet.json' },
-  { kind: 'code_apply_task', markdownSuffix: '.code_apply_task.md', jsonSuffix: '.code_apply_task.json' },
   { kind: 'code_apply_draft', markdownSuffix: '.code_apply_draft.md', jsonSuffix: '.code_apply_draft.json' },
   { kind: 'code_edit_bundle', markdownSuffix: '.code_edit_bundle.md', jsonSuffix: '.code_edit_bundle.json' },
   { kind: 'code_diff_draft', markdownSuffix: '.code_diff_draft.md', jsonSuffix: '.code_diff_draft.json' },
@@ -20,6 +16,12 @@ const PROMOTION_REVIEW_ARTIFACT_ORDER = Object.freeze([
   { kind: 'patch_request', markdownSuffix: '.patch_request.md', jsonSuffix: '.patch_request.json' },
   { kind: 'patch_draft', markdownSuffix: '.patch_draft.md' },
   { kind: 'draft_pr_body', markdownSuffix: '.draft_pr.md', recordField: 'body_path' }
+]);
+const PROMOTION_APPROVAL_ARTIFACT_ORDER = Object.freeze([
+  { kind: 'patch_request', jsonSuffix: '.patch_request.json' },
+  { kind: 'code_apply_task', jsonSuffix: '.code_apply_task.json' },
+  { kind: 'code_apply_signoff', jsonSuffix: '.code_apply_signoff.json' },
+  { kind: 'code_apply_record', jsonSuffix: '.code_apply_record.json' }
 ]);
 
 function resolveArtifactRoot(deps) {
@@ -65,9 +67,11 @@ async function readDirIfExists(dirPath) {
 
 async function latestPromotionRecord(promotionsRoot) {
   const entries = await readDirIfExists(promotionsRoot);
-  const files = entries
+  const jsonFiles = entries
     .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
     .map((entry) => path.join(promotionsRoot, entry.name));
+  const baseRecordFiles = jsonFiles.filter((filePath) => /^[^.]+\.json$/u.test(path.basename(filePath)));
+  const files = baseRecordFiles.length ? baseRecordFiles : jsonFiles;
   let latest = null;
   let latestSortKey = 0;
   for (const filePath of files) {
@@ -228,7 +232,11 @@ function normalizeLatestPromotion(record) {
   };
 }
 
-async function resolvePromotionReviewArtifactRef(descriptor, record, audience) {
+function descriptorForPromotionKind(kind, descriptors) {
+  return (Array.isArray(descriptors) ? descriptors : []).find((item) => item && item.kind === kind) || null;
+}
+
+async function resolvePromotionArtifactPath(descriptor, record) {
   if (!record || typeof record !== 'object') return null;
   const proposalId = normalizeText(record.proposal_id, null);
   const recordPath = normalizeText(record.__path, null);
@@ -251,10 +259,15 @@ async function resolvePromotionReviewArtifactRef(descriptor, record, audience) {
   for (const candidate of uniqueCandidates) {
     const stat = await statIfExists(candidate);
     if (stat) {
-      return toArtifactRef(descriptor.kind, candidate, audience);
+      return candidate;
     }
   }
   return null;
+}
+
+async function resolvePromotionArtifactRef(descriptor, record, audience) {
+  const artifactPath = await resolvePromotionArtifactPath(descriptor, record);
+  return artifactPath ? toArtifactRef(descriptor.kind, artifactPath, audience) : null;
 }
 
 async function normalizeLatestPromotionReview(record, audience) {
@@ -276,8 +289,8 @@ async function normalizeLatestPromotionReview(record, audience) {
   }
 
   const refsByKind = {};
-  for (const descriptor of PROMOTION_REVIEW_ARTIFACT_ORDER) {
-    const ref = await resolvePromotionReviewArtifactRef(descriptor, record, audience);
+  for (const descriptor of PROMOTION_REVIEW_DISPLAY_ORDER) {
+    const ref = await resolvePromotionArtifactRef(descriptor, record, audience);
     if (ref) refsByKind[descriptor.kind] = ref;
   }
   if (record.__path) {
@@ -285,7 +298,7 @@ async function normalizeLatestPromotionReview(record, audience) {
   }
 
   const latestReviewArtifactKind = [
-    ...PROMOTION_REVIEW_ARTIFACT_ORDER.map((descriptor) => descriptor.kind),
+    ...PROMOTION_REVIEW_DISPLAY_ORDER.map((descriptor) => descriptor.kind),
     'promotion_record'
   ].find((kind) => refsByKind[kind]) || null;
   const updatedAt = normalizeText(
@@ -321,6 +334,23 @@ function normalizeStringArray(items) {
   return (Array.isArray(items) ? items : [])
     .map((item) => normalizeText(String(item || ''), ''))
     .filter(Boolean);
+}
+
+function normalizeDisplayList(items, audience) {
+  const rows = normalizeStringArray(items);
+  return audience === 'operator' ? rows : [];
+}
+
+function normalizeCandidateEdits(items, audience) {
+  const rows = Array.isArray(items) ? items.filter((item) => item && typeof item === 'object') : [];
+  return rows.map((item) => ({
+    filePath: audience === 'operator'
+      ? normalizeText(item.file_path || item.filePath, null)
+      : null,
+    action: normalizeText(item.action, null),
+    rationale: normalizeText(item.rationale, null),
+    hiddenForAudience: audience !== 'operator'
+  }));
 }
 
 function normalizeStatusCounts(items) {
@@ -377,6 +407,121 @@ function normalizeLatestPromotionBatch(record) {
     blockedCaseIds: normalizeStringArray(promotionSummary.blockedCaseIds),
     statusCounts: normalizeStatusCounts(promotionSummary.statusCounts),
     nextAction: normalizeText(record.nextAction, null),
+    updatedAt
+  };
+}
+
+function buildPromotionApprovalNextAction(stage, status) {
+  const normalizedStage = normalizeText(stage, null);
+  const normalizedStatus = normalizeText(status, null);
+  if (normalizedStage === 'code_apply_record' || normalizedStatus === 'ready_for_human_apply_record') {
+    return 'Review the final apply record and close the proposal loop.';
+  }
+  if (normalizedStage === 'code_apply_signoff' || normalizedStatus === 'ready_for_human_apply_signoff') {
+    return 'Review the signoff bundle and capture the final go or no-go decision.';
+  }
+  if (normalizedStage === 'code_apply_task' || normalizedStatus === 'ready_for_human_code_apply_task') {
+    return 'Review the code apply task and run the prepared validation plan.';
+  }
+  if (normalizedStage === 'patch_request' || normalizedStatus === 'ready_for_human_patch') {
+    return 'Review the patch request and prepare the code apply task bundle.';
+  }
+  return null;
+}
+
+async function normalizeLatestPromotionApproval(record, audience) {
+  if (!record || typeof record !== 'object') {
+    return {
+      latestProposalId: null,
+      approvalStage: null,
+      approvalStatus: null,
+      latestDraftPrRef: null,
+      branchName: null,
+      worktreeRef: null,
+      patchRequestRef: null,
+      codeApplyTaskRef: null,
+      codeApplySignoffRef: null,
+      codeApplyRecordRef: null,
+      validationCommands: [],
+      validationCommandCount: 0,
+      candidateEdits: [],
+      candidateEditCount: 0,
+      operatorInstructions: [],
+      operatorInstructionCount: 0,
+      nextAction: null,
+      updatedAt: null
+    };
+  }
+
+  const refsByKind = {};
+  for (const descriptor of PROMOTION_APPROVAL_ARTIFACT_ORDER) {
+    const ref = await resolvePromotionArtifactRef(descriptor, record, audience);
+    if (ref) refsByKind[descriptor.kind] = ref;
+  }
+
+  const approvalStage = [...PROMOTION_APPROVAL_ARTIFACT_ORDER]
+    .reverse()
+    .map((descriptor) => descriptor.kind)
+    .find((kind) => refsByKind[kind]) || null;
+  const patchRequestDescriptor = descriptorForPromotionKind('patch_request', PROMOTION_APPROVAL_ARTIFACT_ORDER);
+  const latestDescriptor = descriptorForPromotionKind(approvalStage, PROMOTION_APPROVAL_ARTIFACT_ORDER);
+  const patchRequestPath = patchRequestDescriptor
+    ? await resolvePromotionArtifactPath(patchRequestDescriptor, record)
+    : null;
+  const latestApprovalPath = latestDescriptor
+    ? await resolvePromotionArtifactPath(latestDescriptor, record)
+    : null;
+  const patchRequestPayload = patchRequestPath ? await readJsonIfExists(patchRequestPath) : null;
+  const latestApprovalPayload = latestApprovalPath ? await readJsonIfExists(latestApprovalPath) : null;
+  const validationCommands = normalizeStringArray(
+    (latestApprovalPayload && latestApprovalPayload.validation_commands)
+    || (patchRequestPayload && patchRequestPayload.validation_commands)
+  );
+  const candidateEdits = normalizeCandidateEdits(
+    (patchRequestPayload && patchRequestPayload.candidate_edits) || [],
+    audience
+  );
+  const operatorInstructions = normalizeDisplayList(
+    (patchRequestPayload && patchRequestPayload.operator_instructions)
+    || (latestApprovalPayload && latestApprovalPayload.operator_instructions)
+    || [],
+    audience
+  );
+  const updatedAt = normalizeText(
+    record.updated_at
+    || record.updatedAt
+    || record.finished_at
+    || record.finishedAt
+    || record.created_at
+    || record.createdAt
+    || (record.__sortKey ? new Date(record.__sortKey).toISOString() : null),
+    null
+  );
+
+  return {
+    latestProposalId: normalizeText(record.proposal_id, null),
+    approvalStage,
+    approvalStatus: normalizeText(record.status, null),
+    latestDraftPrRef: normalizeText(record.draft_pr_ref || record.draft_pr_url, null),
+    branchName: normalizeText(record.branch_name, null),
+    worktreeRef: normalizeText(record.worktree_path, null)
+      ? toArtifactRef('worktree', path.resolve(String(record.worktree_path)), audience)
+      : null,
+    patchRequestRef: refsByKind.patch_request || null,
+    codeApplyTaskRef: refsByKind.code_apply_task || null,
+    codeApplySignoffRef: refsByKind.code_apply_signoff || null,
+    codeApplyRecordRef: refsByKind.code_apply_record || null,
+    validationCommands: audience === 'operator' ? validationCommands : [],
+    validationCommandCount: validationCommands.length,
+    candidateEdits,
+    candidateEditCount: candidateEdits.length,
+    operatorInstructions,
+    operatorInstructionCount: normalizeStringArray(
+      (patchRequestPayload && patchRequestPayload.operator_instructions)
+      || (latestApprovalPayload && latestApprovalPayload.operator_instructions)
+      || []
+    ).length,
+    nextAction: buildPromotionApprovalNextAction(approvalStage, record.status),
     updatedAt
   };
 }
@@ -481,6 +626,7 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
     const latestPromotion = await latestPromotionRecord(path.join(artifactRoot, 'proposals', 'promotions'));
     const promotion = normalizeLatestPromotion(latestPromotion);
     const promotionReview = await normalizeLatestPromotionReview(latestPromotion, audience);
+    const promotionApproval = await normalizeLatestPromotionApproval(latestPromotion, audience);
     const latestPromotionBatchRecord = await latestSelfImprovementSummary(
       path.join(artifactRoot, 'self_improvement_runs')
     );
@@ -556,6 +702,7 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
       },
       promotion,
       promotionReview,
+      promotionApproval,
       promotionBatch,
       latestProposalIds,
       artifactRefs
@@ -602,6 +749,26 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
         codeEditTaskRef: null,
         codeApplyDraftRef: null,
         codeReviewPacketRef: null,
+        updatedAt: null
+      },
+      promotionApproval: {
+        latestProposalId: null,
+        approvalStage: null,
+        approvalStatus: null,
+        latestDraftPrRef: null,
+        branchName: null,
+        worktreeRef: null,
+        patchRequestRef: null,
+        codeApplyTaskRef: null,
+        codeApplySignoffRef: null,
+        codeApplyRecordRef: null,
+        validationCommands: [],
+        validationCommandCount: 0,
+        candidateEdits: [],
+        candidateEditCount: 0,
+        operatorInstructions: [],
+        operatorInstructionCount: 0,
+        nextAction: null,
         updatedAt: null
       },
       promotionBatch: {

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-28T20:21:19-04:00",
-  "gitCommit": "bda07d96208924bcb38e45e8d133b0ef0ddf8626",
-  "branch": "codex/desktop-batch-review-surface-T003",
-  "sourceDigest": "7a98bad530658a9c14689f2e267f7cc32d05b5834502cd8faefa7a57e60c6e78",
+  "generatedAt": "2026-03-28T20:48:42-04:00",
+  "gitCommit": "186e4d8bdc0b575a8c918c2355640342958f3870",
+  "branch": "codex/desktop-approval-action-T006",
+  "sourceDigest": "93a8a286fdc0b9aeb5bb2558c4c5d4ef89af981524de7943a7a0312d16f92870",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

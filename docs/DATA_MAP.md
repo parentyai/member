@@ -372,6 +372,25 @@ Typical fields:
   - `desktopPatrolSummary.promotionReview.codeApplyDraftRef`
   - `desktopPatrolSummary.promotionReview.codeReviewPacketRef`
   - `desktopPatrolSummary.promotionReview.updatedAt`
+- admin desktop summary promotion approval view:
+  - `desktopPatrolSummary.promotionApproval.latestProposalId`
+  - `desktopPatrolSummary.promotionApproval.approvalStage`
+  - `desktopPatrolSummary.promotionApproval.approvalStatus`
+  - `desktopPatrolSummary.promotionApproval.latestDraftPrRef`
+  - `desktopPatrolSummary.promotionApproval.branchName`
+  - `desktopPatrolSummary.promotionApproval.worktreeRef`
+  - `desktopPatrolSummary.promotionApproval.patchRequestRef`
+  - `desktopPatrolSummary.promotionApproval.codeApplyTaskRef`
+  - `desktopPatrolSummary.promotionApproval.codeApplySignoffRef`
+  - `desktopPatrolSummary.promotionApproval.codeApplyRecordRef`
+  - `desktopPatrolSummary.promotionApproval.validationCommands[]`
+  - `desktopPatrolSummary.promotionApproval.validationCommandCount`
+  - `desktopPatrolSummary.promotionApproval.candidateEdits[]`
+  - `desktopPatrolSummary.promotionApproval.candidateEditCount`
+  - `desktopPatrolSummary.promotionApproval.operatorInstructions[]`
+  - `desktopPatrolSummary.promotionApproval.operatorInstructionCount`
+  - `desktopPatrolSummary.promotionApproval.nextAction`
+  - `desktopPatrolSummary.promotionApproval.updatedAt`
 - admin desktop summary promotion batch view:
   - `desktopPatrolSummary.promotionBatch.batchRunId`
   - `desktopPatrolSummary.promotionBatch.stage`

@@ -4252,6 +4252,22 @@ function summarizeQualityPatrolArtifactRef(item) {
   return asText(item.displayPath || item.path, '-');
 }
 
+function summarizeQualityPatrolStringList(values) {
+  const rows = Array.isArray(values) ? values.filter(Boolean).map((item) => String(item).trim()).filter(Boolean) : [];
+  return rows.length ? rows.join(' | ') : '-';
+}
+
+function summarizeQualityPatrolCandidateEdits(values) {
+  const rows = Array.isArray(values) ? values.filter((item) => item && typeof item === 'object') : [];
+  if (!rows.length) return '-';
+  return rows.map((item) => {
+    const filePath = asText(item.filePath, 'hidden');
+    const action = asText(item.action, 'inspect_then_patch');
+    const rationale = asText(item.rationale, '-');
+    return `${filePath} (${action}; ${rationale})`;
+  }).join(' | ');
+}
+
 function summarizeQualityPatrolBlockedBy(values) {
   const rows = Array.isArray(values) ? values.filter(Boolean).map((item) => String(item).trim()).filter(Boolean) : [];
   return rows.length ? rows.join(', ') : 'なし';
@@ -4332,6 +4348,9 @@ function renderQualityPatrolDesktopSummary(result) {
   const promotionReview = payload.promotionReview && typeof payload.promotionReview === 'object'
     ? payload.promotionReview
     : {};
+  const promotionApproval = payload.promotionApproval && typeof payload.promotionApproval === 'object'
+    ? payload.promotionApproval
+    : {};
   const promotionBatch = payload.promotionBatch && typeof payload.promotionBatch === 'object' ? payload.promotionBatch : {};
   const evaluation = payload.evaluation && typeof payload.evaluation === 'object' ? payload.evaluation : {};
   const artifactRefs = Array.isArray(payload.artifactRefs) ? payload.artifactRefs : [];
@@ -4395,8 +4414,17 @@ function renderQualityPatrolDesktopSummary(result) {
     || promotionReview.latestDraftPrRef
     || (promotionReview.latestReviewArtifactRef && typeof promotionReview.latestReviewArtifactRef === 'object')
   );
+  const hasPromotionApproval = Boolean(
+    promotionApproval.latestProposalId
+    || promotionApproval.approvalStage
+    || promotionApproval.approvalStatus
+    || promotionApproval.latestDraftPrRef
+    || Number(promotionApproval.validationCommandCount || 0)
+    || Number(promotionApproval.candidateEditCount || 0)
+    || (promotionApproval.patchRequestRef && typeof promotionApproval.patchRequestRef === 'object')
+  );
 
-  if (!latestRun && !artifactRefs.length && !Number(queue.totalCount || 0) && !hasPromotion && !hasPromotionReview && !hasPromotionBatch) {
+  if (!latestRun && !artifactRefs.length && !Number(queue.totalCount || 0) && !hasPromotion && !hasPromotionReview && !hasPromotionApproval && !hasPromotionBatch) {
     renderQualityPatrolPlaceholder(
       'quality-patrol-desktop-latest',
       payload.status === 'error'
@@ -4479,6 +4507,37 @@ function renderQualityPatrolDesktopSummary(result) {
         `codeEditTaskRef: ${summarizeQualityPatrolArtifactRef(promotionReview.codeEditTaskRef)}`,
         `codeApplyDraftRef: ${summarizeQualityPatrolArtifactRef(promotionReview.codeApplyDraftRef)}`,
         `codeReviewPacketRef: ${summarizeQualityPatrolArtifactRef(promotionReview.codeReviewPacketRef)}`
+      ]
+    }));
+  }
+
+  if (hasPromotionApproval) {
+    const approvalTone = String(promotionApproval.approvalStatus || '').startsWith('ready_for_human')
+      ? 'info'
+      : resolveQualityPatrolTone(promotionApproval.approvalStatus || promotionApproval.approvalStage);
+    container.appendChild(createQualityPatrolItem({
+      title: 'Latest approval lane',
+      summary: `${asText(promotionApproval.approvalStage, '-')} / ${asText(promotionApproval.approvalStatus, '-')}`,
+      badges: [
+        { label: buildQualityPatrolStatusLabel(promotionApproval.approvalStatus || promotionApproval.approvalStage || 'approval'), tone: approvalTone }
+      ],
+      meta: [
+        `proposalId=${asText(promotionApproval.latestProposalId, '-')}`,
+        `validationCommands=${Number(promotionApproval.validationCommandCount || 0)}`,
+        `candidateEdits=${Number(promotionApproval.candidateEditCount || 0)}`,
+        promotionApproval.updatedAt ? `updatedAt=${formatDateLabel(promotionApproval.updatedAt)}` : 'updatedAt=-'
+      ],
+      details: [
+        `nextAction: ${asText(promotionApproval.nextAction, '-')}`,
+        `draftPrRef: ${asText(promotionApproval.latestDraftPrRef, '-')}`,
+        `worktreeRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.worktreeRef)}`,
+        `patchRequestRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.patchRequestRef)}`,
+        `codeApplyTaskRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.codeApplyTaskRef)}`,
+        `codeApplySignoffRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.codeApplySignoffRef)}`,
+        `codeApplyRecordRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.codeApplyRecordRef)}`,
+        `validationCommands: ${summarizeQualityPatrolStringList(promotionApproval.validationCommands)}`,
+        `candidateEdits: ${summarizeQualityPatrolCandidateEdits(promotionApproval.candidateEdits)}`,
+        `operatorInstructions: ${summarizeQualityPatrolStringList(promotionApproval.operatorInstructions)}`
       ]
     }));
   }
