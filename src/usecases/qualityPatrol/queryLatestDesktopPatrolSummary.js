@@ -4,6 +4,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const { resolveAudienceView } = require('../../domain/qualityPatrol/query/resolveAudienceView');
+const {
+  PROMOTION_APPROVAL_ARTIFACT_ORDER,
+  resolvePromotionApprovalStage,
+  buildPromotionApprovalNextAction,
+  buildPromotionApprovalCommandHints
+} = require('../../domain/qualityPatrol/desktopApprovalFlow');
 
 const QUERY_VERSION = 'line_desktop_patrol_summary_v1';
 const PROMOTION_REVIEW_DISPLAY_ORDER = Object.freeze([
@@ -16,17 +22,6 @@ const PROMOTION_REVIEW_DISPLAY_ORDER = Object.freeze([
   { kind: 'patch_request', markdownSuffix: '.patch_request.md', jsonSuffix: '.patch_request.json' },
   { kind: 'patch_draft', markdownSuffix: '.patch_draft.md' },
   { kind: 'draft_pr_body', markdownSuffix: '.draft_pr.md', recordField: 'body_path' }
-]);
-const PROMOTION_APPROVAL_ARTIFACT_ORDER = Object.freeze([
-  { kind: 'patch_request', jsonSuffix: '.patch_request.json' },
-  { kind: 'code_apply_task', jsonSuffix: '.code_apply_task.json' },
-  { kind: 'code_apply_signoff', jsonSuffix: '.code_apply_signoff.json' },
-  { kind: 'code_apply_record', jsonSuffix: '.code_apply_record.json' }
-]);
-const PROMOTION_APPROVAL_COMMAND_ORDER = Object.freeze([
-  { stage: 'patch_request', script: 'line-desktop-patrol:synthesize-code-apply-task' },
-  { stage: 'code_apply_task', script: 'line-desktop-patrol:synthesize-code-apply-signoff' },
-  { stage: 'code_apply_signoff', script: 'line-desktop-patrol:synthesize-code-apply-record' }
 ]);
 
 function resolveArtifactRoot(deps) {
@@ -413,74 +408,6 @@ function normalizeLatestPromotionBatch(record) {
     statusCounts: normalizeStatusCounts(promotionSummary.statusCounts),
     nextAction: normalizeText(record.nextAction, null),
     updatedAt
-  };
-}
-
-function buildPromotionApprovalNextAction(stage, status) {
-  const normalizedStage = resolvePromotionApprovalStage(stage, status);
-  const normalizedStatus = normalizeText(status, null);
-  if (normalizedStage === 'code_apply_record' || normalizedStatus === 'ready_for_human_apply_record') {
-    return 'Review the final apply record and close the proposal loop.';
-  }
-  if (normalizedStage === 'code_apply_signoff' || normalizedStatus === 'ready_for_human_apply_signoff') {
-    return 'Review the signoff bundle and capture the final go or no-go decision.';
-  }
-  if (normalizedStage === 'code_apply_task' || normalizedStatus === 'ready_for_human_code_apply_task') {
-    return 'Review the code apply task and run the prepared validation plan.';
-  }
-  if (normalizedStage === 'patch_request' || normalizedStatus === 'ready_for_human_patch') {
-    return 'Review the patch request and prepare the code apply task bundle.';
-  }
-  return null;
-}
-
-function resolvePromotionApprovalStage(stage, status) {
-  const normalizedStage = normalizeText(stage, null);
-  if (normalizedStage) return normalizedStage;
-  const normalizedStatus = normalizeText(status, null);
-  if (normalizedStatus === 'ready_for_human_apply_record') return 'code_apply_record';
-  if (normalizedStatus === 'ready_for_human_apply_signoff') return 'code_apply_signoff';
-  if (normalizedStatus === 'ready_for_human_code_apply_task') return 'code_apply_task';
-  if (normalizedStatus === 'ready_for_human_patch') return 'patch_request';
-  return null;
-}
-
-function buildPromotionApprovalCommand(script, proposalId, branchName, worktreePath) {
-  const normalizedScript = normalizeText(script, null);
-  const normalizedProposalId = normalizeText(proposalId, null);
-  if (!normalizedScript || !normalizedProposalId) return null;
-  const parts = [
-    'npm',
-    'run',
-    normalizedScript,
-    '--',
-    '--proposal-id',
-    normalizedProposalId
-  ];
-  const normalizedBranchName = normalizeText(branchName, null);
-  const normalizedWorktreePath = normalizeText(worktreePath, null);
-  if (normalizedBranchName) {
-    parts.push('--branch-name', normalizedBranchName);
-  }
-  if (normalizedWorktreePath) {
-    parts.push('--worktree-path', normalizedWorktreePath);
-  }
-  return parts.join(' ');
-}
-
-function buildPromotionApprovalCommandHints(stage, status, proposalId, branchName, worktreePath, audience) {
-  const normalizedStage = resolvePromotionApprovalStage(stage, status);
-  const descriptorIndex = PROMOTION_APPROVAL_COMMAND_ORDER.findIndex((item) => item.stage === normalizedStage);
-  const descriptors = descriptorIndex >= 0
-    ? PROMOTION_APPROVAL_COMMAND_ORDER.slice(descriptorIndex)
-    : [];
-  const commands = descriptors
-    .map((item) => buildPromotionApprovalCommand(item.script, proposalId, branchName, worktreePath))
-    .filter(Boolean);
-  return {
-    nextCommand: audience === 'operator' ? commands[0] || null : null,
-    remainingCommands: audience === 'operator' ? commands : [],
-    remainingCommandCount: commands.length
   };
 }
 

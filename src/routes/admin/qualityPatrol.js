@@ -2,14 +2,23 @@
 
 const { URL } = require('url');
 
+const { verifyConfirmToken } = require('../../domain/confirmToken');
+const { buildPromotionApprovalConfirmTokenData } = require('../../domain/qualityPatrol/desktopApprovalFlow');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { queryLatestPatrolInsights } = require('../../usecases/qualityPatrol/queryLatestPatrolInsights');
 const { queryLatestDesktopPatrolSummary } = require('../../usecases/qualityPatrol/queryLatestDesktopPatrolSummary');
+const { planDesktopPatrolApprovalAction } = require('../../usecases/qualityPatrol/planDesktopPatrolApprovalAction');
+const { executeDesktopPatrolApprovalAction } = require('../../usecases/qualityPatrol/executeDesktopPatrolApprovalAction');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
+const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
 const ROUTE_TYPE = 'admin_route';
 const ROUTE_KEY = 'admin.quality_patrol';
+const APPROVAL_PLAN_ROUTE_KEY = 'admin.quality_patrol.desktop_approval.plan';
+const APPROVAL_EXECUTE_ACTION = 'quality_patrol.desktop_approval.execute';
+const APPROVAL_PLAN_PATH = '/api/admin/quality-patrol/desktop-approval/plan';
+const APPROVAL_EXECUTE_PATH = '/api/admin/quality-patrol/desktop-approval/execute';
 
 function normalizeOutcomeOptions(options) {
   const opts = options && typeof options === 'object' ? options : {};
@@ -25,6 +34,34 @@ function writeJson(res, status, payload, outcomeOptions) {
   applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
+}
+
+function parseJsonBody(bodyText, res, routeKey) {
+  try {
+    return JSON.parse(bodyText || '{}');
+  } catch (_err) {
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      guard: { routeKey: routeKey || ROUTE_KEY },
+      state: 'error',
+      reason: 'invalid_json'
+    });
+    return null;
+  }
+}
+
+function writeKnownError(res, err, routeKey, traceId, requestId) {
+  const statusCode = err && Number.isInteger(err.statusCode) ? err.statusCode : 500;
+  const code = err && err.code ? String(err.code) : 'error';
+  const details = err && err.details && typeof err.details === 'object' ? err.details : {};
+  writeJson(res, statusCode, Object.assign({
+    ok: false,
+    error: code,
+    traceId: traceId || null,
+    requestId: requestId || null
+  }, details), {
+    guard: { routeKey: routeKey || ROUTE_KEY },
+    state: statusCode >= 500 ? 'error' : (statusCode >= 400 ? 'blocked' : 'success')
+  });
 }
 
 function parsePositiveInt(value, fallback, max) {
@@ -168,6 +205,128 @@ async function handleQualityPatrolQuery(req, res, deps) {
   }
 }
 
+async function handleQualityPatrolApprovalPlan(req, res, bodyText, deps) {
+  const actor = requireActor(req, res);
+  if (!actor) return;
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
+  const payload = parseJsonBody(bodyText, res, APPROVAL_PLAN_ROUTE_KEY);
+  if (!payload) return;
+
+  try {
+    const result = await planDesktopPatrolApprovalAction(payload, deps);
+    const auditFn = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
+    await auditFn({
+      actor,
+      action: 'quality_patrol.desktop_approval.plan',
+      entityType: 'desktop_patrol_proposal',
+      entityId: result.proposalId,
+      traceId,
+      requestId,
+      payloadSummary: {
+        approvalStage: result.approvalStage || null,
+        approvalStatus: result.approvalStatus || null,
+        nextArtifactKind: result.nextArtifactKind || null,
+        planHash: result.planHash || null
+      }
+    }).catch((auditErr) => {
+      logRouteError('admin.quality_patrol.desktop_approval.plan.audit', auditErr, { actor, traceId, requestId });
+    });
+    writeJson(res, 200, Object.assign({ traceId, requestId }, result), {
+      guard: { routeKey: APPROVAL_PLAN_ROUTE_KEY },
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (err) {
+    logRouteError('admin.quality_patrol.desktop_approval.plan', err, { actor, traceId, requestId });
+    writeKnownError(res, err, APPROVAL_PLAN_ROUTE_KEY, traceId, requestId);
+  }
+}
+
+async function handleQualityPatrolApprovalExecute(req, res, bodyText, deps) {
+  const payload = parseJsonBody(bodyText, res, APPROVAL_EXECUTE_ACTION);
+  if (!payload) return;
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: APPROVAL_EXECUTE_ACTION,
+    payload
+  }, deps);
+  if (!guard) return;
+  const actor = guard.actor || requireActor(req, res);
+  if (!actor) return;
+  const traceId = guard.traceId || resolveTraceId(req);
+  const requestId = resolveRequestId(req);
+
+  try {
+    const planned = await planDesktopPatrolApprovalAction(payload, deps);
+    if (payload.planHash !== planned.planHash) {
+      writeJson(res, 409, {
+        ok: false,
+        error: 'desktop_patrol_approval_plan_stale',
+        traceId,
+        requestId,
+        expectedPlanHash: planned.planHash
+      }, {
+        guard: { routeKey: `admin.${APPROVAL_EXECUTE_ACTION}` },
+        state: 'blocked',
+        reason: 'desktop_patrol_approval_plan_stale'
+      });
+      return;
+    }
+    const tokenOk = verifyConfirmToken(
+      payload.confirmToken,
+      buildPromotionApprovalConfirmTokenData(payload.planHash),
+      { now: new Date() }
+    );
+    if (!tokenOk) {
+      writeJson(res, 409, {
+        ok: false,
+        error: 'desktop_patrol_approval_confirm_invalid',
+        traceId,
+        requestId
+      }, {
+        guard: { routeKey: `admin.${APPROVAL_EXECUTE_ACTION}` },
+        state: 'blocked',
+        reason: 'desktop_patrol_approval_confirm_invalid'
+      });
+      return;
+    }
+    const result = await executeDesktopPatrolApprovalAction(Object.assign({}, payload, {
+      plan: planned
+    }), deps);
+    const auditFn = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
+    await auditFn({
+      actor,
+      action: 'quality_patrol.desktop_approval.execute',
+      entityType: 'desktop_patrol_proposal',
+      entityId: result.proposalId,
+      traceId,
+      requestId,
+      payloadSummary: {
+        approvalStage: result.approvalStage || null,
+        nextArtifactKind: result.nextArtifactKind || null,
+        expectedReadyStatus: result.expectedReadyStatus || null,
+        executionStatus: result.executionResult && result.executionResult.status
+          ? result.executionResult.status
+          : null
+      }
+    }).catch((auditErr) => {
+      logRouteError('admin.quality_patrol.desktop_approval.execute.audit', auditErr, { actor, traceId, requestId });
+    });
+    writeJson(res, 200, Object.assign({ traceId, requestId }, result), {
+      guard: { routeKey: `admin.${APPROVAL_EXECUTE_ACTION}` },
+      state: 'success',
+      reason: 'completed'
+    });
+  } catch (err) {
+    logRouteError('admin.quality_patrol.desktop_approval.execute', err, { actor, traceId, requestId });
+    writeKnownError(res, err, `admin.${APPROVAL_EXECUTE_ACTION}`, traceId, requestId);
+  }
+}
+
 module.exports = {
-  handleQualityPatrolQuery
+  handleQualityPatrolQuery,
+  handleQualityPatrolApprovalPlan,
+  handleQualityPatrolApprovalExecute
 };

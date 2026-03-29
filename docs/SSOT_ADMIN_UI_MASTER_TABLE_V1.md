@@ -32,9 +32,17 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
   - 追加 managed flow action は `task_rules.set` / `task_rules.template_set` / `task_rules.apply`。
   - Task Rules は `managedFlowGuard + planHash + confirmToken` の二段階適用を必須とする。
 
+## Phase903 Addendum（Desktop Patrol Approval Execute / add-only）
+- 対象UI: `/admin/app?pane=quality-patrol`
+- 追加API: `/api/admin/quality-patrol/desktop-approval/plan` と `/api/admin/quality-patrol/desktop-approval/execute`
+- 互換条件:
+  - `GET /api/admin/quality-patrol` の nested `desktopPatrolSummary` shape は add-only で維持する。
+  - `quality_patrol.desktop_approval.execute` は `managedFlowGuard + planHash + confirmToken` を必須とする。
+  - execute は local-only で、approval artifact を 1 ステップだけ前進させる。
+
 <!-- ADMIN_UI_MASTER_TABLE_BEGIN -->
 {
-  "version": "2026-03-03.v1.4",
+  "version": "2026-03-03.v1.5",
   "flows": [
     {
       "flowId": "composer.notification.approve_plan",
@@ -662,6 +670,51 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
         "deny": [
           "operator"
         ]
+      },
+      "confirmMode": "required"
+    },
+    {
+      "flowId": "quality_patrol.desktop_approval.execute",
+      "stateMachine": {
+        "initial": "planned",
+        "transitions": [
+          {
+            "event": "execute",
+            "from": "planned",
+            "to": "advanced"
+          }
+        ]
+      },
+      "guardRules": {
+        "actorMode": "required",
+        "traceMode": "required",
+        "confirmMode": "required",
+        "killSwitchCheck": "none",
+        "auditMode": "required"
+      },
+      "writeActions": [
+        {
+          "actionKey": "quality_patrol.desktop_approval.execute",
+          "method": "POST",
+          "pathPattern": "/api/admin/quality-patrol/desktop-approval/execute",
+          "dangerClass": "execute",
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/qualityPatrol.js"
+        }
+      ],
+      "evidenceBindings": {
+        "auditActionHints": [
+          "quality_patrol.desktop_approval.execute"
+        ],
+        "defaultPane": "audit"
+      },
+      "roleRestrictions": {
+        "allow": [
+          "admin",
+          "developer",
+          "operator"
+        ],
+        "deny": []
       },
       "confirmMode": "required"
     }

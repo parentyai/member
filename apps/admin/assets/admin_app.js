@@ -303,6 +303,10 @@ const state = {
   qualityPatrolAudience: 'operator',
   qualityPatrolLoading: false,
   qualityPatrolError: null,
+  qualityPatrolApprovalPlanHash: null,
+  qualityPatrolApprovalConfirmToken: null,
+  qualityPatrolApprovalPlannedProposalId: null,
+  qualityPatrolApprovalPlannedStage: null,
   paneUpdatedAt: {},
   activePane: 'home',
   auditEntrySourcePane: null,
@@ -4163,6 +4167,7 @@ function createQualityPatrolItem(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const article = document.createElement('article');
   article.className = 'quality-patrol-item';
+  if (opts.workbenchZone === true) article.dataset.workbenchZone = 'true';
 
   const header = document.createElement('div');
   header.className = 'quality-patrol-item-header';
@@ -4220,13 +4225,31 @@ function createQualityPatrolItem(options) {
       button.type = 'button';
       button.className = action.subtle === true ? 'button-subtle' : 'secondary-btn';
       button.textContent = asText(action.label, 'Open');
-      button.addEventListener('click', action.onClick);
+      if (action.actionKey) button.dataset.managedActionKey = action.actionKey;
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (action.actionKey && !button.closest('[data-workbench-zone="true"]')) {
+          showToast('Workbench外からの実行は許可されていません', 'warn');
+          return;
+        }
+        action.onClick(event);
+      });
       actions.appendChild(button);
     });
     article.appendChild(actions);
   }
 
   return article;
+}
+
+function createQualityPatrolAction(label, onClick, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  return {
+    label,
+    onClick,
+    subtle: opts.subtle === true,
+    actionKey: typeof opts.actionKey === 'string' && opts.actionKey.trim() ? opts.actionKey.trim() : ''
+  };
 }
 
 function summarizeQualityPatrolFiles(files, audience) {
@@ -4261,19 +4284,132 @@ function createQualityPatrolCopyAction(label, value, options) {
   const text = typeof value === 'string' ? value.trim() : '';
   if (!text) return null;
   const opts = options && typeof options === 'object' ? options : {};
-  return {
-    label,
-    subtle: opts.subtle === true,
-    onClick: async () => {
-      const copied = await copyTextToClipboardBestEffort(text);
-      showToast(
-        copied
-          ? (opts.okMessage || 'コマンドをコピーしました')
-          : (opts.failMessage || 'コマンドコピーに失敗しました'),
-        copied ? 'ok' : 'danger'
-      );
+  return createQualityPatrolAction(label, async () => {
+    const copied = await copyTextToClipboardBestEffort(text);
+    showToast(
+      copied
+        ? (opts.okMessage || 'コマンドをコピーしました')
+        : (opts.failMessage || 'コマンドコピーに失敗しました'),
+      copied ? 'ok' : 'danger'
+    );
+  }, {
+    subtle: opts.subtle === true
+  });
+}
+
+function resetQualityPatrolApprovalPlanState() {
+  state.qualityPatrolApprovalPlanHash = null;
+  state.qualityPatrolApprovalConfirmToken = null;
+  state.qualityPatrolApprovalPlannedProposalId = null;
+  state.qualityPatrolApprovalPlannedStage = null;
+}
+
+function getCurrentQualityPatrolApproval() {
+  const payload = state.qualityPatrolResult
+    && state.qualityPatrolResult.desktopPatrolSummary
+    && typeof state.qualityPatrolResult.desktopPatrolSummary === 'object'
+    ? state.qualityPatrolResult.desktopPatrolSummary
+    : null;
+  return payload && payload.promotionApproval && typeof payload.promotionApproval === 'object'
+    ? payload.promotionApproval
+    : null;
+}
+
+function syncQualityPatrolApprovalPlanState() {
+  const approval = getCurrentQualityPatrolApproval();
+  if (!approval || !approval.latestProposalId || !approval.approvalStage) {
+    resetQualityPatrolApprovalPlanState();
+    return;
+  }
+  if (
+    state.qualityPatrolApprovalPlannedProposalId
+    && (
+      state.qualityPatrolApprovalPlannedProposalId !== approval.latestProposalId
+      || state.qualityPatrolApprovalPlannedStage !== approval.approvalStage
+    )
+  ) {
+    resetQualityPatrolApprovalPlanState();
+  }
+}
+
+async function runQualityPatrolApprovalPlan() {
+  const approval = getCurrentQualityPatrolApproval();
+  if (!approval || !approval.latestProposalId) {
+    showToast('承認対象の proposalId がありません', 'warn');
+    return;
+  }
+  if (!approval.nextCommand) {
+    showToast('次に進める承認ステップがありません', 'warn');
+    return;
+  }
+  if (state.localPreflight && state.localPreflight.ready === false) {
+    showToast(t('ui.toast.localPreflight.blockedLoads', 'ローカル診断が未復旧のためデータ取得を停止中です'), 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('audit-trace') || newTraceId();
+  const result = await postJson('/api/admin/quality-patrol/desktop-approval/plan', {
+    proposalId: approval.latestProposalId,
+    approvalStage: approval.approvalStage,
+    branchName: approval.branchName || null,
+    worktreePath: approval.worktreeRef && approval.worktreeRef.path ? approval.worktreeRef.path : null
+  }, traceId);
+  if (result && result.ok) {
+    state.qualityPatrolApprovalPlanHash = result.planHash || null;
+    state.qualityPatrolApprovalConfirmToken = result.confirmToken || null;
+    state.qualityPatrolApprovalPlannedProposalId = result.proposalId || approval.latestProposalId || null;
+    state.qualityPatrolApprovalPlannedStage = result.approvalStage || approval.approvalStage || null;
+    renderQualityPatrolResult(state.qualityPatrolResult);
+    showToast('承認ステップの計画を作成しました', 'ok');
+    return;
+  }
+  showToast('承認ステップの計画作成に失敗しました', 'danger');
+}
+
+async function runQualityPatrolApprovalExecute() {
+  const approval = getCurrentQualityPatrolApproval();
+  if (!approval || !approval.latestProposalId || !approval.approvalStage) {
+    showToast('承認対象の proposalId / stage が不足しています', 'warn');
+    return;
+  }
+  if (!state.qualityPatrolApprovalPlanHash || !state.qualityPatrolApprovalConfirmToken) {
+    showToast('先に承認ステップの計画を作成してください', 'warn');
+    return;
+  }
+  if (
+    state.qualityPatrolApprovalPlannedProposalId !== approval.latestProposalId
+    || state.qualityPatrolApprovalPlannedStage !== approval.approvalStage
+  ) {
+    showToast('最新の approval lane に合わせて計画を再作成してください', 'warn');
+    return;
+  }
+  if (state.localPreflight && state.localPreflight.ready === false) {
+    showToast(t('ui.toast.localPreflight.blockedLoads', 'ローカル診断が未復旧のためデータ取得を停止中です'), 'warn');
+    return;
+  }
+  const confirmed = window.confirm('次の承認ステップを実行しますか？');
+  if (!confirmed) {
+    showToast('操作を中止しました', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('audit-trace') || newTraceId();
+  const result = await postJson('/api/admin/quality-patrol/desktop-approval/execute', {
+    proposalId: approval.latestProposalId,
+    approvalStage: approval.approvalStage,
+    planHash: state.qualityPatrolApprovalPlanHash,
+    confirmToken: state.qualityPatrolApprovalConfirmToken
+  }, traceId);
+  if (result && result.ok) {
+    resetQualityPatrolApprovalPlanState();
+    if (result.desktopPatrolSummary) {
+      state.qualityPatrolResult = Object.assign({}, state.qualityPatrolResult || {}, {
+        desktopPatrolSummary: result.desktopPatrolSummary
+      });
     }
-  };
+    renderQualityPatrolResult(state.qualityPatrolResult);
+    showToast('承認ステップを実行しました', 'ok');
+    return;
+  }
+  showToast('承認ステップの実行に失敗しました', 'danger');
 }
 
 function summarizeQualityPatrolCandidateEdits(values) {
@@ -4537,6 +4673,12 @@ function renderQualityPatrolDesktopSummary(result) {
     const remainingApprovalCommands = Array.isArray(promotionApproval.remainingCommands)
       ? promotionApproval.remainingCommands.filter((item) => typeof item === 'string' && item.trim().length > 0)
       : [];
+    const plannedApprovalReady = Boolean(
+      state.qualityPatrolApprovalPlanHash
+      && state.qualityPatrolApprovalConfirmToken
+      && state.qualityPatrolApprovalPlannedProposalId === promotionApproval.latestProposalId
+      && state.qualityPatrolApprovalPlannedStage === promotionApproval.approvalStage
+    );
     const approvalActions = [
       createQualityPatrolCopyAction(
         'Copy next command',
@@ -4554,6 +4696,19 @@ function renderQualityPatrolDesktopSummary(result) {
           failMessage: '残りの承認コマンドのコピーに失敗しました',
           subtle: true
         }
+      ),
+      createQualityPatrolAction(
+        'Plan next step',
+        () => { void runQualityPatrolApprovalPlan(); },
+        { subtle: true }
+      ),
+      createQualityPatrolAction(
+        'Run next step',
+        () => { void runQualityPatrolApprovalExecute(); },
+        {
+          actionKey: 'quality_patrol.desktop_approval.execute',
+          subtle: false
+        }
       )
     ].filter(Boolean);
     container.appendChild(createQualityPatrolItem({
@@ -4567,12 +4722,17 @@ function renderQualityPatrolDesktopSummary(result) {
         `validationCommands=${Number(promotionApproval.validationCommandCount || 0)}`,
         `remainingCommands=${Number(promotionApproval.remainingCommandCount || 0)}`,
         `candidateEdits=${Number(promotionApproval.candidateEditCount || 0)}`,
+        `planReady=${plannedApprovalReady ? 'yes' : 'no'}`,
         promotionApproval.updatedAt ? `updatedAt=${formatDateLabel(promotionApproval.updatedAt)}` : 'updatedAt=-'
       ],
       details: [
         `nextAction: ${asText(promotionApproval.nextAction, '-')}`,
         `nextCommand: ${asText(promotionApproval.nextCommand, '-')}`,
         `remainingCommands: ${summarizeQualityPatrolStringList(promotionApproval.remainingCommands)}`,
+        `pendingPlanHash: ${asText(
+          plannedApprovalReady ? state.qualityPatrolApprovalPlanHash : null,
+          '-'
+        )}`,
         `draftPrRef: ${asText(promotionApproval.latestDraftPrRef, '-')}`,
         `worktreeRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.worktreeRef)}`,
         `patchRequestRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.patchRequestRef)}`,
@@ -4583,7 +4743,8 @@ function renderQualityPatrolDesktopSummary(result) {
         `candidateEdits: ${summarizeQualityPatrolCandidateEdits(promotionApproval.candidateEdits)}`,
         `operatorInstructions: ${summarizeQualityPatrolStringList(promotionApproval.operatorInstructions)}`
       ],
-      actions: approvalActions
+      actions: approvalActions,
+      workbenchZone: true
     }));
   }
 
@@ -4893,6 +5054,7 @@ async function loadQualityPatrolInsights(options) {
   if (isLocalPreflightBlockingDataLoads()) {
     state.qualityPatrolResult = null;
     state.qualityPatrolError = { error: 'local_preflight_blocked' };
+    resetQualityPatrolApprovalPlanState();
     renderQualityPatrolResult({
       mode: state.qualityPatrolMode,
       audience: state.qualityPatrolAudience,
@@ -4931,6 +5093,7 @@ async function loadQualityPatrolInsights(options) {
   if (data && data.ok) {
     state.qualityPatrolResult = data;
     state.qualityPatrolError = null;
+    syncQualityPatrolApprovalPlanState();
     setPaneUpdatedAt('quality-patrol', data.generatedAt || new Date().toISOString());
     renderQualityPatrolResult(data);
     if (state.activePane === 'quality-patrol') updatePageHeader('quality-patrol');
@@ -4940,6 +5103,7 @@ async function loadQualityPatrolInsights(options) {
 
   state.qualityPatrolResult = null;
   state.qualityPatrolError = data || { ok: false, error: 'fetch_error' };
+  resetQualityPatrolApprovalPlanState();
   setPaneUpdatedAt('quality-patrol', new Date().toISOString());
   renderQualityPatrolErrorState(state.qualityPatrolError);
   if (state.activePane === 'quality-patrol') updatePageHeader('quality-patrol');
@@ -6096,7 +6260,8 @@ const MANAGED_FLOW_WRITE_ACTION_MATCHERS = Object.freeze([
   { actionKey: 'emergency.rule.update', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/rules\/[^/]+\/?$/ },
   { actionKey: 'emergency.rule.preview', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/rules\/[^/]+\/preview\/?$/ },
   { actionKey: 'emergency.bulletin.approve', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/bulletins\/[^/]+\/approve\/?$/ },
-  { actionKey: 'emergency.bulletin.reject', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/bulletins\/[^/]+\/reject\/?$/ }
+  { actionKey: 'emergency.bulletin.reject', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/bulletins\/[^/]+\/reject\/?$/ },
+  { actionKey: 'quality_patrol.desktop_approval.execute', method: 'POST', pathRegex: /^\/api\/admin\/quality-patrol\/desktop-approval\/execute\/?$/ }
 ]);
 
 function isWriteMethod(method) {

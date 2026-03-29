@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-03-29T01:34:13.725Z",
-  "gitCommit": "d000a57ff912a4649cefb9f8694f01afc43d224a",
-  "branch": "codex/desktop-approval-commands-T007",
-  "sourceDigest": "16830f156dc5654efa15d3de22962e31d35d6ed5dc7ec15849bac0e0be48542c",
+  "generatedAt": "2026-03-29T01:56:01.831Z",
+  "gitCommit": "269a2b319480fb4eb1f228371df12a3670bde9c4",
+  "branch": "codex/desktop-approval-execute-T008",
+  "sourceDigest": "02be3a7657be3b862f3b70f283402d44832b1876769bbe38743504666e3531ee",
   "counts": {
     "endpoints": 293,
     "routes": 131,
-    "usecases": 166,
+    "usecases": 168,
     "repos": 83,
     "collections": 99
   },
   "live_counts": {
     "routes": 131,
-    "usecases": 166,
+    "usecases": 168,
     "repos": 83,
     "collections": 99
   },
@@ -61,8 +61,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/dependency_graph.json",
-      "sha256": "3837866937c291a1d4cfa86ca8ee525f45b610f38b4cd64bdd2ea6f22d0e955e",
-      "bytes": 37178
+      "sha256": "6732d41d4fa1b577615dafc83ec605fd062ac95815fa99dc631c97299828d41e",
+      "bytes": 37352
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
@@ -76,8 +76,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "3446c4fa115b94409f9b1c5f02394a10185254d8d6a115ec57d9fb07ebc1395a",
-      "bytes": 79340
+      "sha256": "2c250bf3a969c6f9199647e29c76731ec676ffc5d18298e43e199035b2366f69",
+      "bytes": 79429
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json",
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "28b242b2e57f3c15a7cd45cb27f7079e8e11f04c6ea871dfc09d8286762a4439",
+      "sha256": "6f796fbe2f912514a2fa824b67eee23f52d97caad93dbcccf73256acb7f676c1",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "c732240ad81ce9d381ffa8c6b459a1051867f0657b720be5905c4da58bf7c386",
+      "sha256": "8f0c8cb096bd8df0a3e3d7db9e93827d54a21ad03aea3cbd9c93b3d7050c0a8e",
       "bytes": 487
     },
     {
@@ -136,8 +136,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/protection_matrix.json",
-      "sha256": "8ab2f0940f46c729b275f2ffcb65d7d8e22c9b9f4cd2830874a5aaa69b5affae",
-      "bytes": 231496
+      "sha256": "b55f058691c9c7176ef7758ceef03c6c0c373fb5354e4cf6c4924dabe4eeecd1",
+      "bytes": 231530
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/recommended_architecture.json",
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "e1ef153dd94c817fcd2848cbac16ed354190e14eda44fcf55127f27b7e82f7d5",
+      "sha256": "215c633c2ad42c5351490675bf6ea7ac1ec2fd7da8b23260d36666e7129e2786",
       "bytes": 453884
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "29d50e2a1a7b4a67c7fbd1fbc0fd20836c8842bac41da19dd78e4154588b7632",
-      "bytes": 2422
+      "sha256": "ed6a88dd3412a2d2f465c9f549838b67701450b51e86598cf4e87ab8ac199edd",
+      "bytes": 2421
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",

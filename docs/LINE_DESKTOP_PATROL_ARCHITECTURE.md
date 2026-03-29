@@ -76,10 +76,12 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness。exe
 - admin quality patrol can also surface add-only `desktopPatrolSummary.promotionBatch.batchRunId`, `desktopPatrolSummary.promotionBatch.completionStatus`, `desktopPatrolSummary.promotionBatch.queuedProposalCount`, `desktopPatrolSummary.promotionBatch.patchDraftReadyCount`, `desktopPatrolSummary.promotionBatch.blockedCaseIds`, `desktopPatrolSummary.promotionBatch.nextAction`, and `desktopPatrolSummary.promotionBatch.updatedAt`
 - promotion summary is derived from the latest local promotion artifact only and does not mutate the queue or runtime state
 - promotion review summary is derived from the latest local promotion artifact plus sibling review bundles only and does not mutate the queue or runtime state
-- promotion approval summary is derived from the latest local promotion artifact plus sibling approval bundles only and does not mutate the queue or runtime state
+- promotion approval summary is derived from the latest local promotion artifact plus sibling approval bundles only
+- `POST /api/admin/quality-patrol/desktop-approval/plan` derives a two-phase operator plan (`planHash` / `confirmToken`) from the latest approval lane without mutating the queue
+- `POST /api/admin/quality-patrol/desktop-approval/execute` is local-only, uses `managedFlowGuard + planHash + confirmToken`, and advances exactly one approval artifact stage
 - promotion batch summary is derived from the latest local self-improvement summary artifact only and does not mutate the queue or runtime state
 
 ## Non-goals
 - no always-on scheduler
 - no Firestore write path from patrol itself
-- no admin UI contract change
+- no broad server-side auto-apply path
