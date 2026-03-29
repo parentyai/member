@@ -20,6 +20,7 @@ const REQUIRED_FILES = [
   path.join(TOOL_ROOT, 'config', 'allowed_targets.example.json'),
   path.join(TOOL_ROOT, 'scenarios', 'smoke_dry_run.example.json'),
   path.join(TOOL_ROOT, 'scenarios', 'strategic_self_improvement_batch_v1.json'),
+  path.join(TOOL_ROOT, 'scenarios', 'strategic_self_improvement_explore_library_v1.json'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', '__init__.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'policy.py'),
   path.join(TOOL_ROOT, 'src', 'member_line_patrol', 'runtime_state.py'),
@@ -59,6 +60,7 @@ function runValidation() {
   const allowedTargets = readJson(path.join(TOOL_ROOT, 'config', 'allowed_targets.example.json'));
   const scenario = readJson(path.join(TOOL_ROOT, 'scenarios', 'smoke_dry_run.example.json'));
   const strategicBatch = readJson(path.join(TOOL_ROOT, 'scenarios', 'strategic_self_improvement_batch_v1.json'));
+  const exploreLibrary = readJson(path.join(TOOL_ROOT, 'scenarios', 'strategic_self_improvement_explore_library_v1.json'));
 
   assert(policy.enabled === false, 'policy.example enabled must stay false');
   assert(policy.dry_run_default === true, 'policy.example dry_run_default must stay true');
@@ -77,6 +79,13 @@ function runValidation() {
   assert(strategicBatch.cases.every((item) => typeof item.strategic_goal === 'string' && item.strategic_goal.length > 0), 'strategic batch cases need strategic_goal');
   assert(strategicBatch.cases.every((item) => typeof item.improvement_axis === 'string' && item.improvement_axis.length > 0), 'strategic batch cases need improvement_axis');
   assert(strategicBatch.cases.every((item) => item.reply_contract && Array.isArray(item.reply_contract.must_include_any) && item.reply_contract.must_include_any.length > 0), 'strategic batch cases need reply_contract.must_include_any');
+  assert(typeof exploreLibrary.library_id === 'string' && exploreLibrary.library_id.length > 0, 'explore library needs library_id');
+  assert(Array.isArray(exploreLibrary.cases) && exploreLibrary.cases.length >= 6, 'explore library needs at least six cases');
+  assert(exploreLibrary.cases.every((item) => typeof item.case_id === 'string' && item.case_id.length > 0), 'explore library cases need case_id');
+  assert(exploreLibrary.cases.every((item) => typeof item.exploration_family === 'string' && item.exploration_family.length > 0), 'explore library cases need exploration_family');
+  assert(exploreLibrary.cases.every((item) => typeof item.strategic_goal === 'string' && item.strategic_goal.length > 0), 'explore library cases need strategic_goal');
+  assert(exploreLibrary.cases.every((item) => typeof item.improvement_axis === 'string' && item.improvement_axis.length > 0), 'explore library cases need improvement_axis');
+  assert(exploreLibrary.cases.every((item) => item.reply_contract && Array.isArray(item.reply_contract.must_include_any) && item.reply_contract.must_include_any.length > 0), 'explore library cases need reply_contract.must_include_any');
 
   return {
     ok: true,
