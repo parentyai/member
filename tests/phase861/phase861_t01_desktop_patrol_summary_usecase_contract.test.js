@@ -181,10 +181,52 @@ test('phase861: desktop patrol summary exposes latest promotion review pointers 
   assert.equal(result.promotionApproval.codeApplyRecordRef.path, codeApplyRecordPath);
   assert.deepEqual(result.promotionApproval.validationCommands, ['npm test', 'npm run test:docs']);
   assert.equal(result.promotionApproval.validationCommandCount, 2);
+  assert.equal(result.promotionApproval.nextCommand, null);
+  assert.deepEqual(result.promotionApproval.remainingCommands, []);
+  assert.equal(result.promotionApproval.remainingCommandCount, 0);
   assert.equal(result.promotionApproval.candidateEditCount, 2);
   assert.equal(result.promotionApproval.operatorInstructionCount, 2);
   assert.equal(result.promotionApproval.candidateEdits[0].filePath, 'src/routes/webhookLine.js');
   assert.equal(result.promotionApproval.updatedAt, '2026-03-28T14:15:00.000Z');
+});
+
+test('phase861: desktop patrol approval lane exposes next command hints for operator audience', async (t) => {
+  const artifactRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'phase861-desktop-patrol-approval-commands-'));
+  t.after(() => fs.rmSync(artifactRoot, { recursive: true, force: true }));
+
+  const promotionsRoot = path.join(artifactRoot, 'proposals', 'promotions');
+  writeJson(path.join(promotionsRoot, 'prop_012.json'), {
+    proposal_id: 'prop_012',
+    status: 'ready_for_human_code_apply_task',
+    branch_name: 'codex/line-desktop-patrol-prop-012',
+    worktree_path: '/tmp/member-line-desktop-prop-012',
+    draft_pr_ref: 'refs/pull/1012/head',
+    updated_at: '2026-03-28T14:25:00.000Z'
+  });
+  writeJson(path.join(promotionsRoot, 'prop_012.patch_request.json'), {
+    proposal_id: 'prop_012',
+    status: 'ready_for_human_patch',
+    validation_commands: ['npm test']
+  });
+  writeJson(path.join(promotionsRoot, 'prop_012.code_apply_task.json'), {
+    proposal_id: 'prop_012',
+    status: 'ready_for_human_code_apply_task',
+    validation_commands: ['npm test']
+  });
+
+  const result = await queryLatestDesktopPatrolSummary({ audience: 'operator' }, { artifactRoot });
+
+  assert.equal(result.promotionApproval.latestProposalId, 'prop_012');
+  assert.equal(result.promotionApproval.approvalStage, 'code_apply_task');
+  assert.equal(
+    result.promotionApproval.nextCommand,
+    'npm run line-desktop-patrol:synthesize-code-apply-signoff -- --proposal-id prop_012 --branch-name codex/line-desktop-patrol-prop-012 --worktree-path /tmp/member-line-desktop-prop-012'
+  );
+  assert.deepEqual(result.promotionApproval.remainingCommands, [
+    'npm run line-desktop-patrol:synthesize-code-apply-signoff -- --proposal-id prop_012 --branch-name codex/line-desktop-patrol-prop-012 --worktree-path /tmp/member-line-desktop-prop-012',
+    'npm run line-desktop-patrol:synthesize-code-apply-record -- --proposal-id prop_012 --branch-name codex/line-desktop-patrol-prop-012 --worktree-path /tmp/member-line-desktop-prop-012'
+  ]);
+  assert.equal(result.promotionApproval.remainingCommandCount, 2);
 });
 
 test('phase861: desktop patrol approval lane redacts file paths and commands for human audience', async (t) => {
@@ -221,6 +263,9 @@ test('phase861: desktop patrol approval lane redacts file paths and commands for
   assert.equal(result.promotionApproval.approvalStage, 'code_apply_task');
   assert.equal(result.promotionApproval.validationCommandCount, 1);
   assert.deepEqual(result.promotionApproval.validationCommands, []);
+  assert.equal(result.promotionApproval.nextCommand, null);
+  assert.deepEqual(result.promotionApproval.remainingCommands, []);
+  assert.equal(result.promotionApproval.remainingCommandCount, 2);
   assert.deepEqual(result.promotionApproval.operatorInstructions, []);
   assert.equal(result.promotionApproval.candidateEditCount, 1);
   assert.equal(result.promotionApproval.candidateEdits[0].filePath, null);

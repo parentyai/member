@@ -389,6 +389,9 @@ Typical fields:
   - `desktopPatrolSummary.promotionApproval.candidateEditCount`
   - `desktopPatrolSummary.promotionApproval.operatorInstructions[]`
   - `desktopPatrolSummary.promotionApproval.operatorInstructionCount`
+  - `desktopPatrolSummary.promotionApproval.nextCommand`
+  - `desktopPatrolSummary.promotionApproval.remainingCommands[]`
+  - `desktopPatrolSummary.promotionApproval.remainingCommandCount`
   - `desktopPatrolSummary.promotionApproval.nextAction`
   - `desktopPatrolSummary.promotionApproval.updatedAt`
 - admin desktop summary promotion batch view:

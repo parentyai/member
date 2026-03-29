@@ -143,6 +143,9 @@ async function handleQualityPatrolQuery(req, res, deps) {
           desktopPatrolPromotionApprovalCommandCount: desktopPatrolSummary && desktopPatrolSummary.promotionApproval
             ? Number(desktopPatrolSummary.promotionApproval.validationCommandCount || 0)
             : 0,
+          desktopPatrolPromotionApprovalRemainingCommandCount: desktopPatrolSummary && desktopPatrolSummary.promotionApproval
+            ? Number(desktopPatrolSummary.promotionApproval.remainingCommandCount || 0)
+            : 0,
           desktopPatrolPromotionApprovalUpdatedAt: desktopPatrolSummary && desktopPatrolSummary.promotionApproval
             ? desktopPatrolSummary.promotionApproval.updatedAt || null
             : null

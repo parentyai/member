@@ -23,6 +23,11 @@ const PROMOTION_APPROVAL_ARTIFACT_ORDER = Object.freeze([
   { kind: 'code_apply_signoff', jsonSuffix: '.code_apply_signoff.json' },
   { kind: 'code_apply_record', jsonSuffix: '.code_apply_record.json' }
 ]);
+const PROMOTION_APPROVAL_COMMAND_ORDER = Object.freeze([
+  { stage: 'patch_request', script: 'line-desktop-patrol:synthesize-code-apply-task' },
+  { stage: 'code_apply_task', script: 'line-desktop-patrol:synthesize-code-apply-signoff' },
+  { stage: 'code_apply_signoff', script: 'line-desktop-patrol:synthesize-code-apply-record' }
+]);
 
 function resolveArtifactRoot(deps) {
   const fromDeps = deps && typeof deps.artifactRoot === 'string' ? deps.artifactRoot.trim() : '';
@@ -412,7 +417,7 @@ function normalizeLatestPromotionBatch(record) {
 }
 
 function buildPromotionApprovalNextAction(stage, status) {
-  const normalizedStage = normalizeText(stage, null);
+  const normalizedStage = resolvePromotionApprovalStage(stage, status);
   const normalizedStatus = normalizeText(status, null);
   if (normalizedStage === 'code_apply_record' || normalizedStatus === 'ready_for_human_apply_record') {
     return 'Review the final apply record and close the proposal loop.';
@@ -427,6 +432,56 @@ function buildPromotionApprovalNextAction(stage, status) {
     return 'Review the patch request and prepare the code apply task bundle.';
   }
   return null;
+}
+
+function resolvePromotionApprovalStage(stage, status) {
+  const normalizedStage = normalizeText(stage, null);
+  if (normalizedStage) return normalizedStage;
+  const normalizedStatus = normalizeText(status, null);
+  if (normalizedStatus === 'ready_for_human_apply_record') return 'code_apply_record';
+  if (normalizedStatus === 'ready_for_human_apply_signoff') return 'code_apply_signoff';
+  if (normalizedStatus === 'ready_for_human_code_apply_task') return 'code_apply_task';
+  if (normalizedStatus === 'ready_for_human_patch') return 'patch_request';
+  return null;
+}
+
+function buildPromotionApprovalCommand(script, proposalId, branchName, worktreePath) {
+  const normalizedScript = normalizeText(script, null);
+  const normalizedProposalId = normalizeText(proposalId, null);
+  if (!normalizedScript || !normalizedProposalId) return null;
+  const parts = [
+    'npm',
+    'run',
+    normalizedScript,
+    '--',
+    '--proposal-id',
+    normalizedProposalId
+  ];
+  const normalizedBranchName = normalizeText(branchName, null);
+  const normalizedWorktreePath = normalizeText(worktreePath, null);
+  if (normalizedBranchName) {
+    parts.push('--branch-name', normalizedBranchName);
+  }
+  if (normalizedWorktreePath) {
+    parts.push('--worktree-path', normalizedWorktreePath);
+  }
+  return parts.join(' ');
+}
+
+function buildPromotionApprovalCommandHints(stage, status, proposalId, branchName, worktreePath, audience) {
+  const normalizedStage = resolvePromotionApprovalStage(stage, status);
+  const descriptorIndex = PROMOTION_APPROVAL_COMMAND_ORDER.findIndex((item) => item.stage === normalizedStage);
+  const descriptors = descriptorIndex >= 0
+    ? PROMOTION_APPROVAL_COMMAND_ORDER.slice(descriptorIndex)
+    : [];
+  const commands = descriptors
+    .map((item) => buildPromotionApprovalCommand(item.script, proposalId, branchName, worktreePath))
+    .filter(Boolean);
+  return {
+    nextCommand: audience === 'operator' ? commands[0] || null : null,
+    remainingCommands: audience === 'operator' ? commands : [],
+    remainingCommandCount: commands.length
+  };
 }
 
 async function normalizeLatestPromotionApproval(record, audience) {
@@ -448,6 +503,9 @@ async function normalizeLatestPromotionApproval(record, audience) {
       candidateEditCount: 0,
       operatorInstructions: [],
       operatorInstructionCount: 0,
+      nextCommand: null,
+      remainingCommands: [],
+      remainingCommandCount: 0,
       nextAction: null,
       updatedAt: null
     };
@@ -481,6 +539,17 @@ async function normalizeLatestPromotionApproval(record, audience) {
     (patchRequestPayload && patchRequestPayload.candidate_edits) || [],
     audience
   );
+  const proposalId = normalizeText(record.proposal_id, null);
+  const branchName = normalizeText(record.branch_name, null);
+  const worktreePath = normalizeText(record.worktree_path, null);
+  const commandHints = buildPromotionApprovalCommandHints(
+    approvalStage,
+    record.status,
+    proposalId,
+    branchName,
+    worktreePath,
+    audience
+  );
   const operatorInstructions = normalizeDisplayList(
     (patchRequestPayload && patchRequestPayload.operator_instructions)
     || (latestApprovalPayload && latestApprovalPayload.operator_instructions)
@@ -499,13 +568,13 @@ async function normalizeLatestPromotionApproval(record, audience) {
   );
 
   return {
-    latestProposalId: normalizeText(record.proposal_id, null),
+    latestProposalId: proposalId,
     approvalStage,
     approvalStatus: normalizeText(record.status, null),
     latestDraftPrRef: normalizeText(record.draft_pr_ref || record.draft_pr_url, null),
-    branchName: normalizeText(record.branch_name, null),
-    worktreeRef: normalizeText(record.worktree_path, null)
-      ? toArtifactRef('worktree', path.resolve(String(record.worktree_path)), audience)
+    branchName,
+    worktreeRef: worktreePath
+      ? toArtifactRef('worktree', path.resolve(String(worktreePath)), audience)
       : null,
     patchRequestRef: refsByKind.patch_request || null,
     codeApplyTaskRef: refsByKind.code_apply_task || null,
@@ -521,6 +590,9 @@ async function normalizeLatestPromotionApproval(record, audience) {
       || (latestApprovalPayload && latestApprovalPayload.operator_instructions)
       || []
     ).length,
+    nextCommand: commandHints.nextCommand,
+    remainingCommands: commandHints.remainingCommands,
+    remainingCommandCount: commandHints.remainingCommandCount,
     nextAction: buildPromotionApprovalNextAction(approvalStage, record.status),
     updatedAt
   };
