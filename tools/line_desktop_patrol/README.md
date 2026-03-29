@@ -73,10 +73,11 @@ Treat `generic LINE shell only` as a fail-closed preflight state: the LINE shell
 - `desktop_readiness` is read-only and reports whether Codex can safely control LINE Desktop before attempting a loop.
 - `desktop-self-test` runs `desktop_readiness` first and only then executes `desktop_run_conversation_loop` in the same local MCP session.
 - `desktop_run_conversation_loop` sends from the signed-in desktop LINE account, waits for a reply, captures transcript evidence, and enqueues a local proposal when the loop fails.
-- `desktop-self-improvement` runs one readiness gate and then a fixed strategic batch of 10 sends. Each case has an explicit strategic goal, a human-natural reply contract, a patrol eval artifact, and an aggregated proposal summary for the future auto-improvement loop.
-- before the first send, `desktop-self-improvement` preflights the remaining hourly execute budget. If the current local patrol budget cannot absorb all 10 sends, it fails before sending anything and reports the exact shortfall instead of half-running the batch.
+- `desktop-self-improvement` runs one readiness gate and then a two-layer suite: the fixed strategic core 10 plus a seeded rotating explore pack of 5 cases by default. Each case keeps an explicit strategic goal, a human-natural reply contract, a patrol eval artifact, and an aggregated proposal summary for the future auto-improvement loop.
+- before the first send, `desktop-self-improvement` preflights the remaining hourly execute budget against the selected suite size. If the current local patrol budget cannot absorb the selected cases, it fails before sending anything and reports the exact shortfall instead of half-running the batch.
 - when local policy keeps `proposal_mode=local_queue`, failed fixed-batch cases automatically bridge their eval artifacts into the existing local proposal queue.
 - when local policy raises `auto_apply_level=patch_draft`, the same batch also prepares human-reviewed code edit task bundles for the queued proposals. It still does not auto-apply code.
 - when a blocking local patrol error appears mid-batch, later cases are marked as blocked with the same code so the summary preserves why the strategic loop stopped.
 - execute mode still respects blocked hours, local rate limits, failure streak stop, target confirmation, and the existing global kill switch.
+- use `--explore-count 0` to fall back to core-only regression mode, or pass `--seed <value>` to replay the same explore selection later.
 - the quicker local MCP path is `desktop-self-test`, but the formal operator bundle still uses `doctor -> open-target -> execute-once -> loop-execute -> acceptance-gate`.

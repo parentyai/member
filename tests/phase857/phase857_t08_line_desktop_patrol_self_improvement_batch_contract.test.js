@@ -10,11 +10,14 @@ const {
   buildCaseLoopArguments,
   buildBatchPreflight,
   buildBlockedCaseResult,
+  buildScenarioSuite,
   consecutiveFailureCount,
   extractLatestAssistantReply,
+  loadExploreLibrary,
   listRecentTraceArtifacts,
   loadStrategicBatch,
   scoreReplyContract,
+  selectExploreCases,
   summarizeRound,
 } = require('../../tools/line_desktop_patrol/run_desktop_self_improvement_batch');
 
@@ -22,8 +25,31 @@ test('phase857: strategic self improvement batch stays fixed at ten strategic ca
   const batch = loadStrategicBatch();
   assert.equal(batch.fixedCaseCount, 10);
   assert.equal(batch.cases.length, 10);
+  assert.ok(batch.cases.every((item) => item.caseMode === 'core'));
   assert.ok(batch.cases.every((item) => item.strategicGoal.length > 0));
   assert.ok(batch.cases.every((item) => item.improvementAxis.length > 0));
+});
+
+test('phase857: explore library exposes families and seeded selection stays reproducible', () => {
+  const library = loadExploreLibrary();
+  const left = selectExploreCases(library, 5, 'seed-123');
+  const right = selectExploreCases(library, 5, 'seed-123');
+  assert.ok(library.families.length >= 6);
+  assert.equal(left.selectedCases.length, 5);
+  assert.deepEqual(left.selectedCaseIds, right.selectedCaseIds);
+  assert.deepEqual(left.selectedFamilies, right.selectedFamilies);
+});
+
+test('phase857: scenario suite combines fixed core cases with selected explore cases', () => {
+  const batch = loadStrategicBatch();
+  const library = loadExploreLibrary();
+  const exploreSelection = selectExploreCases(library, 4, 'seed-456');
+  const suite = buildScenarioSuite(batch, exploreSelection);
+  assert.equal(suite.coreCaseCount, 10);
+  assert.equal(suite.exploreCaseCount, 4);
+  assert.equal(suite.totalCaseCount, 14);
+  assert.equal(suite.cases.slice(0, 10).every((item) => item.caseMode === 'core'), true);
+  assert.equal(suite.cases.slice(10).every((item) => item.caseMode === 'explore'), true);
 });
 
 test('phase857: strategic batch loop arguments preserve scenario metadata and reply expectations', () => {
@@ -63,18 +89,47 @@ test('phase857: assistant reply extraction keeps the final member message', () =
 
 test('phase857: strategic round summary reports proposal review when any case fails or proposes changes', () => {
   const batch = loadStrategicBatch();
-  const results = batch.cases.map((item, index) => ({
+  const suite = buildScenarioSuite(batch, {
+    selectionSeed: 'seed-789',
+    selectedCases: [
+      {
+        caseId: 'explore_case_1',
+        strategicGoal: 'Explore family case',
+        improvementAxis: 'explore_axis',
+        caseMode: 'explore',
+        explorationFamily: 'notification',
+        userInput: 'text',
+        expectedReplySubstrings: [],
+        forbiddenReplySubstrings: [],
+        replyContract: {
+          mustIncludeAny: ['確認'],
+          maxLines: 1,
+          maxChars: 70,
+          disallowQuestion: true,
+        },
+      },
+    ],
+    selectedCaseIds: ['explore_case_1'],
+    selectedFamilies: ['notification'],
+  });
+  const results = suite.cases.map((item, index) => ({
     caseId: item.caseId,
     improvementAxis: item.improvementAxis,
+    caseMode: item.caseMode,
+    explorationFamily: item.explorationFamily || null,
     loopVerdict: index === 0 ? 'pass' : 'fail',
     caseVerdict: index === 0 ? 'pass' : 'fail',
     planningProposals: index === 1 ? [{ proposalType: 'runtime_fix', title: 'example', targetFiles: [] }] : [],
+    promotionResult: { status: 'queued', proposalIds: [] },
     replyContract: { verdict: index === 0 },
   }));
-  const summary = summarizeRound(batch, results);
+  const summary = summarizeRound(suite, results);
   assert.equal(summary.passCount, 1);
-  assert.equal(summary.failCount, 9);
+  assert.equal(summary.failCount, suite.totalCaseCount - 1);
   assert.equal(summary.proposalCount, 1);
+  assert.equal(summary.modeBreakdown.core.total, 10);
+  assert.equal(summary.modeBreakdown.explore.total, 1);
+  assert.equal(summary.explorationFamilies.notification.total, 1);
   assert.equal(summary.completionStatus, 'proposal_review_required');
 });
 
@@ -103,11 +158,12 @@ test('phase857: budget preflight fails closed when remaining hourly budget is sm
   );
   try {
     process.env.LINE_DESKTOP_PATROL_POLICY_PATH = tempPolicyPath;
-    const preflight = buildBatchPreflight(batch, 'execute');
+    const preflight = buildBatchPreflight(batch, 'execute', 15);
     assert.equal(preflight.stage, 'budget_preflight');
     assert.equal(preflight.code, 'insufficient_hourly_budget');
     assert.equal(typeof preflight.recentRunCount, 'number');
     assert.equal(typeof preflight.maxRunsPerHour, 'number');
+    assert.equal(preflight.requiredSlots, 15);
   } finally {
     if (typeof originalEnv === 'string') {
       process.env.LINE_DESKTOP_PATROL_POLICY_PATH = originalEnv;

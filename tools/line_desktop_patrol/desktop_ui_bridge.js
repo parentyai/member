@@ -84,14 +84,14 @@ function evaluateConversationLoop(input) {
   const finalLines = normalizeTranscript(finalTranscript);
   const replyLines = extractAppendedLines(afterSendTranscript, finalTranscript);
   const replyJoined = replyLines.join('\n');
-  const replyScope = replyJoined || finalTranscript;
+  const evaluationText = sendMode === 'dry_run' ? finalTranscript : replyJoined;
   const sentVisible = sentText.length > 0 && (afterSendTranscript.includes(sentText) || finalTranscript.includes(sentText));
   const expectedReplyMatched = sendMode === 'dry_run'
     ? true
     : expectedReplySubstrings.length === 0
       ? replyObserved
-      : expectedReplySubstrings.some((item) => replyScope.includes(item));
-  const forbiddenReplyHit = forbiddenReplySubstrings.some((item) => replyScope.includes(item));
+      : expectedReplySubstrings.some((item) => evaluationText.includes(item));
+  const forbiddenReplyHit = forbiddenReplySubstrings.some((item) => evaluationText.includes(item));
   const transcriptChanged = beforeTranscript !== finalTranscript;
   const verdict = (payload.targetMatchedHeuristic === true)
     && (sendMode === 'dry_run' || sentVisible)

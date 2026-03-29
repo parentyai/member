@@ -105,6 +105,41 @@ test('phase857: desktop bridge evaluation and proposal fail closed when reply is
   assert.equal(proposal.requires_human_review, true);
 });
 
+test('phase857: desktop bridge evaluator scopes forbidden substrings to the appended reply only', () => {
+  const scores = evaluateConversationLoop({
+    sendMode: 'execute',
+    targetMatchedHeuristic: true,
+    searchQueryApplied: true,
+    sentText: 'その2点のうち、先に確認する方を1つだけ決めて。',
+    beforeTranscript: '12:41 メンバー 最初に確認するのは、受付期限と必要書類の2点です。',
+    afterSendTranscript: '12:41 メンバー 最初に確認するのは、受付期限と必要書類の2点です。\n12:41 Arumamih$ その2点のうち、先に確認する方を1つだけ決めて。',
+    finalTranscript: '12:41 メンバー 最初に確認するのは、受付期限と必要書類の2点です。\n12:41 Arumamih$ その2点のうち、先に確認する方を1つだけ決めて。\n12:42 メンバー 先に確認するのは期限です。',
+    replyObserved: true,
+    expectedReplySubstrings: ['期限'],
+    forbiddenReplySubstrings: ['2つ'],
+  });
+  assert.equal(scores.expectedReplyMatched, true);
+  assert.equal(scores.forbiddenReplyHit, false);
+  assert.equal(scores.verdict, 'pass');
+});
+
+test('phase857: desktop bridge evaluator does not satisfy expected substrings from earlier transcript lines', () => {
+  const scores = evaluateConversationLoop({
+    sendMode: 'execute',
+    targetMatchedHeuristic: true,
+    searchQueryApplied: true,
+    sentText: '期限を教えて',
+    beforeTranscript: 'old line',
+    afterSendTranscript: 'old line\n期限を教えて',
+    finalTranscript: 'old line\n期限を教えて\nまず窓口を確認してください。',
+    replyObserved: true,
+    expectedReplySubstrings: ['期限'],
+    forbiddenReplySubstrings: [],
+  });
+  assert.equal(scores.expectedReplyMatched, false);
+  assert.equal(scores.verdict, 'fail');
+});
+
 test('phase857: transcript helpers preserve visible line ordering', () => {
   assert.deepEqual(extractAppendedLines('a\nb', 'a\nb\nc\n d '), ['c', 'd']);
   assert.deepEqual(toVisibleEntries('a\n\nb'), [
