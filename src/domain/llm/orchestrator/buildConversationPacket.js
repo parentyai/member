@@ -318,10 +318,16 @@ function buildConversationPacket(params) {
     )
   });
   const normalizedConversationIntent = requestContract.primaryDomainIntent || 'general';
+  const followupDomainIntent = normalizedConversationIntent !== 'general'
+    ? normalizedConversationIntent
+    : (recentDomain || null);
+  const followupContextDomain = contextResume
+    ? resumeAnchorDomain
+    : (followupDomainIntent || null);
   const followupIntentDecision = resolveFollowupIntent({
     messageText,
-    domainIntent: normalizedConversationIntent,
-    contextResumeDomain: contextResume ? resumeAnchorDomain : null,
+    domainIntent: followupDomainIntent,
+    contextResumeDomain: followupContextDomain,
     recentFollowupIntents: recentHistory.recentFollowupIntents
   });
   const providedRouterReason = normalizeText(payload.routerReason);

@@ -235,6 +235,27 @@ test('phase734: domain fallback keeps context domain for short follow-up', () =>
   assert.equal(result.replyText.includes('ですねは'), false);
 });
 
+test('phase734: contextual school docs followup keeps restored domain contract and avoids fabricated docs', () => {
+  const result = generatePaidDomainConciergeReply({
+    domainIntent: 'school',
+    messageText: '手続きに必要なしょるい',
+    followupIntent: 'docs_required',
+    recentFollowupIntents: ['next_step'],
+    recentResponseHints: ['最初に学区と対象校を確認して、必要書類と受付期限を整理すると進めやすいです。'],
+    requestContract: {
+      requestShape: 'answer',
+      outputForm: 'default',
+      primaryDomainIntent: 'general',
+      detailObligations: ['avoid_question_back']
+    }
+  });
+
+  assert.equal(result.preserveReplyText, true);
+  assert.equal(String(result.replyText || '').split('\n').filter((line) => line.trim()).length, 1);
+  assert.match(result.replyText, /必要書類一覧|受付期限/);
+  assert.equal(/住所証明|予防接種/.test(result.replyText), false);
+});
+
 test('phase734: general presets answer plan difference and time horizon prompts directly', () => {
   const pricing = generatePaidDomainConciergeReply({
     domainIntent: 'general',

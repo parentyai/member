@@ -171,22 +171,22 @@
     },
     {
       "case_id": "document_pair_specificity",
-      "strategic_goal": "Use concrete document nouns instead of abstract paperwork phrasing.",
+      "strategic_goal": "Avoid fabricated document names and anchor the answer to the official checklist.",
       "improvement_axis": "document_specificity",
       "user_input": "必要書類を2つだけ挙げて。",
       "expected_reply_substrings": [
-        "住所",
-        "予防接種",
-        "身分"
+        "必要書類",
+        "一覧",
+        "受付期限"
       ],
       "forbidden_reply_substrings": [
         "いろいろ"
       ],
       "reply_contract": {
         "must_include_any": [
-          "住所",
-          "予防接種",
-          "身分"
+          "必要書類",
+          "一覧",
+          "受付期限"
         ],
         "max_lines": 2,
         "max_chars": 70,

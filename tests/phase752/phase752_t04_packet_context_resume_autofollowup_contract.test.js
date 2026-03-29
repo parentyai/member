@@ -112,7 +112,7 @@ test('phase752: history carry keeps previous followup intent for ultra-short con
         createdAt: new Date().toISOString(),
         domainIntent: 'school',
         followupIntent: 'docs_required',
-        replyText: '学校手続きは住所証明と予防接種記録を先にそろえるのが最優先です。'
+        replyText: '学校手続きは対象校の必要書類一覧と受付期限を先に見るのが最優先です。'
       }
     ],
     llmFlags: {}

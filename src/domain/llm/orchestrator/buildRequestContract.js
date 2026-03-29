@@ -26,6 +26,24 @@ function similarityScore(left, right) {
   return overlap / Math.max(a.length, b.length);
 }
 
+function isReasonCarryLine(value) {
+  return /^(理由は|理由としては).*(からです|ためです)[。.]?$/i.test(normalizeText(value));
+}
+
+function hasReasonCarryLine(value) {
+  return normalizeText(value)
+    .split('\n')
+    .map((line) => normalizeText(line))
+    .some((line) => isReasonCarryLine(line));
+}
+
+function isSourceEchoMatch(messageText, candidateText) {
+  const threshold = isReasonCarryLine(messageText) && isReasonCarryLine(candidateText)
+    ? 0.55
+    : 0.86;
+  return similarityScore(messageText, candidateText) >= threshold;
+}
+
 function uniqueList(values, limit) {
   const rows = Array.isArray(values) ? values : [];
   const max = Number.isFinite(Number(limit)) ? Math.max(0, Math.floor(Number(limit))) : 8;
@@ -172,6 +190,13 @@ function detectRequestShape(messageText, options) {
   const payload = options && typeof options === 'object' ? options : {};
   const text = normalizeText(messageText);
   if (!text) return 'answer';
+  if (
+    payload.currentTurnHasExplicitDomain !== true
+    && isReasonCarryLine(text)
+    && hasReasonCarryLine(payload.latestAssistantReplyText)
+  ) {
+    return 'followup_continue';
+  }
   if (/(小学生の保護者向け).*(やさしい日本語).*(1文|一文)/i.test(text)) {
     return 'rewrite';
   }
@@ -268,7 +293,7 @@ function detectEchoOfPriorAssistant(messageText, recentResponseHints) {
   const text = normalizeText(messageText);
   const hints = Array.isArray(recentResponseHints) ? recentResponseHints : [];
   if (!text || !hints.length) return false;
-  return hints.slice(0, 2).some((hint) => similarityScore(text, hint) >= 0.86);
+  return hints.slice(0, 6).some((hint) => isSourceEchoMatch(text, hint));
 }
 
 function resolveMatchedPriorReply(messageText, recentReplyRows) {
@@ -280,7 +305,8 @@ function resolveMatchedPriorReply(messageText, recentReplyRows) {
     const normalized = normalizeReplyRow(row);
     const similarity = extractReplyCandidates(normalized)
       .reduce((max, candidateText) => Math.max(max, similarityScore(text, candidateText)), 0);
-    if (similarity < 0.86) return;
+    const matched = extractReplyCandidates(normalized).some((candidateText) => isSourceEchoMatch(text, candidateText));
+    if (matched !== true) return;
     if (!best || similarity > best.similarity || (similarity === best.similarity && index < best.index)) {
       best = {
         index,
@@ -408,7 +434,9 @@ function buildRequestContract(params) {
     recoverySignal: payload.recoverySignal === true,
     contextResumeCue: payload.contextResumeCue === true,
     echoOfPriorAssistant,
-    highRiskIntent
+    highRiskIntent,
+    currentTurnHasExplicitDomain,
+    latestAssistantReplyText: payload.latestAssistantReplyText
   });
   const sourceReplyText = resolveSourceReplyText(requestShape, matchedPriorReply, payload.latestAssistantReplyText, {
     messageText,
