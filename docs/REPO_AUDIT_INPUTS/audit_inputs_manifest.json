@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-28T20:42:00.418Z",
-  "gitCommit": "fda82c580b1482df4c3c10dd7fff42f8ee5e175f",
-  "branch": "codex/firestore-index-apply-workflow",
-  "sourceDigest": "dc9ef27a2b2c40a8adcc6e6b0f80e674622d8c329682709ee98642baf1aff35f",
+  "generatedAt": "2026-03-28T23:56:39.737Z",
+  "gitCommit": "6f13396426976932fd06f4308f7ee0052ca286ac",
+  "branch": "codex/desktop-self-improvement-promotion-T001",
+  "sourceDigest": "80bd5bd20214c7f8ae1e2e5e8fb8d4ccead1108e93b71f7235df3894606464c4",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -76,7 +76,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "294a9fee8e6541bec5b42c845390d813bd5d73efd2e49e01f39e1ab6f77df88b",
+      "sha256": "c6db0afc1af48f4970fb70583143600c67450f3f18ff6783697dfc1a33e1a347",
       "bytes": 79340
     },
     {
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "871c97a016c47fcafa8a8b8f69fdd502a569eb7ede02d3c2d2ec534e516e810a",
+      "sha256": "2cbb4c266f9b8885745e20da49837909924bac43946dc6d7a3176a2ce669116a",
       "bytes": 453884
     },
     {

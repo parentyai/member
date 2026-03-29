@@ -46,6 +46,8 @@ Local-only runbook for the LINE patrol MCP harness.
 10. for the fixed self-improvement loop, prefer `desktop-self-improvement`, which sends the tracked strategic 10-case batch and writes one aggregated review summary under `artifacts/line_desktop_patrol/self_improvement_runs/<batch_run_id>/summary.json`
 11. before the first send, confirm the local hourly budget can absorb all 10 execute calls. `desktop-self-improvement` now checks this automatically and fails closed with `stage=budget_preflight` when the remaining budget is too small.
 12. when a blocking patrol guard fires mid-batch, later cases are recorded as blocked with the same code instead of pretending they were observed.
+13. if local policy keeps `proposal_mode=local_queue`, failed cases enqueue their eval-backed proposals into `artifacts/line_desktop_patrol/proposals/queue.jsonl`
+14. if local policy raises `auto_apply_level=patch_draft`, the batch also prepares human-reviewed code edit task bundles under `artifacts/line_desktop_patrol/proposals/promotions/`
 
 ## Operator safe sequence
 1. `npm run line-desktop-patrol:doctor`
@@ -77,6 +79,7 @@ Debug-only:
   - `desktop_readiness` returns `ready`, `accessibilityTrusted`, `lineRunning`, `contextResolved`, and optional title-match evidence
   - `desktop-self-test` returns both `readiness` and `loop` payloads, so operators can confirm the gate that allowed the send
   - `desktop-self-improvement` writes per-case patrol eval artifacts plus one aggregated summary that reports pass/fail by strategic axis, per-case loop error codes, proposal-only next steps for future auto-improvement, and the preflight budget snapshot used to decide whether the 10-case loop could start
+  - per-case `promotionResult` fields show whether proposals were skipped, queued, or promoted into human-reviewed patch-draft tasks
   - admin summary surfaces add-only `desktopPatrolSummary.promotion.latestArtifactKind`, `desktopPatrolSummary.promotion.latestArtifactStatus`, `desktopPatrolSummary.promotion.latestDraftPrRef`, and `desktopPatrolSummary.promotion.updatedAt`
 
 ## Stop and rollback
@@ -93,6 +96,7 @@ Debug-only:
 - desktop UI control is local-only and limited to targets whose configured title contains `メンバー`
 - screenshot retention follows `store_screenshots`; default local policy keeps it off
 - no promotion into backlog collections
+- patch-draft preparation stays local-only and human-reviewed
 - no patrol-originated Firestore write path
 
 ## Optional operator check
