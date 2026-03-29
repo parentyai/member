@@ -46,9 +46,10 @@ Local-only runbook for the LINE patrol MCP harness.
 10. for the strategic self-improvement loop, prefer `desktop-self-improvement`, which sends the tracked core 10-case regression batch plus a seeded rotating explore pack of 5 cases by default and writes one aggregated review summary under `artifacts/line_desktop_patrol/self_improvement_runs/<batch_run_id>/summary.json`
 11. before the first send, confirm the local hourly budget can absorb the selected suite size. `desktop-self-improvement` now checks this automatically and fails closed with `stage=budget_preflight` when the remaining budget is too small.
 12. use `--explore-count 0` when you need core-only regression mode, or pass `--seed <value>` to replay the same explore selection later.
-13. when a blocking patrol guard fires mid-batch, later cases are recorded as blocked with the same code instead of pretending they were observed.
-14. if local policy keeps `proposal_mode=local_queue`, failed cases enqueue their eval-backed proposals into `artifacts/line_desktop_patrol/proposals/queue.jsonl`
-15. if local policy raises `auto_apply_level=patch_draft`, the batch also prepares human-reviewed code edit task bundles under `artifacts/line_desktop_patrol/proposals/promotions/`
+13. use `--explore-case-ids case_a,case_b` when you want to rerun specific failed explore cases without sampling a new explore pack.
+14. when a blocking patrol guard fires mid-batch, later cases are recorded as blocked with the same code instead of pretending they were observed.
+15. if local policy keeps `proposal_mode=local_queue`, failed cases enqueue their eval-backed proposals into `artifacts/line_desktop_patrol/proposals/queue.jsonl`
+16. if local policy raises `auto_apply_level=patch_draft`, the batch also prepares human-reviewed code edit task bundles under `artifacts/line_desktop_patrol/proposals/promotions/`
 
 ## Operator safe sequence
 1. `npm run line-desktop-patrol:doctor`
@@ -80,6 +81,7 @@ Debug-only:
   - `desktop_readiness` returns `ready`, `accessibilityTrusted`, `lineRunning`, `contextResolved`, and optional title-match evidence
   - `desktop-self-test` returns both `readiness` and `loop` payloads, so operators can confirm the gate that allowed the send
   - `desktop-self-improvement` writes per-case patrol eval artifacts plus one aggregated summary that reports pass/fail by strategic axis, `core/explore` breakdown, explore-family coverage, per-case loop error codes, proposal-only next steps for future auto-improvement, and the preflight budget snapshot used to decide whether the selected suite could start
+  - when explore cases fail, the batch also writes `focus_followup.json` with the failing explore case ids and a ready-to-run rerun command using `--explore-case-ids`
   - per-case `promotionResult` fields show whether proposals were skipped, queued, or promoted into human-reviewed patch-draft tasks
   - admin summary surfaces add-only `desktopPatrolSummary.promotion.latestArtifactKind`, `desktopPatrolSummary.promotion.latestArtifactStatus`, `desktopPatrolSummary.promotion.latestDraftPrRef`, and `desktopPatrolSummary.promotion.updatedAt`
   - admin summary also surfaces add-only `desktopPatrolSummary.promotionReview.latestReviewArtifactKind`, `desktopPatrolSummary.promotionReview.branchName`, `desktopPatrolSummary.promotionReview.worktreeRef`, `desktopPatrolSummary.promotionReview.patchDraftRef`, `desktopPatrolSummary.promotionReview.codeEditTaskRef`, `desktopPatrolSummary.promotionReview.codeApplyDraftRef`, and `desktopPatrolSummary.promotionReview.codeReviewPacketRef`

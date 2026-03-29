@@ -80,4 +80,5 @@ Treat `generic LINE shell only` as a fail-closed preflight state: the LINE shell
 - when a blocking local patrol error appears mid-batch, later cases are marked as blocked with the same code so the summary preserves why the strategic loop stopped.
 - execute mode still respects blocked hours, local rate limits, failure streak stop, target confirmation, and the existing global kill switch.
 - use `--explore-count 0` to fall back to core-only regression mode, or pass `--seed <value>` to replay the same explore selection later.
+- use `--explore-case-ids case_a,case_b` to rerun specific explore failures without rotating a new sample. When any explore case fails, `summary.json` also writes a ready-to-rerun `focus_followup.json`.
 - the quicker local MCP path is `desktop-self-test`, but the formal operator bundle still uses `doctor -> open-target -> execute-once -> loop-execute -> acceptance-gate`.

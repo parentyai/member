@@ -10,14 +10,17 @@ const {
   buildCaseLoopArguments,
   buildBatchPreflight,
   buildBlockedCaseResult,
+  buildFollowupSuggestion,
   buildScenarioSuite,
   consecutiveFailureCount,
   extractLatestAssistantReply,
   loadExploreLibrary,
   listRecentTraceArtifacts,
   loadStrategicBatch,
+  parseCsvList,
   scoreReplyContract,
   selectExploreCases,
+  selectExploreCasesByIds,
   summarizeRound,
 } = require('../../tools/line_desktop_patrol/run_desktop_self_improvement_batch');
 
@@ -38,6 +41,14 @@ test('phase857: explore library exposes families and seeded selection stays repr
   assert.equal(left.selectedCases.length, 5);
   assert.deepEqual(left.selectedCaseIds, right.selectedCaseIds);
   assert.deepEqual(left.selectedFamilies, right.selectedFamilies);
+});
+
+test('phase857: explicit explore case selection preserves requested order', () => {
+  const library = loadExploreLibrary();
+  const selected = selectExploreCasesByIds(library, 'journey_entry_common_start,city_known_short_pointer');
+  assert.deepEqual(parseCsvList('journey_entry_common_start,city_known_short_pointer'), selected.selectedCaseIds);
+  assert.equal(selected.selectedCases[0].caseId, 'journey_entry_common_start');
+  assert.equal(selected.selectedCases[1].caseId, 'city_known_short_pointer');
 });
 
 test('phase857: scenario suite combines fixed core cases with selected explore cases', () => {
@@ -131,6 +142,24 @@ test('phase857: strategic round summary reports proposal review when any case fa
   assert.equal(summary.modeBreakdown.explore.total, 1);
   assert.equal(summary.explorationFamilies.notification.total, 1);
   assert.equal(summary.completionStatus, 'proposal_review_required');
+});
+
+test('phase857: followup suggestion emits rerun command for failing explore cases', () => {
+  const suggestion = buildFollowupSuggestion([
+    { caseId: 'core_case', caseMode: 'core', caseVerdict: 'fail' },
+    { caseId: 'journey_entry_common_start', caseMode: 'explore', caseVerdict: 'fail' },
+    { caseId: 'city_known_short_pointer', caseMode: 'explore', caseVerdict: 'pass' },
+    { caseId: 'journey_close_two_step_plan', caseMode: 'explore', caseVerdict: 'fail' },
+  ], {
+    targetAlias: 'sample-self-test',
+    sendMode: 'execute',
+  });
+  assert.equal(suggestion.focusAvailable, true);
+  assert.deepEqual(suggestion.failingExploreCaseIds, [
+    'journey_entry_common_start',
+    'journey_close_two_step_plan',
+  ]);
+  assert.match(suggestion.rerunCommand, /--explore-case-ids journey_entry_common_start,journey_close_two_step_plan/);
 });
 
 test('phase857: budget preflight fails closed when remaining hourly budget is smaller than fixed batch size', () => {

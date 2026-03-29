@@ -73,6 +73,15 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
+function parseCsvList(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeText(String(item))).filter(Boolean);
+  }
+  const normalized = normalizeText(value);
+  if (!normalized) return [];
+  return normalized.split(',').map((item) => normalizeText(item)).filter(Boolean);
+}
+
 function buildHashKey(seed, value) {
   return crypto.createHash('sha256').update(`${seed}::${value}`).digest('hex');
 }
@@ -293,6 +302,26 @@ function selectExploreCases(library, count = DEFAULT_EXPLORE_COUNT, seed) {
   };
 }
 
+function selectExploreCasesByIds(library, requestedIds) {
+  const ids = Array.from(new Set(parseCsvList(requestedIds)));
+  if (!library || !Array.isArray(library.cases)) {
+    throw new Error('explore library cases are required');
+  }
+  const caseIndex = new Map(library.cases.map((item) => [item.caseId, item]));
+  const selectedCases = ids.map((caseId) => {
+    const match = caseIndex.get(caseId);
+    if (!match) throw new Error(`unknown explore case id: ${caseId}`);
+    return match;
+  });
+  return {
+    selectionSeed: '',
+    requestedCount: ids.length,
+    selectedCases,
+    selectedCaseIds: ids,
+    selectedFamilies: Array.from(new Set(selectedCases.map((item) => item.explorationFamily))).sort(),
+  };
+}
+
 function buildScenarioSuite(batch, exploreSelection) {
   const selectedExploreCases = exploreSelection && Array.isArray(exploreSelection.selectedCases)
     ? exploreSelection.selectedCases
@@ -308,6 +337,26 @@ function buildScenarioSuite(batch, exploreSelection) {
     selectedExploreCaseIds: exploreSelection ? exploreSelection.selectedCaseIds : [],
     selectedExploreFamilies: exploreSelection ? exploreSelection.selectedFamilies : [],
     cases: batch.cases.concat(selectedExploreCases),
+  };
+}
+
+function buildFollowupSuggestion(caseResults, params = {}) {
+  const failingExploreCaseIds = caseResults
+    .filter((item) => item.caseMode === 'explore' && item.caseVerdict !== 'pass')
+    .map((item) => item.caseId);
+  const targetAlias = normalizeText(params.targetAlias);
+  const sendMode = normalizeText(params.sendMode) || 'execute';
+  if (failingExploreCaseIds.length === 0 || !targetAlias) {
+    return {
+      focusAvailable: false,
+      failingExploreCaseIds,
+      rerunCommand: null,
+    };
+  }
+  return {
+    focusAvailable: true,
+    failingExploreCaseIds,
+    rerunCommand: `npm run line-desktop-patrol:desktop-self-improvement -- --target-alias ${targetAlias} --send-mode ${sendMode} --explore-case-ids ${failingExploreCaseIds.join(',')}`,
   };
 }
 
@@ -941,7 +990,12 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
   const args = parseArgs(argv || process.argv.slice(2));
   const batch = loadStrategicBatch(args.batch || DEFAULT_BATCH_PATH);
   const exploreLibrary = loadExploreLibrary(args.exploreLibrary || DEFAULT_EXPLORE_LIBRARY_PATH);
-  const exploreSelection = selectExploreCases(exploreLibrary, args.exploreCount, args.seed);
+  const requestedExploreCaseIds = parseCsvList(args.exploreCaseIds);
+  const explicitExploreSelection = requestedExploreCaseIds.length > 0
+    ? selectExploreCasesByIds(exploreLibrary, requestedExploreCaseIds)
+    : null;
+  const exploreSelectionMode = explicitExploreSelection ? 'explicit_case_ids' : 'seeded_rotation';
+  const exploreSelection = explicitExploreSelection || selectExploreCases(exploreLibrary, args.exploreCount, args.seed);
   const suite = buildScenarioSuite(batch, exploreSelection);
   const targetAlias = requireString(args.targetAlias, 'targetAlias');
   const sendMode = normalizeText(args.sendMode) || 'execute';
@@ -1077,6 +1131,7 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
     }
 
     const roundSummary = summarizeRound(suite, caseResults);
+    const followupSuggestion = buildFollowupSuggestion(caseResults, { targetAlias, sendMode });
     const summary = {
       ok: true,
       batchRunId,
@@ -1087,7 +1142,9 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
       exploreLibraryId: exploreLibrary.libraryId,
       exploreLibraryPath: exploreLibrary.path,
       exploreLibraryDescription: exploreLibrary.description,
+      exploreSelectionMode,
       selectionSeed: suite.selectionSeed,
+      requestedExploreCaseIds,
       coreCaseCount: suite.coreCaseCount,
       exploreCaseCount: suite.exploreCaseCount,
       totalCaseCount: suite.totalCaseCount,
@@ -1111,6 +1168,7 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
       readinessResult,
       batchPreflight,
       roundSummary,
+      followupSuggestion,
       cases: caseResults.map((result) => ({
         caseId: result.caseId,
         strategicGoal: result.strategicGoal,
@@ -1145,6 +1203,9 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
         ),
     };
     writeJson(path.join(batchRoot, 'summary.json'), summary);
+    if (followupSuggestion.focusAvailable) {
+      writeJson(path.join(batchRoot, 'focus_followup.json'), followupSuggestion);
+    }
     return summary;
   } finally {
     await client.close();
@@ -1174,6 +1235,7 @@ if (require.main === module) {
 
 module.exports = {
   buildCaseLoopArguments,
+  buildFollowupSuggestion,
   buildBatchPreflight,
   buildBlockedCaseResult,
   buildScenarioSuite,
@@ -1185,6 +1247,7 @@ module.exports = {
   loadPolicyBudget,
   loadPolicyRuntime,
   parseArgs,
+  parseCsvList,
   resolvePolicyPath,
   runEvalProposalQueue,
   runPatchDraftSynthesis,
@@ -1192,5 +1255,6 @@ module.exports = {
   runStrategicSelfImprovementBatch,
   scoreReplyContract,
   selectExploreCases,
+  selectExploreCasesByIds,
   summarizeRound,
 };
