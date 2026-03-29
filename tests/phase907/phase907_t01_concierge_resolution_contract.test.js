@@ -45,6 +45,11 @@ test('phase907: resolution response attaches only phase1-safe official links and
   assert.equal(response.official_links.length, 1);
   assert.equal(response.official_links[0].url, 'https://www.ssa.gov/number-card');
   assert.equal(response.evidenceRefs.length, 1);
+  assert.equal(response.service_surface, 'template');
+  assert.equal(response.serviceSurface, 'template');
+  assert.equal(Array.isArray(response.templateActions), true);
+  assert.equal(response.templateActions[0] && response.templateActions[0].type, 'uri');
+  assert.equal(response.templateActions[0] && response.templateActions[0].uri, 'https://www.ssa.gov/number-card');
   assert.match(response.replyText, /公式リンク:/);
   assert.match(response.replyText, /https:\/\/www\.ssa\.gov\/number-card/);
   assert.ok(!response.replyText.includes('https://example-blog.com/ssn'));
@@ -63,5 +68,7 @@ test('phase907: no-new-facts shaping suppresses links and menu hints when they a
   assert.equal(response.next_best_action, null);
   assert.equal(response.menu_hint, null);
   assert.equal(response.quickReplies.length, 0);
+  assert.equal(response.service_surface, 'text');
+  assert.equal(response.templateActions.length, 0);
   assert.ok(!response.replyText.includes('公式リンク:'));
 });

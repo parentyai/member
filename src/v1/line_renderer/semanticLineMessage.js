@@ -28,11 +28,20 @@ function buildQuickReplyObject(items) {
 }
 
 function buildTemplateActions(items) {
-  return (Array.isArray(items) ? items : []).slice(0, 4).map((row) => ({
-    type: 'message',
-    label: row.label,
-    text: row.text
-  }));
+  return (Array.isArray(items) ? items : []).slice(0, 4).map((row) => {
+    if (row && row.type === 'uri') {
+      return {
+        type: 'uri',
+        label: row.label,
+        uri: row.uri
+      };
+    }
+    return {
+      type: 'message',
+      label: row.label,
+      text: row.text
+    };
+  });
 }
 
 function buildSemanticFlexMessage(semantic, text) {
@@ -116,6 +125,7 @@ function buildSemanticLineMessage(params) {
     requestedSurface: semantic.service_surface,
     text: responseMarkdown,
     quickReplies: semantic.quick_replies,
+    templateActions: payload.templateActions,
     handoffRequired: ['OFFERED', 'REQUIRED', 'IN_PROGRESS'].includes(semantic.handoff_state),
     miniAppUrl: payload.miniAppUrl,
     liffUrl: payload.liffUrl
@@ -130,7 +140,7 @@ function buildSemanticLineMessage(params) {
   }
 
   if (surfacePlan.surface === 'template') {
-    const templateMessage = buildSemanticTemplateMessage(semantic, responseMarkdown, surfacePlan.quickReplies);
+    const templateMessage = buildSemanticTemplateMessage(semantic, responseMarkdown, surfacePlan.templateActions);
     if (templateMessage) {
       return {
         message: templateMessage,
