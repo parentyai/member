@@ -176,6 +176,15 @@ async function handleQualityPatrolQuery(req, res, deps) {
           desktopPatrolPromotionReviewKind: desktopPatrolSummary && desktopPatrolSummary.promotionReview
             ? desktopPatrolSummary.promotionReview.latestReviewArtifactKind || null
             : null,
+          desktopPatrolPromotionReviewProposalId: desktopPatrolSummary && desktopPatrolSummary.promotionReview
+            ? desktopPatrolSummary.promotionReview.latestProposalId || null
+            : null,
+          desktopPatrolPromotionReviewStatus: desktopPatrolSummary && desktopPatrolSummary.promotionReview
+            ? desktopPatrolSummary.promotionReview.reviewStatus || null
+            : null,
+          desktopPatrolPromotionReviewDraftPrRef: desktopPatrolSummary && desktopPatrolSummary.promotionReview
+            ? desktopPatrolSummary.promotionReview.latestDraftPrRef || null
+            : null,
           desktopPatrolPromotionReviewBranch: desktopPatrolSummary && desktopPatrolSummary.promotionReview
             ? desktopPatrolSummary.promotionReview.branchName || null
             : null,

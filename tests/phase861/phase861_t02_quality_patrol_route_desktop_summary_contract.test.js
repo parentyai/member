@@ -64,6 +64,7 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
       promotionReview: {
         latestProposalId: 'prop_002',
         reviewStatus: 'ready_for_human_code_edit',
+        latestDraftPrRef: 'refs/pull/2002/head',
         latestReviewArtifactKind: 'code_edit_task',
         branchName: 'codex/line-desktop-patrol-prop-002',
         updatedAt: '2026-03-27T22:59:00.000Z'
@@ -126,7 +127,10 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
     'review bundle を確認して patch draft を選別する'
   );
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionBatchUpdatedAt, '2026-03-27T23:02:00.000Z');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewProposalId, 'prop_002');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewStatus, 'ready_for_human_code_edit');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewKind, 'code_edit_task');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewDraftPrRef, 'refs/pull/2002/head');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewBranch, 'codex/line-desktop-patrol-prop-002');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewUpdatedAt, '2026-03-27T22:59:00.000Z');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalStage, 'code_apply_signoff');

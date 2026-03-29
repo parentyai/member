@@ -377,6 +377,13 @@ Typical fields:
   - `desktopPatrolSummary.promotionReview.codeApplyDraftRef`
   - `desktopPatrolSummary.promotionReview.codeReviewPacketRef`
   - `desktopPatrolSummary.promotionReview.updatedAt`
+- admin quality patrol desktop review audit payload summary:
+  - `desktopPatrolPromotionReviewProposalId`
+  - `desktopPatrolPromotionReviewStatus`
+  - `desktopPatrolPromotionReviewKind`
+  - `desktopPatrolPromotionReviewDraftPrRef`
+  - `desktopPatrolPromotionReviewBranch`
+  - `desktopPatrolPromotionReviewUpdatedAt`
 - admin desktop summary promotion approval view:
   - `desktopPatrolSummary.promotionApproval.latestProposalId`
   - `desktopPatrolSummary.promotionApproval.approvalStage`
