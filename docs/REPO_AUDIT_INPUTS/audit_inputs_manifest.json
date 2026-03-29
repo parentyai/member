@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-29T16:03:58.217Z",
-  "gitCommit": "81ad0145ed064670367eff78979e34f52102481d",
-  "branch": "codex/desktop-review-summary-T017",
-  "sourceDigest": "4c2304a2ce8eafc5097a7bc60c2f50058aa9f7d1740bc5b9cb46b02e1fb6ca0d",
+  "generatedAt": "2026-03-29T20:59:01.979Z",
+  "gitCommit": "cfb9ab021f2c205b3f5fb71889958a8dd1d8ced0",
+  "branch": "codex/line-desktop-runtime-fix-T018",
+  "sourceDigest": "12f8f10c8d09761c52796933f54b732b956ac8c0c4f98ff4d6aa1f5c4f5bb110",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "418f67591b9e70f7a64dff62c3af4917f667c31090dd5a2d4a00691884c4d0f7",
+      "sha256": "bcbccd4cbe481a185f79b1cb9010583292f23fc09352d83af150db1a37963a7b",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "6031127dae78e79c97f5498416152365a89e72813e133ec83958d229164806f1",
+      "sha256": "cc0ac79826f55b385b31baaa1bf4c690e6e61fb021364ae422f533616f35c07f",
       "bytes": 487
     },
     {
@@ -151,7 +151,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "a372442988eacdb97576b352cd0a60d1216a70594237744880642389dc1b76aa",
+      "sha256": "6c5ded61a085ec2d126edaab4c7234188a9d0978985678d26207ef0baac8e1df",
       "bytes": 740
     },
     {
@@ -166,13 +166,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "f29d02135c8cdad21037837cb1a3669bf1d252e54c2babe39eacd84f9656d284",
+      "sha256": "4b7ce5ad00f4ebc28b06496a1c55126a90ccf90c4918ebdaab826b476e8d4e33",
       "bytes": 3680
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "c6f92ad94632aa6c9b01e2721389b79ddbef2e23e3f121f7aa37aa997c512783",
-      "bytes": 2419
+      "sha256": "89832d68929d4445ff5c38147bc74f0afc1e6cebe3e166cb5cafa8a849ed1f27",
+      "bytes": 2421
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",

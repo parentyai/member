@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-29T12:01:10-04:00",
-  "gitCommit": "81ad0145ed064670367eff78979e34f52102481d",
-  "branch": "codex/desktop-review-summary-T017",
-  "sourceDigest": "bf75b8c3bfd6b765ab14ccd994bb193646bba663aca88937a7d41b2534ade008",
+  "generatedAt": "2026-03-29T16:57:01-04:00",
+  "gitCommit": "cfb9ab021f2c205b3f5fb71889958a8dd1d8ced0",
+  "branch": "codex/line-desktop-runtime-fix-T018",
+  "sourceDigest": "252321d84fff6740c8608f319de732004e38474448ed80d6714efee0621b18d1",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
