@@ -235,6 +235,27 @@ test('phase734: domain fallback keeps context domain for short follow-up', () =>
   assert.equal(result.replyText.includes('ですねは'), false);
 });
 
+test('phase734: contextual school docs followup keeps restored domain contract and avoids fabricated docs', () => {
+  const result = generatePaidDomainConciergeReply({
+    domainIntent: 'school',
+    messageText: '手続きに必要なしょるい',
+    followupIntent: 'docs_required',
+    recentFollowupIntents: ['next_step'],
+    recentResponseHints: ['最初に学区と対象校を確認して、必要書類と受付期限を整理すると進めやすいです。'],
+    requestContract: {
+      requestShape: 'answer',
+      outputForm: 'default',
+      primaryDomainIntent: 'general',
+      detailObligations: ['avoid_question_back']
+    }
+  });
+
+  assert.equal(result.preserveReplyText, true);
+  assert.equal(String(result.replyText || '').split('\n').filter((line) => line.trim()).length, 1);
+  assert.match(result.replyText, /必要書類一覧|受付期限/);
+  assert.equal(/住所証明|予防接種/.test(result.replyText), false);
+});
+
 test('phase734: general presets answer plan difference and time horizon prompts directly', () => {
   const pricing = generatePaidDomainConciergeReply({
     domainIntent: 'general',
@@ -280,6 +301,25 @@ test('phase734: general kickoff and ssn-vs-banking prompts answer directly witho
   assert.match(compare.replyText, /先にSSN/);
   assert.match(compare.replyText, /理由/);
   assert.match(compare.replyText, /銀行|口座/);
+});
+
+test('phase734: strategic kickoff and close prompts stay concise without stale reset', () => {
+  const kickoffGuide = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: '初回案内として、最初に見るものを1つだけ教えて。'
+  });
+  assert.equal(String(kickoffGuide.replyText || '').split('\n').length, 1);
+  assert.match(kickoffGuide.replyText, /期限/);
+  assert.match(kickoffGuide.replyText, /公式/);
+  assert.match(kickoffGuide.replyText, /案内/);
+  assert.equal(/[?？]$/.test(kickoffGuide.replyText), false);
+
+  const closeGuide = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: 'ジャーニーを閉じる感じで、今日の順番を2行だけ。'
+  });
+  const closeLines = String(closeGuide.replyText || '').split('\n').map((line) => line.trim()).filter(Boolean);
+  assert.deepEqual(closeLines, ['先に期限を確認する。', '次に必要書類か予約要否を確認する。']);
 });
 
 test('phase734: utility transformation and correction presets stay concise and task-shaped', () => {

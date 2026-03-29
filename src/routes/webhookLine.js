@@ -923,29 +923,40 @@ async function buildPaidDomainConciergeResult(params) {
 async function replyWithPaidDomainConcierge(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const result = await buildPaidDomainConciergeResult(payload);
-  const conciergeResolution = buildConversationConciergeEnvelope({
-    lane: 'paid_domain',
-    baseReplyText: result.replyText,
-    domainIntent: payload.domainIntent || (result.conversationQuality && result.conversationQuality.domainIntent) || 'general',
-    topic: payload.domainIntent || (result.conversationQuality && result.conversationQuality.domainIntent) || 'general',
-    nextSteps: result.atoms && Array.isArray(result.atoms.nextActions) ? result.atoms.nextActions : [],
-    followUpQuestion: result.atoms && typeof result.atoms.followupQuestion === 'string'
-      ? result.atoms.followupQuestion
-      : null,
-    officialLinkCandidates: result.conciergeMeta && Array.isArray(result.conciergeMeta.urls) ? result.conciergeMeta.urls : [],
-    blockerNotes: result.conciergeMeta && Array.isArray(result.conciergeMeta.blockedReasons) ? result.conciergeMeta.blockedReasons : [],
-    readinessDecision: result.conciergeMeta && typeof result.conciergeMeta.readinessDecision === 'string'
-      ? result.conciergeMeta.readinessDecision
-      : null,
-    sourceFreshnessScore: result.conciergeMeta && Number.isFinite(Number(result.conciergeMeta.sourceFreshnessScore))
-      ? Number(result.conciergeMeta.sourceFreshnessScore)
-      : null,
-    sourceReadinessDecision: result.conciergeMeta && typeof result.conciergeMeta.sourceReadinessDecision === 'string'
-      ? result.conciergeMeta.sourceReadinessDecision
-      : null,
-    officialOnlySatisfied: result.conciergeMeta ? result.conciergeMeta.officialOnlySatisfied === true : false
+  const storedCityPackCandidates = await resolveCityPackStoredCandidatesFromSignals(result.integrationSignals).catch(() => []);
+  const mergedOfficialLinkCandidates = []
+    .concat(result.conciergeMeta && Array.isArray(result.conciergeMeta.urls) ? result.conciergeMeta.urls : [])
+    .concat(storedCityPackCandidates);
+  const mergedConciergeMeta = Object.assign({}, result.conciergeMeta || {}, {
+    urls: mergedOfficialLinkCandidates,
+    urlCount: mergedOfficialLinkCandidates.length
   });
-  const semanticReplyEnvelope = buildSemanticReplyEnvelope(mergeSemanticReplyParams({
+  const shouldBypassResolutionEnvelope = result.preserveReplyText === true && mergedOfficialLinkCandidates.length === 0;
+  const conciergeResolution = shouldBypassResolutionEnvelope
+    ? null
+    : buildConversationConciergeEnvelope({
+      lane: 'paid_domain',
+      baseReplyText: result.replyText,
+      domainIntent: payload.domainIntent || (result.conversationQuality && result.conversationQuality.domainIntent) || 'general',
+      topic: payload.domainIntent || (result.conversationQuality && result.conversationQuality.domainIntent) || 'general',
+      nextSteps: result.atoms && Array.isArray(result.atoms.nextActions) ? result.atoms.nextActions : [],
+      followUpQuestion: result.atoms && typeof result.atoms.followupQuestion === 'string'
+        ? result.atoms.followupQuestion
+        : null,
+      officialLinkCandidates: mergedOfficialLinkCandidates,
+      blockerNotes: mergedConciergeMeta && Array.isArray(mergedConciergeMeta.blockedReasons) ? mergedConciergeMeta.blockedReasons : [],
+      readinessDecision: mergedConciergeMeta && typeof mergedConciergeMeta.readinessDecision === 'string'
+        ? mergedConciergeMeta.readinessDecision
+        : null,
+      sourceFreshnessScore: mergedConciergeMeta && Number.isFinite(Number(mergedConciergeMeta.sourceFreshnessScore))
+        ? Number(mergedConciergeMeta.sourceFreshnessScore)
+        : null,
+      sourceReadinessDecision: mergedConciergeMeta && typeof mergedConciergeMeta.sourceReadinessDecision === 'string'
+        ? mergedConciergeMeta.sourceReadinessDecision
+        : null,
+      officialOnlySatisfied: mergedConciergeMeta ? mergedConciergeMeta.officialOnlySatisfied === true : false
+    });
+  const semanticBaseParams = {
     replyText: result.replyText,
     domainIntent: payload.domainIntent || (result.conversationQuality && result.conversationQuality.domainIntent) || 'general',
     conversationMode: result.opportunityDecision && result.opportunityDecision.conversationMode
@@ -954,36 +965,53 @@ async function replyWithPaidDomainConcierge(params) {
     eventSource: payload.eventSource,
     pathType: 'slow',
     uUnits: ['U-05', 'U-06', 'U-09', 'U-10', 'U-11', 'U-12', 'U-13', 'U-16', 'U-17', 'U-23'],
-    nextSteps: result.atoms && Array.isArray(result.atoms.nextActions) ? result.atoms.nextActions : [],
-    followupQuestion: result.atoms && typeof result.atoms.followupQuestion === 'string'
-      ? result.atoms.followupQuestion
-      : null,
-    warnings: result.conciergeMeta && Array.isArray(result.conciergeMeta.blockedReasons)
-      ? result.conciergeMeta.blockedReasons
-      : [],
+    nextSteps: shouldBypassResolutionEnvelope
+      ? []
+      : (result.atoms && Array.isArray(result.atoms.nextActions) ? result.atoms.nextActions : []),
+    followupQuestion: shouldBypassResolutionEnvelope
+      ? null
+      : (result.atoms && typeof result.atoms.followupQuestion === 'string'
+        ? result.atoms.followupQuestion
+        : null),
+    warnings: shouldBypassResolutionEnvelope
+      ? []
+      : (mergedConciergeMeta && Array.isArray(mergedConciergeMeta.blockedReasons)
+        ? mergedConciergeMeta.blockedReasons
+        : []),
     legalSnapshot: payload.legalSnapshot || null,
-    sourceAuthorityScore: result.conciergeMeta && Number.isFinite(Number(result.conciergeMeta.sourceAuthorityScore))
-      ? Number(result.conciergeMeta.sourceAuthorityScore)
+    sourceAuthorityScore: mergedConciergeMeta && Number.isFinite(Number(mergedConciergeMeta.sourceAuthorityScore))
+      ? Number(mergedConciergeMeta.sourceAuthorityScore)
       : null,
-    sourceFreshnessScore: result.conciergeMeta && Number.isFinite(Number(result.conciergeMeta.sourceFreshnessScore))
-      ? Number(result.conciergeMeta.sourceFreshnessScore)
+    sourceFreshnessScore: mergedConciergeMeta && Number.isFinite(Number(mergedConciergeMeta.sourceFreshnessScore))
+      ? Number(mergedConciergeMeta.sourceFreshnessScore)
       : null,
-    sourceReadinessDecision: result.conciergeMeta && typeof result.conciergeMeta.sourceReadinessDecision === 'string'
-      ? result.conciergeMeta.sourceReadinessDecision
+    sourceReadinessDecision: mergedConciergeMeta && typeof mergedConciergeMeta.sourceReadinessDecision === 'string'
+      ? mergedConciergeMeta.sourceReadinessDecision
       : null,
-    officialOnlySatisfied: result.conciergeMeta ? result.conciergeMeta.officialOnlySatisfied === true : false,
-    readinessDecision: result.conciergeMeta && typeof result.conciergeMeta.readinessDecision === 'string'
-      ? result.conciergeMeta.readinessDecision
+    officialOnlySatisfied: mergedConciergeMeta ? mergedConciergeMeta.officialOnlySatisfied === true : false,
+    readinessDecision: mergedConciergeMeta && typeof mergedConciergeMeta.readinessDecision === 'string'
+      ? mergedConciergeMeta.readinessDecision
       : null,
-    readinessReasonCodes: result.conciergeMeta && Array.isArray(result.conciergeMeta.readinessReasonCodes)
-      ? result.conciergeMeta.readinessReasonCodes
+    readinessReasonCodes: mergedConciergeMeta && Array.isArray(mergedConciergeMeta.readinessReasonCodes)
+      ? mergedConciergeMeta.readinessReasonCodes
       : []
-  }, conciergeResolution));
+  };
+  const semanticReplyEnvelope = buildSemanticReplyEnvelope(
+    conciergeResolution
+      ? mergeSemanticReplyParams(semanticBaseParams, conciergeResolution)
+      : semanticBaseParams
+  );
+  const finalReplyEnvelope = shouldBypassResolutionEnvelope
+    ? Object.assign({}, semanticReplyEnvelope, {
+      replyText: result.replyText,
+      lineMessage: { type: 'text', text: result.replyText }
+    })
+    : semanticReplyEnvelope;
   await payload.replyFn(
     payload.replyToken,
-    semanticReplyEnvelope.lineMessage || { type: 'text', text: semanticReplyEnvelope.replyText }
+    finalReplyEnvelope.lineMessage || { type: 'text', text: finalReplyEnvelope.replyText }
   );
-  return Object.assign({}, result, semanticReplyEnvelope);
+  return Object.assign({}, result, { conciergeMeta: mergedConciergeMeta }, finalReplyEnvelope);
 }
 
 async function replyWithPaidHousingConcierge(params) {
@@ -1113,6 +1141,10 @@ async function resolveCityPackStoredCandidatesFromRetrieval(retrieval) {
       // fail closed
     }
   }
+  return resolveSourceRefCandidatesFromIds(sourceRefIds);
+}
+
+async function resolveSourceRefCandidatesFromIds(sourceRefIds) {
   const refs = uniqueStringList(sourceRefIds);
   if (!refs.length) return [];
   const rows = await Promise.all(refs.map(async (sourceRefId) => {
@@ -1137,6 +1169,17 @@ async function resolveCityPackStoredCandidatesFromRetrieval(retrieval) {
     }
   }));
   return rows.filter(Boolean);
+}
+
+async function resolveCityPackStoredCandidatesFromSignals(signals) {
+  const payload = signals && typeof signals === 'object' ? signals : {};
+  const sourceSnapshot = payload.cityPackSourceSnapshot && typeof payload.cityPackSourceSnapshot === 'object'
+    ? payload.cityPackSourceSnapshot
+    : null;
+  const sourceRefIds = sourceSnapshot && Array.isArray(sourceSnapshot.sourceRefIds)
+    ? sourceSnapshot.sourceRefIds
+    : [];
+  return resolveSourceRefCandidatesFromIds(sourceRefIds);
 }
 
 async function resolveStoredCandidatesForPaid(paid, options) {
@@ -1331,6 +1374,15 @@ async function buildBlockedFallbackContext(params) {
       || payload.domainIntent
   );
   const followupIntent = normalizeFollowupIntent(packet.followupIntent);
+  const recentDomainIntent = Array.isArray(packet.recentDomains)
+    ? normalizeDomainIntent(packet.recentDomains[0])
+    : 'general';
+  const fallbackDomainIntent = domainIntent !== 'general'
+    ? domainIntent
+    : (followupIntent && recentDomainIntent !== 'general' ? recentDomainIntent : domainIntent);
+  const explicitPaidDomain = domainIntent !== 'general'
+    && packet.requestContract
+    && packet.requestContract.currentTurnHasExplicitDomain === true;
   const hasContextualPaidDomain = domainIntent !== 'general'
     && (
       packet.priorContextUsed === true
@@ -1338,10 +1390,10 @@ async function buildBlockedFallbackContext(params) {
       || (typeof packet.contextResumeDomain === 'string' && packet.contextResumeDomain.trim().length > 0)
       || (typeof packet.sourceDomainIntent === 'string' && packet.sourceDomainIntent.trim().length > 0)
     );
-  if (!hasContextualPaidDomain && !followupIntent) return null;
+  if (!hasContextualPaidDomain && !followupIntent && explicitPaidDomain !== true) return null;
 
   return {
-    domainIntent,
+    domainIntent: fallbackDomainIntent,
     requestContract: withBlockedFallbackDetailObligations(packet.requestContract, { followupIntent }),
     contextResumeDomain: packet.contextResumeDomain || null,
     followupIntent,

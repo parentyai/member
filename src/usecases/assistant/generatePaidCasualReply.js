@@ -13,7 +13,7 @@ const CONTEXT_LABEL_MAP = Object.freeze({
 
 const CASUAL_FOLLOWUP_DIRECT_ANSWER_MAP = Object.freeze({
   school: {
-    docs_required: '学校手続きは、住所証明と予防接種記録を先にそろえると止まりにくいです。',
+    docs_required: '学校手続きは、対象校の必要書類一覧と受付期限を先に見ると止まりにくいです。',
     appointment_needed: '学校登録や面談は予約制のことがあるので、対象校が決まったら予約要否を確認しましょう。',
     next_step: '次は、対象校を1校に絞って必要書類を先に確定するのが最短です。'
   },

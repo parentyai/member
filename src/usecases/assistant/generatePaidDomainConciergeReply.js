@@ -38,7 +38,7 @@ const DOMAIN_SPECS = Object.freeze({
     pitfall: '提出書類の不足や期限超過で入学手続きが止まりやすくなります。',
     question: '学年と希望エリアを教えてもらえますか？',
     directAnswers: {
-      docs_required: '学校手続きで先にそろえるのは、住所証明と予防接種記録です。',
+      docs_required: '学校手続きで先に見るのは、対象校の必要書類一覧と受付期限です。',
       appointment_needed: '面談や学校登録は予約制のことが多いので、対象校が決まったら先に空き枠を確認しましょう。',
       next_step: '学校手続きの次は、対象校を1校に絞って必要書類を先に確定するのが最短です。'
     }
@@ -150,6 +150,18 @@ function resolveDomainIntent(value, fallback) {
   }
   if (intent && Object.prototype.hasOwnProperty.call(DOMAIN_SPECS, intent)) return intent;
   return 'general';
+}
+
+function resolveEffectiveContractDomainIntent(requestContract, payloadDomainIntent, contextResumeDomain) {
+  const contractDomainIntent = resolveDomainIntent(
+    requestContract && requestContract.primaryDomainIntent,
+    contextResumeDomain
+  );
+  const payloadDomain = resolveDomainIntent(payloadDomainIntent, contextResumeDomain);
+  if (contractDomainIntent === 'general' && payloadDomain !== 'general') {
+    return payloadDomain;
+  }
+  return contractDomainIntent;
 }
 
 function buildContextActions(context) {
@@ -638,7 +650,11 @@ function isSingleTodoImperativePrompt(messageText) {
 }
 
 function isTwoLineClosePrompt(messageText) {
-  return /((最後に).*(今日やる順番).*(2行|二行)でまとめて)/i.test(normalizeText(messageText));
+  return /(((最後に)|(ジャーニーを閉じる感じで?)).*(今日やる順番|今日の順番).*((2行|二行)(でまとめて|だけ)?))/i.test(normalizeText(messageText));
+}
+
+function isInitialKickoffGuidePrompt(messageText) {
+  return /((初回案内として).*(最初に見るもの).*((1つ|一つ)だけ))/i.test(normalizeText(messageText));
 }
 
 function isParentFriendlyOneLinePrompt(messageText) {
@@ -671,8 +687,12 @@ function buildOfficialSinglePointLine(domainIntent) {
   return 'あとで公式確認が必要なのは、受付期限が公式窓口の案内と一致しているかです';
 }
 
+function buildSchoolDocsChecklistLine() {
+  return '対象校の必要書類一覧と受付期限です';
+}
+
 function buildDocumentPairLine(domainIntent) {
-  if (domainIntent === 'school') return '住所証明と予防接種記録です';
+  if (domainIntent === 'school') return buildSchoolDocsChecklistLine();
   if (domainIntent === 'housing') return '住所証明と本人確認書類です';
   if (domainIntent === 'ssn') return '本人確認書類と在留資格書類です';
   if (domainIntent === 'banking') return '本人確認書類と住所証明です';
@@ -703,6 +723,12 @@ function buildTwoLineCloseLines(domainIntent) {
   return ['先に期限を確認する', '次に必要書類か予約要否を確認する'];
 }
 
+function buildInitialKickoffGuideLine(domainIntent) {
+  if (domainIntent === 'school') return '最初に見るのは、学校の期限が出ている公式案内です';
+  if (domainIntent === 'housing') return '最初に見るのは、住まい手続きの期限が出ている公式案内です';
+  return '最初に見るのは、期限が出ている公式案内です';
+}
+
 function buildParentFriendlyOneLine(domainIntent) {
   if (domainIntent === 'school') {
     return '最初に期限を見てから、必要な書類を決めれば大丈夫です';
@@ -725,6 +751,9 @@ function buildStrategicHumanReplyLines(params) {
     : {};
   const locationHintKind = normalizeText(locationHint.kind).toLowerCase();
 
+  if (isInitialKickoffGuidePrompt(messageText)) {
+    return [buildInitialKickoffGuideLine(domainIntent)];
+  }
   if (isSingleCityCheckpointPrompt(messageText) || ((locationHintKind === 'city' || locationHintKind === 'regionkey') && /(最初の確認先|確認先を(1つ|一つ)だけ)/i.test(messageText))) {
     return [buildSingleCityCheckpointLine(domainIntent)];
   }
@@ -769,7 +798,11 @@ function buildContractReply(params) {
     ? requestContract.locationHint
     : {};
   const locationHintKind = normalizeText(locationHint.kind).toLowerCase();
-  const domainIntent = resolveDomainIntent(requestContract.primaryDomainIntent || payload.domainIntent, payload.contextResumeDomain);
+  const domainIntent = resolveEffectiveContractDomainIntent(
+    requestContract,
+    payload.domainIntent,
+    payload.contextResumeDomain
+  );
   const followupIntent = normalizeText(payload.followupIntent).toLowerCase();
   const domainSignals = Array.isArray(requestContract.domainSignals) ? requestContract.domainSignals : [];
   const sourceReplyText = normalizeText(requestContract.sourceReplyText || payload.sourceReplyText);
@@ -784,7 +817,7 @@ function buildContractReply(params) {
   if (strategicReplyLines.length > 0) {
     lines.push(...strategicReplyLines);
   } else if (followupIntent === 'docs_required' && domainIntent === 'school' && /(必要|書類|しょるい|提出物)/.test(messageText)) {
-    lines.push('学校手続きで先にそろえるのは、住所証明と予防接種記録です');
+    lines.push('学校手続きで先に見るのは、対象校の必要書類一覧と受付期限です');
   } else if (depthIntent === 'deepen' && sourceReplyText) {
     lines.push(...buildDeepenReplyFromSource(sourceReplyText, domainIntent, messageText));
   } else if (requestShape === 'followup_continue' && sourceReplyText) {
@@ -825,7 +858,7 @@ function buildContractReply(params) {
         lines.push('次に、内見候補を3件までに絞って必要書類を確認すると進めやすいです');
       } else {
         lines.push('了解です。学校優先で見るなら、学区と対象校の条件を先に確認しましょう');
-        lines.push('次に、住所証明や予防接種記録など必要書類をまとめると進めやすいです');
+        lines.push('次に、対象校ごとの必要書類一覧をまとめると進めやすいです');
       }
     } else if (outputForm === 'message_only') {
       lines.push(buildMessageTemplateFromSource(sourceReplyText, domainIntent));
@@ -1124,7 +1157,7 @@ function resolvePresetReply(params) {
   if (/(((住まい|住居|住宅|引っ越し|家探し|部屋探し).*(じゃなくて|ではなく|より).*(学校|学区|入学|転校))|(学校優先で考え直して|学校優先))/i.test(messageText)) {
     return buildPresetReply({
       primaryLine: '了解です。学校優先で見るなら、学区と対象校の条件を先に確認しましょう',
-      secondaryLine: '次に、住所証明や予防接種記録など必要書類をまとめると進めやすいです'
+      secondaryLine: '次に、対象校ごとの必要書類一覧をまとめると進めやすいです'
     });
   }
 
@@ -1331,6 +1364,11 @@ function buildConciseReply(parts) {
   const questionLine = question
     ? (/[?？]$/.test(question) ? question : `${question}？`)
     : '';
+  const shouldPreserveFollowupReply = Boolean(followupIntent)
+    && (
+      hasDetailObligation(requestContract, 'avoid_question_back')
+      || normalizeText(requestContract.answerability).toLowerCase() === 'answer_now'
+    );
 
   const lines = [primaryLine];
   if (followupIntent) {
@@ -1349,7 +1387,8 @@ function buildConciseReply(parts) {
   const replyText = trimForLineMessage((shapedLines.length ? shapedLines : lines.filter(Boolean)).slice(0, lineLimit).join('\n'));
   return {
     replyText,
-    preserveReplyText: requestContract.outputForm && requestContract.outputForm !== 'default',
+    preserveReplyText: shouldPreserveFollowupReply
+      || (requestContract.outputForm && requestContract.outputForm !== 'default'),
     atoms: {
       situationLine: shapedLines[0] || primaryLine,
       nextActions: actionLine && actionLine !== primaryLine ? [actionLine] : [],

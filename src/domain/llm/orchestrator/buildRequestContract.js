@@ -26,6 +26,24 @@ function similarityScore(left, right) {
   return overlap / Math.max(a.length, b.length);
 }
 
+function isReasonCarryLine(value) {
+  return /^(理由は|理由としては).*(からです|ためです)[。.]?$/i.test(normalizeText(value));
+}
+
+function hasReasonCarryLine(value) {
+  return normalizeText(value)
+    .split('\n')
+    .map((line) => normalizeText(line))
+    .some((line) => isReasonCarryLine(line));
+}
+
+function isSourceEchoMatch(messageText, candidateText) {
+  const threshold = isReasonCarryLine(messageText) && isReasonCarryLine(candidateText)
+    ? 0.55
+    : 0.86;
+  return similarityScore(messageText, candidateText) >= threshold;
+}
+
 function uniqueList(values, limit) {
   const rows = Array.isArray(values) ? values : [];
   const max = Number.isFinite(Number(limit)) ? Math.max(0, Math.floor(Number(limit))) : 8;
@@ -115,14 +133,27 @@ function resolveCorrectionPreferredDomain(messageText, explicitDomainSignals) {
 function detectOutputForm(messageText) {
   const text = normalizeText(messageText);
   if (!text) return 'default';
+  if (isJourneyClosePrompt(text)) return 'two_sentences';
   if (/(相手に送る文面だけ|文面だけ|返信文だけ|送る文面|メッセージだけ)/i.test(text)) return 'message_only';
   if (/(失礼なく|丁寧に|やわらかい敬語|失礼のない)/i.test(text)) return 'polite_template';
   if (/(断定しすぎない|断定せずに|言い切らない|やわらかく提案)/i.test(text)) return 'non_dogmatic';
   if (/(判断基準だけ|確認する項目名だけ|何を確認すべきかだけ|項目名だけ並べて)/i.test(text)) return 'criteria_only';
   if (/(1行にして|一行にして|1行だけ|一行だけ|1文で|一文で|1文にして|一文にして|1文だけ|一文だけ)/i.test(text)) return 'one_line';
-  if (/(2文にして|二文にして|2文だけ|二文だけ|2行で|二行で)/i.test(text)) return 'two_sentences';
+  if (/(2文にして|二文にして|2文だけ|二文だけ|2行で|二行で|2行だけ|二行だけ)/i.test(text)) return 'two_sentences';
   if (/(事務的すぎない|事務的じゃない|少し硬い|人に話す感じ|やさしくしたい)/i.test(text)) return 'softer';
   return 'default';
+}
+
+function isInitialKickoffGuidePrompt(messageText) {
+  return /((初回案内として).*(最初に見るもの).*((1つ|一つ)だけ))/i.test(normalizeText(messageText));
+}
+
+function isJourneyClosePrompt(messageText) {
+  return /(((最後に)|(ジャーニーを閉じる感じで?)).*(今日やる順番|今日の順番).*((2行|二行)(でまとめて|だけ)?))/i.test(normalizeText(messageText));
+}
+
+function isStandaloneStrategicPrompt(messageText) {
+  return isInitialKickoffGuidePrompt(messageText) || isJourneyClosePrompt(messageText);
 }
 
 function isLowFrictionDirectPrompt(messageText) {
@@ -159,8 +190,18 @@ function detectRequestShape(messageText, options) {
   const payload = options && typeof options === 'object' ? options : {};
   const text = normalizeText(messageText);
   if (!text) return 'answer';
+  if (
+    payload.currentTurnHasExplicitDomain !== true
+    && isReasonCarryLine(text)
+    && hasReasonCarryLine(payload.latestAssistantReplyText)
+  ) {
+    return 'followup_continue';
+  }
   if (/(小学生の保護者向け).*(やさしい日本語).*(1文|一文)/i.test(text)) {
     return 'rewrite';
+  }
+  if (isStandaloneStrategicPrompt(text)) {
+    return 'summarize';
   }
   if (/(相手に送る文面だけ|文面だけ|返信文だけ|家族に送れる|家族に送る用|一文にして|短文を1つ作って|短文だけ|文章だけ|文面を作って)/i.test(text)) {
     return 'message_template';
@@ -252,7 +293,7 @@ function detectEchoOfPriorAssistant(messageText, recentResponseHints) {
   const text = normalizeText(messageText);
   const hints = Array.isArray(recentResponseHints) ? recentResponseHints : [];
   if (!text || !hints.length) return false;
-  return hints.slice(0, 2).some((hint) => similarityScore(text, hint) >= 0.86);
+  return hints.slice(0, 6).some((hint) => isSourceEchoMatch(text, hint));
 }
 
 function resolveMatchedPriorReply(messageText, recentReplyRows) {
@@ -264,7 +305,8 @@ function resolveMatchedPriorReply(messageText, recentReplyRows) {
     const normalized = normalizeReplyRow(row);
     const similarity = extractReplyCandidates(normalized)
       .reduce((max, candidateText) => Math.max(max, similarityScore(text, candidateText)), 0);
-    if (similarity < 0.86) return;
+    const matched = extractReplyCandidates(normalized).some((candidateText) => isSourceEchoMatch(text, candidateText));
+    if (matched !== true) return;
     if (!best || similarity > best.similarity || (similarity === best.similarity && index < best.index)) {
       best = {
         index,
@@ -280,7 +322,11 @@ function shouldUseLatestAssistantSource(requestShape, options) {
   const payload = options && typeof options === 'object' ? options : {};
   if (payload.matchedPriorReply === true || payload.echoOfPriorAssistant === true) return true;
   if (requestShape === 'correction' || requestShape === 'followup_continue') return true;
-  if (requestShape === 'summarize') return true;
+  if (requestShape === 'summarize') {
+    if (referencesPriorAssistantText(payload.messageText, payload)) return true;
+    if (isStandaloneStrategicPrompt(payload.messageText)) return false;
+    return true;
+  }
   if (requestShape === 'rewrite' || requestShape === 'message_template') {
     if (referencesPriorAssistantText(payload.messageText, payload)) return true;
     if (requestShape === 'message_template' && isStandaloneTemplatePrompt(payload.messageText)) return false;
@@ -388,7 +434,9 @@ function buildRequestContract(params) {
     recoverySignal: payload.recoverySignal === true,
     contextResumeCue: payload.contextResumeCue === true,
     echoOfPriorAssistant,
-    highRiskIntent
+    highRiskIntent,
+    currentTurnHasExplicitDomain,
+    latestAssistantReplyText: payload.latestAssistantReplyText
   });
   const sourceReplyText = resolveSourceReplyText(requestShape, matchedPriorReply, payload.latestAssistantReplyText, {
     messageText,
@@ -402,9 +450,10 @@ function buildRequestContract(params) {
     requestShape,
     sourceReplyText
   });
+  const sourceReplyAvailable = Boolean(sourceReplyText);
   const sourceReplyRow = resolveSourceReplyRow(sourceReplyText, matchedPriorReply, payload.recentReplyRows);
   const sourceOutputForm = normalizeText(
-    (sourceReplyRow && sourceReplyRow.outputForm) || payload.latestAssistantOutputForm
+    (sourceReplyRow && sourceReplyRow.outputForm) || (sourceReplyAvailable ? payload.latestAssistantOutputForm : '')
   ).toLowerCase();
   const outputForm = detectedOutputForm !== 'default'
     ? detectedOutputForm
@@ -427,10 +476,10 @@ function buildRequestContract(params) {
   });
   const sourceReplySignals = detectExplicitDomainSignals(sourceReplyText);
   const sourceDomainIntent = normalizeText(
-    (sourceReplyRow && sourceReplyRow.domainIntent) || payload.latestAssistantDomainIntent
+    (sourceReplyRow && sourceReplyRow.domainIntent) || (sourceReplyAvailable ? payload.latestAssistantDomainIntent : '')
   ).toLowerCase();
   const sourceFollowupIntent = normalizeText(
-    (sourceReplyRow && sourceReplyRow.followupIntent) || payload.latestAssistantFollowupIntent
+    (sourceReplyRow && sourceReplyRow.followupIntent) || (sourceReplyAvailable ? payload.latestAssistantFollowupIntent : '')
   ).toLowerCase();
   const echoGeneralMixedContinuation = requestShape === 'followup_continue'
     && echoOfPriorAssistant === true

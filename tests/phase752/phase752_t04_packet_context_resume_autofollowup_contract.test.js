@@ -112,7 +112,7 @@ test('phase752: history carry keeps previous followup intent for ultra-short con
         createdAt: new Date().toISOString(),
         domainIntent: 'school',
         followupIntent: 'docs_required',
-        replyText: '学校手続きは住所証明と予防接種記録を先にそろえるのが最優先です。'
+        replyText: '学校手続きは対象校の必要書類一覧と受付期限を先に見るのが最優先です。'
       }
     ],
     llmFlags: {}
@@ -339,6 +339,56 @@ test('phase752: two-line close prompt maps to two-sentence output form and suppr
 
   assert.equal(packet.outputForm, 'two_sentences');
   assert.equal(packet.detailObligations.includes('avoid_question_back'), true);
+});
+
+test('phase752: kickoff guide prompt does not inherit stale followup history', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_KICKOFF_GUIDE',
+    messageText: '初回案内として、最初に見るものを1つだけ教えて。',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'general',
+        followupIntent: 'docs_required',
+        replyText: '同じ書類確認なら、次は不足しやすい書類を1つずつ潰すのが最短です。\n次は提出先ごとの必要書類を先に分けて整理しましょう。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.requestShape, 'summarize');
+  assert.equal(packet.outputForm, 'default');
+  assert.equal(packet.contextResume, false);
+  assert.equal(packet.followupIntent, null);
+  assert.equal(packet.sourceReplyText, null);
+  assert.equal(packet.sourceFollowupIntent, null);
+  assert.equal(packet.normalizedConversationIntent, 'general');
+});
+
+test('phase752: journey close prompt avoids stale followup carry from unrelated latest reply', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_JOURNEY_CLOSE',
+    messageText: 'ジャーニーを閉じる感じで、今日の順番を2行だけ。',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'general',
+        followupIntent: 'docs_required',
+        replyText: '同じ書類確認なら、次は不足しやすい書類を1つずつ潰すのが最短です。\n次は提出先ごとの必要書類を先に分けて整理しましょう。'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.requestShape, 'summarize');
+  assert.equal(packet.outputForm, 'two_sentences');
+  assert.equal(packet.contextResume, false);
+  assert.equal(packet.followupIntent, null);
+  assert.equal(packet.sourceReplyText, null);
+  assert.equal(packet.sourceFollowupIntent, null);
+  assert.equal(packet.normalizedConversationIntent, 'general');
 });
 
 test('phase752: parent-friendly one-line rewrite keeps rewrite contract even with prior housing context', () => {
