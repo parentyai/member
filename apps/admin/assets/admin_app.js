@@ -4741,6 +4741,31 @@ function renderQualityPatrolDesktopSummary(result) {
           subtle: true
         }
       ),
+      createQualityPatrolCopyAction(
+        'Copy worktree path',
+        promotionApproval.worktreeRef && promotionApproval.worktreeRef.path
+          ? promotionApproval.worktreeRef.path
+          : '',
+        {
+          okMessage: 'worktree のパスをコピーしました',
+          failMessage: 'worktree のパスコピーに失敗しました',
+          subtle: true
+        }
+      ),
+      createQualityPatrolCopyAction(
+        'Copy candidate edit paths',
+        Array.isArray(promotionApproval.candidateEdits)
+          ? promotionApproval.candidateEdits
+            .map((item) => (item && typeof item.filePath === 'string' ? item.filePath.trim() : ''))
+            .filter(Boolean)
+            .join('\n')
+          : '',
+        {
+          okMessage: 'candidate edit path をコピーしました',
+          failMessage: 'candidate edit path のコピーに失敗しました',
+          subtle: true
+        }
+      ),
       createQualityPatrolAction(
         'Plan next step',
         () => { void runQualityPatrolApprovalPlan(); },
