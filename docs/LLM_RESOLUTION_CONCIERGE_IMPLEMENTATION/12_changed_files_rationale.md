@@ -18,9 +18,9 @@
 ## Updated runtime files
 
 - `src/routes/webhookLine.js`
-  - phase1 lane integration through existing semantic envelope
+  - existing semantic envelope keeps concierge merge hooks available, while broad paid/free lanes remain literal-preserving in phase1
 - `src/usecases/notifications/sendWelcomeMessage.js`
-  - welcome lane adopts concierge shaping
+  - welcome stays literal-preserving to keep frozen runtime contract intact
 - `src/v1/line_renderer/fallbackRenderer.js`
   - service ack adopts concierge shaping
 

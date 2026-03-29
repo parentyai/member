@@ -4,11 +4,6 @@ const { buildResolutionResponse } = require('./buildResolutionResponse');
 const { feedbackReceived, feedbackUsage } = require('../../cityPackFeedbackMessages');
 
 const PHASE1_CONCIERGE_LANES = new Set([
-  'paid_domain',
-  'paid_orchestrated',
-  'paid_main',
-  'paid_casual',
-  'free_retrieval',
   'welcome',
   'citypack_feedback_received',
   'citypack_feedback_usage',

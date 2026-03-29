@@ -21,17 +21,15 @@ const REPO_ROOT = path.resolve(__dirname, '../..');
 
 test('phase909: phase1 lane allowlist is fixed and excludes non-target families', () => {
   assert.deepEqual(Array.from(PHASE1_CONCIERGE_LANES), [
-    'paid_domain',
-    'paid_orchestrated',
-    'paid_main',
-    'paid_casual',
-    'free_retrieval',
     'welcome',
     'citypack_feedback_received',
     'citypack_feedback_usage',
     'service_ack'
   ]);
   assert.equal(isPhase1ConciergeLane('welcome'), true);
+  assert.equal(isPhase1ConciergeLane('service_ack'), true);
+  assert.equal(isPhase1ConciergeLane('paid_main'), false);
+  assert.equal(isPhase1ConciergeLane('free_retrieval'), false);
   assert.equal(isPhase1ConciergeLane('ready_after_binding_contract'), false);
   assert.equal(isPhase1ConciergeLane('operator'), false);
   assert.equal(isPhase1ConciergeLane('unknown'), false);
@@ -42,15 +40,10 @@ test('phase909: webhook and adjacent phase1 lanes are wired to concierge shaping
   const welcomeSource = read(path.join(REPO_ROOT, 'src/usecases/notifications/sendWelcomeMessage.js'));
   const fallbackRendererSource = read(path.join(REPO_ROOT, 'src/v1/line_renderer/fallbackRenderer.js'));
 
-  assert.ok(webhookSource.includes("lane: 'paid_domain'"));
-  assert.ok(webhookSource.includes("lane: 'paid_orchestrated'"));
-  assert.ok(webhookSource.includes("lane: 'free_retrieval'"));
-  assert.ok(webhookSource.includes("lane: 'paid_casual'"));
-  assert.ok(webhookSource.includes("lane: 'paid_main'"));
   assert.ok(webhookSource.includes('buildCityPackFeedbackReceivedText()'));
   assert.ok(webhookSource.includes('buildCityPackFeedbackUsageText()'));
   assert.ok(webhookSource.includes('mergeSemanticReplyParams('));
-  assert.ok(welcomeSource.includes('buildWelcomeConciergeText(WELCOME_TEXT)'));
+  assert.ok(welcomeSource.includes('text: WELCOME_TEXT'));
   assert.ok(fallbackRendererSource.includes("buildServiceAckText('確認しています。少しお待ちください。')"));
 });
 

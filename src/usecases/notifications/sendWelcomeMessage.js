@@ -3,7 +3,6 @@
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const { pushMessage } = require('../../infra/lineClient');
 const { getMinSafeApplyLiteral } = require('../../domain/llm/closure/minSafeApplyRegistry');
-const { buildWelcomeConciergeText } = require('../../domain/llm/concierge/conciergeLayer');
 
 const WELCOME_TEXT = getMinSafeApplyLiteral('leaf_welcome_message', '公式からのご案内はすべてこちらのLINEでお送りします。重要なお知らせは「公式連絡」からご確認ください。');
 const WELCOME_NOTIFICATION_ID = 'welcome';
@@ -19,7 +18,7 @@ async function sendWelcomeMessage(params) {
   }
 
   const pushFn = payload.pushFn || pushMessage;
-  await pushFn(payload.lineUserId, { type: 'text', text: buildWelcomeConciergeText(WELCOME_TEXT) });
+  await pushFn(payload.lineUserId, { type: 'text', text: WELCOME_TEXT });
 
   const result = await deliveriesRepo.createDelivery({
     notificationId: WELCOME_NOTIFICATION_ID,

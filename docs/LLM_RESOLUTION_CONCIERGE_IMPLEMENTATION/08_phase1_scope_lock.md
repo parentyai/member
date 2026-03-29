@@ -2,15 +2,17 @@
 
 ## Included lanes
 
-- `paid_domain`
-- `paid_orchestrated`
-- `paid_main`
-- `paid_casual`
-- `free_retrieval`
 - `welcome`
 - `citypack_feedback_received`
 - `citypack_feedback_usage`
 - `service_ack`
+
+## Contract-only or helper-only in phase1
+
+- paid readiness / finalizer shaping contracts
+- webhook top-level fallback / clarify / refuse / ack helper contracts
+- free retrieval empty reply helper contracts
+- broad paid/free conversational lanes remain literal-preserving in live runtime
 
 ## Excluded classes
 
