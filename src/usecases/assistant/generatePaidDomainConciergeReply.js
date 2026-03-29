@@ -638,7 +638,11 @@ function isSingleTodoImperativePrompt(messageText) {
 }
 
 function isTwoLineClosePrompt(messageText) {
-  return /((最後に).*(今日やる順番).*(2行|二行)でまとめて)/i.test(normalizeText(messageText));
+  return /(((最後に)|(ジャーニーを閉じる感じで?)).*(今日やる順番|今日の順番).*((2行|二行)(でまとめて|だけ)?))/i.test(normalizeText(messageText));
+}
+
+function isInitialKickoffGuidePrompt(messageText) {
+  return /((初回案内として).*(最初に見るもの).*((1つ|一つ)だけ))/i.test(normalizeText(messageText));
 }
 
 function isParentFriendlyOneLinePrompt(messageText) {
@@ -703,6 +707,12 @@ function buildTwoLineCloseLines(domainIntent) {
   return ['先に期限を確認する', '次に必要書類か予約要否を確認する'];
 }
 
+function buildInitialKickoffGuideLine(domainIntent) {
+  if (domainIntent === 'school') return '最初に見るのは、学校の期限が出ている公式案内です';
+  if (domainIntent === 'housing') return '最初に見るのは、住まい手続きの期限が出ている公式案内です';
+  return '最初に見るのは、期限が出ている公式案内です';
+}
+
 function buildParentFriendlyOneLine(domainIntent) {
   if (domainIntent === 'school') {
     return '最初に期限を見てから、必要な書類を決めれば大丈夫です';
@@ -725,6 +735,9 @@ function buildStrategicHumanReplyLines(params) {
     : {};
   const locationHintKind = normalizeText(locationHint.kind).toLowerCase();
 
+  if (isInitialKickoffGuidePrompt(messageText)) {
+    return [buildInitialKickoffGuideLine(domainIntent)];
+  }
   if (isSingleCityCheckpointPrompt(messageText) || ((locationHintKind === 'city' || locationHintKind === 'regionkey') && /(最初の確認先|確認先を(1つ|一つ)だけ)/i.test(messageText))) {
     return [buildSingleCityCheckpointLine(domainIntent)];
   }

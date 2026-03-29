@@ -282,6 +282,25 @@ test('phase734: general kickoff and ssn-vs-banking prompts answer directly witho
   assert.match(compare.replyText, /銀行|口座/);
 });
 
+test('phase734: strategic kickoff and close prompts stay concise without stale reset', () => {
+  const kickoffGuide = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: '初回案内として、最初に見るものを1つだけ教えて。'
+  });
+  assert.equal(String(kickoffGuide.replyText || '').split('\n').length, 1);
+  assert.match(kickoffGuide.replyText, /期限/);
+  assert.match(kickoffGuide.replyText, /公式/);
+  assert.match(kickoffGuide.replyText, /案内/);
+  assert.equal(/[?？]$/.test(kickoffGuide.replyText), false);
+
+  const closeGuide = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    messageText: 'ジャーニーを閉じる感じで、今日の順番を2行だけ。'
+  });
+  const closeLines = String(closeGuide.replyText || '').split('\n').map((line) => line.trim()).filter(Boolean);
+  assert.deepEqual(closeLines, ['先に期限を確認する。', '次に必要書類か予約要否を確認する。']);
+});
+
 test('phase734: utility transformation and correction presets stay concise and task-shaped', () => {
   const tenMinute = generatePaidDomainConciergeReply({
     domainIntent: 'general',
