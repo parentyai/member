@@ -156,7 +156,8 @@ internal outcome quick guide:
   - nested `desktopPatrolSummary.status`: `ready`, `insufficient_evidence`, `unavailable`, `error`
   - nested `desktopPatrolSummary.stage`: `queued`, `evaluated`, `trace_only`, `not_observed`, `error`
   - nested `desktopPatrolSummary.promotion`: latest promotion kind / status / draft PR ref / updatedAt
-  - audit `payloadSummary`: `desktopPatrolStatus`, `desktopPatrolStage`, `desktopPatrolQueueCount`, `desktopPatrolLatestRunId`, `desktopPatrolLastRunKind`, `desktopPatrolSendStatus`, `desktopPatrolPromotionProposalId`, `desktopPatrolPromotionKind`, `desktopPatrolPromotionStatus`, `desktopPatrolPromotionDraftPrRef`, `desktopPatrolPromotionUpdatedAt`
+  - nested `desktopPatrolSummary.promotionBatch`: latest self-improvement batch run / completionStatus / queuedProposalCount / patchDraftReadyCount / blockedCaseIds / nextAction / updatedAt
+  - audit `payloadSummary`: `desktopPatrolStatus`, `desktopPatrolStage`, `desktopPatrolQueueCount`, `desktopPatrolLatestRunId`, `desktopPatrolLastRunKind`, `desktopPatrolSendStatus`, `desktopPatrolPromotionProposalId`, `desktopPatrolPromotionKind`, `desktopPatrolPromotionStatus`, `desktopPatrolPromotionDraftPrRef`, `desktopPatrolPromotionUpdatedAt`, `desktopPatrolPromotionBatchRunId`, `desktopPatrolPromotionBatchCompletionStatus`, `desktopPatrolPromotionBatchQueuedProposalCount`, `desktopPatrolPromotionBatchPatchDraftReadyCount`
 - admin journey KPI view: `success/completed`, `blocked/journey_kpi_disabled`, `error/error`
 - admin dashboard KPI view: `success/completed_from_snapshot`, `success/completed`, `degraded/completed_with_fallback`, `degraded/not_available`, `error/invalid_fallback_mode`, `error/invalid_fallback_on_empty`, `error/invalid_snapshot_refresh`, `error/error`
 - admin ops system snapshot view/rebuild: `success/completed`, `success/dry_run`, `blocked/ops_system_snapshot_disabled`, `error/invalid_json`, `error/error`
