@@ -27,9 +27,14 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(js.includes('promotionApproval.validationCommandCount'));
   assert.ok(js.includes('promotionApproval.remainingCommandCount'));
   assert.ok(js.includes('promotionApproval.codeApplyRecordRef'));
+  assert.ok(js.includes('promotionApproval.codeApplyEvidenceRef'));
+  assert.ok(js.includes('promotionApproval.codeApplyEvidencePromptRef'));
   assert.ok(js.includes('promotionApproval.latestArtifactRef'));
   assert.ok(js.includes('promotionApproval.latestPromptRef'));
   assert.ok(js.includes('promotionApproval.operatorInstructions'));
+  assert.ok(js.includes('promotionApproval.evidenceRequirements'));
+  assert.ok(js.includes('promotionApproval.expectedOutputs'));
+  assert.ok(js.includes('promotionApproval.stopConditions'));
   assert.ok(js.includes('promotionApproval.nextCommand'));
   assert.ok(js.includes('promotionApproval.remainingCommands'));
   assert.ok(js.includes('qualityPatrolApprovalPlanHash'));
@@ -39,6 +44,8 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(js.includes("Copy latest prompt path"));
   assert.ok(js.includes("Copy latest artifact path"));
   assert.ok(js.includes("Copy validation commands"));
+  assert.ok(js.includes("Copy evidence prompt path"));
+  assert.ok(js.includes("Copy evidence requirements"));
   assert.ok(js.includes("Copy operator instructions"));
   assert.ok(js.includes("Copy worktree path"));
   assert.ok(js.includes("Copy candidate edit paths"));
@@ -58,6 +65,8 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(runbook.includes('remainingCommandCount'));
   assert.ok(runbook.includes('nextCommand'));
   assert.ok(runbook.includes('latestPromptRef'));
+  assert.ok(runbook.includes('codeApplyEvidenceRef'));
+  assert.ok(runbook.includes('evidenceRequirementCount'));
   assert.ok(runbook.includes('/api/admin/quality-patrol/desktop-approval/plan'));
   assert.ok(runbook.includes('/api/admin/quality-patrol/desktop-approval/execute'));
   assert.ok(lineRunbook.includes('desktopPatrolSummary.promotion'));
@@ -67,6 +76,8 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(lineRunbook.includes('remainingCommandCount'));
   assert.ok(lineRunbook.includes('nextCommand'));
   assert.ok(lineRunbook.includes('latestPromptRef'));
+  assert.ok(lineRunbook.includes('codeApplyEvidenceRef'));
+  assert.ok(lineRunbook.includes('evidenceRequirementCount'));
   assert.ok(lineRunbook.includes('managedFlowGuard + planHash + confirmToken'));
   assert.ok(ssot.includes('Latest promotion'));
   assert.ok(ssot.includes('Latest review bundle'));
@@ -77,6 +88,8 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(ssot.includes('Copy latest prompt path'));
   assert.ok(ssot.includes('Copy latest artifact path'));
   assert.ok(ssot.includes('Copy validation commands'));
+  assert.ok(ssot.includes('Copy evidence prompt path'));
+  assert.ok(ssot.includes('Copy evidence requirements'));
   assert.ok(ssot.includes('Copy operator instructions'));
   assert.ok(ssot.includes('Copy worktree path'));
   assert.ok(ssot.includes('Copy candidate edit paths'));
@@ -86,6 +99,8 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(architecture.includes('promotionApproval.approvalStage'));
   assert.ok(architecture.includes('promotionApproval.nextCommand'));
   assert.ok(architecture.includes('promotionApproval.latestPromptRef'));
+  assert.ok(architecture.includes('promotionApproval.codeApplyEvidenceRef'));
+  assert.ok(architecture.includes('Copy evidence prompt path'));
   assert.ok(architecture.includes('/api/admin/quality-patrol/desktop-approval/execute'));
   assert.ok(architecture.includes('promotionBatch.batchRunId'));
   assert.ok(dataMap.includes('POST /api/admin/quality-patrol/desktop-approval/plan'));
@@ -95,6 +110,8 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(dataMap.includes('desktopPatrolSummary.promotionApproval.approvalStage'));
   assert.ok(dataMap.includes('desktopPatrolSummary.promotionApproval.nextCommand'));
   assert.ok(dataMap.includes('desktopPatrolSummary.promotionApproval.latestPromptRef'));
+  assert.ok(dataMap.includes('desktopPatrolSummary.promotionApproval.codeApplyEvidenceRef'));
+  assert.ok(dataMap.includes('desktopPatrolSummary.promotionApproval.evidenceRequirementCount'));
   assert.ok(dataMap.includes('desktopPatrolSummary.promotionApproval.remainingCommandCount'));
   assert.ok(dataMap.includes('desktopPatrolSummary.promotionBatch.batchRunId'));
 });

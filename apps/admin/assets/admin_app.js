@@ -4731,6 +4731,28 @@ function renderQualityPatrolDesktopSummary(result) {
         }
       ),
       createQualityPatrolCopyAction(
+        'Copy evidence prompt path',
+        promotionApproval.codeApplyEvidencePromptRef && promotionApproval.codeApplyEvidencePromptRef.path
+          ? promotionApproval.codeApplyEvidencePromptRef.path
+          : '',
+        {
+          okMessage: 'evidence prompt のパスをコピーしました',
+          failMessage: 'evidence prompt のパスコピーに失敗しました',
+          subtle: true
+        }
+      ),
+      createQualityPatrolCopyAction(
+        'Copy evidence requirements',
+        Array.isArray(promotionApproval.evidenceRequirements)
+          ? promotionApproval.evidenceRequirements.join('\n')
+          : '',
+        {
+          okMessage: 'evidence requirements をコピーしました',
+          failMessage: 'evidence requirements のコピーに失敗しました',
+          subtle: true
+        }
+      ),
+      createQualityPatrolCopyAction(
         'Copy operator instructions',
         Array.isArray(promotionApproval.operatorInstructions)
           ? promotionApproval.operatorInstructions.join('\n')
@@ -4791,6 +4813,7 @@ function renderQualityPatrolDesktopSummary(result) {
         `validationCommands=${Number(promotionApproval.validationCommandCount || 0)}`,
         `remainingCommands=${Number(promotionApproval.remainingCommandCount || 0)}`,
         `candidateEdits=${Number(promotionApproval.candidateEditCount || 0)}`,
+        `evidenceRequirements=${Number(promotionApproval.evidenceRequirementCount || 0)}`,
         `planReady=${plannedApprovalReady ? 'yes' : 'no'}`,
         promotionApproval.updatedAt ? `updatedAt=${formatDateLabel(promotionApproval.updatedAt)}` : 'updatedAt=-'
       ],
@@ -4810,7 +4833,12 @@ function renderQualityPatrolDesktopSummary(result) {
         `codeApplyTaskRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.codeApplyTaskRef)}`,
         `codeApplySignoffRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.codeApplySignoffRef)}`,
         `codeApplyRecordRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.codeApplyRecordRef)}`,
+        `codeApplyEvidenceRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.codeApplyEvidenceRef)}`,
+        `codeApplyEvidencePromptRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.codeApplyEvidencePromptRef)}`,
         `validationCommands: ${summarizeQualityPatrolStringList(promotionApproval.validationCommands)}`,
+        `evidenceRequirements: ${summarizeQualityPatrolStringList(promotionApproval.evidenceRequirements)}`,
+        `expectedOutputs: ${summarizeQualityPatrolStringList(promotionApproval.expectedOutputs)}`,
+        `stopConditions: ${summarizeQualityPatrolStringList(promotionApproval.stopConditions)}`,
         `candidateEdits: ${summarizeQualityPatrolCandidateEdits(promotionApproval.candidateEdits)}`,
         `operatorInstructions: ${summarizeQualityPatrolStringList(promotionApproval.operatorInstructions)}`
       ],

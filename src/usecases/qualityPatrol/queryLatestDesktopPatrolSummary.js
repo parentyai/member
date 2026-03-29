@@ -26,8 +26,13 @@ const PROMOTION_REVIEW_DISPLAY_ORDER = Object.freeze([
 const PROMOTION_APPROVAL_PROMPT_ORDER = Object.freeze([
   { kind: 'code_apply_task', field: 'worker_prompt_path', markdownSuffix: '.code_apply_task.prompt.md', refKind: 'code_apply_task_prompt' },
   { kind: 'code_apply_signoff', field: 'signoff_prompt_path', markdownSuffix: '.code_apply_signoff.prompt.md', refKind: 'code_apply_signoff_prompt' },
-  { kind: 'code_apply_record', field: 'record_prompt_path', markdownSuffix: '.code_apply_record.prompt.md', refKind: 'code_apply_record_prompt' }
+  { kind: 'code_apply_record', field: 'record_prompt_path', markdownSuffix: '.code_apply_record.prompt.md', refKind: 'code_apply_record_prompt' },
+  { kind: 'code_apply_evidence', field: 'evidence_prompt_path', markdownSuffix: '.code_apply_evidence.prompt.md', refKind: 'code_apply_evidence_prompt' }
 ]);
+const PROMOTION_EVIDENCE_ARTIFACT_DESCRIPTOR = Object.freeze({
+  kind: 'code_apply_evidence',
+  jsonSuffix: '.code_apply_evidence.json'
+});
 
 function resolveArtifactRoot(deps) {
   const fromDeps = deps && typeof deps.artifactRoot === 'string' ? deps.artifactRoot.trim() : '';
@@ -466,12 +471,20 @@ async function normalizeLatestPromotionApproval(record, audience) {
       codeApplyTaskRef: null,
       codeApplySignoffRef: null,
       codeApplyRecordRef: null,
+      codeApplyEvidenceRef: null,
+      codeApplyEvidencePromptRef: null,
       validationCommands: [],
       validationCommandCount: 0,
       candidateEdits: [],
       candidateEditCount: 0,
       operatorInstructions: [],
       operatorInstructionCount: 0,
+      evidenceRequirements: [],
+      evidenceRequirementCount: 0,
+      expectedOutputs: [],
+      expectedOutputCount: 0,
+      stopConditions: [],
+      stopConditionCount: 0,
       nextCommand: null,
       remainingCommands: [],
       remainingCommandCount: 0,
@@ -501,6 +514,8 @@ async function normalizeLatestPromotionApproval(record, audience) {
   const latestApprovalStat = latestApprovalPath ? await statIfExists(latestApprovalPath) : null;
   const patchRequestPayload = patchRequestPath ? await readJsonIfExists(patchRequestPath) : null;
   const latestApprovalPayload = latestApprovalPath ? await readJsonIfExists(latestApprovalPath) : null;
+  const codeApplyEvidencePath = await resolvePromotionArtifactPath(PROMOTION_EVIDENCE_ARTIFACT_DESCRIPTOR, record);
+  const codeApplyEvidencePayload = codeApplyEvidencePath ? await readJsonIfExists(codeApplyEvidencePath) : null;
   const approvalStatus = normalizeText(
     (latestApprovalPayload && latestApprovalPayload.status)
     || (patchRequestPayload && patchRequestPayload.status)
@@ -533,6 +548,24 @@ async function normalizeLatestPromotionApproval(record, audience) {
     audience
   );
   const latestPromptRef = await resolvePromotionPromptRef(approvalStage, latestApprovalPayload, record, audience);
+  const codeApplyEvidencePromptRef = await resolvePromotionPromptRef(
+    'code_apply_evidence',
+    codeApplyEvidencePayload,
+    record,
+    audience
+  );
+  const evidenceRequirements = normalizeDisplayList(
+    codeApplyEvidencePayload && codeApplyEvidencePayload.evidence_requirements,
+    audience
+  );
+  const expectedOutputs = normalizeDisplayList(
+    codeApplyEvidencePayload && codeApplyEvidencePayload.expected_outputs,
+    audience
+  );
+  const stopConditions = normalizeDisplayList(
+    codeApplyEvidencePayload && codeApplyEvidencePayload.stop_conditions,
+    audience
+  );
   const updatedAt = normalizeUpdatedAtFromPayload(latestApprovalPayload, latestApprovalStat)
     || normalizeText(
       record.updated_at
@@ -560,6 +593,10 @@ async function normalizeLatestPromotionApproval(record, audience) {
     codeApplyTaskRef: refsByKind.code_apply_task || null,
     codeApplySignoffRef: refsByKind.code_apply_signoff || null,
     codeApplyRecordRef: refsByKind.code_apply_record || null,
+    codeApplyEvidenceRef: codeApplyEvidencePath
+      ? toArtifactRef('code_apply_evidence', codeApplyEvidencePath, audience)
+      : null,
+    codeApplyEvidencePromptRef,
     validationCommands: audience === 'operator' ? validationCommands : [],
     validationCommandCount: validationCommands.length,
     candidateEdits,
@@ -569,6 +606,18 @@ async function normalizeLatestPromotionApproval(record, audience) {
       (patchRequestPayload && patchRequestPayload.operator_instructions)
       || (latestApprovalPayload && latestApprovalPayload.operator_instructions)
       || []
+    ).length,
+    evidenceRequirements,
+    evidenceRequirementCount: normalizeStringArray(
+      codeApplyEvidencePayload && codeApplyEvidencePayload.evidence_requirements
+    ).length,
+    expectedOutputs,
+    expectedOutputCount: normalizeStringArray(
+      codeApplyEvidencePayload && codeApplyEvidencePayload.expected_outputs
+    ).length,
+    stopConditions,
+    stopConditionCount: normalizeStringArray(
+      codeApplyEvidencePayload && codeApplyEvidencePayload.stop_conditions
     ).length,
     nextCommand: commandHints.nextCommand,
     remainingCommands: commandHints.remainingCommands,
@@ -816,12 +865,20 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
         codeApplyTaskRef: null,
         codeApplySignoffRef: null,
         codeApplyRecordRef: null,
+        codeApplyEvidenceRef: null,
+        codeApplyEvidencePromptRef: null,
         validationCommands: [],
         validationCommandCount: 0,
         candidateEdits: [],
         candidateEditCount: 0,
         operatorInstructions: [],
         operatorInstructionCount: 0,
+        evidenceRequirements: [],
+        evidenceRequirementCount: 0,
+        expectedOutputs: [],
+        expectedOutputCount: 0,
+        stopConditions: [],
+        stopConditionCount: 0,
         nextAction: null,
         updatedAt: null
       },

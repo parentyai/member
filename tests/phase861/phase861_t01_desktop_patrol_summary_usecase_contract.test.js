@@ -117,6 +117,8 @@ test('phase861: desktop patrol summary exposes latest promotion review pointers 
   const codeApplySignoffPromptPath = path.join(promotionsRoot, 'prop_010.code_apply_signoff.prompt.md');
   const codeApplyRecordPath = path.join(promotionsRoot, 'prop_010.code_apply_record.json');
   const codeApplyRecordPromptPath = path.join(promotionsRoot, 'prop_010.code_apply_record.prompt.md');
+  const codeApplyEvidencePath = path.join(promotionsRoot, 'prop_010.code_apply_evidence.json');
+  const codeApplyEvidencePromptPath = path.join(promotionsRoot, 'prop_010.code_apply_evidence.prompt.md');
 
   writeJson(recordPath, {
     proposal_id: 'prop_010',
@@ -154,6 +156,23 @@ test('phase861: desktop patrol summary exposes latest promotion review pointers 
     validation_commands: ['npm test', 'npm run test:docs'],
     record_prompt_path: codeApplyRecordPromptPath
   });
+  writeJson(codeApplyEvidencePath, {
+    proposal_id: 'prop_010',
+    status: 'ready_for_human_apply_evidence',
+    evidence_requirements: [
+      'Record the reviewed apply_patch payload.',
+      'Record all validation outcomes.'
+    ],
+    expected_outputs: [
+      'Machine-readable evidence record.',
+      'Markdown evidence summary.'
+    ],
+    stop_conditions: [
+      'Stop if validation output is missing.',
+      'Stop if touched files widen scope.'
+    ],
+    evidence_prompt_path: codeApplyEvidencePromptPath
+  });
   fs.mkdirSync(promotionsRoot, { recursive: true });
   fs.writeFileSync(patchDraftPath, '# patch draft\n');
   fs.writeFileSync(codeEditTaskPath, '# code edit task\n');
@@ -162,6 +181,7 @@ test('phase861: desktop patrol summary exposes latest promotion review pointers 
   fs.writeFileSync(codeApplyTaskPromptPath, '# code apply task prompt\n');
   fs.writeFileSync(codeApplySignoffPromptPath, '# code apply signoff prompt\n');
   fs.writeFileSync(codeApplyRecordPromptPath, '# code apply record prompt\n');
+  fs.writeFileSync(codeApplyEvidencePromptPath, '# code apply evidence prompt\n');
   const approvalUpdatedAt = new Date('2026-03-28T14:15:00.000Z');
   fs.utimesSync(codeApplyRecordPath, approvalUpdatedAt, approvalUpdatedAt);
 
@@ -192,8 +212,25 @@ test('phase861: desktop patrol summary exposes latest promotion review pointers 
   assert.equal(result.promotionApproval.codeApplyTaskRef.path, codeApplyTaskPath);
   assert.equal(result.promotionApproval.codeApplySignoffRef.path, codeApplySignoffPath);
   assert.equal(result.promotionApproval.codeApplyRecordRef.path, codeApplyRecordPath);
+  assert.equal(result.promotionApproval.codeApplyEvidenceRef.path, codeApplyEvidencePath);
+  assert.equal(result.promotionApproval.codeApplyEvidencePromptRef.path, codeApplyEvidencePromptPath);
   assert.deepEqual(result.promotionApproval.validationCommands, ['npm test', 'npm run test:docs']);
   assert.equal(result.promotionApproval.validationCommandCount, 2);
+  assert.deepEqual(result.promotionApproval.evidenceRequirements, [
+    'Record the reviewed apply_patch payload.',
+    'Record all validation outcomes.'
+  ]);
+  assert.equal(result.promotionApproval.evidenceRequirementCount, 2);
+  assert.deepEqual(result.promotionApproval.expectedOutputs, [
+    'Machine-readable evidence record.',
+    'Markdown evidence summary.'
+  ]);
+  assert.equal(result.promotionApproval.expectedOutputCount, 2);
+  assert.deepEqual(result.promotionApproval.stopConditions, [
+    'Stop if validation output is missing.',
+    'Stop if touched files widen scope.'
+  ]);
+  assert.equal(result.promotionApproval.stopConditionCount, 2);
   assert.equal(result.promotionApproval.nextCommand, null);
   assert.deepEqual(result.promotionApproval.remainingCommands, []);
   assert.equal(result.promotionApproval.remainingCommandCount, 0);
