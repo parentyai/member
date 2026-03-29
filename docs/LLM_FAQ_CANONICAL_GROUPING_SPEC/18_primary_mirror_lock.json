@@ -1,0 +1,21 @@
+{
+  "spec_dir": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_FAQ_CANONICAL_GROUPING_SPEC",
+  "repo_root": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001",
+  "repo_head": "834eaf010876a6c08d21efd38a0e135df7987cb4",
+  "audit_dir": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_FAQ_TEMPLATE_AUDIT",
+  "generated_at": "2026-03-20T12:48:24Z",
+  "authority": {
+    "primary": "05_canonical_grouping_spec.json",
+    "mirror": "10_canonical_grouping_spec.json",
+    "human_anchor": "04_canonical_grouping_spec.md"
+  },
+  "lock": {
+    "sha256_primary": "b06647e52cddd8582ec95eeda5990f5c698f37781e54b047fe11c719ac6516a2",
+    "sha256_mirror": "b06647e52cddd8582ec95eeda5990f5c698f37781e54b047fe11c719ac6516a2",
+    "json_equal": true
+  },
+  "policy": {
+    "mirror_update_mode": "regenerate_from_primary_only",
+    "independent_mirror_edit": "forbidden"
+  }
+}

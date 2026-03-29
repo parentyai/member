@@ -1,5 +1,7 @@
 'use strict';
 
+const { buildServiceAckText } = require('../../domain/llm/concierge/conciergeLayer');
+
 function buildOverflowFallbackMessage(state) {
   const payload = state && typeof state === 'object' ? state : {};
   const hint = typeof payload.handoffUrl === 'string' && payload.handoffUrl.trim()
@@ -14,7 +16,7 @@ function buildOverflowFallbackMessage(state) {
 function buildServiceAckMessage() {
   return {
     type: 'text',
-    text: '確認しています。少しお待ちください。'
+    text: buildServiceAckText('確認しています。少しお待ちください。')
   };
 }
 

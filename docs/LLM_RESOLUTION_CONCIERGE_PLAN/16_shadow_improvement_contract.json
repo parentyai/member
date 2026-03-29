@@ -1,0 +1,46 @@
+{
+  "contract_version": "shadow_improvement_v1_plan",
+  "status": "proposed_add_only_scaffold",
+  "shadow_loop_contract": {
+    "replay_dataset": {
+      "dataset_id": "string",
+      "lane": "free_retrieval|paid|journey|fallback",
+      "journey_phase": "string|null",
+      "allowlist_only": true
+    },
+    "desktop_automation_scope": {
+      "enabled": "boolean",
+      "target_class": "internal_allowlist|test_account|canary_only",
+      "live_customer_allowed": false
+    },
+    "capture": {
+      "full_transcript": true,
+      "response_contract_snapshot": true,
+      "diff_bundle": true,
+      "rollback_log": true
+    },
+    "rubric_metrics": [
+      "answer_first_rate",
+      "official_link_attachment_rate",
+      "next_action_presence_rate",
+      "task_visibility_rate",
+      "unnecessary_clarify_rate",
+      "disclaimer_frontload_rate",
+      "route_persona_divergence_rate",
+      "task_progression_rate",
+      "human_naturalness_review_score",
+      "safety_regression_rate",
+      "successful_resolution_proxy"
+    ],
+    "human_gate": {
+      "required_before_canary": true,
+      "required_before_live": true
+    },
+    "abort_thresholds": {
+      "safety_regression_rate": "strict_fail",
+      "route_persona_divergence_rate": "strict_fail",
+      "task_progression_rate_drop": "strict_fail"
+    }
+  }
+}
+

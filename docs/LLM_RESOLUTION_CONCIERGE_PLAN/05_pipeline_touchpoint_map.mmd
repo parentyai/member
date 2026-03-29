@@ -1,0 +1,32 @@
+flowchart TD
+  A["Inbound LINE message"] --> B["Webhook edge: verify + dedupe + chat mode"]
+  B --> C{"Route family"}
+  C --> D["Free retrieval lane"]
+  C --> E["Paid orchestrator lane"]
+  C --> F["Journey / Task OS lane"]
+  C --> G["Top-level fallback / ack lane"]
+  D --> H["Candidate answer / evidence"]
+  E --> H
+  F --> I["Task state / todo / postback surface"]
+  G --> H
+  H --> J["Resolution Concierge Layer (proposed)"]
+  I --> J
+  J --> K["Link Assembler (proposed)"]
+  J --> L["Task OS Adapter (proposed)"]
+  J --> M["Next-best-action composer (proposed)"]
+  K --> N["Resolution response contract (proposed)"]
+  L --> N
+  M --> N
+  N --> O["Surface-fit planner"]
+  O --> P["Text / quick reply / flex"]
+  O --> Q["Rich menu hint"]
+  O --> R["LIFF handoff"]
+  O --> S["MINI App handoff"]
+  P --> T["LINE renderer"]
+  Q --> T
+  R --> T
+  S --> T
+  T --> U["LINE payload reply / push"]
+  N --> V["Task delta / memory writeback"]
+  N --> W["Audit / evidence / eval"]
+

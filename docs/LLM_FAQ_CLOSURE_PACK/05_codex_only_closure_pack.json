@@ -1,0 +1,560 @@
+{
+  "pack_version": "1.0",
+  "generated_at": "2026-03-19T19:42:22.191146",
+  "repo_root": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001",
+  "repo_head": "834eaf010876a6c08d21efd38a0e135df7987cb4",
+  "records": [
+    {
+      "leaf_id": "leaf_free_retrieval_empty_reply",
+      "closure_class": "codex_binding_closure_candidate",
+      "current_apply_class": "parameterized_apply_candidate",
+      "blockers": [
+        "binding_missing_only",
+        "weak_exact_string_anchor",
+        "weak_output_shape_anchor"
+      ],
+      "why_codex_only": "token source が観測済みで、new wording なしに binding + test closure で進められます。",
+      "required_binding_contracts": [
+        "<title>"
+      ],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "output_shape_assert"
+      ],
+      "exact_observed_sources": [
+        "free_retrieval_empty_reply#block0",
+        "free_retrieval_empty_reply#block1",
+        "free_retrieval_empty_reply#block2",
+        "free_retrieval_empty_reply#block3",
+        "free_retrieval_empty_reply#block4",
+        "free_retrieval_empty_reply#block5"
+      ],
+      "success_condition": "binding contract と対応 test anchors が凍結されること。",
+      "still_not_apply_until": "binding contract と test anchors の両方が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_webhook_consent_state_ack",
+      "closure_class": "codex_variant_closure_candidate",
+      "current_apply_class": "keyed_variant_candidate",
+      "blockers": [
+        "variant_key_missing_only",
+        "weak_exact_string_anchor",
+        "weak_output_shape_anchor"
+      ],
+      "why_codex_only": "alternate strings は現行 corpus にあり、必要なのは key 凍結と anchors です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [
+        "consent_granted",
+        "consent_revoked"
+      ],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "output_shape_assert"
+      ],
+      "exact_observed_sources": [
+        "webhook_assistant_top_level_templates#block10",
+        "webhook_assistant_top_level_templates#block11",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js"
+      ],
+      "success_condition": "variant key と対応 test anchors が凍結されること。",
+      "still_not_apply_until": "variant key と test anchors の両方が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_line_renderer_service_ack",
+      "closure_class": "codex_variant_closure_candidate",
+      "current_apply_class": "keyed_variant_candidate",
+      "blockers": [
+        "variant_key_missing_only",
+        "weak_exact_string_anchor",
+        "weak_route_contract_anchor"
+      ],
+      "why_codex_only": "alternate strings は現行 corpus にあり、必要なのは key 凍結と anchors です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [
+        "service_ack_wait",
+        "service_ack_prepare",
+        "service_ack_display"
+      ],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "route_contract_assert"
+      ],
+      "exact_observed_sources": [
+        "line_surface_renderer_defaults#block3",
+        "line_surface_renderer_defaults#block4",
+        "line_surface_renderer_defaults#block5",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js:3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js:44",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js:58"
+      ],
+      "success_condition": "variant key と対応 test anchors が凍結されること。",
+      "still_not_apply_until": "variant key と test anchors の両方が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_region_prompt_or_validation",
+      "closure_class": "codex_variant_closure_candidate",
+      "current_apply_class": "keyed_variant_candidate",
+      "blockers": [
+        "variant_key_missing_only",
+        "weak_exact_string_anchor",
+        "weak_output_shape_anchor",
+        "weak_route_contract_anchor"
+      ],
+      "why_codex_only": "alternate strings は現行 corpus にあり、必要なのは key 凍結と anchors です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [
+        "prompt_required",
+        "invalid_format"
+      ],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "route_contract_assert",
+        "output_shape_assert"
+      ],
+      "exact_observed_sources": [
+        "region_line_messages#block0",
+        "region_line_messages#block2",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/regionLineMessages.js:4",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/regionLineMessages.js"
+      ],
+      "success_condition": "variant key と対応 test anchors が凍結されること。",
+      "still_not_apply_until": "variant key と test anchors の両方が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_region_state_ack",
+      "closure_class": "codex_variant_closure_candidate",
+      "current_apply_class": "keyed_variant_candidate",
+      "blockers": [
+        "binding_and_variant_missing",
+        "weak_exact_string_anchor",
+        "weak_output_shape_anchor",
+        "weak_route_contract_anchor"
+      ],
+      "why_codex_only": "alternate strings は現行 corpus にあり、必要なのは key 凍結と anchors です。",
+      "required_binding_contracts": [
+        "<cityLabel>",
+        "<stateLabel>"
+      ],
+      "required_variant_keys": [
+        "declared",
+        "already_set"
+      ],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "route_contract_assert",
+        "output_shape_assert"
+      ],
+      "exact_observed_sources": [
+        "region_line_messages#block1",
+        "region_line_messages#block3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/regionLineMessages.js:4",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/regionLineMessages.js"
+      ],
+      "success_condition": "variant key と対応 test anchors が凍結されること。",
+      "still_not_apply_until": "variant key と test anchors の両方が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_paid_readiness_clarify_default",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor",
+        "weak_output_shape_anchor",
+        "weak_route_contract_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "route_contract_assert",
+        "output_shape_assert"
+      ],
+      "exact_observed_sources": [
+        "answer_readiness_gate_templates#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js:20",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase230/phase230_faq_confidence_blocks_low_confidence.test.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_paid_readiness_refuse_default",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor",
+        "weak_output_shape_anchor",
+        "weak_route_contract_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "route_contract_assert",
+        "output_shape_assert"
+      ],
+      "exact_observed_sources": [
+        "answer_readiness_gate_templates#block1",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js:20",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase230/phase230_faq_confidence_blocks_low_confidence.test.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_paid_readiness_hedge_suffix",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor",
+        "weak_output_shape_anchor",
+        "weak_route_contract_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "route_contract_assert",
+        "output_shape_assert"
+      ],
+      "exact_observed_sources": [
+        "answer_readiness_gate_templates#block2",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js:20",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase230/phase230_faq_confidence_blocks_low_confidence.test.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_paid_finalizer_fallback",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor",
+        "weak_output_shape_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "output_shape_assert"
+      ],
+      "exact_observed_sources": [
+        "finalize_candidate_fallback_templates#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/orchestrator/finalizeCandidate.js:37",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/orchestrator/finalizeCandidate.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase731/phase731_t02_paid_orchestrator_run_contract.test.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_paid_finalizer_refuse",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert"
+      ],
+      "exact_observed_sources": [
+        "finalize_candidate_fallback_templates#block3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/orchestrator/finalizeCandidate.js:37",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/orchestrator/finalizeCandidate.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase731/phase731_t02_paid_orchestrator_run_contract.test.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_webhook_guard_missing_reply_fallback",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor",
+        "weak_output_shape_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "output_shape_assert"
+      ],
+      "exact_observed_sources": [
+        "webhook_assistant_top_level_templates#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_webhook_low_relevance_clarify",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert"
+      ],
+      "exact_observed_sources": [
+        "webhook_assistant_top_level_templates#block1",
+        "webhook_assistant_top_level_templates#block2",
+        "webhook_assistant_top_level_templates#block3",
+        "webhook_assistant_top_level_templates#block4",
+        "webhook_assistant_top_level_templates#block5",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_webhook_retrieval_failure_fallback",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor",
+        "weak_output_shape_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "output_shape_assert"
+      ],
+      "exact_observed_sources": [
+        "webhook_assistant_top_level_templates#block6",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_webhook_readiness_clarify",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert"
+      ],
+      "exact_observed_sources": [
+        "webhook_assistant_top_level_templates#block7",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_webhook_readiness_refuse",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert"
+      ],
+      "exact_observed_sources": [
+        "webhook_assistant_top_level_templates#block8",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_webhook_synthetic_ack",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert"
+      ],
+      "exact_observed_sources": [
+        "webhook_assistant_top_level_templates#block9",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_welcome_message",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor",
+        "weak_route_contract_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "route_contract_assert"
+      ],
+      "exact_observed_sources": [
+        "welcome_message#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/sendWelcomeMessage.js:6",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/sendWelcomeMessage.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase0/welcome.test.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_line_renderer_overflow_summary",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor",
+        "weak_route_contract_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "route_contract_assert"
+      ],
+      "exact_observed_sources": [
+        "line_surface_renderer_defaults#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js:3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js:44",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js:58",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_line_renderer_deeplink_generic",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor",
+        "weak_route_contract_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "route_contract_assert"
+      ],
+      "exact_observed_sources": [
+        "line_surface_renderer_defaults#block2",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js:3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js:44",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js:58",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_line_renderer_render_failure",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor",
+        "weak_route_contract_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "route_contract_assert"
+      ],
+      "exact_observed_sources": [
+        "line_surface_renderer_defaults#block8",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js:3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js:44",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js:58",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    },
+    {
+      "leaf_id": "leaf_citypack_feedback_received",
+      "closure_class": "codex_test_anchor_closure_candidate",
+      "current_apply_class": "literal_apply_candidate",
+      "blockers": [
+        "weak_exact_string_anchor",
+        "weak_output_shape_anchor",
+        "weak_route_contract_anchor"
+      ],
+      "why_codex_only": "placeholder / shell / policy freeze を伴わず、主因は test anchor 不足です。",
+      "required_binding_contracts": [],
+      "required_variant_keys": [],
+      "required_test_anchors": [
+        "exact_string_assert",
+        "route_contract_assert",
+        "output_shape_assert"
+      ],
+      "exact_observed_sources": [
+        "citypack_feedback_messages#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/cityPackFeedbackMessages.js:4",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/cityPackFeedbackMessages.js"
+      ],
+      "success_condition": "missing exact-string / shape / route anchors が補われること。",
+      "still_not_apply_until": "test anchors が閉じるまで。"
+    }
+  ]
+}

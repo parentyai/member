@@ -27,6 +27,18 @@
       ]
     },
     {
+      "file": "src/domain/llm/closure/codexOnlyClosureContracts.js",
+      "status": "monitor",
+      "reachability": "non_reachable_runtime",
+      "disposition": "keep_as_build_helper",
+      "reason": "runtime graphでは未到達だが、codex closure binding/variant freeze を tests と docs から参照する contract-only helper",
+      "ssot_refs": [
+        "tests/phase860/phase860_t01_codex_binding_and_variant_contract.test.js",
+        "docs/LLM_FAQ_CODEX_CLOSURE_EXEC/03_binding_closure_plan.md",
+        "scripts/check_structural_cleanup.js"
+      ]
+    },
+    {
       "file": "src/domain/qualityPatrol/buildIssueRecord.js",
       "status": "monitor",
       "reachability": "non_reachable_runtime",

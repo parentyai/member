@@ -1,0 +1,248 @@
+{
+  "pack_version": "1.0",
+  "generated_at": "2026-03-19T19:42:22.191146",
+  "repo_root": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001",
+  "repo_head": "834eaf010876a6c08d21efd38a0e135df7987cb4",
+  "target": "gpt_reauthoring",
+  "source_apply_gate": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_FAQ_DRAFT_APPLY_GATE",
+  "leafs": [
+    {
+      "leaf_id": "leaf_free_style_quick",
+      "why_gpt_reauthoring_required": "current draft が shell / ellipsis / semantic-fill placeholder に依存しており final wording を持たないため。",
+      "source_shell_text": "まずこの順です。\nつまずきやすい点: ...\n確認: ...\n1. 手続きを1つだけ指定してください。\n状況の特定に必要な情報が不足しています。\n手続き名と期限が曖昧なまま進めることです。",
+      "unresolved_tokens": [
+        "..."
+      ],
+      "must_keep_facts": [
+        "Preserve the quick style shell only; semantic action content remains dynamic.",
+        "Keep free retrieval style routing separate from contextual and paid lanes."
+      ],
+      "prohibited_claims": [
+        "Do not invent new legal, tax, contract, or eligibility claims.",
+        "Do not promote shadow or dead templates into live output.",
+        "Do not merge operator/admin wording into unrelated end-user leaves.",
+        "Do not add new style ids or rename current style selectors."
+      ],
+      "prohibited_tone": [
+        "overconfident certainty",
+        "operator-only operational jargon unless already present in the source leaf",
+        "new promotional tone not observed in current runtime"
+      ],
+      "output_shape": "plain_text_answer",
+      "route_scope": "POST /webhook/line free retrieval",
+      "audience_scope": "end_user",
+      "safety_scope": "faq",
+      "must_not_generate": [
+        "new style families",
+        "cross-style hybrid copy"
+      ],
+      "must_not_merge_with": [
+        "leaf_free_retrieval_ranked_reply",
+        "leaf_free_contextual_followup"
+      ],
+      "required_finalization_decisions_before_apply": [
+        "style shell を final literal に落とす decision",
+        "re-authored text に対する exact-string anchor plan"
+      ]
+    },
+    {
+      "leaf_id": "leaf_free_style_coach",
+      "why_gpt_reauthoring_required": "current draft が shell / ellipsis / semantic-fill placeholder に依存しており final wording を持たないため。",
+      "source_shell_text": "この順で進めると迷いにくいです。\n注意点: ...\n確認したい点: ...\n- まず対象手続きを1つ確定してください。\n状況の特定に必要な情報が不足しています。\n手続き名と期限が曖昧なまま進めることです。",
+      "unresolved_tokens": [
+        "..."
+      ],
+      "must_keep_facts": [
+        "Preserve the coach style shell only; semantic action content remains dynamic.",
+        "Keep free retrieval style routing separate from contextual and paid lanes."
+      ],
+      "prohibited_claims": [
+        "Do not invent new legal, tax, contract, or eligibility claims.",
+        "Do not promote shadow or dead templates into live output.",
+        "Do not merge operator/admin wording into unrelated end-user leaves.",
+        "Do not add new style ids or rename current style selectors."
+      ],
+      "prohibited_tone": [
+        "overconfident certainty",
+        "operator-only operational jargon unless already present in the source leaf",
+        "new promotional tone not observed in current runtime"
+      ],
+      "output_shape": "plain_text_answer",
+      "route_scope": "POST /webhook/line free retrieval",
+      "audience_scope": "end_user",
+      "safety_scope": "faq",
+      "must_not_generate": [
+        "new style families",
+        "cross-style hybrid copy"
+      ],
+      "must_not_merge_with": [
+        "leaf_free_retrieval_ranked_reply",
+        "leaf_free_contextual_followup"
+      ],
+      "required_finalization_decisions_before_apply": [
+        "style shell を final literal に落とす decision",
+        "re-authored text に対する exact-string anchor plan"
+      ]
+    },
+    {
+      "leaf_id": "leaf_free_style_checklist",
+      "why_gpt_reauthoring_required": "current draft が shell / ellipsis / semantic-fill placeholder に依存しており final wording を持たないため。",
+      "source_shell_text": "チェックリスト:\n見落としやすい点: ...\n確認事項: ...\n- [ ] 対象手続きを1つ決める\n状況の特定に必要な情報が不足しています。\n手続き名と期限が曖昧なまま進めることです。",
+      "unresolved_tokens": [
+        "..."
+      ],
+      "must_keep_facts": [
+        "Preserve the checklist style shell only; semantic action content remains dynamic.",
+        "Keep free retrieval style routing separate from contextual and paid lanes."
+      ],
+      "prohibited_claims": [
+        "Do not invent new legal, tax, contract, or eligibility claims.",
+        "Do not promote shadow or dead templates into live output.",
+        "Do not merge operator/admin wording into unrelated end-user leaves.",
+        "Do not add new style ids or rename current style selectors."
+      ],
+      "prohibited_tone": [
+        "overconfident certainty",
+        "operator-only operational jargon unless already present in the source leaf",
+        "new promotional tone not observed in current runtime"
+      ],
+      "output_shape": "plain_text_answer",
+      "route_scope": "POST /webhook/line free retrieval",
+      "audience_scope": "end_user",
+      "safety_scope": "faq",
+      "must_not_generate": [
+        "new style families",
+        "cross-style hybrid copy"
+      ],
+      "must_not_merge_with": [
+        "leaf_free_retrieval_ranked_reply",
+        "leaf_free_contextual_followup"
+      ],
+      "required_finalization_decisions_before_apply": [
+        "style shell を final literal に落とす decision",
+        "re-authored text に対する exact-string anchor plan"
+      ]
+    },
+    {
+      "leaf_id": "leaf_free_style_timeline",
+      "why_gpt_reauthoring_required": "current draft が shell / ellipsis / semantic-fill placeholder に依存しており final wording を持たないため。",
+      "source_shell_text": "タイムラインで整理します。\n遅れやすい点: ...\n期限確認: ...\n1. 手続きを1つだけ指定してください。\n状況の特定に必要な情報が不足しています。\n手続き名と期限が曖昧なまま進めることです。",
+      "unresolved_tokens": [
+        "..."
+      ],
+      "must_keep_facts": [
+        "Preserve the timeline style shell only; semantic action content remains dynamic.",
+        "Keep free retrieval style routing separate from contextual and paid lanes."
+      ],
+      "prohibited_claims": [
+        "Do not invent new legal, tax, contract, or eligibility claims.",
+        "Do not promote shadow or dead templates into live output.",
+        "Do not merge operator/admin wording into unrelated end-user leaves.",
+        "Do not add new style ids or rename current style selectors."
+      ],
+      "prohibited_tone": [
+        "overconfident certainty",
+        "operator-only operational jargon unless already present in the source leaf",
+        "new promotional tone not observed in current runtime"
+      ],
+      "output_shape": "plain_text_answer",
+      "route_scope": "POST /webhook/line free retrieval",
+      "audience_scope": "end_user",
+      "safety_scope": "faq",
+      "must_not_generate": [
+        "new style families",
+        "cross-style hybrid copy"
+      ],
+      "must_not_merge_with": [
+        "leaf_free_retrieval_ranked_reply",
+        "leaf_free_contextual_followup"
+      ],
+      "required_finalization_decisions_before_apply": [
+        "style shell を final literal に落とす decision",
+        "re-authored text に対する exact-string anchor plan"
+      ]
+    },
+    {
+      "leaf_id": "leaf_free_style_weekend",
+      "why_gpt_reauthoring_required": "current draft が shell / ellipsis / semantic-fill placeholder に依存しており final wording を持たないため。",
+      "source_shell_text": "候補は次の通りです。\nよくある失敗: ...\n好みに合わせる確認: ...\n- まず対象手続きを1つ確定してください。\n状況の特定に必要な情報が不足しています。\n手続き名と期限が曖昧なまま進めることです。",
+      "unresolved_tokens": [
+        "..."
+      ],
+      "must_keep_facts": [
+        "Preserve the weekend style shell only; semantic action content remains dynamic.",
+        "Keep free retrieval style routing separate from contextual and paid lanes."
+      ],
+      "prohibited_claims": [
+        "Do not invent new legal, tax, contract, or eligibility claims.",
+        "Do not promote shadow or dead templates into live output.",
+        "Do not merge operator/admin wording into unrelated end-user leaves.",
+        "Do not add new style ids or rename current style selectors."
+      ],
+      "prohibited_tone": [
+        "overconfident certainty",
+        "operator-only operational jargon unless already present in the source leaf",
+        "new promotional tone not observed in current runtime"
+      ],
+      "output_shape": "plain_text_answer",
+      "route_scope": "POST /webhook/line free retrieval",
+      "audience_scope": "end_user",
+      "safety_scope": "faq",
+      "must_not_generate": [
+        "new style families",
+        "cross-style hybrid copy"
+      ],
+      "must_not_merge_with": [
+        "leaf_free_retrieval_ranked_reply",
+        "leaf_free_contextual_followup"
+      ],
+      "required_finalization_decisions_before_apply": [
+        "style shell を final literal に落とす decision",
+        "re-authored text に対する exact-string anchor plan"
+      ]
+    },
+    {
+      "leaf_id": "leaf_paid_conversation_format_shell",
+      "why_gpt_reauthoring_required": "current draft が shell / ellipsis / semantic-fill placeholder に依存しており final wording を持たないため。",
+      "source_shell_text": "いまの状況を短く整理します。\nまずは次の一手です:\n多くの人が詰まりやすいのは <pitfall>。\n<gap> の認識で進めてもよいですか？",
+      "unresolved_tokens": [
+        "<pitfall>",
+        "<gap>"
+      ],
+      "must_keep_facts": [
+        "Keep the paid conversation shell headings and question line placeholders.",
+        "Preserve conversation-format ownership separate from semantic answer policy."
+      ],
+      "prohibited_claims": [
+        "Do not invent new legal, tax, contract, or eligibility claims.",
+        "Do not promote shadow or dead templates into live output.",
+        "Do not merge operator/admin wording into unrelated end-user leaves.",
+        "Do not remove or rename fixed shell sections without changing downstream contract."
+      ],
+      "prohibited_tone": [
+        "overconfident certainty",
+        "operator-only operational jargon unless already present in the source leaf",
+        "new promotional tone not observed in current runtime"
+      ],
+      "output_shape": "plain_text_answer",
+      "route_scope": "POST /webhook/line paid finalization",
+      "audience_scope": "end_user",
+      "safety_scope": "faq",
+      "must_not_generate": [
+        "new sections"
+      ],
+      "must_not_merge_with": [
+        "leaf_paid_reply_guard_defaults",
+        "leaf_paid_domain_concierge"
+      ],
+      "required_finalization_decisions_before_apply": [
+        "pitfall source freeze",
+        "gap/followup source freeze",
+        "section preservation policy"
+      ]
+    }
+  ],
+  "summary": {
+    "gpt_reauthoring_required": 6
+  }
+}

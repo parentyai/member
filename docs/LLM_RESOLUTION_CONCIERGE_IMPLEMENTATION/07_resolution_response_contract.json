@@ -1,0 +1,50 @@
+{
+  "contract_version": "resolution_concierge_v1",
+  "phase": "phase1",
+  "response_contract": {
+    "resolution_state": "informing|actionable|clarify|refuse|ack|handoff_ready",
+    "specificity_level": "0|1|2|3",
+    "answer_summary": "string",
+    "why_it_matters": "string|null",
+    "next_best_action": "string|null",
+    "official_links": [
+      {
+        "link_id": "string",
+        "title": "string",
+        "url": "string",
+        "source_type": "official|semi_official|internal_approved",
+        "authority_band": "primary_required|primary_preferred|workflow_internal",
+        "jurisdiction": "string|null",
+        "topic": "string",
+        "freshness_status": "fresh|mixed|stale|unknown",
+        "why_relevant": "string",
+        "open_surface": "text|quick_reply|flex|template|mini_app|service_message",
+        "task_binding": "string|null",
+        "menu_binding": "string|null",
+        "fallback_if_unavailable": "string|null"
+      }
+    ],
+    "required_docs": ["string"],
+    "due_notes": ["string"],
+    "blocker_notes": ["string"],
+    "task_hint": {
+      "task_id": "string",
+      "task_title": "string",
+      "status": "string",
+      "due_class": "overdue|due_soon|scheduled|none",
+      "blocker_state": "clear|locked|missing_doc|external_dependency|unknown",
+      "next_best_action": "string"
+    },
+    "menu_hint": {
+      "label": "string",
+      "payload": "string",
+      "action_type": "message",
+      "menu_bucket": "next_tasks|due_soon_tasks|regional_procedures|todo_list|delivery_history|support_guide"
+    },
+    "follow_up_question": "string|null",
+    "service_surface": "text|quick_reply",
+    "output_shape": "resolution_response_v1",
+    "safety_notes": ["string"],
+    "source_freshness": "fresh|mixed|stale|unknown"
+  }
+}

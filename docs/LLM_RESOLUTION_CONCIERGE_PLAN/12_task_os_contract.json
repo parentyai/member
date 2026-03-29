@@ -1,0 +1,36 @@
+{
+  "contract_version": "resolution_task_os_v1_plan",
+  "status": "proposed_add_only_scaffold",
+  "workbook_status": "missing",
+  "source_of_truth": [
+    "src/usecases/journey/handleJourneyLineCommand.js",
+    "src/usecases/journey/taskDetailSectionReply.js",
+    "src/usecases/tasks/renderTaskFlexMessage.js",
+    "docs/DATA_MAP.md"
+  ],
+  "task_projection_contract": {
+    "task_id": "string",
+    "phase_id": "string",
+    "current_state": "planned|in_progress|done|blocked|snoozed|skipped",
+    "next_best_action": "string",
+    "due_class": "overdue|due_soon|scheduled|none",
+    "blocker_state": "clear|missing_fact|missing_doc|external_dependency|locked|unknown",
+    "required_docs": [
+      "string"
+    ],
+    "official_links": [
+      {
+        "link_id": "string"
+      }
+    ],
+    "menu_entry_binding": "now|due_this_week|docs|regional_procedure|human_support",
+    "liff_handoff_needed": "boolean",
+    "mini_app_handoff_needed": "boolean",
+    "concierge_summary": "string"
+  },
+  "notes": [
+    "This contract is a user-facing projection layer over existing task and journey records.",
+    "It must not redefine the current storage semantics of journey_todo_items or tasks."
+  ]
+}
+

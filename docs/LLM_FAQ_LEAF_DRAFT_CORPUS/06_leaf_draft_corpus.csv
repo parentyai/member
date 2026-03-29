@@ -1,0 +1,76 @@
+leaf_id,draft_status,parent_g3_unit_id,parent_g4_group_id,output_shape,primary_route,audience_type,safety_role,generation_mode,human_review_required,primary_text_or_label_summary,notes
+leaf_free_retrieval_empty_reply,draft_ready,g3_free_retrieval_search_unit,g4_assistant_free_retrieval_registry_slot,fallback_text,POST /webhook/line free retrieval,end_user,fallback,SAFE_ONLY,false,"<title> に一致する情報が見つかりませんでした。
+キーワードを短くして再検索する
+都市名/期限/手続き名を追加して再送する
+対象手続きと期限が曖昧なまま再検索すると候補が広がります。
+都市名・期限・手続き名を1つずつ教えてください。
+不明点は運用窓口へお問い合わせください。",答えられない理由 + 次に必要な入力の方向だけに絞っています。
+leaf_free_style_quick,draft_ready,g3_free_retrieval_search_unit,g4_assistant_free_retrieval_registry_slot,plain_text_answer,POST /webhook/line free retrieval,end_user,faq,SAFE_ONLY,false,"まずこの順です。
+つまずきやすい点: ...
+確認: ...
+1. 手続きを1つだけ指定してください。
+状況の特定に必要な情報が不足しています。
+手続き名と期限が曖昧なまま進めることです。",2-5文相当の単一メッセージとして保持し、shell lines のみで閉じています。
+leaf_free_style_coach,draft_ready,g3_free_retrieval_search_unit,g4_assistant_free_retrieval_registry_slot,plain_text_answer,POST /webhook/line free retrieval,end_user,faq,SAFE_ONLY,false,"この順で進めると迷いにくいです。
+注意点: ...
+確認したい点: ...
+- まず対象手続きを1つ確定してください。
+状況の特定に必要な情報が不足しています。
+手続き名と期限が曖昧なまま進めることです。",2-5文相当の単一メッセージとして保持し、shell lines のみで閉じています。
+leaf_free_style_checklist,draft_ready,g3_free_retrieval_search_unit,g4_assistant_free_retrieval_registry_slot,plain_text_answer,POST /webhook/line free retrieval,end_user,faq,SAFE_ONLY,false,"チェックリスト:
+見落としやすい点: ...
+確認事項: ...
+- [ ] 対象手続きを1つ決める
+状況の特定に必要な情報が不足しています。
+手続き名と期限が曖昧なまま進めることです。",2-5文相当の単一メッセージとして保持し、shell lines のみで閉じています。
+leaf_free_style_timeline,draft_ready,g3_free_retrieval_search_unit,g4_assistant_free_retrieval_registry_slot,plain_text_answer,POST /webhook/line free retrieval,end_user,faq,SAFE_ONLY,false,"タイムラインで整理します。
+遅れやすい点: ...
+期限確認: ...
+1. 手続きを1つだけ指定してください。
+状況の特定に必要な情報が不足しています。
+手続き名と期限が曖昧なまま進めることです。",2-5文相当の単一メッセージとして保持し、shell lines のみで閉じています。
+leaf_free_style_weekend,draft_ready,g3_free_retrieval_search_unit,g4_assistant_free_retrieval_registry_slot,plain_text_answer,POST /webhook/line free retrieval,end_user,faq,SAFE_ONLY,false,"候補は次の通りです。
+よくある失敗: ...
+好みに合わせる確認: ...
+- まず対象手続きを1つ確定してください。
+状況の特定に必要な情報が不足しています。
+手続き名と期限が曖昧なまま進めることです。",2-5文相当の単一メッセージとして保持し、shell lines のみで閉じています。
+leaf_paid_conversation_format_shell,draft_ready,g3_paid_conversation_format_unit,g4_assistant_paid_format_registry_slot,plain_text_answer,POST /webhook/line paid finalization,end_user,faq,SAFE_ONLY,false,"いまの状況を短く整理します。
+まずは次の一手です:
+多くの人が詰まりやすいのは <pitfall>。
+<gap> の認識で進めてもよいですか？",2-5文相当の単一メッセージとして保持し、shell lines のみで閉じています。
+leaf_paid_reply_guard_defaults,draft_ready,g3_paid_conversation_format_unit,g4_assistant_paid_format_registry_slot,fallback_text,POST /webhook/line paid finalization,end_user,fallback,SAFE_ONLY,false,"状況を整理しながら進めましょう。
+まず最優先で進めたい手続きを1つ教えてください。
+まずは次の一手です。
+多くの人が詰まりやすいのは <pitfall>。",答えられない理由 + 次に必要な入力の方向だけに絞っています。
+leaf_paid_readiness_clarify_default,draft_ready,g3_paid_safety_gate_unit,g4_assistant_paid_safety_registry_slot,clarify_prompt,paid orchestrator,end_user,warning,SAFE_ONLY,false,まず対象手続きと期限を1つずつ教えてください。そこから案内を具体化します。,必要な情報を 1-3 論点で聞く形に固定しています。
+leaf_paid_readiness_refuse_default,draft_ready,g3_paid_safety_gate_unit,g4_assistant_paid_safety_registry_slot,refuse_text,paid orchestrator,end_user,warning,SAFE_ONLY,false,この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを一緒に整理します。,安全上の断定回避と確認先だけに留めています。
+leaf_paid_readiness_hedge_suffix,draft_ready,g3_paid_safety_gate_unit,g4_assistant_paid_safety_registry_slot,disclaimer_block,paid orchestrator,end_user,warning,SAFE_ONLY,false,補足: 情報は更新されるため、最終確認をお願いします。,断定回避の短い補足ブロックに限定しています。
+leaf_paid_finalizer_fallback,draft_ready,g3_paid_safety_gate_unit,g4_assistant_paid_safety_registry_slot,fallback_text,paid orchestrator,end_user,fallback,SAFE_ONLY,false,状況を整理しながら進めます。優先手続きを1つ決めて進めましょう。,答えられない理由 + 次に必要な入力の方向だけに絞っています。
+leaf_paid_finalizer_refuse,draft_ready,g3_paid_safety_gate_unit,g4_assistant_paid_safety_registry_slot,refuse_text,paid orchestrator,end_user,warning,SAFE_ONLY,false,この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを整理します。,安全上の断定回避と確認先だけに留めています。
+leaf_webhook_guard_missing_reply_fallback,draft_ready,g3_webhook_top_level_unit,g4_webhook_top_level_registry_slot,fallback_text,POST /webhook/line top-level,end_user,fallback,SAFE_ONLY,false,状況を整理しながら進めましょう。まずは優先する手続きを1つ決めるのがおすすめです。,答えられない理由 + 次に必要な入力の方向だけに絞っています。
+leaf_webhook_low_relevance_clarify,draft_ready,g3_webhook_top_level_unit,g4_webhook_top_level_registry_slot,clarify_prompt,POST /webhook/line top-level,end_user,clarify,SAFE_ONLY,false,"いまの質問だけでは対象手続きを特定できません。
+対象手続きを1つ指定する（例: ビザ更新 / 住居契約 / 税務）
+期限を1つ添える（例: 1週間後）
+対象手続きと期限が曖昧なまま進めると、案内の精度が下がります。
+対象手続き名と期限を1つずつ教えてください。",必要な情報を 1-3 論点で聞く形に固定しています。
+leaf_webhook_retrieval_failure_fallback,draft_ready,g3_webhook_top_level_unit,g4_webhook_top_level_registry_slot,fallback_text,POST /webhook/line top-level,end_user,fallback,SAFE_ONLY,false,関連情報を取得できませんでした。,答えられない理由 + 次に必要な入力の方向だけに絞っています。
+leaf_webhook_readiness_clarify,draft_ready,g3_webhook_top_level_unit,g4_webhook_top_level_registry_slot,clarify_prompt,POST /webhook/line top-level,end_user,warning,SAFE_ONLY,false,まず対象手続きと期限を1つずつ教えてください。そこから具体的な次の一手を整理します。,必要な情報を 1-3 論点で聞く形に固定しています。
+leaf_webhook_readiness_refuse,draft_ready,g3_webhook_top_level_unit,g4_webhook_top_level_registry_slot,refuse_text,POST /webhook/line top-level,end_user,warning,SAFE_ONLY,false,この内容は安全に断定できないため、公式窓口で最終確認をお願いします。必要なら確認項目を整理します。,安全上の断定回避と確認先だけに留めています。
+leaf_webhook_synthetic_ack,draft_ready,g3_webhook_top_level_unit,g4_webhook_top_level_registry_slot,command_ack,POST /webhook/line top-level,end_user,fallback,SAFE_ONLY,false,受け取りました。続けて状況を一緒に整理します。,受理/状態反映のみで、余計な操作説明を足していません。
+leaf_webhook_consent_state_ack,draft_ready,g3_webhook_top_level_unit,g4_webhook_top_level_registry_slot,consent_ack,POST /webhook/line top-level,end_user,fallback,SAFE_ONLY,false,AI機能の利用に同意しました。,同意状態の確認のみで長文化していません。
+leaf_webhook_direct_command_ack,draft_ready,g3_webhook_top_level_unit,g4_webhook_top_level_registry_slot,command_ack,POST /webhook/line top-level,end_user,fallback,SAFE_ONLY,false,フェーズ更新を記録しました: <phaseCommand>,受理/状態反映のみで、余計な操作説明を足していません。
+leaf_welcome_message,draft_ready,g3_welcome_message_unit,g4_notification_registry_slot,welcome_text,welcome push flow,end_user,notification,SAFE_ONLY,false,公式からのご案内はすべてこちらのLINEでお送りします。重要なお知らせは「公式連絡」からご確認ください。,初回導入メッセージのみです。
+leaf_line_renderer_overflow_summary,draft_ready,g3_line_renderer_service_fallback_unit,g4_line_renderer_fallback_registry_slot,renderer_default_text,renderer fallback,end_user,fallback,SAFE_ONLY,false,表示できる件数を超えたため要約して案内します。,renderer fallback text としてだけ成立する短文に留めています。
+leaf_line_renderer_deeplink_with_url,draft_ready,g3_line_renderer_service_fallback_unit,g4_line_renderer_fallback_registry_slot,renderer_default_text,renderer fallback,end_user,fallback,SAFE_ONLY,false,詳しくは次の画面で確認できます: <url>,renderer fallback text としてだけ成立する短文に留めています。
+leaf_line_renderer_deeplink_generic,draft_ready,g3_line_renderer_service_fallback_unit,g4_line_renderer_fallback_registry_slot,renderer_default_text,renderer fallback,end_user,fallback,SAFE_ONLY,false,続きはアプリ内画面で確認できます。,renderer fallback text としてだけ成立する短文に留めています。
+leaf_line_renderer_service_ack,draft_ready,g3_line_renderer_service_fallback_unit,g4_line_renderer_fallback_registry_slot,renderer_default_text,renderer fallback,end_user,fallback,SAFE_ONLY,false,確認しています。少しお待ちください。,renderer fallback text としてだけ成立する短文に留めています。
+leaf_line_renderer_render_failure,draft_ready,g3_line_renderer_service_fallback_unit,g4_line_renderer_fallback_registry_slot,renderer_default_text,renderer fallback,end_user,fallback,SAFE_ONLY,false,メッセージを生成できませんでした。,renderer fallback text としてだけ成立する短文に留めています。
+leaf_notification_body_default,draft_ready,g3_notification_renderer_unit,g4_notification_registry_slot,notification_text,notification sender,end_user,notification,SAFE_ONLY,false,-,通知 body / CTA join placeholder として最小限に留めています。
+leaf_notification_textmode_cta_join,draft_ready,g3_notification_renderer_unit,g4_notification_registry_slot,notification_text,notification sender,end_user,cta,SAFE_ONLY,false,label: url,通知 body / CTA join placeholder として最小限に留めています。
+leaf_region_prompt_or_validation,draft_ready,g3_journey_direct_command_unit,g4_journey_text_registry_slot,clarify_prompt,journey direct command parser,end_user,clarify,SAFE_ONLY,false,"地域（City, State）を入力してください。例: Austin, TX",必要な情報を 1-3 論点で聞く形に固定しています。
+leaf_region_state_ack,draft_ready,g3_journey_direct_command_unit,g4_journey_text_registry_slot,command_ack,journey direct command parser,end_user,cta,SAFE_ONLY,false,"地域を登録しました: <cityLabel>, <stateLabel>",受理/状態反映のみで、余計な操作説明を足していません。
+leaf_citypack_feedback_received,draft_ready,g3_journey_direct_command_unit,g4_journey_text_registry_slot,command_ack,journey direct command parser,end_user,cta,SAFE_ONLY,false,City Packの誤り報告を受け付けました。確認後に反映します。,受理/状態反映のみで、余計な操作説明を足していません。
+leaf_citypack_feedback_usage,draft_ready,g3_journey_direct_command_unit,g4_journey_text_registry_slot,clarify_prompt,journey direct command parser,end_user,clarify,SAFE_ONLY,false,City Pack Feedback: <内容> の形式で送信してください。,必要な情報を 1-3 論点で聞く形に固定しています。
+leaf_task_flex_labels,draft_ready,g3_journey_task_surface_unit,g4_journey_task_registry_slot,flex_label_set,journey task detail and postback,end_user,label,SAFE_ONLY,false,いまやる理由 / 必要時間 / やること / 概要 / よくある失敗 / あなたの状況の注意 / 理解する / 【<title>】 / <title> のタスク詳細,ラベル配列のみで文章化していません。
+leaf_task_flex_buttons,draft_ready,g3_journey_task_surface_unit,g4_journey_task_registry_slot,flex_button_set,journey task detail and postback,end_user,button,SAFE_ONLY,false,📖 手順マニュアル / 🎥 3分動画 / ⚠ よくある失敗 / 外部リンクを開く,ボタンラベル配列のみです。
