@@ -4720,6 +4720,61 @@ function renderQualityPatrolDesktopSummary(result) {
         }
       ),
       createQualityPatrolCopyAction(
+        'Copy patch request path',
+        promotionApproval.patchRequestRef && promotionApproval.patchRequestRef.path
+          ? promotionApproval.patchRequestRef.path
+          : '',
+        {
+          okMessage: 'patch request のパスをコピーしました',
+          failMessage: 'patch request のパスコピーに失敗しました',
+          subtle: true
+        }
+      ),
+      createQualityPatrolCopyAction(
+        'Copy code apply task path',
+        promotionApproval.codeApplyTaskRef && promotionApproval.codeApplyTaskRef.path
+          ? promotionApproval.codeApplyTaskRef.path
+          : '',
+        {
+          okMessage: 'code apply task のパスをコピーしました',
+          failMessage: 'code apply task のパスコピーに失敗しました',
+          subtle: true
+        }
+      ),
+      createQualityPatrolCopyAction(
+        'Copy code apply signoff path',
+        promotionApproval.codeApplySignoffRef && promotionApproval.codeApplySignoffRef.path
+          ? promotionApproval.codeApplySignoffRef.path
+          : '',
+        {
+          okMessage: 'code apply signoff のパスをコピーしました',
+          failMessage: 'code apply signoff のパスコピーに失敗しました',
+          subtle: true
+        }
+      ),
+      createQualityPatrolCopyAction(
+        'Copy code apply record path',
+        promotionApproval.codeApplyRecordRef && promotionApproval.codeApplyRecordRef.path
+          ? promotionApproval.codeApplyRecordRef.path
+          : '',
+        {
+          okMessage: 'code apply record のパスをコピーしました',
+          failMessage: 'code apply record のパスコピーに失敗しました',
+          subtle: true
+        }
+      ),
+      createQualityPatrolCopyAction(
+        'Copy code apply evidence path',
+        promotionApproval.codeApplyEvidenceRef && promotionApproval.codeApplyEvidenceRef.path
+          ? promotionApproval.codeApplyEvidenceRef.path
+          : '',
+        {
+          okMessage: 'code apply evidence のパスをコピーしました',
+          failMessage: 'code apply evidence のパスコピーに失敗しました',
+          subtle: true
+        }
+      ),
+      createQualityPatrolCopyAction(
         'Copy validation commands',
         Array.isArray(promotionApproval.validationCommands)
           ? promotionApproval.validationCommands.join('\n')

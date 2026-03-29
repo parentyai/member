@@ -47,6 +47,11 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(js.includes("Copy remaining commands"));
   assert.ok(js.includes("Copy latest prompt path"));
   assert.ok(js.includes("Copy latest artifact path"));
+  assert.ok(js.includes("Copy patch request path"));
+  assert.ok(js.includes("Copy code apply task path"));
+  assert.ok(js.includes("Copy code apply signoff path"));
+  assert.ok(js.includes("Copy code apply record path"));
+  assert.ok(js.includes("Copy code apply evidence path"));
   assert.ok(js.includes("Copy validation commands"));
   assert.ok(js.includes("Copy evidence prompt path"));
   assert.ok(js.includes("Copy evidence requirements"));
@@ -98,6 +103,11 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(ssot.includes('Run next step'));
   assert.ok(ssot.includes('Copy latest prompt path'));
   assert.ok(ssot.includes('Copy latest artifact path'));
+  assert.ok(ssot.includes('Copy patch request path'));
+  assert.ok(ssot.includes('Copy code apply task path'));
+  assert.ok(ssot.includes('Copy code apply signoff path'));
+  assert.ok(ssot.includes('Copy code apply record path'));
+  assert.ok(ssot.includes('Copy code apply evidence path'));
   assert.ok(ssot.includes('Copy validation commands'));
   assert.ok(ssot.includes('Copy evidence prompt path'));
   assert.ok(ssot.includes('Copy evidence requirements'));
@@ -113,6 +123,11 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(architecture.includes('promotionApproval.nextCommand'));
   assert.ok(architecture.includes('promotionApproval.latestPromptRef'));
   assert.ok(architecture.includes('promotionApproval.codeApplyEvidenceRef'));
+  assert.ok(architecture.includes('Copy patch request path'));
+  assert.ok(architecture.includes('Copy code apply task path'));
+  assert.ok(architecture.includes('Copy code apply signoff path'));
+  assert.ok(architecture.includes('Copy code apply record path'));
+  assert.ok(architecture.includes('Copy code apply evidence path'));
   assert.ok(architecture.includes('promotionApproval.expectedOutputCount'));
   assert.ok(architecture.includes('promotionApproval.stopConditionCount'));
   assert.ok(architecture.includes('Copy evidence prompt path'));
