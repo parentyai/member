@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-29T07:08:54.609Z",
-  "gitCommit": "e852fdd643d37921cec24869dadf2ecb8b86c794",
-  "branch": "codex/desktop-approval-evidence-copy-T012",
-  "sourceDigest": "4773483215701f880604d9e12dde1adc143b8273c9fc67a8c8ec2f4c3ef7f9a8",
+  "generatedAt": "2026-03-29T07:14:34.708Z",
+  "gitCommit": "6601ad84578127d4cfb1f554f2e50a6c6c73b0f2",
+  "branch": "codex/desktop-approval-artifact-copy-T013",
+  "sourceDigest": "639f48e4302f8b66af39c85ddda69836969cd6f940ab704f96ac2fc9081c0a3a",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -171,7 +171,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "4e40e7019580acd883ee2abc52ff6eb9f1bf3f48e4ebef0e4b260b34b8fd1b40",
+      "sha256": "6c72a89631c06f116309f1c1932ce79ff12e1a840db2ec2c75e0ac05a8bf49fb",
       "bytes": 2427
     },
     {
