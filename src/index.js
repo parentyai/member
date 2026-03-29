@@ -2476,10 +2476,49 @@ function createServer() {
     return;
   }
 
-  if (req.method === 'GET' && (pathname === '/api/admin/quality-patrol' || pathname === '/api/admin/quality-patrol/')) {
-    const { handleQualityPatrolQuery } = require('./routes/admin/qualityPatrol');
+  if (
+    (req.method === 'GET' && (pathname === '/api/admin/quality-patrol' || pathname === '/api/admin/quality-patrol/'))
+    || (req.method === 'POST' && (
+      pathname === '/api/admin/quality-patrol/desktop-approval/plan'
+      || pathname === '/api/admin/quality-patrol/desktop-approval/plan/'
+      || pathname === '/api/admin/quality-patrol/desktop-approval/execute'
+      || pathname === '/api/admin/quality-patrol/desktop-approval/execute/'
+    ))
+  ) {
+    const {
+      handleQualityPatrolQuery,
+      handleQualityPatrolApprovalPlan,
+      handleQualityPatrolApprovalExecute
+    } = require('./routes/admin/qualityPatrol');
+    let qualityPatrolBytes = 0;
+    const qualityPatrolChunks = [];
+    let qualityPatrolTooLarge = false;
+    const collectQualityPatrolBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (qualityPatrolTooLarge) return;
+        qualityPatrolBytes += chunk.length;
+        if (qualityPatrolBytes > MAX_BODY_BYTES) {
+          qualityPatrolTooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        qualityPatrolChunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(qualityPatrolChunks).toString('utf8')));
+    });
     (async () => {
-      await handleQualityPatrolQuery(req, res);
+      if (req.method === 'GET') {
+        await handleQualityPatrolQuery(req, res);
+        return;
+      }
+      const bodyText = await collectQualityPatrolBody();
+      if (pathname.startsWith('/api/admin/quality-patrol/desktop-approval/plan')) {
+        await handleQualityPatrolApprovalPlan(req, res, bodyText);
+        return;
+      }
+      await handleQualityPatrolApprovalExecute(req, res, bodyText);
     })().catch(() => {
       res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: false, error: 'error' }));

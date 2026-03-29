@@ -112,8 +112,11 @@ test('phase861: desktop patrol summary exposes latest promotion review pointers 
   const codeApplyDraftPath = path.join(promotionsRoot, 'prop_010.code_apply_draft.md');
   const codeReviewPacketPath = path.join(promotionsRoot, 'prop_010.code_review_packet.md');
   const codeApplyTaskPath = path.join(promotionsRoot, 'prop_010.code_apply_task.json');
+  const codeApplyTaskPromptPath = path.join(promotionsRoot, 'prop_010.code_apply_task.prompt.md');
   const codeApplySignoffPath = path.join(promotionsRoot, 'prop_010.code_apply_signoff.json');
+  const codeApplySignoffPromptPath = path.join(promotionsRoot, 'prop_010.code_apply_signoff.prompt.md');
   const codeApplyRecordPath = path.join(promotionsRoot, 'prop_010.code_apply_record.json');
+  const codeApplyRecordPromptPath = path.join(promotionsRoot, 'prop_010.code_apply_record.prompt.md');
 
   writeJson(recordPath, {
     proposal_id: 'prop_010',
@@ -136,23 +139,31 @@ test('phase861: desktop patrol summary exposes latest promotion review pointers 
   writeJson(codeApplyTaskPath, {
     proposal_id: 'prop_010',
     status: 'ready_for_human_code_apply_task',
-    validation_commands: ['npm test', 'npm run test:docs']
+    validation_commands: ['npm test', 'npm run test:docs'],
+    worker_prompt_path: codeApplyTaskPromptPath
   });
   writeJson(codeApplySignoffPath, {
     proposal_id: 'prop_010',
     status: 'ready_for_human_apply_signoff',
-    validation_commands: ['npm test', 'npm run test:docs']
+    validation_commands: ['npm test', 'npm run test:docs'],
+    signoff_prompt_path: codeApplySignoffPromptPath
   });
   writeJson(codeApplyRecordPath, {
     proposal_id: 'prop_010',
     status: 'ready_for_human_apply_record',
-    validation_commands: ['npm test', 'npm run test:docs']
+    validation_commands: ['npm test', 'npm run test:docs'],
+    record_prompt_path: codeApplyRecordPromptPath
   });
   fs.mkdirSync(promotionsRoot, { recursive: true });
   fs.writeFileSync(patchDraftPath, '# patch draft\n');
   fs.writeFileSync(codeEditTaskPath, '# code edit task\n');
   fs.writeFileSync(codeApplyDraftPath, '# code apply draft\n');
   fs.writeFileSync(codeReviewPacketPath, '# code review packet\n');
+  fs.writeFileSync(codeApplyTaskPromptPath, '# code apply task prompt\n');
+  fs.writeFileSync(codeApplySignoffPromptPath, '# code apply signoff prompt\n');
+  fs.writeFileSync(codeApplyRecordPromptPath, '# code apply record prompt\n');
+  const approvalUpdatedAt = new Date('2026-03-28T14:15:00.000Z');
+  fs.utimesSync(codeApplyRecordPath, approvalUpdatedAt, approvalUpdatedAt);
 
   const result = await queryLatestDesktopPatrolSummary({ audience: 'operator' }, { artifactRoot });
 
@@ -175,6 +186,8 @@ test('phase861: desktop patrol summary exposes latest promotion review pointers 
   assert.equal(result.promotionApproval.latestDraftPrRef, 'refs/pull/1010/head');
   assert.equal(result.promotionApproval.branchName, 'codex/line-desktop-patrol-prop-010');
   assert.equal(result.promotionApproval.worktreeRef.path, '/tmp/member-line-desktop-prop-010');
+  assert.equal(result.promotionApproval.latestArtifactRef.path, codeApplyRecordPath);
+  assert.equal(result.promotionApproval.latestPromptRef.path, codeApplyRecordPromptPath);
   assert.equal(result.promotionApproval.patchRequestRef.path, patchRequestPath);
   assert.equal(result.promotionApproval.codeApplyTaskRef.path, codeApplyTaskPath);
   assert.equal(result.promotionApproval.codeApplySignoffRef.path, codeApplySignoffPath);
@@ -188,6 +201,46 @@ test('phase861: desktop patrol summary exposes latest promotion review pointers 
   assert.equal(result.promotionApproval.operatorInstructionCount, 2);
   assert.equal(result.promotionApproval.candidateEdits[0].filePath, 'src/routes/webhookLine.js');
   assert.equal(result.promotionApproval.updatedAt, '2026-03-28T14:15:00.000Z');
+});
+
+test('phase861: desktop patrol approval lane prefers latest approval artifact status and prompt refs', async (t) => {
+  const artifactRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'phase861-desktop-patrol-approval-latest-'));
+  t.after(() => fs.rmSync(artifactRoot, { recursive: true, force: true }));
+
+  const promotionsRoot = path.join(artifactRoot, 'proposals', 'promotions');
+  const recordPath = path.join(promotionsRoot, 'prop_013.json');
+  const patchRequestPath = path.join(promotionsRoot, 'prop_013.patch_request.json');
+  const codeApplyTaskPath = path.join(promotionsRoot, 'prop_013.code_apply_task.json');
+  const codeApplyTaskPromptPath = path.join(promotionsRoot, 'prop_013.code_apply_task.prompt.md');
+
+  writeJson(recordPath, {
+    proposal_id: 'prop_013',
+    status: 'ready_for_human_patch',
+    branch_name: 'codex/line-desktop-patrol-prop-013',
+    worktree_path: '/tmp/member-line-desktop-prop-013',
+    updated_at: '2026-03-28T14:30:00.000Z'
+  });
+  writeJson(patchRequestPath, {
+    proposal_id: 'prop_013',
+    status: 'ready_for_human_patch',
+    validation_commands: ['npm test']
+  });
+  writeJson(codeApplyTaskPath, {
+    proposal_id: 'prop_013',
+    status: 'ready_for_human_code_apply_task',
+    validation_commands: ['npm test'],
+    worker_prompt_path: codeApplyTaskPromptPath
+  });
+  fs.mkdirSync(promotionsRoot, { recursive: true });
+  fs.writeFileSync(codeApplyTaskPromptPath, '# code apply task prompt\n');
+
+  const result = await queryLatestDesktopPatrolSummary({ audience: 'operator' }, { artifactRoot });
+
+  assert.equal(result.promotionApproval.latestProposalId, 'prop_013');
+  assert.equal(result.promotionApproval.approvalStage, 'code_apply_task');
+  assert.equal(result.promotionApproval.approvalStatus, 'ready_for_human_code_apply_task');
+  assert.equal(result.promotionApproval.latestArtifactRef.path, codeApplyTaskPath);
+  assert.equal(result.promotionApproval.latestPromptRef.path, codeApplyTaskPromptPath);
 });
 
 test('phase861: desktop patrol approval lane exposes next command hints for operator audience', async (t) => {

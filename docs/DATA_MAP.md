@@ -174,7 +174,11 @@ Notes:
 - route: `GET /api/admin/quality-patrol`
 - query is read-only and uses the existing review-unit, evaluator, KPI, detection, root-cause, and planner foundations as inputs.
 - operator audience may receive trace refs and denser evidence; human audience hides raw trace ids and compresses internal metadata.
-- PR-9 admin UI consumes the same route in `pane-quality-patrol` with `mode` and `audience` selectors; no additional write path is introduced.
+- PR-9 admin UI consumes the same route in `pane-quality-patrol` with `mode` and `audience` selectors.
+- route: `POST /api/admin/quality-patrol/desktop-approval/plan`
+- route: `POST /api/admin/quality-patrol/desktop-approval/execute`
+- the plan route returns `planHash` / `confirmToken` for the latest approval stage and does not mutate runtime state.
+- the execute route is `managedFlowGuard`-protected, local-only, and advances one approval artifact stage per call.
 
 ### Quality Patrol job artifacts (derived, filesystem, read-only by default)
 Purpose: allow manual or scheduled patrol runs to materialize stable JSON artifacts without changing runtime, Firestore collection meaning, or query route shape.
@@ -379,6 +383,8 @@ Typical fields:
   - `desktopPatrolSummary.promotionApproval.latestDraftPrRef`
   - `desktopPatrolSummary.promotionApproval.branchName`
   - `desktopPatrolSummary.promotionApproval.worktreeRef`
+  - `desktopPatrolSummary.promotionApproval.latestArtifactRef`
+  - `desktopPatrolSummary.promotionApproval.latestPromptRef`
   - `desktopPatrolSummary.promotionApproval.patchRequestRef`
   - `desktopPatrolSummary.promotionApproval.codeApplyTaskRef`
   - `desktopPatrolSummary.promotionApproval.codeApplySignoffRef`
@@ -394,6 +400,8 @@ Typical fields:
   - `desktopPatrolSummary.promotionApproval.remainingCommandCount`
   - `desktopPatrolSummary.promotionApproval.nextAction`
   - `desktopPatrolSummary.promotionApproval.updatedAt`
+  - plan response only: `planHash`
+  - plan response only: `confirmToken`
 - admin desktop summary promotion batch view:
   - `desktopPatrolSummary.promotionBatch.batchRunId`
   - `desktopPatrolSummary.promotionBatch.stage`

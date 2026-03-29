@@ -164,6 +164,7 @@
     "executeBackfill": [
       "deliveriesRepo"
     ],
+    "executeDesktopPatrolApprovalAction": [],
     "executeNotificationSend": [
       "auditLogsRepo",
       "decisionLogsRepo",
@@ -481,6 +482,7 @@
     "planBackfill": [
       "deliveriesRepo"
     ],
+    "planDesktopPatrolApprovalAction": [],
     "planNotificationSend": [
       "auditLogsRepo",
       "notificationsRepo",
@@ -1225,6 +1227,8 @@
     ],
     "src/routes/admin/qualityPatrol.js": [
       "appendAuditLog",
+      "executeDesktopPatrolApprovalAction",
+      "planDesktopPatrolApprovalAction",
       "queryLatestDesktopPatrolSummary",
       "queryLatestPatrolInsights"
     ],
