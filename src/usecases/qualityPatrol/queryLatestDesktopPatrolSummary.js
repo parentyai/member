@@ -23,6 +23,11 @@ const PROMOTION_REVIEW_DISPLAY_ORDER = Object.freeze([
   { kind: 'patch_draft', markdownSuffix: '.patch_draft.md' },
   { kind: 'draft_pr_body', markdownSuffix: '.draft_pr.md', recordField: 'body_path' }
 ]);
+const PROMOTION_APPROVAL_PROMPT_ORDER = Object.freeze([
+  { kind: 'code_apply_task', field: 'worker_prompt_path', markdownSuffix: '.code_apply_task.prompt.md', refKind: 'code_apply_task_prompt' },
+  { kind: 'code_apply_signoff', field: 'signoff_prompt_path', markdownSuffix: '.code_apply_signoff.prompt.md', refKind: 'code_apply_signoff_prompt' },
+  { kind: 'code_apply_record', field: 'record_prompt_path', markdownSuffix: '.code_apply_record.prompt.md', refKind: 'code_apply_record_prompt' }
+]);
 
 function resolveArtifactRoot(deps) {
   const fromDeps = deps && typeof deps.artifactRoot === 'string' ? deps.artifactRoot.trim() : '';
@@ -270,6 +275,43 @@ async function resolvePromotionArtifactRef(descriptor, record, audience) {
   return artifactPath ? toArtifactRef(descriptor.kind, artifactPath, audience) : null;
 }
 
+function normalizeUpdatedAtFromPayload(payload, stat) {
+  return normalizeText(
+    (payload && (
+      payload.updated_at
+      || payload.updatedAt
+      || payload.finished_at
+      || payload.finishedAt
+      || payload.created_at
+      || payload.createdAt
+    ))
+    || (stat ? new Date(stat.mtimeMs).toISOString() : null),
+    null
+  );
+}
+
+async function resolvePromotionPromptRef(kind, payload, record, audience) {
+  const descriptor = descriptorForPromotionKind(kind, PROMOTION_APPROVAL_PROMPT_ORDER);
+  if (!descriptor || !record || typeof record !== 'object') return null;
+
+  const candidates = [];
+  const proposalId = normalizeText(record.proposal_id, null);
+  const recordPath = normalizeText(record.__path, null);
+  const promotionsRoot = recordPath ? path.dirname(recordPath) : null;
+  if (payload && payload[descriptor.field]) {
+    candidates.push(path.resolve(String(payload[descriptor.field])));
+  }
+  if (promotionsRoot && proposalId && descriptor.markdownSuffix) {
+    candidates.push(path.join(promotionsRoot, `${proposalId}${descriptor.markdownSuffix}`));
+  }
+
+  for (const candidate of candidates.filter((item, index) => item && candidates.indexOf(item) === index)) {
+    const stat = await statIfExists(candidate);
+    if (stat) return toArtifactRef(descriptor.refKind, candidate, audience);
+  }
+  return null;
+}
+
 async function normalizeLatestPromotionReview(record, audience) {
   if (!record || typeof record !== 'object') {
     return {
@@ -456,8 +498,15 @@ async function normalizeLatestPromotionApproval(record, audience) {
   const latestApprovalPath = latestDescriptor
     ? await resolvePromotionArtifactPath(latestDescriptor, record)
     : null;
+  const latestApprovalStat = latestApprovalPath ? await statIfExists(latestApprovalPath) : null;
   const patchRequestPayload = patchRequestPath ? await readJsonIfExists(patchRequestPath) : null;
   const latestApprovalPayload = latestApprovalPath ? await readJsonIfExists(latestApprovalPath) : null;
+  const approvalStatus = normalizeText(
+    (latestApprovalPayload && latestApprovalPayload.status)
+    || (patchRequestPayload && patchRequestPayload.status)
+    || record.status,
+    null
+  );
   const validationCommands = normalizeStringArray(
     (latestApprovalPayload && latestApprovalPayload.validation_commands)
     || (patchRequestPayload && patchRequestPayload.validation_commands)
@@ -483,26 +532,30 @@ async function normalizeLatestPromotionApproval(record, audience) {
     || [],
     audience
   );
-  const updatedAt = normalizeText(
-    record.updated_at
-    || record.updatedAt
-    || record.finished_at
-    || record.finishedAt
-    || record.created_at
-    || record.createdAt
-    || (record.__sortKey ? new Date(record.__sortKey).toISOString() : null),
-    null
-  );
+  const latestPromptRef = await resolvePromotionPromptRef(approvalStage, latestApprovalPayload, record, audience);
+  const updatedAt = normalizeUpdatedAtFromPayload(latestApprovalPayload, latestApprovalStat)
+    || normalizeText(
+      record.updated_at
+      || record.updatedAt
+      || record.finished_at
+      || record.finishedAt
+      || record.created_at
+      || record.createdAt
+      || (record.__sortKey ? new Date(record.__sortKey).toISOString() : null),
+      null
+    );
 
   return {
     latestProposalId: proposalId,
     approvalStage,
-    approvalStatus: normalizeText(record.status, null),
+    approvalStatus,
     latestDraftPrRef: normalizeText(record.draft_pr_ref || record.draft_pr_url, null),
     branchName,
     worktreeRef: worktreePath
       ? toArtifactRef('worktree', path.resolve(String(worktreePath)), audience)
       : null,
+    latestArtifactRef: approvalStage ? refsByKind[approvalStage] || null : null,
+    latestPromptRef,
     patchRequestRef: refsByKind.patch_request || null,
     codeApplyTaskRef: refsByKind.code_apply_task || null,
     codeApplySignoffRef: refsByKind.code_apply_signoff || null,
@@ -520,7 +573,7 @@ async function normalizeLatestPromotionApproval(record, audience) {
     nextCommand: commandHints.nextCommand,
     remainingCommands: commandHints.remainingCommands,
     remainingCommandCount: commandHints.remainingCommandCount,
-    nextAction: buildPromotionApprovalNextAction(approvalStage, record.status),
+    nextAction: buildPromotionApprovalNextAction(approvalStage, approvalStatus),
     updatedAt
   };
 }
@@ -757,6 +810,8 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
         latestDraftPrRef: null,
         branchName: null,
         worktreeRef: null,
+        latestArtifactRef: null,
+        latestPromptRef: null,
         patchRequestRef: null,
         codeApplyTaskRef: null,
         codeApplySignoffRef: null,

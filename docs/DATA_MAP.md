@@ -383,6 +383,8 @@ Typical fields:
   - `desktopPatrolSummary.promotionApproval.latestDraftPrRef`
   - `desktopPatrolSummary.promotionApproval.branchName`
   - `desktopPatrolSummary.promotionApproval.worktreeRef`
+  - `desktopPatrolSummary.promotionApproval.latestArtifactRef`
+  - `desktopPatrolSummary.promotionApproval.latestPromptRef`
   - `desktopPatrolSummary.promotionApproval.patchRequestRef`
   - `desktopPatrolSummary.promotionApproval.codeApplyTaskRef`
   - `desktopPatrolSummary.promotionApproval.codeApplySignoffRef`

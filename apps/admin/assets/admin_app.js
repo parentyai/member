@@ -4697,6 +4697,17 @@ function renderQualityPatrolDesktopSummary(result) {
           subtle: true
         }
       ),
+      createQualityPatrolCopyAction(
+        'Copy latest prompt path',
+        promotionApproval.latestPromptRef && promotionApproval.latestPromptRef.path
+          ? promotionApproval.latestPromptRef.path
+          : '',
+        {
+          okMessage: '最新 prompt のパスをコピーしました',
+          failMessage: '最新 prompt のパスコピーに失敗しました',
+          subtle: true
+        }
+      ),
       createQualityPatrolAction(
         'Plan next step',
         () => { void runQualityPatrolApprovalPlan(); },
@@ -4735,6 +4746,8 @@ function renderQualityPatrolDesktopSummary(result) {
         )}`,
         `draftPrRef: ${asText(promotionApproval.latestDraftPrRef, '-')}`,
         `worktreeRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.worktreeRef)}`,
+        `latestArtifactRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.latestArtifactRef)}`,
+        `latestPromptRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.latestPromptRef)}`,
         `patchRequestRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.patchRequestRef)}`,
         `codeApplyTaskRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.codeApplyTaskRef)}`,
         `codeApplySignoffRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.codeApplySignoffRef)}`,
