@@ -14,9 +14,11 @@ const {
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_BATCH_PATH = path.join(__dirname, 'scenarios', 'strategic_self_improvement_batch_v1.json');
+const DEFAULT_EXPLORE_LIBRARY_PATH = path.join(__dirname, 'scenarios', 'strategic_self_improvement_explore_library_v1.json');
 const DEFAULT_POLICY_PATH = path.join(ROOT, 'tools', 'line_desktop_patrol', 'config', 'policy.local.json');
 const DEFAULT_QUEUE_ROOT = path.join(ROOT, 'artifacts', 'line_desktop_patrol', 'proposals');
 const DEFAULT_BASE_REF = 'origin/main';
+const DEFAULT_EXPLORE_COUNT = 5;
 const STOP_BATCH_ERROR_CODES = new Set([
   'blocked_hours',
   'desktop_target_title_guard',
@@ -69,6 +71,54 @@ function normalizeText(value) {
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+function buildHashKey(seed, value) {
+  return crypto.createHash('sha256').update(`${seed}::${value}`).digest('hex');
+}
+
+function normalizeCaseDefinition(item, index, options = {}) {
+  const payload = item && typeof item === 'object' ? item : null;
+  if (!payload) {
+    throw new Error(`${options.sourceLabel || 'case'} ${index} must be an object`);
+  }
+  const replyContract = payload.reply_contract;
+  if (!replyContract || typeof replyContract !== 'object') {
+    throw new Error(`${options.sourceLabel || 'case'} ${index} reply_contract is required`);
+  }
+  const mustIncludeAny = Array.isArray(replyContract.must_include_any)
+    ? replyContract.must_include_any.map((row) => normalizeText(String(row))).filter(Boolean)
+    : [];
+  if (mustIncludeAny.length === 0) {
+    throw new Error(`${options.sourceLabel || 'case'} ${index} must include reply_contract.must_include_any`);
+  }
+  const normalized = {
+    caseId: requireString(payload.case_id, `${options.sourceLabel || 'cases'}[${index}].case_id`),
+    strategicGoal: requireString(payload.strategic_goal, `${options.sourceLabel || 'cases'}[${index}].strategic_goal`),
+    improvementAxis: requireString(payload.improvement_axis, `${options.sourceLabel || 'cases'}[${index}].improvement_axis`),
+    userInput: requireString(payload.user_input, `${options.sourceLabel || 'cases'}[${index}].user_input`),
+    expectedReplySubstrings: (Array.isArray(payload.expected_reply_substrings) ? payload.expected_reply_substrings : [])
+      .map((row) => normalizeText(String(row)))
+      .filter(Boolean),
+    forbiddenReplySubstrings: (Array.isArray(payload.forbidden_reply_substrings) ? payload.forbidden_reply_substrings : [])
+      .map((row) => normalizeText(String(row)))
+      .filter(Boolean),
+    replyContract: {
+      mustIncludeAny,
+      maxLines: toInt(replyContract.max_lines, 2),
+      maxChars: toInt(replyContract.max_chars, 90),
+      disallowQuestion: replyContract.disallow_question === true,
+    },
+    caseMode: options.caseMode || 'core',
+    explorationFamily: null,
+  };
+  if (options.caseMode === 'explore') {
+    normalized.explorationFamily = requireString(
+      payload.exploration_family,
+      `${options.sourceLabel || 'cases'}[${index}].exploration_family`
+    );
+  }
+  return normalized;
 }
 
 function resolvePolicyPath() {
@@ -145,39 +195,10 @@ function loadStrategicBatch(batchPath = DEFAULT_BATCH_PATH) {
   if (cases.length !== expectedCount) {
     throw new Error(`strategic batch must contain exactly ${expectedCount} cases`);
   }
-  const normalizedCases = cases.map((item, index) => {
-    if (!item || typeof item !== 'object') {
-      throw new Error(`case ${index} must be an object`);
-    }
-    const replyContract = item.reply_contract;
-    if (!replyContract || typeof replyContract !== 'object') {
-      throw new Error(`case ${index} reply_contract is required`);
-    }
-    const mustIncludeAny = Array.isArray(replyContract.must_include_any)
-      ? replyContract.must_include_any.map((row) => normalizeText(String(row))).filter(Boolean)
-      : [];
-    if (mustIncludeAny.length === 0) {
-      throw new Error(`case ${index} must include reply_contract.must_include_any`);
-    }
-    return {
-      caseId: requireString(item.case_id, `cases[${index}].case_id`),
-      strategicGoal: requireString(item.strategic_goal, `cases[${index}].strategic_goal`),
-      improvementAxis: requireString(item.improvement_axis, `cases[${index}].improvement_axis`),
-      userInput: requireString(item.user_input, `cases[${index}].user_input`),
-      expectedReplySubstrings: (Array.isArray(item.expected_reply_substrings) ? item.expected_reply_substrings : [])
-        .map((row) => normalizeText(String(row)))
-        .filter(Boolean),
-      forbiddenReplySubstrings: (Array.isArray(item.forbidden_reply_substrings) ? item.forbidden_reply_substrings : [])
-        .map((row) => normalizeText(String(row)))
-        .filter(Boolean),
-      replyContract: {
-        mustIncludeAny,
-        maxLines: toInt(replyContract.max_lines, 2),
-        maxChars: toInt(replyContract.max_chars, 90),
-        disallowQuestion: replyContract.disallow_question === true,
-      },
-    };
-  });
+  const normalizedCases = cases.map((item, index) => normalizeCaseDefinition(item, index, {
+    sourceLabel: 'cases',
+    caseMode: 'core',
+  }));
 
   return {
     batchId: payload.batch_id,
@@ -187,6 +208,106 @@ function loadStrategicBatch(batchPath = DEFAULT_BATCH_PATH) {
     futureAutomationGoal: normalizeText(payload.future_automation_goal),
     path: resolved,
     cases: normalizedCases,
+  };
+}
+
+function loadExploreLibrary(libraryPath = DEFAULT_EXPLORE_LIBRARY_PATH) {
+  const resolved = path.resolve(ROOT, libraryPath);
+  const payload = readJson(resolved);
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('explore library must be an object');
+  }
+  if (normalizeText(payload.library_id).length < 3) {
+    throw new Error('explore library library_id is required');
+  }
+  const cases = Array.isArray(payload.cases) ? payload.cases : [];
+  if (cases.length === 0) {
+    throw new Error('explore library must contain at least one case');
+  }
+  const normalizedCases = cases.map((item, index) => normalizeCaseDefinition(item, index, {
+    sourceLabel: 'explore_cases',
+    caseMode: 'explore',
+  }));
+  const families = Array.from(new Set(normalizedCases.map((item) => item.explorationFamily))).sort();
+  if (families.length === 0) {
+    throw new Error('explore library must contain at least one exploration family');
+  }
+  return {
+    libraryId: payload.library_id,
+    description: normalizeText(payload.description),
+    path: resolved,
+    families,
+    cases: normalizedCases,
+  };
+}
+
+function selectExploreCases(library, count = DEFAULT_EXPLORE_COUNT, seed) {
+  const requestedCount = Math.max(toInt(count, DEFAULT_EXPLORE_COUNT), 0);
+  const selectionSeed = normalizeText(seed) || crypto.randomUUID();
+  if (!library || !Array.isArray(library.cases)) {
+    throw new Error('explore library cases are required');
+  }
+  if (requestedCount === 0 || library.cases.length === 0) {
+    return {
+      selectionSeed,
+      requestedCount,
+      selectedCases: [],
+      selectedCaseIds: [],
+      selectedFamilies: [],
+    };
+  }
+
+  const familyOrder = library.families
+    .slice()
+    .sort((left, right) => buildHashKey(selectionSeed, `family:${left}`).localeCompare(buildHashKey(selectionSeed, `family:${right}`)));
+  const selected = [];
+  const seenIds = new Set();
+  for (const family of familyOrder) {
+    if (selected.length >= requestedCount) break;
+    const familyCases = library.cases
+      .filter((item) => item.explorationFamily === family)
+      .slice()
+      .sort((left, right) => buildHashKey(selectionSeed, `case:${left.caseId}`).localeCompare(buildHashKey(selectionSeed, `case:${right.caseId}`)));
+    const candidate = familyCases[0];
+    if (!candidate) continue;
+    selected.push(candidate);
+    seenIds.add(candidate.caseId);
+  }
+  if (selected.length < requestedCount) {
+    const remaining = library.cases
+      .filter((item) => !seenIds.has(item.caseId))
+      .slice()
+      .sort((left, right) => buildHashKey(selectionSeed, `case:${left.caseId}`).localeCompare(buildHashKey(selectionSeed, `case:${right.caseId}`)));
+    for (const candidate of remaining) {
+      if (selected.length >= requestedCount) break;
+      selected.push(candidate);
+      seenIds.add(candidate.caseId);
+    }
+  }
+  return {
+    selectionSeed,
+    requestedCount,
+    selectedCases: selected,
+    selectedCaseIds: selected.map((item) => item.caseId),
+    selectedFamilies: Array.from(new Set(selected.map((item) => item.explorationFamily))).sort(),
+  };
+}
+
+function buildScenarioSuite(batch, exploreSelection) {
+  const selectedExploreCases = exploreSelection && Array.isArray(exploreSelection.selectedCases)
+    ? exploreSelection.selectedCases
+    : [];
+  return {
+    suiteId: selectedExploreCases.length > 0 ? `${batch.batchId}__core_plus_explore` : `${batch.batchId}__core_only`,
+    batchId: batch.batchId,
+    batchDescription: batch.description,
+    coreCaseCount: batch.fixedCaseCount,
+    exploreCaseCount: selectedExploreCases.length,
+    totalCaseCount: batch.fixedCaseCount + selectedExploreCases.length,
+    selectionSeed: exploreSelection ? exploreSelection.selectionSeed : '',
+    selectedExploreCaseIds: exploreSelection ? exploreSelection.selectedCaseIds : [],
+    selectedExploreFamilies: exploreSelection ? exploreSelection.selectedFamilies : [],
+    cases: batch.cases.concat(selectedExploreCases),
   };
 }
 
@@ -598,7 +719,7 @@ function consecutiveFailureCount(rows) {
   return count;
 }
 
-function buildBatchPreflight(batch, sendMode) {
+function buildBatchPreflight(batch, sendMode, requiredSlots = batch.fixedCaseCount) {
   if (normalizeText(sendMode) !== 'execute') {
     return {
       ok: true,
@@ -634,22 +755,22 @@ function buildBatchPreflight(batch, sendMode) {
       maxRunsPerHour: policy.maxRunsPerHour,
       failureStreakCount,
       failureStreakThreshold: policy.failureStreakThreshold,
-      requiredSlots: batch.fixedCaseCount,
+      requiredSlots,
     };
   }
-  if (remainingSlots < batch.fixedCaseCount) {
+  if (remainingSlots < requiredSlots) {
     return {
       ok: false,
       stage: 'budget_preflight',
       code: 'insufficient_hourly_budget',
-      error: `remaining hourly budget ${remainingSlots} is below required fixed batch size ${batch.fixedCaseCount}`,
+      error: `remaining hourly budget ${remainingSlots} is below required suite size ${requiredSlots}`,
       policyPath: policy.policyPath,
       recentRunCount,
       remainingSlots,
       maxRunsPerHour: policy.maxRunsPerHour,
       failureStreakCount,
       failureStreakThreshold: policy.failureStreakThreshold,
-      requiredSlots: batch.fixedCaseCount,
+      requiredSlots,
     };
   }
   if (failureStreakCount >= policy.failureStreakThreshold) {
@@ -664,7 +785,7 @@ function buildBatchPreflight(batch, sendMode) {
       maxRunsPerHour: policy.maxRunsPerHour,
       failureStreakCount,
       failureStreakThreshold: policy.failureStreakThreshold,
-      requiredSlots: batch.fixedCaseCount,
+      requiredSlots,
     };
   }
   return {
@@ -676,7 +797,7 @@ function buildBatchPreflight(batch, sendMode) {
     maxRunsPerHour: policy.maxRunsPerHour,
     failureStreakCount,
     failureStreakThreshold: policy.failureStreakThreshold,
-    requiredSlots: batch.fixedCaseCount,
+    requiredSlots,
   };
 }
 
@@ -685,6 +806,8 @@ function buildBlockedCaseResult(caseDefinition, blocker, index, batchSize) {
     caseId: caseDefinition.caseId,
     strategicGoal: caseDefinition.strategicGoal,
     improvementAxis: caseDefinition.improvementAxis,
+    caseMode: caseDefinition.caseMode || 'core',
+    explorationFamily: caseDefinition.explorationFamily || null,
     userInput: caseDefinition.userInput,
     loopOk: false,
     loopVerdict: 'blocked',
@@ -729,6 +852,8 @@ function buildBlockedCaseResult(caseDefinition, blocker, index, batchSize) {
 
 function summarizeRound(batch, caseResults) {
   const strategicAxes = {};
+  const modeBreakdown = {};
+  const explorationFamilies = {};
   const proposals = [];
   const promotionSummary = {
     statusCounts: {},
@@ -744,11 +869,21 @@ function summarizeRound(batch, caseResults) {
   for (const result of caseResults) {
     strategicAxes[result.improvementAxis] = strategicAxes[result.improvementAxis] || { total: 0, passed: 0 };
     strategicAxes[result.improvementAxis].total += 1;
+    modeBreakdown[result.caseMode] = modeBreakdown[result.caseMode] || { total: 0, passed: 0 };
+    modeBreakdown[result.caseMode].total += 1;
+    if (result.explorationFamily) {
+      explorationFamilies[result.explorationFamily] = explorationFamilies[result.explorationFamily] || { total: 0, passed: 0 };
+      explorationFamilies[result.explorationFamily].total += 1;
+    }
     if (result.loopVerdict === 'pass') loopPassCount += 1;
     if (result.replyContract && result.replyContract.verdict === true) replyContractPassCount += 1;
     if (result.caseVerdict === 'pass') {
       passCount += 1;
       strategicAxes[result.improvementAxis].passed += 1;
+      modeBreakdown[result.caseMode].passed += 1;
+      if (result.explorationFamily) {
+        explorationFamilies[result.explorationFamily].passed += 1;
+      }
     } else {
       failingCaseIds.push(result.caseId);
     }
@@ -772,7 +907,9 @@ function summarizeRound(batch, caseResults) {
   }
   return {
     batchId: batch.batchId,
-    fixedCaseCount: batch.fixedCaseCount,
+    coreCaseCount: batch.coreCaseCount || batch.fixedCaseCount,
+    exploreCaseCount: batch.exploreCaseCount || 0,
+    totalCaseCount: batch.totalCaseCount || caseResults.length,
     passCount,
     loopPassCount,
     replyContractPassCount,
@@ -780,12 +917,14 @@ function summarizeRound(batch, caseResults) {
     proposalCount,
     failingCaseIds,
     strategicAxes,
+    modeBreakdown,
+    explorationFamilies,
     promotionSummary,
     proposals,
     completionStatus: promotionSummary.blockedCaseIds.length > 0
       ? 'promotion_blocked'
       : (
-        passCount === batch.fixedCaseCount && proposalCount === 0
+        passCount === (batch.totalCaseCount || caseResults.length) && proposalCount === 0
           ? 'stable_no_improvement_needed'
           : 'proposal_review_required'
       ),
@@ -801,6 +940,9 @@ function writeJson(filePath, payload) {
 async function runStrategicSelfImprovementBatch(argv, deps) {
   const args = parseArgs(argv || process.argv.slice(2));
   const batch = loadStrategicBatch(args.batch || DEFAULT_BATCH_PATH);
+  const exploreLibrary = loadExploreLibrary(args.exploreLibrary || DEFAULT_EXPLORE_LIBRARY_PATH);
+  const exploreSelection = selectExploreCases(exploreLibrary, args.exploreCount, args.seed);
+  const suite = buildScenarioSuite(batch, exploreSelection);
   const targetAlias = requireString(args.targetAlias, 'targetAlias');
   const sendMode = normalizeText(args.sendMode) || 'execute';
   const observeSeconds = toInt(args.observeSeconds, 25);
@@ -832,15 +974,19 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
       return payload;
     }
 
-    const batchPreflight = buildBatchPreflight(batch, sendMode);
+    const batchPreflight = buildBatchPreflight(batch, sendMode, suite.totalCaseCount);
     if (!batchPreflight.ok) {
       const payload = {
         ok: false,
         batchRunId,
         batchId: batch.batchId,
+        suiteId: suite.suiteId,
         stage: 'budget_preflight',
         readiness,
         readinessResult,
+        exploreLibraryId: exploreLibrary.libraryId,
+        selectionSeed: suite.selectionSeed,
+        suiteCaseCount: suite.totalCaseCount,
         batchPreflight,
       };
       writeJson(path.join(batchRoot, 'summary.json'), payload);
@@ -849,10 +995,10 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
 
     const caseResults = [];
     let stopBlocker = null;
-    for (let index = 0; index < batch.cases.length; index += 1) {
-      const caseDefinition = batch.cases[index];
+    for (let index = 0; index < suite.cases.length; index += 1) {
+      const caseDefinition = suite.cases[index];
       if (stopBlocker) {
-        caseResults.push(buildBlockedCaseResult(caseDefinition, stopBlocker, index, batch.cases.length));
+        caseResults.push(buildBlockedCaseResult(caseDefinition, stopBlocker, index, suite.cases.length));
         continue;
       }
       const loop = await callTool(client, nextRequestId, {
@@ -903,6 +1049,8 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
         caseId: caseDefinition.caseId,
         strategicGoal: caseDefinition.strategicGoal,
         improvementAxis: caseDefinition.improvementAxis,
+        caseMode: caseDefinition.caseMode || 'core',
+        explorationFamily: caseDefinition.explorationFamily || null,
         userInput: caseDefinition.userInput,
         loopOk: loop.ok,
         loopVerdict,
@@ -928,12 +1076,23 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
       }
     }
 
-    const roundSummary = summarizeRound(batch, caseResults);
+    const roundSummary = summarizeRound(suite, caseResults);
     const summary = {
       ok: true,
       batchRunId,
       batchId: batch.batchId,
+      suiteId: suite.suiteId,
       batchDescription: batch.description,
+      batchPath: batch.path,
+      exploreLibraryId: exploreLibrary.libraryId,
+      exploreLibraryPath: exploreLibrary.path,
+      exploreLibraryDescription: exploreLibrary.description,
+      selectionSeed: suite.selectionSeed,
+      coreCaseCount: suite.coreCaseCount,
+      exploreCaseCount: suite.exploreCaseCount,
+      totalCaseCount: suite.totalCaseCount,
+      selectedExploreCaseIds: suite.selectedExploreCaseIds,
+      selectedExploreFamilies: suite.selectedExploreFamilies,
       targetAlias,
       sendMode,
       autoApplyMode: batch.autoApplyMode,
@@ -956,6 +1115,8 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
         caseId: result.caseId,
         strategicGoal: result.strategicGoal,
         improvementAxis: result.improvementAxis,
+        caseMode: result.caseMode,
+        explorationFamily: result.explorationFamily,
         caseVerdict: result.caseVerdict,
         loopVerdict: result.loopVerdict,
         loopOk: result.loopOk,
@@ -972,14 +1133,14 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
         resultPath: result.artifactPaths.resultPath,
       })),
       nextAction: roundSummary.completionStatus === 'stable_no_improvement_needed'
-        ? 'No patch proposal is required for this fixed batch.'
+        ? 'No patch proposal is required for the core-plus-explore suite.'
         : (
           roundSummary.completionStatus === 'promotion_blocked'
             ? 'Review the promotion blockers before any code patch preparation continues.'
             : (
               roundSummary.promotionSummary.patchDraftReadyCount > 0
                 ? 'Review the prepared human code edit tasks before any apply_patch step.'
-                : 'Review the queued proposals before any code patch is prepared.'
+                : 'Review the queued proposals, failing strategic axes, and explore-family misses before any code patch is prepared.'
             )
         ),
     };
@@ -1015,9 +1176,11 @@ module.exports = {
   buildCaseLoopArguments,
   buildBatchPreflight,
   buildBlockedCaseResult,
+  buildScenarioSuite,
   consecutiveFailureCount,
   extractLatestAssistantReply,
   listRecentTraceArtifacts,
+  loadExploreLibrary,
   loadStrategicBatch,
   loadPolicyBudget,
   loadPolicyRuntime,
@@ -1028,5 +1191,6 @@ module.exports = {
   runPromotionPipeline,
   runStrategicSelfImprovementBatch,
   scoreReplyContract,
+  selectExploreCases,
   summarizeRound,
 };

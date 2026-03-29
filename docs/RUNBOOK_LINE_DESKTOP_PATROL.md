@@ -43,11 +43,12 @@ Local-only runbook for the LINE patrol MCP harness.
    - `send_mode=execute` only when intentional
    - optional `expected_reply_substrings[]` / `forbidden_reply_substrings[]`
 9. for the safest operator flow, prefer `desktop-self-test`, which aborts before send when `desktop_readiness.ready` is not true
-10. for the fixed self-improvement loop, prefer `desktop-self-improvement`, which sends the tracked strategic 10-case batch and writes one aggregated review summary under `artifacts/line_desktop_patrol/self_improvement_runs/<batch_run_id>/summary.json`
-11. before the first send, confirm the local hourly budget can absorb all 10 execute calls. `desktop-self-improvement` now checks this automatically and fails closed with `stage=budget_preflight` when the remaining budget is too small.
-12. when a blocking patrol guard fires mid-batch, later cases are recorded as blocked with the same code instead of pretending they were observed.
-13. if local policy keeps `proposal_mode=local_queue`, failed cases enqueue their eval-backed proposals into `artifacts/line_desktop_patrol/proposals/queue.jsonl`
-14. if local policy raises `auto_apply_level=patch_draft`, the batch also prepares human-reviewed code edit task bundles under `artifacts/line_desktop_patrol/proposals/promotions/`
+10. for the strategic self-improvement loop, prefer `desktop-self-improvement`, which sends the tracked core 10-case regression batch plus a seeded rotating explore pack of 5 cases by default and writes one aggregated review summary under `artifacts/line_desktop_patrol/self_improvement_runs/<batch_run_id>/summary.json`
+11. before the first send, confirm the local hourly budget can absorb the selected suite size. `desktop-self-improvement` now checks this automatically and fails closed with `stage=budget_preflight` when the remaining budget is too small.
+12. use `--explore-count 0` when you need core-only regression mode, or pass `--seed <value>` to replay the same explore selection later.
+13. when a blocking patrol guard fires mid-batch, later cases are recorded as blocked with the same code instead of pretending they were observed.
+14. if local policy keeps `proposal_mode=local_queue`, failed cases enqueue their eval-backed proposals into `artifacts/line_desktop_patrol/proposals/queue.jsonl`
+15. if local policy raises `auto_apply_level=patch_draft`, the batch also prepares human-reviewed code edit task bundles under `artifacts/line_desktop_patrol/proposals/promotions/`
 
 ## Operator safe sequence
 1. `npm run line-desktop-patrol:doctor`
@@ -78,7 +79,7 @@ Debug-only:
   - desktop loops include add-only header OCR evidence and transcript deltas in `result.json`
   - `desktop_readiness` returns `ready`, `accessibilityTrusted`, `lineRunning`, `contextResolved`, and optional title-match evidence
   - `desktop-self-test` returns both `readiness` and `loop` payloads, so operators can confirm the gate that allowed the send
-  - `desktop-self-improvement` writes per-case patrol eval artifacts plus one aggregated summary that reports pass/fail by strategic axis, per-case loop error codes, proposal-only next steps for future auto-improvement, and the preflight budget snapshot used to decide whether the 10-case loop could start
+  - `desktop-self-improvement` writes per-case patrol eval artifacts plus one aggregated summary that reports pass/fail by strategic axis, `core/explore` breakdown, explore-family coverage, per-case loop error codes, proposal-only next steps for future auto-improvement, and the preflight budget snapshot used to decide whether the selected suite could start
   - per-case `promotionResult` fields show whether proposals were skipped, queued, or promoted into human-reviewed patch-draft tasks
   - admin summary surfaces add-only `desktopPatrolSummary.promotion.latestArtifactKind`, `desktopPatrolSummary.promotion.latestArtifactStatus`, `desktopPatrolSummary.promotion.latestDraftPrRef`, and `desktopPatrolSummary.promotion.updatedAt`
   - admin summary also surfaces add-only `desktopPatrolSummary.promotionReview.latestReviewArtifactKind`, `desktopPatrolSummary.promotionReview.branchName`, `desktopPatrolSummary.promotionReview.worktreeRef`, `desktopPatrolSummary.promotionReview.patchDraftRef`, `desktopPatrolSummary.promotionReview.codeEditTaskRef`, `desktopPatrolSummary.promotionReview.codeApplyDraftRef`, and `desktopPatrolSummary.promotionReview.codeReviewPacketRef`
@@ -111,4 +112,4 @@ Debug-only:
 2. Run `npm run line-desktop-patrol:desktop-self-test -- --target-alias <alias> --text '...' --send-mode dry_run`.
 3. Confirm `tmp/line_desktop_patrol_latest.json` points at the latest run and `result.json` contains header OCR evidence for the `メンバー` target.
 4. When the goal is reply quality iteration, run `npm run line-desktop-patrol:desktop-self-improvement -- --target-alias <alias> --send-mode execute` and review the aggregated strategic summary before deciding whether to patch the runtime.
-5. If `summary.json` stops at `stage=budget_preflight`, raise the local-only `max_runs_per_hour` just enough for `recentRunCount + 10` and rerun after confirming the target is still the `メンバー` group.
+5. If `summary.json` stops at `stage=budget_preflight`, raise the local-only `max_runs_per_hour` just enough for `recentRunCount + suiteCaseCount` and rerun after confirming the target is still the `メンバー` group.
