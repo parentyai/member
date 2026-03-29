@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-29T03:13:49-04:00",
-  "gitCommit": "6601ad84578127d4cfb1f554f2e50a6c6c73b0f2",
-  "branch": "codex/desktop-approval-artifact-copy-T013",
-  "sourceDigest": "1d1efdbb9ce2b112d367a030e3f0d4febb6d7d772aadbd47ed6521547bbb7b07",
+  "generatedAt": "2026-03-29T03:19:18-04:00",
+  "gitCommit": "61680bfd3a59f07b1338de76d59f179c7bda35af",
+  "branch": "codex/desktop-approval-audit-summary-T014",
+  "sourceDigest": "bbb9dd6460f480dfa21d7ce0bcfc4a3d2f860ea933835c20c4363e6cd4e285fc",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
