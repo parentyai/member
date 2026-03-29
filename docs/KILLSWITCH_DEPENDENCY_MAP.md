@@ -66,8 +66,8 @@
 | `src/routes/internal/userContextSnapshotJob.js` | 78 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/userContextSnapshotRecompressJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/userContextSnapshotRecompressJob.js` | 78 | `const killSwitch = await getKillSwitch();` |
-| `src/routes/webhookLine.js` | 5801 | `const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'` |
-| `src/routes/webhookLine.js` | 5802 | `? options.getKillSwitchFn` |
+| `src/routes/webhookLine.js` | 5808 | `const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'` |
+| `src/routes/webhookLine.js` | 5809 | `? options.getKillSwitchFn` |
 | `src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js` | 374 | `safeQuery('killSwitch', () => systemFlagsRepo.getKillSwitch()),` |
 | `src/usecases/adminOs/executeNotificationSend.js` | 220 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 169 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
