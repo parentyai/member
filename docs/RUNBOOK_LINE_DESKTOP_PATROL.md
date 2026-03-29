@@ -81,6 +81,7 @@ Debug-only:
   - `desktop-self-improvement` writes per-case patrol eval artifacts plus one aggregated summary that reports pass/fail by strategic axis, per-case loop error codes, proposal-only next steps for future auto-improvement, and the preflight budget snapshot used to decide whether the 10-case loop could start
   - per-case `promotionResult` fields show whether proposals were skipped, queued, or promoted into human-reviewed patch-draft tasks
   - admin summary surfaces add-only `desktopPatrolSummary.promotion.latestArtifactKind`, `desktopPatrolSummary.promotion.latestArtifactStatus`, `desktopPatrolSummary.promotion.latestDraftPrRef`, and `desktopPatrolSummary.promotion.updatedAt`
+  - admin summary also surfaces add-only `desktopPatrolSummary.promotionReview.latestReviewArtifactKind`, `desktopPatrolSummary.promotionReview.branchName`, `desktopPatrolSummary.promotionReview.worktreeRef`, `desktopPatrolSummary.promotionReview.patchDraftRef`, `desktopPatrolSummary.promotionReview.codeEditTaskRef`, `desktopPatrolSummary.promotionReview.codeApplyDraftRef`, and `desktopPatrolSummary.promotionReview.codeReviewPacketRef`
   - admin summary also surfaces add-only `desktopPatrolSummary.promotionBatch.batchRunId`, `desktopPatrolSummary.promotionBatch.completionStatus`, `desktopPatrolSummary.promotionBatch.queuedProposalCount`, `desktopPatrolSummary.promotionBatch.patchDraftReadyCount`, `desktopPatrolSummary.promotionBatch.blockedCaseIds`, and `desktopPatrolSummary.promotionBatch.nextAction`
 
 ## Stop and rollback

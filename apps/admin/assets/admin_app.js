@@ -4247,6 +4247,11 @@ function summarizeQualityPatrolArtifactRefs(rows) {
   }).join(' | ');
 }
 
+function summarizeQualityPatrolArtifactRef(item) {
+  if (!item || typeof item !== 'object') return '-';
+  return asText(item.displayPath || item.path, '-');
+}
+
 function summarizeQualityPatrolBlockedBy(values) {
   const rows = Array.isArray(values) ? values.filter(Boolean).map((item) => String(item).trim()).filter(Boolean) : [];
   return rows.length ? rows.join(', ') : 'なし';
@@ -4324,6 +4329,9 @@ function renderQualityPatrolDesktopSummary(result) {
   const latestRun = payload.latestRun && typeof payload.latestRun === 'object' ? payload.latestRun : null;
   const queue = payload.queue && typeof payload.queue === 'object' ? payload.queue : {};
   const promotion = payload.promotion && typeof payload.promotion === 'object' ? payload.promotion : {};
+  const promotionReview = payload.promotionReview && typeof payload.promotionReview === 'object'
+    ? payload.promotionReview
+    : {};
   const promotionBatch = payload.promotionBatch && typeof payload.promotionBatch === 'object' ? payload.promotionBatch : {};
   const evaluation = payload.evaluation && typeof payload.evaluation === 'object' ? payload.evaluation : {};
   const artifactRefs = Array.isArray(payload.artifactRefs) ? payload.artifactRefs : [];
@@ -4380,8 +4388,15 @@ function renderQualityPatrolDesktopSummary(result) {
     || Number(promotionBatch.patchDraftReadyCount || 0)
     || (Array.isArray(promotionBatch.blockedCaseIds) && promotionBatch.blockedCaseIds.length)
   );
+  const hasPromotionReview = Boolean(
+    promotionReview.latestProposalId
+    || promotionReview.latestReviewArtifactKind
+    || promotionReview.branchName
+    || promotionReview.latestDraftPrRef
+    || (promotionReview.latestReviewArtifactRef && typeof promotionReview.latestReviewArtifactRef === 'object')
+  );
 
-  if (!latestRun && !artifactRefs.length && !Number(queue.totalCount || 0) && !hasPromotion && !hasPromotionBatch) {
+  if (!latestRun && !artifactRefs.length && !Number(queue.totalCount || 0) && !hasPromotion && !hasPromotionReview && !hasPromotionBatch) {
     renderQualityPatrolPlaceholder(
       'quality-patrol-desktop-latest',
       payload.status === 'error'
@@ -4437,6 +4452,33 @@ function renderQualityPatrolDesktopSummary(result) {
         `proposalId=${asText(promotion.latestProposalId, '-')}`,
         `draftPrRef=${asText(promotion.latestDraftPrRef, '-')}`,
         promotion.updatedAt ? `updatedAt=${formatDateLabel(promotion.updatedAt)}` : 'updatedAt=-'
+      ]
+    }));
+  }
+
+  if (hasPromotionReview) {
+    const reviewTone = String(promotionReview.reviewStatus || '').startsWith('ready_for_human')
+      ? 'info'
+      : resolveQualityPatrolTone(promotionReview.reviewStatus || promotionReview.latestReviewArtifactKind);
+    container.appendChild(createQualityPatrolItem({
+      title: 'Latest review bundle',
+      summary: `${asText(promotionReview.latestReviewArtifactKind, '-')} / ${asText(promotionReview.reviewStatus, '-')}`,
+      badges: [
+        { label: buildQualityPatrolStatusLabel(promotionReview.reviewStatus || promotionReview.latestReviewArtifactKind || 'review'), tone: reviewTone }
+      ],
+      meta: [
+        `proposalId=${asText(promotionReview.latestProposalId, '-')}`,
+        `branchName=${asText(promotionReview.branchName, '-')}`,
+        promotionReview.updatedAt ? `updatedAt=${formatDateLabel(promotionReview.updatedAt)}` : 'updatedAt=-'
+      ],
+      details: [
+        `latestReviewArtifactRef: ${summarizeQualityPatrolArtifactRef(promotionReview.latestReviewArtifactRef)}`,
+        `worktreeRef: ${summarizeQualityPatrolArtifactRef(promotionReview.worktreeRef)}`,
+        `draftPrRef: ${asText(promotionReview.latestDraftPrRef, '-')}`,
+        `patchDraftRef: ${summarizeQualityPatrolArtifactRef(promotionReview.patchDraftRef)}`,
+        `codeEditTaskRef: ${summarizeQualityPatrolArtifactRef(promotionReview.codeEditTaskRef)}`,
+        `codeApplyDraftRef: ${summarizeQualityPatrolArtifactRef(promotionReview.codeApplyDraftRef)}`,
+        `codeReviewPacketRef: ${summarizeQualityPatrolArtifactRef(promotionReview.codeReviewPacketRef)}`
       ]
     }));
   }

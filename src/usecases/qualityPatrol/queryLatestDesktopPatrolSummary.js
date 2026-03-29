@@ -6,6 +6,21 @@ const path = require('node:path');
 const { resolveAudienceView } = require('../../domain/qualityPatrol/query/resolveAudienceView');
 
 const QUERY_VERSION = 'line_desktop_patrol_summary_v1';
+const PROMOTION_REVIEW_ARTIFACT_ORDER = Object.freeze([
+  { kind: 'code_apply_record', markdownSuffix: '.code_apply_record.md', jsonSuffix: '.code_apply_record.json' },
+  { kind: 'code_apply_signoff', markdownSuffix: '.code_apply_signoff.md', jsonSuffix: '.code_apply_signoff.json' },
+  { kind: 'code_apply_evidence', markdownSuffix: '.code_apply_evidence.md', jsonSuffix: '.code_apply_evidence.json' },
+  { kind: 'code_review_packet', markdownSuffix: '.code_review_packet.md', jsonSuffix: '.code_review_packet.json' },
+  { kind: 'code_apply_task', markdownSuffix: '.code_apply_task.md', jsonSuffix: '.code_apply_task.json' },
+  { kind: 'code_apply_draft', markdownSuffix: '.code_apply_draft.md', jsonSuffix: '.code_apply_draft.json' },
+  { kind: 'code_edit_bundle', markdownSuffix: '.code_edit_bundle.md', jsonSuffix: '.code_edit_bundle.json' },
+  { kind: 'code_diff_draft', markdownSuffix: '.code_diff_draft.md', jsonSuffix: '.code_diff_draft.json' },
+  { kind: 'code_edit_task', markdownSuffix: '.code_edit_task.md', jsonSuffix: '.code_edit_task.json' },
+  { kind: 'code_patch_bundle', markdownSuffix: '.code_patch_bundle.md', jsonSuffix: '.code_patch_bundle.json' },
+  { kind: 'patch_request', markdownSuffix: '.patch_request.md', jsonSuffix: '.patch_request.json' },
+  { kind: 'patch_draft', markdownSuffix: '.patch_draft.md' },
+  { kind: 'draft_pr_body', markdownSuffix: '.draft_pr.md', recordField: 'body_path' }
+]);
 
 function resolveArtifactRoot(deps) {
   const fromDeps = deps && typeof deps.artifactRoot === 'string' ? deps.artifactRoot.trim() : '';
@@ -213,6 +228,95 @@ function normalizeLatestPromotion(record) {
   };
 }
 
+async function resolvePromotionReviewArtifactRef(descriptor, record, audience) {
+  if (!record || typeof record !== 'object') return null;
+  const proposalId = normalizeText(record.proposal_id, null);
+  const recordPath = normalizeText(record.__path, null);
+  const promotionsRoot = recordPath ? path.dirname(recordPath) : null;
+  const candidates = [];
+
+  if (descriptor && descriptor.recordField && record[descriptor.recordField]) {
+    candidates.push(path.resolve(String(record[descriptor.recordField])));
+  }
+  if (promotionsRoot && proposalId) {
+    if (descriptor.markdownSuffix) {
+      candidates.push(path.join(promotionsRoot, `${proposalId}${descriptor.markdownSuffix}`));
+    }
+    if (descriptor.jsonSuffix) {
+      candidates.push(path.join(promotionsRoot, `${proposalId}${descriptor.jsonSuffix}`));
+    }
+  }
+
+  const uniqueCandidates = candidates.filter((item, index) => item && candidates.indexOf(item) === index);
+  for (const candidate of uniqueCandidates) {
+    const stat = await statIfExists(candidate);
+    if (stat) {
+      return toArtifactRef(descriptor.kind, candidate, audience);
+    }
+  }
+  return null;
+}
+
+async function normalizeLatestPromotionReview(record, audience) {
+  if (!record || typeof record !== 'object') {
+    return {
+      latestProposalId: null,
+      reviewStatus: null,
+      latestDraftPrRef: null,
+      latestReviewArtifactKind: null,
+      latestReviewArtifactRef: null,
+      worktreeRef: null,
+      branchName: null,
+      patchDraftRef: null,
+      codeEditTaskRef: null,
+      codeApplyDraftRef: null,
+      codeReviewPacketRef: null,
+      updatedAt: null
+    };
+  }
+
+  const refsByKind = {};
+  for (const descriptor of PROMOTION_REVIEW_ARTIFACT_ORDER) {
+    const ref = await resolvePromotionReviewArtifactRef(descriptor, record, audience);
+    if (ref) refsByKind[descriptor.kind] = ref;
+  }
+  if (record.__path) {
+    refsByKind.promotion_record = toArtifactRef('promotion_record', record.__path, audience);
+  }
+
+  const latestReviewArtifactKind = [
+    ...PROMOTION_REVIEW_ARTIFACT_ORDER.map((descriptor) => descriptor.kind),
+    'promotion_record'
+  ].find((kind) => refsByKind[kind]) || null;
+  const updatedAt = normalizeText(
+    record.updated_at
+    || record.updatedAt
+    || record.finished_at
+    || record.finishedAt
+    || record.created_at
+    || record.createdAt
+    || (record.__sortKey ? new Date(record.__sortKey).toISOString() : null),
+    null
+  );
+
+  return {
+    latestProposalId: normalizeText(record.proposal_id, null),
+    reviewStatus: normalizeText(record.status, null),
+    latestDraftPrRef: normalizeText(record.draft_pr_ref || record.draft_pr_url, null),
+    latestReviewArtifactKind,
+    latestReviewArtifactRef: latestReviewArtifactKind ? refsByKind[latestReviewArtifactKind] || null : null,
+    worktreeRef: normalizeText(record.worktree_path, null)
+      ? toArtifactRef('worktree', path.resolve(String(record.worktree_path)), audience)
+      : null,
+    branchName: normalizeText(record.branch_name, null),
+    patchDraftRef: refsByKind.patch_draft || null,
+    codeEditTaskRef: refsByKind.code_edit_task || null,
+    codeApplyDraftRef: refsByKind.code_apply_draft || null,
+    codeReviewPacketRef: refsByKind.code_review_packet || null,
+    updatedAt
+  };
+}
+
 function normalizeStringArray(items) {
   return (Array.isArray(items) ? items : [])
     .map((item) => normalizeText(String(item || ''), ''))
@@ -376,6 +480,7 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
     const packetPaths = await listPacketPaths(packetRoot);
     const latestPromotion = await latestPromotionRecord(path.join(artifactRoot, 'proposals', 'promotions'));
     const promotion = normalizeLatestPromotion(latestPromotion);
+    const promotionReview = await normalizeLatestPromotionReview(latestPromotion, audience);
     const latestPromotionBatchRecord = await latestSelfImprovementSummary(
       path.join(artifactRoot, 'self_improvement_runs')
     );
@@ -450,6 +555,7 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
         latestDraftPrRef
       },
       promotion,
+      promotionReview,
       promotionBatch,
       latestProposalIds,
       artifactRefs
@@ -482,6 +588,20 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
         latestArtifactKind: null,
         latestArtifactStatus: null,
         latestDraftPrRef: null,
+        updatedAt: null
+      },
+      promotionReview: {
+        latestProposalId: null,
+        reviewStatus: null,
+        latestDraftPrRef: null,
+        latestReviewArtifactKind: null,
+        latestReviewArtifactRef: null,
+        worktreeRef: null,
+        branchName: null,
+        patchDraftRef: null,
+        codeEditTaskRef: null,
+        codeApplyDraftRef: null,
+        codeReviewPacketRef: null,
         updatedAt: null
       },
       promotionBatch: {
