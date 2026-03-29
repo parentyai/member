@@ -389,12 +389,20 @@ Typical fields:
   - `desktopPatrolSummary.promotionApproval.codeApplyTaskRef`
   - `desktopPatrolSummary.promotionApproval.codeApplySignoffRef`
   - `desktopPatrolSummary.promotionApproval.codeApplyRecordRef`
+  - `desktopPatrolSummary.promotionApproval.codeApplyEvidenceRef`
+  - `desktopPatrolSummary.promotionApproval.codeApplyEvidencePromptRef`
   - `desktopPatrolSummary.promotionApproval.validationCommands[]`
   - `desktopPatrolSummary.promotionApproval.validationCommandCount`
   - `desktopPatrolSummary.promotionApproval.candidateEdits[]`
   - `desktopPatrolSummary.promotionApproval.candidateEditCount`
   - `desktopPatrolSummary.promotionApproval.operatorInstructions[]`
   - `desktopPatrolSummary.promotionApproval.operatorInstructionCount`
+  - `desktopPatrolSummary.promotionApproval.evidenceRequirements[]`
+  - `desktopPatrolSummary.promotionApproval.evidenceRequirementCount`
+  - `desktopPatrolSummary.promotionApproval.expectedOutputs[]`
+  - `desktopPatrolSummary.promotionApproval.expectedOutputCount`
+  - `desktopPatrolSummary.promotionApproval.stopConditions[]`
+  - `desktopPatrolSummary.promotionApproval.stopConditionCount`
   - `desktopPatrolSummary.promotionApproval.nextCommand`
   - `desktopPatrolSummary.promotionApproval.remainingCommands[]`
   - `desktopPatrolSummary.promotionApproval.remainingCommandCount`
