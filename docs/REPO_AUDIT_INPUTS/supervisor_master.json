@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-28T16:40:33-04:00",
-  "gitCommit": "fda82c580b1482df4c3c10dd7fff42f8ee5e175f",
-  "branch": "codex/firestore-index-apply-workflow",
-  "sourceDigest": "979cc9af28fd47fd9a31e66b507173e5467d0991a1861d4e6a9dba4e8a8791e6",
+  "generatedAt": "2026-03-28T20:14:41-04:00",
+  "gitCommit": "a90311c8488412a5c6decfb512d4381ab19c6f36",
+  "branch": "codex/desktop-promotion-summary-T002",
+  "sourceDigest": "05cf56544d4bc9680d6e313c070c760687fc57a2dcc4fde2df48eb39f62e5350",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
