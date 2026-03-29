@@ -50,6 +50,8 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(js.includes("Copy validation commands"));
   assert.ok(js.includes("Copy evidence prompt path"));
   assert.ok(js.includes("Copy evidence requirements"));
+  assert.ok(js.includes("Copy expected outputs"));
+  assert.ok(js.includes("Copy stop conditions"));
   assert.ok(js.includes("Copy operator instructions"));
   assert.ok(js.includes("Copy worktree path"));
   assert.ok(js.includes("Copy candidate edit paths"));
@@ -99,6 +101,8 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(ssot.includes('Copy validation commands'));
   assert.ok(ssot.includes('Copy evidence prompt path'));
   assert.ok(ssot.includes('Copy evidence requirements'));
+  assert.ok(ssot.includes('Copy expected outputs'));
+  assert.ok(ssot.includes('Copy stop conditions'));
   assert.ok(ssot.includes('Copy operator instructions'));
   assert.ok(ssot.includes('Copy worktree path'));
   assert.ok(ssot.includes('Copy candidate edit paths'));
@@ -112,6 +116,8 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(architecture.includes('promotionApproval.expectedOutputCount'));
   assert.ok(architecture.includes('promotionApproval.stopConditionCount'));
   assert.ok(architecture.includes('Copy evidence prompt path'));
+  assert.ok(architecture.includes('Copy expected outputs'));
+  assert.ok(architecture.includes('Copy stop conditions'));
   assert.ok(architecture.includes('/api/admin/quality-patrol/desktop-approval/execute'));
   assert.ok(architecture.includes('promotionBatch.batchRunId'));
   assert.ok(dataMap.includes('POST /api/admin/quality-patrol/desktop-approval/plan'));

@@ -4753,6 +4753,28 @@ function renderQualityPatrolDesktopSummary(result) {
         }
       ),
       createQualityPatrolCopyAction(
+        'Copy expected outputs',
+        Array.isArray(promotionApproval.expectedOutputs)
+          ? promotionApproval.expectedOutputs.join('\n')
+          : '',
+        {
+          okMessage: 'expected outputs をコピーしました',
+          failMessage: 'expected outputs のコピーに失敗しました',
+          subtle: true
+        }
+      ),
+      createQualityPatrolCopyAction(
+        'Copy stop conditions',
+        Array.isArray(promotionApproval.stopConditions)
+          ? promotionApproval.stopConditions.join('\n')
+          : '',
+        {
+          okMessage: 'stop conditions をコピーしました',
+          failMessage: 'stop conditions のコピーに失敗しました',
+          subtle: true
+        }
+      ),
+      createQualityPatrolCopyAction(
         'Copy operator instructions',
         Array.isArray(promotionApproval.operatorInstructions)
           ? promotionApproval.operatorInstructions.join('\n')
