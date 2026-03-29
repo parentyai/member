@@ -4257,6 +4257,25 @@ function summarizeQualityPatrolStringList(values) {
   return rows.length ? rows.join(' | ') : '-';
 }
 
+function createQualityPatrolCopyAction(label, value, options) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) return null;
+  const opts = options && typeof options === 'object' ? options : {};
+  return {
+    label,
+    subtle: opts.subtle === true,
+    onClick: async () => {
+      const copied = await copyTextToClipboardBestEffort(text);
+      showToast(
+        copied
+          ? (opts.okMessage || 'コマンドをコピーしました')
+          : (opts.failMessage || 'コマンドコピーに失敗しました'),
+        copied ? 'ok' : 'danger'
+      );
+    }
+  };
+}
+
 function summarizeQualityPatrolCandidateEdits(values) {
   const rows = Array.isArray(values) ? values.filter((item) => item && typeof item === 'object') : [];
   if (!rows.length) return '-';
@@ -4515,6 +4534,28 @@ function renderQualityPatrolDesktopSummary(result) {
     const approvalTone = String(promotionApproval.approvalStatus || '').startsWith('ready_for_human')
       ? 'info'
       : resolveQualityPatrolTone(promotionApproval.approvalStatus || promotionApproval.approvalStage);
+    const remainingApprovalCommands = Array.isArray(promotionApproval.remainingCommands)
+      ? promotionApproval.remainingCommands.filter((item) => typeof item === 'string' && item.trim().length > 0)
+      : [];
+    const approvalActions = [
+      createQualityPatrolCopyAction(
+        'Copy next command',
+        promotionApproval.nextCommand,
+        {
+          okMessage: '次の承認コマンドをコピーしました',
+          failMessage: '次の承認コマンドのコピーに失敗しました'
+        }
+      ),
+      createQualityPatrolCopyAction(
+        'Copy remaining commands',
+        remainingApprovalCommands.join('\n'),
+        {
+          okMessage: '残りの承認コマンドをコピーしました',
+          failMessage: '残りの承認コマンドのコピーに失敗しました',
+          subtle: true
+        }
+      )
+    ].filter(Boolean);
     container.appendChild(createQualityPatrolItem({
       title: 'Latest approval lane',
       summary: `${asText(promotionApproval.approvalStage, '-')} / ${asText(promotionApproval.approvalStatus, '-')}`,
@@ -4524,11 +4565,14 @@ function renderQualityPatrolDesktopSummary(result) {
       meta: [
         `proposalId=${asText(promotionApproval.latestProposalId, '-')}`,
         `validationCommands=${Number(promotionApproval.validationCommandCount || 0)}`,
+        `remainingCommands=${Number(promotionApproval.remainingCommandCount || 0)}`,
         `candidateEdits=${Number(promotionApproval.candidateEditCount || 0)}`,
         promotionApproval.updatedAt ? `updatedAt=${formatDateLabel(promotionApproval.updatedAt)}` : 'updatedAt=-'
       ],
       details: [
         `nextAction: ${asText(promotionApproval.nextAction, '-')}`,
+        `nextCommand: ${asText(promotionApproval.nextCommand, '-')}`,
+        `remainingCommands: ${summarizeQualityPatrolStringList(promotionApproval.remainingCommands)}`,
         `draftPrRef: ${asText(promotionApproval.latestDraftPrRef, '-')}`,
         `worktreeRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.worktreeRef)}`,
         `patchRequestRef: ${summarizeQualityPatrolArtifactRef(promotionApproval.patchRequestRef)}`,
@@ -4538,7 +4582,8 @@ function renderQualityPatrolDesktopSummary(result) {
         `validationCommands: ${summarizeQualityPatrolStringList(promotionApproval.validationCommands)}`,
         `candidateEdits: ${summarizeQualityPatrolCandidateEdits(promotionApproval.candidateEdits)}`,
         `operatorInstructions: ${summarizeQualityPatrolStringList(promotionApproval.operatorInstructions)}`
-      ]
+      ],
+      actions: approvalActions
     }));
   }
 
