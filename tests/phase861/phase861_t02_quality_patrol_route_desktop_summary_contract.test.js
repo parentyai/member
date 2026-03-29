@@ -87,7 +87,10 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
         batchRunId: 'desktop-self-improve-002',
         completionStatus: 'proposal_review_required',
         queuedProposalCount: 3,
-        patchDraftReadyCount: 1
+        patchDraftReadyCount: 1,
+        blockedCaseIds: ['case_001', 'case_002'],
+        nextAction: 'review bundle を確認して patch draft を選別する',
+        updatedAt: '2026-03-27T23:02:00.000Z'
       }
     }),
     appendAuditLog: async (payload) => {
@@ -117,6 +120,12 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionBatchCompletionStatus, 'proposal_review_required');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionBatchQueuedProposalCount, 3);
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionBatchPatchDraftReadyCount, 1);
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionBatchBlockedCaseCount, 2);
+  assert.equal(
+    auditCalls[0].payloadSummary.desktopPatrolPromotionBatchNextAction,
+    'review bundle を確認して patch draft を選別する'
+  );
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionBatchUpdatedAt, '2026-03-27T23:02:00.000Z');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewKind, 'code_edit_task');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewBranch, 'codex/line-desktop-patrol-prop-002');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewUpdatedAt, '2026-03-27T22:59:00.000Z');
