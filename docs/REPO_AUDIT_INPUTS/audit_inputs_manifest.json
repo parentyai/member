@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-29T20:59:01.979Z",
-  "gitCommit": "cfb9ab021f2c205b3f5fb71889958a8dd1d8ced0",
+  "generatedAt": "2026-03-29T21:20:20.173Z",
+  "gitCommit": "879585c3161f965617bb94380d88ab9a0d316cb6",
   "branch": "codex/line-desktop-runtime-fix-T018",
-  "sourceDigest": "12f8f10c8d09761c52796933f54b732b956ac8c0c4f98ff4d6aa1f5c4f5bb110",
+  "sourceDigest": "a7499666cd782d726072392b2ff2221148cd5b5691b4fca384fd62f733f2bb70",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "bcbccd4cbe481a185f79b1cb9010583292f23fc09352d83af150db1a37963a7b",
+      "sha256": "3c2954f8ca32278596cb878a3f9e8bff64be48b4fbc67159da63eed0d8cdbfe4",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "cc0ac79826f55b385b31baaa1bf4c690e6e61fb021364ae422f533616f35c07f",
+      "sha256": "1043a867379c60155e0b8540c7be98bc2e588e28db0d5facb5685069e3322fb8",
       "bytes": 487
     },
     {
@@ -171,7 +171,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "89832d68929d4445ff5c38147bc74f0afc1e6cebe3e166cb5cafa8a849ed1f27",
+      "sha256": "0254d6186e75590976697b4ed5bb6ef729365addadbf140708800c2208f1781a",
       "bytes": 2421
     },
     {
