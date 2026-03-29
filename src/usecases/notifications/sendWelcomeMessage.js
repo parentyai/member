@@ -2,8 +2,9 @@
 
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const { pushMessage } = require('../../infra/lineClient');
+const { getMinSafeApplyLiteral } = require('../../domain/llm/closure/minSafeApplyRegistry');
 
-const WELCOME_TEXT = '公式からのご案内はすべてこちらのLINEでお送りします。重要なお知らせは「公式連絡」からご確認ください。';
+const WELCOME_TEXT = getMinSafeApplyLiteral('leaf_welcome_message', '公式からのご案内はすべてこちらのLINEでお送りします。重要なお知らせは「公式連絡」からご確認ください。');
 const WELCOME_NOTIFICATION_ID = 'welcome';
 
 async function sendWelcomeMessage(params) {

@@ -1,0 +1,87 @@
+leaf_id,anchor_type,why_missing_matters,minimal_test_intent,expected_observed_contract,depends_on_binding_freeze,depends_on_variant_freeze,depends_on_reauthoring
+leaf_free_retrieval_empty_reply,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line free retrieval,true,false,false
+leaf_free_retrieval_empty_reply,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,POST /webhook/line free retrieval,true,false,false
+leaf_free_retrieval_empty_reply,binding_contract_anchor,token source と fallback policy を固定しないと apply 時に literal化誤りが起きる。,token source field と missing policy が current observed source に一致することを固定する。,question -> normalizeText(question),true,false,false
+leaf_free_style_quick,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,POST /webhook/line free retrieval,false,false,true
+leaf_free_style_coach,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line free retrieval,false,false,true
+leaf_free_style_coach,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,POST /webhook/line free retrieval,false,false,true
+leaf_free_style_checklist,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line free retrieval,false,false,true
+leaf_free_style_checklist,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,POST /webhook/line free retrieval,false,false,true
+leaf_free_style_timeline,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line free retrieval,false,false,true
+leaf_free_style_timeline,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,POST /webhook/line free retrieval,false,false,true
+leaf_free_style_weekend,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line free retrieval,false,false,true
+leaf_free_style_weekend,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,POST /webhook/line free retrieval,false,false,true
+leaf_paid_conversation_format_shell,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line paid finalization,true,false,true
+leaf_paid_conversation_format_shell,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,POST /webhook/line paid finalization,true,false,true
+leaf_paid_conversation_format_shell,binding_contract_anchor,token source と fallback policy を固定しないと apply 時に literal化誤りが起きる。,token source field と missing policy が current observed source に一致することを固定する。,"gaps[0] / followupQuestion, risks[0] or gaps[0]",true,false,true
+leaf_paid_reply_guard_defaults,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,POST /webhook/line paid finalization,true,false,false
+leaf_paid_reply_guard_defaults,binding_contract_anchor,token source と fallback policy を固定しないと apply 時に literal化誤りが起きる。,token source field と missing policy が current observed source に一致することを固定する。,payload.pitfall via pickPitfallLine(),true,false,false
+leaf_paid_readiness_clarify_default,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,paid orchestrator,false,false,false
+leaf_paid_readiness_clarify_default,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,paid orchestrator,false,false,false
+leaf_paid_readiness_clarify_default,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,paid orchestrator,false,false,false
+leaf_paid_readiness_refuse_default,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,paid orchestrator,false,false,false
+leaf_paid_readiness_refuse_default,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,paid orchestrator,false,false,false
+leaf_paid_readiness_refuse_default,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,paid orchestrator,false,false,false
+leaf_paid_readiness_hedge_suffix,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,paid orchestrator,false,false,false
+leaf_paid_readiness_hedge_suffix,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,paid orchestrator,false,false,false
+leaf_paid_readiness_hedge_suffix,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,paid orchestrator,false,false,false
+leaf_paid_finalizer_fallback,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,paid orchestrator,false,false,false
+leaf_paid_finalizer_fallback,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,paid orchestrator,false,false,false
+leaf_paid_finalizer_refuse,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,paid orchestrator,false,false,false
+leaf_webhook_guard_missing_reply_fallback,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line top-level,false,false,false
+leaf_webhook_guard_missing_reply_fallback,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,POST /webhook/line top-level,false,false,false
+leaf_webhook_low_relevance_clarify,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line top-level,false,false,false
+leaf_webhook_retrieval_failure_fallback,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line top-level,false,false,false
+leaf_webhook_retrieval_failure_fallback,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,POST /webhook/line top-level,false,false,false
+leaf_webhook_readiness_clarify,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line top-level,false,false,false
+leaf_webhook_readiness_refuse,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line top-level,false,false,false
+leaf_webhook_synthetic_ack,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line top-level,false,false,false
+leaf_webhook_consent_state_ack,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line top-level,false,true,false
+leaf_webhook_consent_state_ack,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,POST /webhook/line top-level,false,true,false
+leaf_webhook_consent_state_ack,variant_key_anchor,alternate text を key なしで apply すると state が逆転する。,variant key -> text mapping が current observed branches と一致することを固定する。,"consent_granted, consent_revoked",false,true,false
+leaf_webhook_direct_command_ack,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,POST /webhook/line top-level,true,true,false
+leaf_webhook_direct_command_ack,binding_contract_anchor,token source と fallback policy を固定しないと apply 時に literal化誤りが起きる。,token source field と missing policy が current observed source に一致することを固定する。,"parseJourneyPhaseCommand(text), parseNextActionCompletedCommand(text)",true,true,false
+leaf_webhook_direct_command_ack,variant_key_anchor,alternate text を key なしで apply すると state が逆転する。,variant key -> text mapping が current observed branches と一致することを固定する。,"phase_update, done_update",true,true,false
+leaf_welcome_message,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,welcome push flow,false,false,false
+leaf_welcome_message,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,welcome push flow,false,false,false
+leaf_line_renderer_overflow_summary,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,renderer fallback,false,false,false
+leaf_line_renderer_overflow_summary,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,renderer fallback,false,false,false
+leaf_line_renderer_deeplink_with_url,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,renderer fallback,true,false,false
+leaf_line_renderer_deeplink_with_url,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,renderer fallback,true,false,false
+leaf_line_renderer_deeplink_with_url,binding_contract_anchor,token source と fallback policy を固定しないと apply 時に literal化誤りが起きる。,token source field と missing policy が current observed source に一致することを固定する。,payload.handoffUrl,true,false,false
+leaf_line_renderer_deeplink_generic,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,renderer fallback,false,false,false
+leaf_line_renderer_deeplink_generic,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,renderer fallback,false,false,false
+leaf_line_renderer_service_ack,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,renderer fallback,false,true,false
+leaf_line_renderer_service_ack,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,renderer fallback,false,true,false
+leaf_line_renderer_service_ack,variant_key_anchor,alternate text を key なしで apply すると state が逆転する。,variant key -> text mapping が current observed branches と一致することを固定する。,"service_ack_wait, service_ack_prepare, service_ack_display",false,true,false
+leaf_line_renderer_render_failure,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,renderer fallback,false,false,false
+leaf_line_renderer_render_failure,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,renderer fallback,false,false,false
+leaf_notification_body_default,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,notification sender,false,false,false
+leaf_notification_body_default,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,notification sender,false,false,false
+leaf_notification_textmode_cta_join,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,notification sender,false,false,false
+leaf_notification_textmode_cta_join,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,notification sender,false,false,false
+leaf_region_prompt_or_validation,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,journey direct command parser,false,true,false
+leaf_region_prompt_or_validation,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,journey direct command parser,false,true,false
+leaf_region_prompt_or_validation,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,journey direct command parser,false,true,false
+leaf_region_prompt_or_validation,variant_key_anchor,alternate text を key なしで apply すると state が逆転する。,variant key -> text mapping が current observed branches と一致することを固定する。,"prompt_required, invalid_format",false,true,false
+leaf_region_state_ack,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,journey direct command parser,true,true,false
+leaf_region_state_ack,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,journey direct command parser,true,true,false
+leaf_region_state_ack,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,journey direct command parser,true,true,false
+leaf_region_state_ack,binding_contract_anchor,token source と fallback policy を固定しないと apply 時に literal化誤りが起きる。,token source field と missing policy が current observed source に一致することを固定する。,"regionDeclared(city, state)",true,true,false
+leaf_region_state_ack,variant_key_anchor,alternate text を key なしで apply すると state が逆転する。,variant key -> text mapping が current observed branches と一致することを固定する。,"declared, already_set",true,true,false
+leaf_citypack_feedback_received,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,journey direct command parser,false,false,false
+leaf_citypack_feedback_received,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,journey direct command parser,false,false,false
+leaf_citypack_feedback_received,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,journey direct command parser,false,false,false
+leaf_citypack_feedback_usage,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,journey direct command parser,true,false,false
+leaf_citypack_feedback_usage,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,journey direct command parser,true,false,false
+leaf_citypack_feedback_usage,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,journey direct command parser,true,false,false
+leaf_citypack_feedback_usage,binding_contract_anchor,token source と fallback policy を固定しないと apply 時に literal化誤りが起きる。,token source field と missing policy が current observed source に一致することを固定する。,not_observed,true,false,false
+leaf_task_flex_labels,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,journey task detail and postback,true,true,false
+leaf_task_flex_labels,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,journey task detail and postback,true,true,false
+leaf_task_flex_labels,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,journey task detail and postback,true,true,false
+leaf_task_flex_labels,binding_contract_anchor,token source と fallback policy を固定しないと apply 時に literal化誤りが起きる。,token source field と missing policy が current observed source に一致することを固定する。,"resolveTitle(task, taskContent)",true,true,false
+leaf_task_flex_labels,variant_key_anchor,alternate text を key なしで apply すると state が逆転する。,variant key -> text mapping が current observed branches と一致することを固定する。,"section_why_now, section_duration, section_checklist, section_summary, section_top_mistakes, section_context_tips, section_understanding, hero_title, alt_text_title",true,true,false
+leaf_task_flex_buttons,exact_string_anchor,apply-ready 判定で drift を止められない。,current literal or shell token shape が変わらないことを固定する。,journey task detail and postback,false,true,false
+leaf_task_flex_buttons,route_contract_anchor,別 route / owner への漏れを検出できない。,対象 route / renderer / command parser から当該 leaf が選ばれることを固定する。,journey task detail and postback,false,true,false
+leaf_task_flex_buttons,output_shape_anchor,shape regression を検出できない。,plain_text / clarify / fallback / flex labels/buttons の shape を固定する。,journey task detail and postback,false,true,false
+leaf_task_flex_buttons,variant_key_anchor,alternate text を key なしで apply すると state が逆転する。,variant key -> text mapping が current observed branches と一致することを固定する。,"manual_button, video_button, mistake_button, external_link_button",false,true,false

@@ -17,6 +17,7 @@ const {
   createResponseQualityContext,
   createResponseQualityVerdict
 } = require('../quality/responseQualityFoundation');
+const { getMinSafeApplyLiteral } = require('../closure/minSafeApplyRegistry');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -158,7 +159,7 @@ function finalizeCandidate(params) {
     },
     replyText: recoveredReplyText,
     clarifyText: readinessClarifyText || 'まず対象手続きと期限を1つずつ教えてください。そこから次の一手を絞ります。',
-    refuseText: 'この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを整理します。'
+    refuseText: getMinSafeApplyLiteral('leaf_paid_finalizer_refuse', 'この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを整理します。')
   });
   const replyText = trimForPaidLineMessage(responseQualityVerdict.replyText) || fallbackText;
   const fallbackTemplateKind = guardResult && typeof guardResult.templateKind === 'string'

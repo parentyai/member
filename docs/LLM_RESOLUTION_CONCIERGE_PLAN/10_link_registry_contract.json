@@ -1,0 +1,34 @@
+{
+  "contract_version": "resolution_link_registry_v1_plan",
+  "status": "proposed_add_only_scaffold",
+  "workbook_status": "missing",
+  "source_of_truth": [
+    "src/repos/firestore/linkRegistryRepo.js",
+    "src/usecases/assistant/concierge/composeConciergeReply.js",
+    "Member_LLM_Integrated_Spec_V1.md"
+  ],
+  "link_contract": {
+    "link_id": "string",
+    "title": "string",
+    "url": "string",
+    "source_type": "official|semi_official|internal_guidance",
+    "authority_band": "primary_required|primary_preferred|workflow_internal",
+    "freshness_status": "fresh|near_stale|stale|unknown",
+    "why_relevant": "string",
+    "open_surface": "text|flex|liff|mini_app|service_message",
+    "requires_handoff": "boolean",
+    "fallback_if_unavailable": "string"
+  },
+  "selection_rules": {
+    "max_links_default": 2,
+    "max_links_regulated": 3,
+    "suppress_if_irrelevant": true,
+    "suppress_if_low_authority_and_primary_required": true,
+    "rich_menu_direct_url": "forbidden"
+  },
+  "notes": [
+    "This contract is additive over the current link registry repository model.",
+    "authority_band and open_surface are planned response-layer fields, not yet observed as persisted repo fields."
+  ]
+}
+

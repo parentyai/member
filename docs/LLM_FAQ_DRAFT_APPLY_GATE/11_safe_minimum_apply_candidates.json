@@ -1,0 +1,532 @@
+{
+  "spec_version": "1.0",
+  "generated_at": "2026-03-19T19:29:32.815889",
+  "repo_root": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001",
+  "repo_head": "834eaf010876a6c08d21efd38a0e135df7987cb4",
+  "source_draft_corpus": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_FAQ_LEAF_DRAFT_CORPUS/04_leaf_draft_corpus.json",
+  "summary": {
+    "generated_scanned": 35,
+    "literal_apply_candidate": 16,
+    "parameterized_apply_candidate": 3,
+    "keyed_variant_candidate": 7,
+    "copy_shell_only": 7,
+    "blocked_apply": 2
+  },
+  "safe_candidates": [],
+  "blocked_or_nonliteral": [
+    {
+      "leaf_id": "leaf_citypack_feedback_received",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_citypack_feedback_usage",
+      "apply_class": "copy_shell_only",
+      "blocking_reasons": [
+        "missing_binding_source",
+        "shell_only",
+        "unresolved_placeholder"
+      ],
+      "unresolved_tokens": [
+        "<内容>"
+      ],
+      "variant_keys_needed": [],
+      "binding_requirements": [
+        "<内容>"
+      ],
+      "recommended_next_step": "shellをapply対象から除外"
+    },
+    {
+      "leaf_id": "leaf_free_retrieval_empty_reply",
+      "apply_class": "parameterized_apply_candidate",
+      "blocking_reasons": [
+        "binding_contract_required",
+        "unresolved_placeholder",
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [
+        "<title>"
+      ],
+      "variant_keys_needed": [],
+      "binding_requirements": [
+        "<title>"
+      ],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_free_style_checklist",
+      "apply_class": "copy_shell_only",
+      "blocking_reasons": [
+        "ellipsis_placeholder",
+        "runtime_semantic_fill_required",
+        "shell_only"
+      ],
+      "unresolved_tokens": [
+        "..."
+      ],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "shellをapply対象から除外"
+    },
+    {
+      "leaf_id": "leaf_free_style_coach",
+      "apply_class": "copy_shell_only",
+      "blocking_reasons": [
+        "ellipsis_placeholder",
+        "runtime_semantic_fill_required",
+        "shell_only"
+      ],
+      "unresolved_tokens": [
+        "..."
+      ],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "shellをapply対象から除外"
+    },
+    {
+      "leaf_id": "leaf_free_style_quick",
+      "apply_class": "copy_shell_only",
+      "blocking_reasons": [
+        "ellipsis_placeholder",
+        "runtime_semantic_fill_required",
+        "shell_only"
+      ],
+      "unresolved_tokens": [
+        "..."
+      ],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "shellをapply対象から除外"
+    },
+    {
+      "leaf_id": "leaf_free_style_timeline",
+      "apply_class": "copy_shell_only",
+      "blocking_reasons": [
+        "ellipsis_placeholder",
+        "runtime_semantic_fill_required",
+        "shell_only"
+      ],
+      "unresolved_tokens": [
+        "..."
+      ],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "shellをapply対象から除外"
+    },
+    {
+      "leaf_id": "leaf_free_style_weekend",
+      "apply_class": "copy_shell_only",
+      "blocking_reasons": [
+        "ellipsis_placeholder",
+        "runtime_semantic_fill_required",
+        "shell_only"
+      ],
+      "unresolved_tokens": [
+        "..."
+      ],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "shellをapply対象から除外"
+    },
+    {
+      "leaf_id": "leaf_line_renderer_deeplink_generic",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_line_renderer_deeplink_with_url",
+      "apply_class": "parameterized_apply_candidate",
+      "blocking_reasons": [
+        "binding_contract_required",
+        "weak_contract",
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [
+        "<url>"
+      ],
+      "variant_keys_needed": [],
+      "binding_requirements": [
+        "<url>"
+      ],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_line_renderer_overflow_summary",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_line_renderer_render_failure",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_line_renderer_service_ack",
+      "apply_class": "keyed_variant_candidate",
+      "blocking_reasons": [
+        "keyed_variant_missing",
+        "mixed_state_text",
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [
+        "service_ack_wait",
+        "service_ack_prepare",
+        "service_ack_display"
+      ],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_notification_body_default",
+      "apply_class": "blocked_apply",
+      "blocking_reasons": [
+        "format_placeholder_only",
+        "weak_contract",
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [
+        "-"
+      ],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_notification_textmode_cta_join",
+      "apply_class": "blocked_apply",
+      "blocking_reasons": [
+        "format_placeholder_only",
+        "weak_contract",
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [
+        "label: url"
+      ],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_paid_conversation_format_shell",
+      "apply_class": "copy_shell_only",
+      "blocking_reasons": [
+        "runtime_semantic_fill_required",
+        "shell_only"
+      ],
+      "unresolved_tokens": [
+        "<pitfall>",
+        "<gap>"
+      ],
+      "variant_keys_needed": [],
+      "binding_requirements": [
+        "<pitfall>",
+        "<gap>"
+      ],
+      "recommended_next_step": "shellをapply対象から除外"
+    },
+    {
+      "leaf_id": "leaf_paid_finalizer_fallback",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_paid_finalizer_refuse",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_paid_readiness_clarify_default",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_paid_readiness_hedge_suffix",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_paid_readiness_refuse_default",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_paid_reply_guard_defaults",
+      "apply_class": "parameterized_apply_candidate",
+      "blocking_reasons": [
+        "binding_contract_required"
+      ],
+      "unresolved_tokens": [
+        "<pitfall>"
+      ],
+      "variant_keys_needed": [],
+      "binding_requirements": [
+        "<pitfall>"
+      ],
+      "recommended_next_step": "binding contract固定後に再判定"
+    },
+    {
+      "leaf_id": "leaf_region_prompt_or_validation",
+      "apply_class": "keyed_variant_candidate",
+      "blocking_reasons": [
+        "keyed_variant_missing",
+        "mixed_state_text",
+        "weak_contract",
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [
+        "prompt_required",
+        "invalid_format"
+      ],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_region_state_ack",
+      "apply_class": "keyed_variant_candidate",
+      "blocking_reasons": [
+        "keyed_variant_missing",
+        "mixed_state_text",
+        "weak_contract",
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [
+        "<cityLabel>",
+        "<stateLabel>"
+      ],
+      "variant_keys_needed": [
+        "declared",
+        "already_set"
+      ],
+      "binding_requirements": [
+        "<cityLabel>",
+        "<stateLabel>"
+      ],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_task_flex_buttons",
+      "apply_class": "keyed_variant_candidate",
+      "blocking_reasons": [
+        "keyed_variant_missing",
+        "mixed_state_text",
+        "weak_contract",
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [
+        "manual_button",
+        "video_button",
+        "mistake_button",
+        "external_link_button"
+      ],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_task_flex_labels",
+      "apply_class": "keyed_variant_candidate",
+      "blocking_reasons": [
+        "keyed_variant_missing",
+        "mixed_state_text",
+        "weak_contract",
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [
+        "<title>"
+      ],
+      "variant_keys_needed": [
+        "section_why_now",
+        "section_duration",
+        "section_checklist",
+        "section_summary",
+        "section_top_mistakes",
+        "section_context_tips",
+        "section_understanding",
+        "hero_title",
+        "alt_text_title"
+      ],
+      "binding_requirements": [
+        "<title>"
+      ],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_webhook_consent_state_ack",
+      "apply_class": "keyed_variant_candidate",
+      "blocking_reasons": [
+        "keyed_variant_missing",
+        "mixed_state_text",
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [
+        "consent_granted",
+        "consent_revoked"
+      ],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_webhook_direct_command_ack",
+      "apply_class": "keyed_variant_candidate",
+      "blocking_reasons": [
+        "keyed_variant_missing",
+        "mixed_state_text",
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [
+        "<phaseCommand>",
+        "<doneKey>"
+      ],
+      "variant_keys_needed": [
+        "phase_update",
+        "done_update"
+      ],
+      "binding_requirements": [
+        "<phaseCommand>",
+        "<doneKey>"
+      ],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_webhook_guard_missing_reply_fallback",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_webhook_low_relevance_clarify",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_webhook_readiness_clarify",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_webhook_readiness_refuse",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_webhook_retrieval_failure_fallback",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_webhook_synthetic_ack",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    },
+    {
+      "leaf_id": "leaf_welcome_message",
+      "apply_class": "literal_apply_candidate",
+      "blocking_reasons": [
+        "weak_test_anchor"
+      ],
+      "unresolved_tokens": [],
+      "variant_keys_needed": [],
+      "binding_requirements": [],
+      "recommended_next_step": "tests/contract/bindingを補強して再判定"
+    }
+  ],
+  "open_questions": [
+    "exact_string_assert がない generated draft が大半で、literal safe set を 0 件に据え置いた判断を維持するか。",
+    "<内容> は user instruction の literal example なのか runtime slot なのか。",
+    "line renderer service ack 3 variants の state key 名をどこで固定するか。",
+    "task flex title token は hero title と altText を同一 key で持つべきか。",
+    "<pitfall> 欠損時の paid reply guard line を omit するのか別 literal を持つのか。"
+  ]
+}

@@ -37,6 +37,7 @@ const {
   createResponseQualityVerdict,
   normalizeResponseQualityReasonCodes
 } = require('../domain/llm/quality/responseQualityFoundation');
+const { getMinSafeApplyLiteral } = require('../domain/llm/closure/minSafeApplyRegistry');
 const { resolveJourneyActionSignals } = require('../domain/llm/quality/resolveJourneyActionSignals');
 const { resolveRuntimeCityPackSignals } = require('../domain/llm/quality/resolveRuntimeCityPackSignals');
 const { resolveRuntimeEmergencySignals } = require('../domain/llm/quality/resolveRuntimeEmergencySignals');
@@ -91,6 +92,11 @@ const { resolveFreeContextualFollowup } = require('../domain/llm/conversation/fr
 const { searchCityPackCandidates } = require('../usecases/assistant/retrieval/searchCityPackCandidates');
 const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
 const { handleJourneyPostback } = require('../usecases/journey/handleJourneyPostback');
+const {
+  buildConversationConciergeEnvelope,
+  buildCityPackFeedbackReceivedText,
+  buildCityPackFeedbackUsageText
+} = require('../domain/llm/concierge/conciergeLayer');
 const { evaluateResponseContractConformance } = require('../v1/semantic/responseContractConformance');
 const { InMemoryWebhookDedupeStore } = require('../v1/channel_edge/line/dedupeStore');
 const { filterWebhookEventsAsync } = require('../v1/channel_edge/line/receiver');
@@ -107,10 +113,6 @@ const {
   regionAlreadySet
 } = require('../domain/regionLineMessages');
 const { parseRegionInput, extractLocationHintFromText } = require('../domain/regionNormalization');
-const {
-  feedbackReceived,
-  feedbackUsage
-} = require('../domain/cityPackFeedbackMessages');
 const {
   statusDeclared,
   statusUnlinked,
@@ -341,7 +343,7 @@ function detectLegacyTemplateHit(value) {
 function guardPaidMainReplyText(value, options) {
   const payload = options && typeof options === 'object' ? options : {};
   const fallbackText = normalizeReplyText(payload.fallbackText)
-    || '状況を整理しながら進めましょう。まずは優先する手続きを1つ決めるのがおすすめです。';
+    || getMinSafeApplyLiteral('leaf_webhook_guard_missing_reply_fallback', '状況を整理しながら進めましょう。まずは優先する手続きを1つ決めるのがおすすめです。');
   if (payload.preserveReplyText === true) {
     const guardedText = trimForPaidLineMessage(
       normalizeReplyText(value)
@@ -921,7 +923,29 @@ async function buildPaidDomainConciergeResult(params) {
 async function replyWithPaidDomainConcierge(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const result = await buildPaidDomainConciergeResult(payload);
-  const semanticReplyEnvelope = buildSemanticReplyEnvelope({
+  const conciergeResolution = buildConversationConciergeEnvelope({
+    lane: 'paid_domain',
+    baseReplyText: result.replyText,
+    domainIntent: payload.domainIntent || (result.conversationQuality && result.conversationQuality.domainIntent) || 'general',
+    topic: payload.domainIntent || (result.conversationQuality && result.conversationQuality.domainIntent) || 'general',
+    nextSteps: result.atoms && Array.isArray(result.atoms.nextActions) ? result.atoms.nextActions : [],
+    followUpQuestion: result.atoms && typeof result.atoms.followupQuestion === 'string'
+      ? result.atoms.followupQuestion
+      : null,
+    officialLinkCandidates: result.conciergeMeta && Array.isArray(result.conciergeMeta.urls) ? result.conciergeMeta.urls : [],
+    blockerNotes: result.conciergeMeta && Array.isArray(result.conciergeMeta.blockedReasons) ? result.conciergeMeta.blockedReasons : [],
+    readinessDecision: result.conciergeMeta && typeof result.conciergeMeta.readinessDecision === 'string'
+      ? result.conciergeMeta.readinessDecision
+      : null,
+    sourceFreshnessScore: result.conciergeMeta && Number.isFinite(Number(result.conciergeMeta.sourceFreshnessScore))
+      ? Number(result.conciergeMeta.sourceFreshnessScore)
+      : null,
+    sourceReadinessDecision: result.conciergeMeta && typeof result.conciergeMeta.sourceReadinessDecision === 'string'
+      ? result.conciergeMeta.sourceReadinessDecision
+      : null,
+    officialOnlySatisfied: result.conciergeMeta ? result.conciergeMeta.officialOnlySatisfied === true : false
+  });
+  const semanticReplyEnvelope = buildSemanticReplyEnvelope(mergeSemanticReplyParams({
     replyText: result.replyText,
     domainIntent: payload.domainIntent || (result.conversationQuality && result.conversationQuality.domainIntent) || 'general',
     conversationMode: result.opportunityDecision && result.opportunityDecision.conversationMode
@@ -954,7 +978,7 @@ async function replyWithPaidDomainConcierge(params) {
     readinessReasonCodes: result.conciergeMeta && Array.isArray(result.conciergeMeta.readinessReasonCodes)
       ? result.conciergeMeta.readinessReasonCodes
       : []
-  });
+  }, conciergeResolution));
   await payload.replyFn(
     payload.replyToken,
     semanticReplyEnvelope.lineMessage || { type: 'text', text: semanticReplyEnvelope.replyText }
@@ -1733,6 +1757,8 @@ function buildSemanticReplyEnvelope(params) {
   });
   const responseContractConformance = evaluateResponseContractConformance({
     replyText: payload.replyText || '',
+    summary: payload.summary || null,
+    contractVersion: payload.contractVersion || null,
     domainIntent: normalizeDomainIntent(payload.domainIntent || 'general'),
     stage: payload.stage || payload.lifecycleStage || null,
     answerMode: payload.answerMode || payload.conversationMode || null,
@@ -1763,7 +1789,10 @@ function buildSemanticReplyEnvelope(params) {
       ? payload.conversationMode
       : null,
     nextSteps,
-    followupQuestion
+    followupQuestion,
+    pitfall: payload.pitfall || null,
+    evidenceFooter: payload.evidenceFooter || null,
+    safetyNotes: Array.isArray(payload.safetyNotes) ? payload.safetyNotes : []
   });
   const lineRender = buildSemanticLineMessage({
     semanticResponseObject: responseContractConformance.semanticResponseObject,
@@ -1778,6 +1807,38 @@ function buildSemanticReplyEnvelope(params) {
     lineMessage: lineRender.message,
     lineSurfacePlan: lineRender.surfacePlan
   };
+}
+
+function mergeSemanticReplyParams(baseParams, conciergeResolution) {
+  const base = baseParams && typeof baseParams === 'object' ? baseParams : {};
+  const resolution = conciergeResolution && typeof conciergeResolution === 'object' ? conciergeResolution : null;
+  if (!resolution) return base;
+  return Object.assign({}, base, {
+    contractVersion: 'resolution_concierge_v1',
+    summary: resolution.answer_summary || base.summary || null,
+    replyText: resolution.replyText || base.replyText,
+    nextSteps: Array.isArray(resolution.nextSteps) && resolution.nextSteps.length
+      ? resolution.nextSteps
+      : base.nextSteps,
+    followupQuestion: typeof resolution.follow_up_question === 'string' && resolution.follow_up_question
+      ? resolution.follow_up_question
+      : base.followupQuestion,
+    tasks: Array.isArray(resolution.semanticTasks)
+      ? resolution.semanticTasks
+      : (Array.isArray(base.tasks) ? base.tasks : []),
+    evidenceRefs: Array.isArray(resolution.evidenceRefs)
+      ? resolution.evidenceRefs
+      : (Array.isArray(base.evidenceRefs) ? base.evidenceRefs : []),
+    quickReplies: Array.isArray(resolution.quickReplies)
+      ? resolution.quickReplies
+      : (Array.isArray(base.quickReplies) ? base.quickReplies : []),
+    serviceSurface: typeof resolution.service_surface === 'string' && resolution.service_surface
+      ? resolution.service_surface
+      : base.serviceSurface,
+    safetyNotes: Array.isArray(resolution.safety_notes)
+      ? resolution.safety_notes
+      : (Array.isArray(base.safetyNotes) ? base.safetyNotes : [])
+  });
 }
 
 function resolveAnswerReadinessTelemetry(params) {
@@ -3320,7 +3381,29 @@ async function tryHandlePaidOrchestratorV2(params) {
   });
 
   if (!orchestrated || orchestrated.ok !== true) return null;
-  const orchestratedReplyEnvelope = buildSemanticReplyEnvelope({
+  const orchestratedConciergeResolution = buildConversationConciergeEnvelope({
+    lane: 'paid_orchestrated',
+    baseReplyText: orchestrated.replyText,
+    domainIntent: orchestrated.domainIntent || 'general',
+    topic: orchestrated.domainIntent || 'general',
+    nextSteps: orchestrated.finalMeta && Array.isArray(orchestrated.finalMeta.committedNextActions)
+      ? orchestrated.finalMeta.committedNextActions
+      : [],
+    followUpQuestion: orchestrated.finalMeta && typeof orchestrated.finalMeta.committedFollowupQuestion === 'string'
+      ? orchestrated.finalMeta.committedFollowupQuestion
+      : null,
+    officialLinkCandidates: orchestrated.conciergeMeta && Array.isArray(orchestrated.conciergeMeta.urls)
+      ? orchestrated.conciergeMeta.urls
+      : [],
+    blockerNotes: orchestrated.conciergeMeta && Array.isArray(orchestrated.conciergeMeta.blockedReasons)
+      ? orchestrated.conciergeMeta.blockedReasons
+      : [],
+    readinessDecision: orchestrated.telemetry ? orchestrated.telemetry.readinessDecision : null,
+    sourceFreshnessScore: orchestrated.telemetry ? orchestrated.telemetry.sourceFreshnessScore : null,
+    sourceReadinessDecision: orchestrated.telemetry ? orchestrated.telemetry.sourceReadinessDecision : null,
+    officialOnlySatisfied: orchestrated.telemetry ? orchestrated.telemetry.officialOnlySatisfied === true : false
+  });
+  const orchestratedReplyEnvelope = buildSemanticReplyEnvelope(mergeSemanticReplyParams({
     replyText: orchestrated.replyText,
     domainIntent: orchestrated.domainIntent || 'general',
     conversationMode: orchestrated.conversationMode || 'concierge',
@@ -3344,7 +3427,7 @@ async function tryHandlePaidOrchestratorV2(params) {
     readinessDecision: orchestrated.telemetry ? orchestrated.telemetry.readinessDecision : null,
     readinessReasonCodes: orchestrated.telemetry ? orchestrated.telemetry.readinessReasonCodes : [],
     actionClass: orchestrated.telemetry ? orchestrated.telemetry.actionClass : null
-  });
+  }, orchestratedConciergeResolution));
   const orchestratedReplyText = orchestratedReplyEnvelope.replyText;
   await payload.replyFn(
     payload.replyToken,
@@ -3674,7 +3757,8 @@ async function replyWithFreeRetrieval(params) {
     .filter(Boolean)
     .join('\n\n');
   const extra = normalizeReplyText(mergedExtra);
-  const base = trimForLineMessage(retrieval.replyText) || '関連情報を取得できませんでした。';
+  const base = trimForLineMessage(retrieval.replyText)
+    || getMinSafeApplyLiteral('leaf_webhook_retrieval_failure_fallback', '関連情報を取得できませんでした。');
   let replyText = extra ? trimForLineMessage(`${base}\n\n${extra}`) : base;
   if (contextualFollowup && contextualFollowup.replyText) {
     replyText = extra
@@ -3780,7 +3864,38 @@ async function replyWithFreeRetrieval(params) {
     replyText = trimForPaidLineMessage(replyText);
   }
 
-  const semanticReplyEnvelope = buildSemanticReplyEnvelope({
+  const retrievalNextSteps = retrieval.mode === 'ranked'
+    ? ['関連するFAQかCity Packを1つ選んで確認する']
+    : ['都市名・期限・手続き名を1つずつ足して再送する'];
+  const [faqStoredCandidates, cityPackStoredCandidates] = await Promise.all([
+    resolveFaqStoredCandidatesFromRetrieval(retrieval),
+    resolveCityPackStoredCandidatesFromRetrieval(retrieval)
+  ]);
+  const retrievalConciergeResolution = buildConversationConciergeEnvelope({
+    lane: 'free_retrieval',
+    baseReplyText: replyText,
+    domainIntent,
+    topic: domainIntent || 'general',
+    nextSteps: retrievalNextSteps,
+    followUpQuestion: contextualFollowup && typeof contextualFollowup.replyText === 'string'
+      ? contextualFollowup.replyText
+      : null,
+    officialLinkCandidates: faqStoredCandidates.concat(cityPackStoredCandidates),
+    faqCandidates: retrieval.faqCandidates,
+    cityPackCandidates: retrieval.cityPackCandidates,
+    blockerNotes: conciergeMeta && Array.isArray(conciergeMeta.blockedReasons) ? conciergeMeta.blockedReasons : [],
+    readinessDecision: conciergeMeta && typeof conciergeMeta.readinessDecision === 'string'
+      ? conciergeMeta.readinessDecision
+      : null,
+    sourceFreshnessScore: conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceFreshnessScore))
+      ? Number(conciergeMeta.sourceFreshnessScore)
+      : null,
+    sourceReadinessDecision: conciergeMeta && typeof conciergeMeta.sourceReadinessDecision === 'string'
+      ? conciergeMeta.sourceReadinessDecision
+      : null,
+    officialOnlySatisfied: conciergeMeta ? conciergeMeta.officialOnlySatisfied === true : false
+  });
+  const semanticReplyEnvelope = buildSemanticReplyEnvelope(mergeSemanticReplyParams({
     replyText,
     domainIntent,
     conversationMode: payload.plan === 'pro' ? 'concierge' : 'casual',
@@ -3811,7 +3926,7 @@ async function replyWithFreeRetrieval(params) {
     readinessReasonCodes: conciergeMeta && Array.isArray(conciergeMeta.readinessReasonCodes)
       ? conciergeMeta.readinessReasonCodes
       : []
-  });
+  }, retrievalConciergeResolution));
   replyText = semanticReplyEnvelope.replyText;
   await payload.replyFn(
     payload.replyToken,
@@ -4051,7 +4166,13 @@ async function handleAssistantMessage(params) {
       disablePitfall: true,
       disableFollowup: true
     });
-    const semanticReplyEnvelope = buildSemanticReplyEnvelope({
+    const casualConciergeResolution = buildConversationConciergeEnvelope({
+      lane: 'paid_casual',
+      baseReplyText: guardedReply.replyText,
+      domainIntent: normalizedConversationIntent,
+      topic: normalizedConversationIntent || 'general'
+    });
+    const semanticReplyEnvelope = buildSemanticReplyEnvelope(mergeSemanticReplyParams({
       replyText: guardedReply.replyText,
       domainIntent: normalizedConversationIntent,
       conversationMode: 'casual',
@@ -4060,8 +4181,8 @@ async function handleAssistantMessage(params) {
       uUnits: ['U-02', 'U-17', 'U-26', 'U-27'],
       nextSteps: [],
       followupQuestion: null
-    });
-    const replyText = normalizeReplyText(casual && casual.replyText ? casual.replyText : '') || guardedReply.replyText;
+    }, casualConciergeResolution));
+    const replyText = semanticReplyEnvelope.replyText;
     await payload.replyFn(
       payload.replyToken,
       { type: 'text', text: replyText }
@@ -4736,7 +4857,13 @@ async function handleAssistantMessage(params) {
       disablePitfall: true,
       disableFollowup: true
     });
-    const semanticReplyEnvelope = buildSemanticReplyEnvelope({
+    const casualConciergeResolution = buildConversationConciergeEnvelope({
+      lane: 'paid_casual',
+      baseReplyText: guardedReply.replyText,
+      domainIntent: normalizedConversationIntent,
+      topic: normalizedConversationIntent || 'general'
+    });
+    const semanticReplyEnvelope = buildSemanticReplyEnvelope(mergeSemanticReplyParams({
       replyText: guardedReply.replyText,
       domainIntent: normalizedConversationIntent,
       conversationMode: opportunityDecision.conversationMode || 'casual',
@@ -4745,8 +4872,8 @@ async function handleAssistantMessage(params) {
       uUnits: ['U-02', 'U-17', 'U-26', 'U-27'],
       nextSteps: [],
       followupQuestion: null
-    });
-    const replyText = normalizeReplyText(casual && casual.replyText ? casual.replyText : '') || guardedReply.replyText;
+    }, casualConciergeResolution));
+    const replyText = semanticReplyEnvelope.replyText;
     await payload.replyFn(
       payload.replyToken,
       { type: 'text', text: replyText }
@@ -5336,10 +5463,32 @@ async function handleAssistantMessage(params) {
     responseQualityContext: readinessTelemetry.responseQualityContext,
     readinessOverride: readinessTelemetry.readiness,
     replyText: guardedMainReply.replyText,
-    clarifyText: 'まず対象手続きと期限を1つずつ教えてください。そこから具体的な次の一手を整理します。',
-    refuseText: 'この内容は安全に断定できないため、公式窓口で最終確認をお願いします。必要なら確認項目を整理します。'
+    clarifyText: getMinSafeApplyLiteral('leaf_webhook_readiness_clarify', 'まず対象手続きと期限を1つずつ教えてください。そこから具体的な次の一手を整理します。'),
+    refuseText: getMinSafeApplyLiteral('leaf_webhook_readiness_refuse', 'この内容は安全に断定できないため、公式窓口で最終確認をお願いします。必要なら確認項目を整理します。')
   });
-  const semanticReplyEnvelope = buildSemanticReplyEnvelope({
+  const mainConciergeResolution = buildConversationConciergeEnvelope({
+    lane: 'paid_main',
+    baseReplyText: responseQualityVerdict.replyText,
+    domainIntent: normalizedConversationIntent,
+    topic: normalizedConversationIntent || 'general',
+    nextSteps: paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : [],
+    followUpQuestion: paid && paid.output && Array.isArray(paid.output.gaps) ? paid.output.gaps[0] : '',
+    officialLinkCandidates: conciergeMeta && Array.isArray(conciergeMeta.urls) ? conciergeMeta.urls : [],
+    blockerNotes: []
+      .concat(conciergeMeta && Array.isArray(conciergeMeta.blockedReasons) ? conciergeMeta.blockedReasons : [])
+      .concat(readinessTelemetry.readiness && Array.isArray(readinessTelemetry.readiness.reasonCodes)
+        ? readinessTelemetry.readiness.reasonCodes
+        : []),
+    readinessDecision: readinessTelemetry.readiness ? readinessTelemetry.readiness.decision : null,
+    sourceFreshnessScore: conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceFreshnessScore))
+      ? Number(conciergeMeta.sourceFreshnessScore)
+      : null,
+    sourceReadinessDecision: conciergeMeta && typeof conciergeMeta.sourceReadinessDecision === 'string'
+      ? conciergeMeta.sourceReadinessDecision
+      : null,
+    officialOnlySatisfied: conciergeMeta ? conciergeMeta.officialOnlySatisfied === true : false
+  });
+  const semanticReplyEnvelope = buildSemanticReplyEnvelope(mergeSemanticReplyParams({
     replyText: responseQualityVerdict.replyText,
     domainIntent: normalizedConversationIntent,
     conversationMode: (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath)
@@ -5380,7 +5529,7 @@ async function handleAssistantMessage(params) {
     escalationRequired: readinessTelemetry.readiness
       ? readinessTelemetry.readiness.decision === 'refuse'
       : false
-  });
+  }, mainConciergeResolution));
   replyText = semanticReplyEnvelope.replyText;
   await payload.replyFn(
     payload.replyToken,
@@ -5808,7 +5957,7 @@ async function handleLineWebhook(options) {
             }
             await effectiveReplyFn(effectiveReplyToken, {
               type: 'text',
-              text: '受け取りました。続けて状況を一緒に整理します。'
+              text: getMinSafeApplyLiteral('leaf_webhook_synthetic_ack', '受け取りました。続けて状況を一緒に整理します。')
             });
             continue;
           }
@@ -5909,11 +6058,11 @@ async function handleLineWebhook(options) {
 
           const feedback = await declareCityPackFeedbackFromLine({ lineUserId: userId, text, requestId, traceId: requestId });
           if (feedback.status === 'received') {
-            await replyFn(replyToken, { type: 'text', text: feedbackReceived() });
+            await replyFn(replyToken, { type: 'text', text: buildCityPackFeedbackReceivedText() });
             continue;
           }
           if (feedback.status === 'usage') {
-            await replyFn(replyToken, { type: 'text', text: feedbackUsage() });
+            await replyFn(replyToken, { type: 'text', text: buildCityPackFeedbackUsageText() });
             continue;
           }
 

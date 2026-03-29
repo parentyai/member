@@ -1,7 +1,9 @@
 'use strict';
 
+const { getMinSafeApplyLiteral } = require('./llm/closure/minSafeApplyRegistry');
+
 function feedbackReceived() {
-  return 'City Packの誤り報告を受け付けました。確認後に反映します。';
+  return getMinSafeApplyLiteral('leaf_citypack_feedback_received', 'City Packの誤り報告を受け付けました。確認後に反映します。');
 }
 
 function feedbackUsage() {

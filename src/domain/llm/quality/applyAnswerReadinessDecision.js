@@ -1,5 +1,7 @@
 'use strict';
 
+const { getMinSafeApplyLiteral } = require('../closure/minSafeApplyRegistry');
+
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
@@ -35,11 +37,11 @@ function applyAnswerReadinessDecision(params) {
   const decision = normalizeDecision(payload.decision);
   const replyText = normalizeText(payload.replyText);
   const clarifyText = normalizeText(payload.clarifyText)
-    || 'まず対象手続きと期限を1つずつ教えてください。そこから案内を具体化します。';
+    || getMinSafeApplyLiteral('leaf_paid_readiness_clarify_default', 'まず対象手続きと期限を1つずつ教えてください。そこから案内を具体化します。');
   const refuseText = normalizeText(payload.refuseText)
-    || 'この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを一緒に整理します。';
+    || getMinSafeApplyLiteral('leaf_paid_readiness_refuse_default', 'この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを一緒に整理します。');
   const hedgeSuffix = normalizeText(payload.hedgeSuffix)
-    || '補足: 情報は更新されるため、最終確認をお願いします。';
+    || getMinSafeApplyLiteral('leaf_paid_readiness_hedge_suffix', '補足: 情報は更新されるため、最終確認をお願いします。');
 
   if (decision === 'clarify') {
     return {

@@ -1,0 +1,10 @@
+leaf_id,exclusion_type,reason,notes
+leaf_task_detail_defaults_isolate,isolate_or_policy,isolate_for_human_or_separate_policy leaf,SAFE_ONLY excludes this class from draft generation
+leaf_journey_reminder_message,isolate_or_policy,isolate_for_human_or_separate_policy leaf,SAFE_ONLY excludes this class from draft generation
+leaf_ops_escalation_title_isolate,isolate_or_policy,isolate_for_human_or_separate_policy leaf,SAFE_ONLY excludes this class from draft generation
+leaf_ops_escalation_body_isolate,isolate_or_policy,isolate_for_human_or_separate_policy leaf,SAFE_ONLY excludes this class from draft generation
+leaf_ops_escalation_button_isolate,isolate_or_policy,isolate_for_human_or_separate_policy leaf,SAFE_ONLY excludes this class from draft generation
+leaf_policy_override_shadow,shadow_or_dead,shadow or dead/test-only leaf,SAFE_ONLY excludes this class from draft generation
+leaf_search_kb_replytext_shadow,shadow_or_dead,shadow or dead/test-only leaf,SAFE_ONLY excludes this class from draft generation
+leaf_paid_assistant_legacy_shadow,shadow_or_dead,shadow or dead/test-only leaf,SAFE_ONLY excludes this class from draft generation
+leaf_future_quick_reply_surface_slot,unknown_future_slot,unknown future surface slot,SAFE_ONLY excludes this class from draft generation

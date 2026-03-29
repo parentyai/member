@@ -1,0 +1,33 @@
+graph LR
+  A["POST /webhook/line"] --> B["handleLineWebhook"]
+  B --> C["Journey parser"]
+  B --> D["Assistant message path"]
+  C --> C1["region / city pack / redac"]
+  C --> C2["handleJourneyLineCommand"]
+  C --> C3["handleJourneyPostback"]
+  C2 --> C4["taskDetailSectionReply"]
+  C2 --> C5["renderTaskFlexMessage"]
+  D --> E["Free tier"]
+  D --> F["Paid tier"]
+  E --> E1["generateFreeRetrievalReply"]
+  E --> E2["freeContextualFollowup"]
+  E1 --> R["replyFn text"]
+  E2 --> R
+  F --> F1["routeConversation"]
+  F1 --> F2["generatePaidCasualReply"]
+  F1 --> F3["generatePaidDomainConciergeReply"]
+  F1 --> F4["runPaidConversationOrchestrator"]
+  F4 --> F5["verifyCandidate"]
+  F5 --> F6["finalizeCandidate"]
+  F2 --> G["paidReplyGuard / readiness"]
+  F3 --> G
+  F6 --> G
+  G --> R
+  H["POST /api/admin/llm/faq/answer"] --> I["answerFaqFromKb"]
+  J["POST /api/phaseLLM4/faq/answer"] --> I
+  I --> I1["disclaimer / fallbackActions"]
+  K["internal reminder job"] --> K1["buildReminderMessage"]
+  K1 --> P["pushFn text"]
+  L["sendNotification"] --> L1["buildLineNotificationMessage"]
+  L1 --> P
+

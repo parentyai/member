@@ -1,0 +1,14 @@
+flowchart LR
+  A["G0 Raw Families"] --> B["G1 Runtime Lanes"]
+  B --> C["G2 Canonical Owners"]
+  C --> D["G3 GPT Handoff Units"]
+  D --> E["G4 Future Registry Slots"]
+  P["policy_override_disclaimer_templates"] -. shadow .-> S1["policy_shadow_runtime"]
+  Q["search_kb_replytext_templates"] -. shadow .-> S2["dead_test_shadow_runtime"]
+  R["paid_assistant_legacy_structured_format"] -. shadow .-> S2
+  X["dynamic quick reply surface"] -. not observed as standalone family .-> S3["dynamic_quick_reply_surface_slot"]
+  B --> L1["audience leak flags"]
+  L1 --> D
+  C --> N1["hard_no_merge rules"]
+  N1 --> D
+  D --> N2["apply readiness"]
