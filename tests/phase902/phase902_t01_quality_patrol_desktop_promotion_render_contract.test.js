@@ -14,6 +14,7 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
 
   assert.ok(js.includes("title: 'Latest promotion'"));
   assert.ok(js.includes("title: 'Latest review bundle'"));
+  assert.ok(js.includes("title: 'Latest approval lane'"));
   assert.ok(js.includes("title: 'Latest promotion batch'"));
   assert.ok(js.includes('promotion.latestArtifactKind'));
   assert.ok(js.includes('promotion.latestArtifactStatus'));
@@ -22,22 +23,31 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(js.includes('promotionReview.codeEditTaskRef'));
   assert.ok(js.includes('promotionReview.codeApplyDraftRef'));
   assert.ok(js.includes('promotionReview.codeReviewPacketRef'));
+  assert.ok(js.includes('promotionApproval.approvalStage'));
+  assert.ok(js.includes('promotionApproval.validationCommandCount'));
+  assert.ok(js.includes('promotionApproval.codeApplyRecordRef'));
+  assert.ok(js.includes('promotionApproval.operatorInstructions'));
   assert.ok(js.includes('promotionBatch.patchDraftReadyCount'));
   assert.ok(js.includes('promotionBatch.nextAction'));
 
   assert.ok(runbook.includes('latest promotion kind / status / draft PR ref / updatedAt'));
   assert.ok(runbook.includes('desktopPatrolSummary.promotionReview'));
+  assert.ok(runbook.includes('desktopPatrolSummary.promotionApproval'));
   assert.ok(runbook.includes('desktopPatrolSummary.promotionBatch'));
   assert.ok(lineRunbook.includes('desktopPatrolSummary.promotion'));
   assert.ok(lineRunbook.includes('desktopPatrolSummary.promotionReview'));
+  assert.ok(lineRunbook.includes('desktopPatrolSummary.promotionApproval'));
   assert.ok(lineRunbook.includes('desktopPatrolSummary.promotionBatch'));
   assert.ok(ssot.includes('Latest promotion'));
   assert.ok(ssot.includes('Latest review bundle'));
+  assert.ok(ssot.includes('Latest approval lane'));
   assert.ok(ssot.includes('Latest promotion batch'));
   assert.ok(architecture.includes('promotion.latestArtifactKind'));
   assert.ok(architecture.includes('promotionReview.latestReviewArtifactKind'));
+  assert.ok(architecture.includes('promotionApproval.approvalStage'));
   assert.ok(architecture.includes('promotionBatch.batchRunId'));
   assert.ok(dataMap.includes('desktopPatrolSummary.promotion.latestArtifactKind'));
   assert.ok(dataMap.includes('desktopPatrolSummary.promotionReview.latestReviewArtifactKind'));
+  assert.ok(dataMap.includes('desktopPatrolSummary.promotionApproval.approvalStage'));
   assert.ok(dataMap.includes('desktopPatrolSummary.promotionBatch.batchRunId'));
 });

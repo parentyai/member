@@ -133,6 +133,18 @@ async function handleQualityPatrolQuery(req, res, deps) {
             : null,
           desktopPatrolPromotionReviewUpdatedAt: desktopPatrolSummary && desktopPatrolSummary.promotionReview
             ? desktopPatrolSummary.promotionReview.updatedAt || null
+            : null,
+          desktopPatrolPromotionApprovalStage: desktopPatrolSummary && desktopPatrolSummary.promotionApproval
+            ? desktopPatrolSummary.promotionApproval.approvalStage || null
+            : null,
+          desktopPatrolPromotionApprovalStatus: desktopPatrolSummary && desktopPatrolSummary.promotionApproval
+            ? desktopPatrolSummary.promotionApproval.approvalStatus || null
+            : null,
+          desktopPatrolPromotionApprovalCommandCount: desktopPatrolSummary && desktopPatrolSummary.promotionApproval
+            ? Number(desktopPatrolSummary.promotionApproval.validationCommandCount || 0)
+            : 0,
+          desktopPatrolPromotionApprovalUpdatedAt: desktopPatrolSummary && desktopPatrolSummary.promotionApproval
+            ? desktopPatrolSummary.promotionApproval.updatedAt || null
             : null
         }
       });

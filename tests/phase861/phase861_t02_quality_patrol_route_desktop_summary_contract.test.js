@@ -68,6 +68,13 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
         branchName: 'codex/line-desktop-patrol-prop-002',
         updatedAt: '2026-03-27T22:59:00.000Z'
       },
+      promotionApproval: {
+        latestProposalId: 'prop_002',
+        approvalStage: 'code_apply_signoff',
+        approvalStatus: 'ready_for_human_apply_signoff',
+        validationCommandCount: 4,
+        updatedAt: '2026-03-27T23:01:00.000Z'
+      },
       promotionBatch: {
         batchRunId: 'desktop-self-improve-002',
         completionStatus: 'proposal_review_required',
@@ -105,4 +112,8 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewKind, 'code_edit_task');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewBranch, 'codex/line-desktop-patrol-prop-002');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewUpdatedAt, '2026-03-27T22:59:00.000Z');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalStage, 'code_apply_signoff');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalStatus, 'ready_for_human_apply_signoff');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalCommandCount, 4);
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalUpdatedAt, '2026-03-27T23:01:00.000Z');
 });
