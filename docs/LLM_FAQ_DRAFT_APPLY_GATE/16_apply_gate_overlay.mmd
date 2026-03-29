@@ -1,0 +1,17 @@
+flowchart LR
+  A["Generated drafts 35"] --> B["Content triage
+Literal 16
+Parameterized 3
+Keyed 7
+Shell 7
+Blocked 2"]
+  B --> C["Readiness partition
+ready_literal_now 0
+ready_after_binding_contract 1
+ready_after_variant_keying 0
+shell_only_not_for_apply 7
+blocked_apply 27"]
+  C --> D["Safe minimum apply set
+0 leaves"]
+  C --> E["Needs more work
+Binding / Variant / Tests / Contract"]

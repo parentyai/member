@@ -1,0 +1,37 @@
+leaf_id,reason,blocking_issue,human_review_required,output_shape,notes
+leaf_faq_admin_disclaimer,audience is mixed,"audience scope is mixed, not end_user-only",true,disclaimer_block,human review before any draft generation
+leaf_faq_admin_block_actions,audience is mixed,"audience scope is mixed, not end_user-only",true,unknown_shape,human review before any draft generation
+leaf_faq_admin_readiness_clarify,audience is mixed,"audience scope is mixed, not end_user-only",true,clarify_prompt,human review before any draft generation
+leaf_faq_admin_readiness_refuse,audience is mixed,"audience scope is mixed, not end_user-only",true,refuse_text,human review before any draft generation
+leaf_faq_admin_readiness_hedge,audience is mixed,"audience scope is mixed, not end_user-only",true,disclaimer_block,human review before any draft generation
+leaf_faq_compat_disclaimer,audience is mixed,"audience scope is mixed, not end_user-only",true,disclaimer_block,human review before any draft generation
+leaf_faq_compat_block_actions,audience is mixed,"audience scope is mixed, not end_user-only",true,unknown_shape,human review before any draft generation
+leaf_faq_compat_readiness_clarify,audience is mixed,"audience scope is mixed, not end_user-only",true,clarify_prompt,human review before any draft generation
+leaf_faq_compat_readiness_refuse,audience is mixed,"audience scope is mixed, not end_user-only",true,refuse_text,human review before any draft generation
+leaf_faq_compat_readiness_hedge,audience is mixed,"audience scope is mixed, not end_user-only",true,disclaimer_block,human review before any draft generation
+leaf_free_retrieval_ranked_reply,human review gate present,human review gate is set,true,ranked_answer_with_candidates,human review before any draft generation
+leaf_free_style_choice,human review gate present,human review gate is set,true,plain_text_answer,human review before any draft generation
+leaf_free_style_debug,human review gate present,human review gate is set,true,plain_text_answer,human review before any draft generation
+leaf_free_style_story,human review gate present,human review gate is set,true,plain_text_answer,human review before any draft generation
+leaf_free_contextual_followup,human review gate present,human review gate is set,true,plain_text_answer,human review before any draft generation
+leaf_paid_casual,human review gate present,human review gate is set,true,plain_text_answer,human review before any draft generation
+leaf_paid_domain_concierge,human review gate present,human review gate is set,true,plain_text_answer,human review before any draft generation
+leaf_runtime_knowledge_fallback,human review gate present,human review gate is set,true,fallback_text,human review before any draft generation
+leaf_paid_disclaimer,human review gate present,human review gate is set,true,disclaimer_block,human review before any draft generation
+leaf_paid_safety_core_facts_clarify,human review gate present,human review gate is set,true,clarify_prompt,human review before any draft generation
+leaf_paid_verify_candidate_clarify,human review gate present,human review gate is set,true,clarify_prompt,human review before any draft generation
+leaf_paid_finalizer_clarify,human review gate present,human review gate is set,true,clarify_prompt,human review before any draft generation
+leaf_line_renderer_generic_headers,human review gate present,human review gate is set,true,renderer_default_text,human review before any draft generation
+leaf_notification_alt_text_default,output shape is unknown_shape,output shape is not stable enough for SAFE_ONLY drafting,true,unknown_shape,human review before any draft generation
+leaf_redac_membership_status,human review gate present,human review gate is set,true,command_ack,human review before any draft generation
+leaf_redac_membership_guidance,human review gate present,human review gate is set,true,clarify_prompt,human review before any draft generation
+leaf_redac_membership_unavailable,human review gate present,human review gate is set,true,fallback_text,human review before any draft generation
+leaf_journey_command_validation,human review gate present,human review gate is set,true,clarify_prompt,human review before any draft generation
+leaf_journey_command_state_ack,human review gate present,human review gate is set,true,command_ack,human review before any draft generation
+leaf_journey_command_feature_paused,human review gate present,human review gate is set,true,fallback_text,human review before any draft generation
+leaf_journey_command_support_open,human review gate present,human review gate is set,true,command_ack,human review before any draft generation
+leaf_journey_command_citypack_subscription,human review gate present,human review gate is set,true,command_ack,human review before any draft generation
+leaf_journey_command_todo_status,human review gate present,human review gate is set,true,command_ack,human review before any draft generation
+leaf_journey_command_guidance_hints,human review gate present,human review gate is set,true,clarify_prompt,human review before any draft generation
+leaf_blocked_reason_labels,output shape is unknown_shape,output shape is not stable enough for SAFE_ONLY drafting,true,unknown_shape,human review before any draft generation
+leaf_adjacent_emergency_message,audience is mixed,"audience scope is mixed, not end_user-only",true,notification_text,human review before any draft generation

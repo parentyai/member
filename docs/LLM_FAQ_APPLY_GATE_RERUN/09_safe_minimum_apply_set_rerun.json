@@ -1,0 +1,122 @@
+{
+  "spec_version": "1.0.0",
+  "generated_at": "2026-03-19",
+  "repo_root": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001",
+  "repo_head": "834eaf010876a6c08d21efd38a0e135df7987cb4",
+  "source_rerun_partition": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_FAQ_APPLY_GATE_RERUN/04_rerun_apply_partition.md",
+  "summary": {
+    "ready_literal_now_pool": 16,
+    "safe_minimum_apply_candidates": 12
+  },
+  "safe_candidates": [
+    {
+      "leaf_id": "leaf_citypack_feedback_received",
+      "promoted_to": "ready_literal_now",
+      "why_safe_now": "Exact string, route contract, and output shape anchors now exist and no placeholder or variant key remains.",
+      "remaining_risks": [],
+      "required_apply_discipline": [
+        "keep wording literal",
+        "map one-to-one into future registry slot"
+      ]
+    },
+    {
+      "leaf_id": "leaf_line_renderer_render_failure",
+      "promoted_to": "ready_literal_now",
+      "why_safe_now": "Renderer fallback literal is anchored without unresolved binding or variant state.",
+      "remaining_risks": [],
+      "required_apply_discipline": [
+        "keep renderer-default semantics unchanged"
+      ]
+    },
+    {
+      "leaf_id": "leaf_paid_finalizer_refuse",
+      "promoted_to": "ready_literal_now",
+      "why_safe_now": "Refuse literal now has exact-string coverage and no unresolved runtime fill.",
+      "remaining_risks": [],
+      "required_apply_discipline": [
+        "preserve refusal role and route scope"
+      ]
+    },
+    {
+      "leaf_id": "leaf_paid_readiness_clarify_default",
+      "promoted_to": "ready_literal_now",
+      "why_safe_now": "Clarify literal is anchored across exact string, shape, and route scope.",
+      "remaining_risks": [],
+      "required_apply_discipline": [
+        "keep clarify-only purpose"
+      ]
+    },
+    {
+      "leaf_id": "leaf_paid_readiness_hedge_suffix",
+      "promoted_to": "ready_literal_now",
+      "why_safe_now": "Disclaimer suffix literal is anchored and contains no placeholder or policy-dependent slot.",
+      "remaining_risks": [],
+      "required_apply_discipline": [
+        "preserve disclaimer role"
+      ]
+    },
+    {
+      "leaf_id": "leaf_paid_readiness_refuse_default",
+      "promoted_to": "ready_literal_now",
+      "why_safe_now": "Refuse default literal is anchored across the observed contract surface.",
+      "remaining_risks": [],
+      "required_apply_discipline": [
+        "keep refusal semantics unchanged"
+      ]
+    },
+    {
+      "leaf_id": "leaf_webhook_guard_missing_reply_fallback",
+      "promoted_to": "ready_literal_now",
+      "why_safe_now": "Fallback literal is anchored and does not depend on dynamic runtime slots.",
+      "remaining_risks": [],
+      "required_apply_discipline": [
+        "preserve top-level fallback route scope"
+      ]
+    },
+    {
+      "leaf_id": "leaf_webhook_readiness_clarify",
+      "promoted_to": "ready_literal_now",
+      "why_safe_now": "Clarify text is literal and now exact-string anchored.",
+      "remaining_risks": [],
+      "required_apply_discipline": [
+        "keep clarify role separate from fallback and refuse"
+      ]
+    },
+    {
+      "leaf_id": "leaf_webhook_readiness_refuse",
+      "promoted_to": "ready_literal_now",
+      "why_safe_now": "Refuse text is literal and now exact-string anchored.",
+      "remaining_risks": [],
+      "required_apply_discipline": [
+        "keep refusal route scope unchanged"
+      ]
+    },
+    {
+      "leaf_id": "leaf_webhook_retrieval_failure_fallback",
+      "promoted_to": "ready_literal_now",
+      "why_safe_now": "Fallback literal is anchored and free of runtime token binding.",
+      "remaining_risks": [],
+      "required_apply_discipline": [
+        "keep retrieval-failure fallback semantics"
+      ]
+    },
+    {
+      "leaf_id": "leaf_webhook_synthetic_ack",
+      "promoted_to": "ready_literal_now",
+      "why_safe_now": "Command ack literal is now exact-string anchored and has no unresolved token.",
+      "remaining_risks": [],
+      "required_apply_discipline": [
+        "keep single-purpose ack semantics"
+      ]
+    },
+    {
+      "leaf_id": "leaf_welcome_message",
+      "promoted_to": "ready_literal_now",
+      "why_safe_now": "Welcome literal now has exact-string and route-contract coverage with no unresolved binding.",
+      "remaining_risks": [],
+      "required_apply_discipline": [
+        "preserve welcome-only surface"
+      ]
+    }
+  ]
+}

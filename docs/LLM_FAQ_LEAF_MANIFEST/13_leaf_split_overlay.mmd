@@ -1,0 +1,173 @@
+flowchart LR
+  subgraph G3["G3 mixed and special units"]
+    g3_faq_admin_answer_unit["g3_faq_admin_answer_unit"]
+    g3_faq_compat_answer_unit["g3_faq_compat_answer_unit"]
+    g3_free_retrieval_search_unit["g3_free_retrieval_search_unit"]
+    g3_paid_safety_gate_unit["g3_paid_safety_gate_unit"]
+    g3_webhook_top_level_unit["g3_webhook_top_level_unit"]
+    g3_notification_renderer_unit["g3_notification_renderer_unit"]
+    g3_journey_direct_command_unit["g3_journey_direct_command_unit"]
+    g3_journey_task_surface_unit["g3_journey_task_surface_unit"]
+    g3_journey_reminder_unit["g3_journey_reminder_unit"]
+    g3_adjacent_ops_notification_unit["g3_adjacent_ops_notification_unit"]
+    g3_policy_override_shadow_unit["g3_policy_override_shadow_unit"]
+    g3_dead_shadow_unit["g3_dead_shadow_unit"]
+  end
+  leaf_faq_admin_disclaimer["leaf_faq_admin_disclaimer\ngenerate\ndisclaimer_block"]
+  g3_faq_admin_answer_unit --> leaf_faq_admin_disclaimer
+  leaf_faq_admin_block_actions["leaf_faq_admin_block_actions\ngenerate\nunknown_shape"]
+  g3_faq_admin_answer_unit --> leaf_faq_admin_block_actions
+  leaf_faq_admin_readiness_clarify["leaf_faq_admin_readiness_clarify\ngenerate\nclarify_prompt"]
+  g3_faq_admin_answer_unit --> leaf_faq_admin_readiness_clarify
+  leaf_faq_admin_readiness_refuse["leaf_faq_admin_readiness_refuse\ngenerate\nrefuse_text"]
+  g3_faq_admin_answer_unit --> leaf_faq_admin_readiness_refuse
+  leaf_faq_admin_readiness_hedge["leaf_faq_admin_readiness_hedge\ngenerate\ndisclaimer_block"]
+  g3_faq_admin_answer_unit --> leaf_faq_admin_readiness_hedge
+  leaf_faq_compat_disclaimer["leaf_faq_compat_disclaimer\ngenerate\ndisclaimer_block"]
+  g3_faq_compat_answer_unit --> leaf_faq_compat_disclaimer
+  leaf_faq_compat_block_actions["leaf_faq_compat_block_actions\ngenerate\nunknown_shape"]
+  g3_faq_compat_answer_unit --> leaf_faq_compat_block_actions
+  leaf_faq_compat_readiness_clarify["leaf_faq_compat_readiness_clarify\ngenerate\nclarify_prompt"]
+  g3_faq_compat_answer_unit --> leaf_faq_compat_readiness_clarify
+  leaf_faq_compat_readiness_refuse["leaf_faq_compat_readiness_refuse\ngenerate\nrefuse_text"]
+  g3_faq_compat_answer_unit --> leaf_faq_compat_readiness_refuse
+  leaf_faq_compat_readiness_hedge["leaf_faq_compat_readiness_hedge\ngenerate\ndisclaimer_block"]
+  g3_faq_compat_answer_unit --> leaf_faq_compat_readiness_hedge
+  leaf_free_retrieval_empty_reply["leaf_free_retrieval_empty_reply\ngenerate\nfallback_text"]
+  g3_free_retrieval_search_unit --> leaf_free_retrieval_empty_reply
+  leaf_free_retrieval_ranked_reply["leaf_free_retrieval_ranked_reply\ngenerate\nranked_answer_with_candidates"]
+  g3_free_retrieval_search_unit --> leaf_free_retrieval_ranked_reply
+  leaf_free_style_quick["leaf_free_style_quick\ngenerate\nplain_text_answer"]
+  g3_free_retrieval_search_unit --> leaf_free_style_quick
+  leaf_free_style_coach["leaf_free_style_coach\ngenerate\nplain_text_answer"]
+  g3_free_retrieval_search_unit --> leaf_free_style_coach
+  leaf_free_style_checklist["leaf_free_style_checklist\ngenerate\nplain_text_answer"]
+  g3_free_retrieval_search_unit --> leaf_free_style_checklist
+  leaf_free_style_choice["leaf_free_style_choice\ngenerate\nplain_text_answer"]
+  g3_free_retrieval_search_unit --> leaf_free_style_choice
+  leaf_free_style_debug["leaf_free_style_debug\ngenerate\nplain_text_answer"]
+  g3_free_retrieval_search_unit --> leaf_free_style_debug
+  leaf_free_style_timeline["leaf_free_style_timeline\ngenerate\nplain_text_answer"]
+  g3_free_retrieval_search_unit --> leaf_free_style_timeline
+  leaf_free_style_weekend["leaf_free_style_weekend\ngenerate\nplain_text_answer"]
+  g3_free_retrieval_search_unit --> leaf_free_style_weekend
+  leaf_free_style_story["leaf_free_style_story\ngenerate\nplain_text_answer"]
+  g3_free_retrieval_search_unit --> leaf_free_style_story
+  leaf_free_contextual_followup["leaf_free_contextual_followup\ngenerate\nplain_text_answer"]
+  g3_free_contextual_followup_unit --> leaf_free_contextual_followup
+  leaf_paid_casual["leaf_paid_casual\ngenerate\nplain_text_answer"]
+  g3_paid_casual_unit --> leaf_paid_casual
+  leaf_paid_domain_concierge["leaf_paid_domain_concierge\ngenerate\nplain_text_answer"]
+  g3_paid_domain_answer_unit --> leaf_paid_domain_concierge
+  leaf_runtime_knowledge_fallback["leaf_runtime_knowledge_fallback\ngenerate\nfallback_text"]
+  g3_paid_domain_answer_unit --> leaf_runtime_knowledge_fallback
+  leaf_paid_conversation_format_shell["leaf_paid_conversation_format_shell\ngenerate\nplain_text_answer"]
+  g3_paid_conversation_format_unit --> leaf_paid_conversation_format_shell
+  leaf_paid_reply_guard_defaults["leaf_paid_reply_guard_defaults\ngenerate\nfallback_text"]
+  g3_paid_conversation_format_unit --> leaf_paid_reply_guard_defaults
+  leaf_paid_disclaimer["leaf_paid_disclaimer\ngenerate\ndisclaimer_block"]
+  g3_paid_disclaimer_unit --> leaf_paid_disclaimer
+  leaf_paid_readiness_clarify_default["leaf_paid_readiness_clarify_default\ngenerate\nclarify_prompt"]
+  g3_paid_safety_gate_unit --> leaf_paid_readiness_clarify_default
+  leaf_paid_readiness_refuse_default["leaf_paid_readiness_refuse_default\ngenerate\nrefuse_text"]
+  g3_paid_safety_gate_unit --> leaf_paid_readiness_refuse_default
+  leaf_paid_readiness_hedge_suffix["leaf_paid_readiness_hedge_suffix\ngenerate\ndisclaimer_block"]
+  g3_paid_safety_gate_unit --> leaf_paid_readiness_hedge_suffix
+  leaf_paid_safety_core_facts_clarify["leaf_paid_safety_core_facts_clarify\ngenerate\nclarify_prompt"]
+  g3_paid_safety_gate_unit --> leaf_paid_safety_core_facts_clarify
+  leaf_paid_verify_candidate_clarify["leaf_paid_verify_candidate_clarify\ngenerate\nclarify_prompt"]
+  g3_paid_safety_gate_unit --> leaf_paid_verify_candidate_clarify
+  leaf_paid_finalizer_fallback["leaf_paid_finalizer_fallback\ngenerate\nfallback_text"]
+  g3_paid_safety_gate_unit --> leaf_paid_finalizer_fallback
+  leaf_paid_finalizer_clarify["leaf_paid_finalizer_clarify\ngenerate\nclarify_prompt"]
+  g3_paid_safety_gate_unit --> leaf_paid_finalizer_clarify
+  leaf_paid_finalizer_refuse["leaf_paid_finalizer_refuse\ngenerate\nrefuse_text"]
+  g3_paid_safety_gate_unit --> leaf_paid_finalizer_refuse
+  leaf_webhook_guard_missing_reply_fallback["leaf_webhook_guard_missing_reply_fallback\ngenerate\nfallback_text"]
+  g3_webhook_top_level_unit --> leaf_webhook_guard_missing_reply_fallback
+  leaf_webhook_low_relevance_clarify["leaf_webhook_low_relevance_clarify\ngenerate\nclarify_prompt"]
+  g3_webhook_top_level_unit --> leaf_webhook_low_relevance_clarify
+  leaf_webhook_retrieval_failure_fallback["leaf_webhook_retrieval_failure_fallback\ngenerate\nfallback_text"]
+  g3_webhook_top_level_unit --> leaf_webhook_retrieval_failure_fallback
+  leaf_webhook_readiness_clarify["leaf_webhook_readiness_clarify\ngenerate\nclarify_prompt"]
+  g3_webhook_top_level_unit --> leaf_webhook_readiness_clarify
+  leaf_webhook_readiness_refuse["leaf_webhook_readiness_refuse\ngenerate\nrefuse_text"]
+  g3_webhook_top_level_unit --> leaf_webhook_readiness_refuse
+  leaf_webhook_synthetic_ack["leaf_webhook_synthetic_ack\ngenerate\ncommand_ack"]
+  g3_webhook_top_level_unit --> leaf_webhook_synthetic_ack
+  leaf_webhook_consent_state_ack["leaf_webhook_consent_state_ack\ngenerate\nconsent_ack"]
+  g3_webhook_top_level_unit --> leaf_webhook_consent_state_ack
+  leaf_webhook_direct_command_ack["leaf_webhook_direct_command_ack\ngenerate\ncommand_ack"]
+  g3_webhook_top_level_unit --> leaf_webhook_direct_command_ack
+  leaf_welcome_message["leaf_welcome_message\ngenerate\nwelcome_text"]
+  g3_welcome_message_unit --> leaf_welcome_message
+  leaf_line_renderer_overflow_summary["leaf_line_renderer_overflow_summary\ngenerate\nrenderer_default_text"]
+  g3_line_renderer_service_fallback_unit --> leaf_line_renderer_overflow_summary
+  leaf_line_renderer_deeplink_with_url["leaf_line_renderer_deeplink_with_url\ngenerate\nrenderer_default_text"]
+  g3_line_renderer_service_fallback_unit --> leaf_line_renderer_deeplink_with_url
+  leaf_line_renderer_deeplink_generic["leaf_line_renderer_deeplink_generic\ngenerate\nrenderer_default_text"]
+  g3_line_renderer_service_fallback_unit --> leaf_line_renderer_deeplink_generic
+  leaf_line_renderer_service_ack["leaf_line_renderer_service_ack\ngenerate\nrenderer_default_text"]
+  g3_line_renderer_service_fallback_unit --> leaf_line_renderer_service_ack
+  leaf_line_renderer_generic_headers["leaf_line_renderer_generic_headers\ngenerate\nrenderer_default_text"]
+  g3_line_renderer_service_fallback_unit --> leaf_line_renderer_generic_headers
+  leaf_line_renderer_render_failure["leaf_line_renderer_render_failure\ngenerate\nrenderer_default_text"]
+  g3_line_renderer_service_fallback_unit --> leaf_line_renderer_render_failure
+  leaf_notification_body_default["leaf_notification_body_default\ngenerate\nnotification_text"]
+  g3_notification_renderer_unit --> leaf_notification_body_default
+  leaf_notification_alt_text_default["leaf_notification_alt_text_default\ngenerate\nunknown_shape"]
+  g3_notification_renderer_unit --> leaf_notification_alt_text_default
+  leaf_notification_textmode_cta_join["leaf_notification_textmode_cta_join\ngenerate\nnotification_text"]
+  g3_notification_renderer_unit --> leaf_notification_textmode_cta_join
+  leaf_region_prompt_or_validation["leaf_region_prompt_or_validation\ngenerate\nclarify_prompt"]
+  g3_journey_direct_command_unit --> leaf_region_prompt_or_validation
+  leaf_region_state_ack["leaf_region_state_ack\ngenerate\ncommand_ack"]
+  g3_journey_direct_command_unit --> leaf_region_state_ack
+  leaf_citypack_feedback_received["leaf_citypack_feedback_received\ngenerate\ncommand_ack"]
+  g3_journey_direct_command_unit --> leaf_citypack_feedback_received
+  leaf_citypack_feedback_usage["leaf_citypack_feedback_usage\ngenerate\nclarify_prompt"]
+  g3_journey_direct_command_unit --> leaf_citypack_feedback_usage
+  leaf_redac_membership_status["leaf_redac_membership_status\ngenerate\ncommand_ack"]
+  g3_journey_direct_command_unit --> leaf_redac_membership_status
+  leaf_redac_membership_guidance["leaf_redac_membership_guidance\ngenerate\nclarify_prompt"]
+  g3_journey_direct_command_unit --> leaf_redac_membership_guidance
+  leaf_redac_membership_unavailable["leaf_redac_membership_unavailable\ngenerate\nfallback_text"]
+  g3_journey_direct_command_unit --> leaf_redac_membership_unavailable
+  leaf_journey_command_validation["leaf_journey_command_validation\ngenerate\nclarify_prompt"]
+  g3_journey_direct_command_unit --> leaf_journey_command_validation
+  leaf_journey_command_state_ack["leaf_journey_command_state_ack\ngenerate\ncommand_ack"]
+  g3_journey_direct_command_unit --> leaf_journey_command_state_ack
+  leaf_journey_command_feature_paused["leaf_journey_command_feature_paused\ngenerate\nfallback_text"]
+  g3_journey_direct_command_unit --> leaf_journey_command_feature_paused
+  leaf_journey_command_support_open["leaf_journey_command_support_open\ngenerate\ncommand_ack"]
+  g3_journey_direct_command_unit --> leaf_journey_command_support_open
+  leaf_journey_command_citypack_subscription["leaf_journey_command_citypack_subscription\ngenerate\ncommand_ack"]
+  g3_journey_direct_command_unit --> leaf_journey_command_citypack_subscription
+  leaf_journey_command_todo_status["leaf_journey_command_todo_status\ngenerate\ncommand_ack"]
+  g3_journey_direct_command_unit --> leaf_journey_command_todo_status
+  leaf_journey_command_guidance_hints["leaf_journey_command_guidance_hints\ngenerate\nclarify_prompt"]
+  g3_journey_direct_command_unit --> leaf_journey_command_guidance_hints
+  leaf_task_detail_defaults_isolate["leaf_task_detail_defaults_isolate\nisolate_for_human_or_separate_policy\nunknown_shape"]
+  g3_journey_task_surface_unit --> leaf_task_detail_defaults_isolate
+  leaf_task_flex_labels["leaf_task_flex_labels\ngenerate\nflex_label_set"]
+  g3_journey_task_surface_unit --> leaf_task_flex_labels
+  leaf_task_flex_buttons["leaf_task_flex_buttons\ngenerate\nflex_button_set"]
+  g3_journey_task_surface_unit --> leaf_task_flex_buttons
+  leaf_blocked_reason_labels["leaf_blocked_reason_labels\ngenerate\nunknown_shape"]
+  g3_journey_task_surface_unit --> leaf_blocked_reason_labels
+  leaf_journey_reminder_message["leaf_journey_reminder_message\nisolate_for_human_or_separate_policy\nreminder_text"]
+  g3_journey_reminder_unit --> leaf_journey_reminder_message
+  leaf_adjacent_emergency_message["leaf_adjacent_emergency_message\ngenerate\nnotification_text"]
+  g3_adjacent_emergency_unit --> leaf_adjacent_emergency_message
+  leaf_ops_escalation_title_isolate["leaf_ops_escalation_title_isolate\nisolate_for_human_or_separate_policy\nunknown_shape"]
+  g3_adjacent_ops_notification_unit --> leaf_ops_escalation_title_isolate
+  leaf_ops_escalation_body_isolate["leaf_ops_escalation_body_isolate\nisolate_for_human_or_separate_policy\noperator_notification_text"]
+  g3_adjacent_ops_notification_unit --> leaf_ops_escalation_body_isolate
+  leaf_ops_escalation_button_isolate["leaf_ops_escalation_button_isolate\nisolate_for_human_or_separate_policy\nflex_button_set"]
+  g3_adjacent_ops_notification_unit --> leaf_ops_escalation_button_isolate
+  leaf_policy_override_shadow["leaf_policy_override_shadow\nexclude_shadow\nunknown_shape"]
+  g3_policy_override_shadow_unit --> leaf_policy_override_shadow
+  leaf_search_kb_replytext_shadow["leaf_search_kb_replytext_shadow\nexclude_shadow\nunknown_shape"]
+  g3_dead_shadow_unit --> leaf_search_kb_replytext_shadow
+  leaf_paid_assistant_legacy_shadow["leaf_paid_assistant_legacy_shadow\nexclude_shadow\nunknown_shape"]
+  g3_dead_shadow_unit --> leaf_paid_assistant_legacy_shadow

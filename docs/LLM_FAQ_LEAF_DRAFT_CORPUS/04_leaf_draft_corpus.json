@@ -1,0 +1,2937 @@
+{
+  "corpus_version": "v1",
+  "generated_at": "2026-03-19T23:13:51+00:00",
+  "repo_root": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001",
+  "repo_head": "834eaf010876a6c08d21efd38a0e135df7987cb4",
+  "generation_mode": "SAFE_ONLY",
+  "source_leaf_manifest": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_FAQ_LEAF_MANIFEST/05_leaf_manifest.json",
+  "source_grouping_spec": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_FAQ_CANONICAL_GROUPING_SPEC/05_canonical_grouping_spec.json",
+  "summary": {
+    "total_leafs_scanned": 80,
+    "eligible_generate": 35,
+    "generated_drafts": 35,
+    "deferred_review": 36,
+    "excluded_non_generate": 9
+  },
+  "drafts": [
+    {
+      "leaf_id": "leaf_free_retrieval_empty_reply",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_free_retrieval_search_unit",
+      "parent_g4_group_id": "g4_assistant_free_retrieval_registry_slot",
+      "output_shape": "fallback_text",
+      "route_scope": {
+        "primary_route": "POST /webhook/line free retrieval",
+        "selectors": [
+          "replyWithFreeRetrieval() chooses generateFreeRetrievalReply()",
+          "buildEmptyReply() selected when safeFaqCandidates + safeCityPackCandidates length is 0",
+          "free plan branch only"
+        ],
+        "decision_nodes": [
+          "plan tier",
+          "faq candidate count",
+          "city pack candidate count"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep not-found framing, narrowing guidance, and support fallback in one free retrieval empty-result response.",
+          "Preserve free-tier retrieval lane attribution."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not claim search succeeded when no candidates were found."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "candidate citations",
+          "new paid upsell promises"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "<title> に一致する情報が見つかりませんでした。\nキーワードを短くして再検索する\n都市名/期限/手続き名を追加して再送する\n対象手続きと期限が曖昧なまま再検索すると候補が広がります。\n都市名・期限・手続き名を1つずつ教えてください。\n不明点は運用窓口へお問い合わせください。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "答えられない理由 + 次に必要な入力の方向だけに絞っています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "free_retrieval_empty_reply#block0",
+        "free_retrieval_empty_reply#block1",
+        "free_retrieval_empty_reply#block2",
+        "free_retrieval_empty_reply#block3",
+        "free_retrieval_empty_reply#block4",
+        "free_retrieval_empty_reply#block5",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/assistant/generateFreeRetrievalReply.js:36",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:3279",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/assistant/generateFreeRetrievalReply.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase653/phase653_t05_free_retrieval_kb_citypack_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, output_shape_assert",
+      "open_questions": [
+        "direct searchFaqFromKb ranked replyText assert remains weak elsewhere; empty branch exact strings are more stable"
+      ]
+    },
+    {
+      "leaf_id": "leaf_free_style_quick",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_free_retrieval_search_unit",
+      "parent_g4_group_id": "g4_assistant_free_retrieval_registry_slot",
+      "output_shape": "plain_text_answer",
+      "route_scope": {
+        "primary_route": "POST /webhook/line free retrieval",
+        "selectors": [
+          "urgent regex or urgency=high -> Quick",
+          "topic=activity -> Weekend",
+          "topic in regulation/medical/visa/tax/school/pricing -> Checklist",
+          "deadline or journeyPhase pre/arrival -> Timeline",
+          "confused regex -> Coach",
+          "messageLength <= 24 -> Choice"
+        ],
+        "decision_nodes": [
+          "topic",
+          "urgency",
+          "journeyPhase",
+          "messageLength",
+          "timeOfDay",
+          "askClarifying",
+          "maxActions"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "faq"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Preserve the quick style shell only; semantic action content remains dynamic.",
+          "Keep free retrieval style routing separate from contextual and paid lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not add new style ids or rename current style selectors."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new style families",
+          "cross-style hybrid copy"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "まずこの順です。\nつまずきやすい点: ...\n確認: ...\n1. 手続きを1つだけ指定してください。\n状況の特定に必要な情報が不足しています。\n手続き名と期限が曖昧なまま進めることです。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "2-5文相当の単一メッセージとして保持し、shell lines のみで閉じています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "response_style_templates#block0",
+        "response_style_templates#block1",
+        "response_style_templates#block2",
+        "response_style_templates#block3",
+        "response_style_templates#block28",
+        "response_style_templates#block29",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/responseStyles.js:43",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/styleRouter.js:22",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/responseStyles.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/styleRouter.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t03_style_router_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t04_style_humanizer_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t09_style_variation_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_free_style_coach",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_free_retrieval_search_unit",
+      "parent_g4_group_id": "g4_assistant_free_retrieval_registry_slot",
+      "output_shape": "plain_text_answer",
+      "route_scope": {
+        "primary_route": "POST /webhook/line free retrieval",
+        "selectors": [
+          "urgent regex or urgency=high -> Quick",
+          "topic=activity -> Weekend",
+          "topic in regulation/medical/visa/tax/school/pricing -> Checklist",
+          "deadline or journeyPhase pre/arrival -> Timeline",
+          "confused regex -> Coach",
+          "messageLength <= 24 -> Choice"
+        ],
+        "decision_nodes": [
+          "topic",
+          "urgency",
+          "journeyPhase",
+          "messageLength",
+          "timeOfDay",
+          "askClarifying",
+          "maxActions"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "faq"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Preserve the coach style shell only; semantic action content remains dynamic.",
+          "Keep free retrieval style routing separate from contextual and paid lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not add new style ids or rename current style selectors."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new style families",
+          "cross-style hybrid copy"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "この順で進めると迷いにくいです。\n注意点: ...\n確認したい点: ...\n- まず対象手続きを1つ確定してください。\n状況の特定に必要な情報が不足しています。\n手続き名と期限が曖昧なまま進めることです。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "2-5文相当の単一メッセージとして保持し、shell lines のみで閉じています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "response_style_templates#block4",
+        "response_style_templates#block5",
+        "response_style_templates#block6",
+        "response_style_templates#block7",
+        "response_style_templates#block28",
+        "response_style_templates#block29",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/responseStyles.js:43",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/styleRouter.js:22",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/responseStyles.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/styleRouter.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t03_style_router_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t04_style_humanizer_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t09_style_variation_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_free_style_checklist",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_free_retrieval_search_unit",
+      "parent_g4_group_id": "g4_assistant_free_retrieval_registry_slot",
+      "output_shape": "plain_text_answer",
+      "route_scope": {
+        "primary_route": "POST /webhook/line free retrieval",
+        "selectors": [
+          "urgent regex or urgency=high -> Quick",
+          "topic=activity -> Weekend",
+          "topic in regulation/medical/visa/tax/school/pricing -> Checklist",
+          "deadline or journeyPhase pre/arrival -> Timeline",
+          "confused regex -> Coach",
+          "messageLength <= 24 -> Choice"
+        ],
+        "decision_nodes": [
+          "topic",
+          "urgency",
+          "journeyPhase",
+          "messageLength",
+          "timeOfDay",
+          "askClarifying",
+          "maxActions"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "faq"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Preserve the checklist style shell only; semantic action content remains dynamic.",
+          "Keep free retrieval style routing separate from contextual and paid lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not add new style ids or rename current style selectors."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new style families",
+          "cross-style hybrid copy"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "チェックリスト:\n見落としやすい点: ...\n確認事項: ...\n- [ ] 対象手続きを1つ決める\n状況の特定に必要な情報が不足しています。\n手続き名と期限が曖昧なまま進めることです。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "2-5文相当の単一メッセージとして保持し、shell lines のみで閉じています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "response_style_templates#block8",
+        "response_style_templates#block9",
+        "response_style_templates#block10",
+        "response_style_templates#block11",
+        "response_style_templates#block28",
+        "response_style_templates#block29",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/responseStyles.js:43",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/styleRouter.js:22",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/responseStyles.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/styleRouter.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t03_style_router_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t04_style_humanizer_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t09_style_variation_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_free_style_timeline",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_free_retrieval_search_unit",
+      "parent_g4_group_id": "g4_assistant_free_retrieval_registry_slot",
+      "output_shape": "plain_text_answer",
+      "route_scope": {
+        "primary_route": "POST /webhook/line free retrieval",
+        "selectors": [
+          "urgent regex or urgency=high -> Quick",
+          "topic=activity -> Weekend",
+          "topic in regulation/medical/visa/tax/school/pricing -> Checklist",
+          "deadline or journeyPhase pre/arrival -> Timeline",
+          "confused regex -> Coach",
+          "messageLength <= 24 -> Choice"
+        ],
+        "decision_nodes": [
+          "topic",
+          "urgency",
+          "journeyPhase",
+          "messageLength",
+          "timeOfDay",
+          "askClarifying",
+          "maxActions"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "faq"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Preserve the timeline style shell only; semantic action content remains dynamic.",
+          "Keep free retrieval style routing separate from contextual and paid lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not add new style ids or rename current style selectors."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new style families",
+          "cross-style hybrid copy"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "タイムラインで整理します。\n遅れやすい点: ...\n期限確認: ...\n1. 手続きを1つだけ指定してください。\n状況の特定に必要な情報が不足しています。\n手続き名と期限が曖昧なまま進めることです。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "2-5文相当の単一メッセージとして保持し、shell lines のみで閉じています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "response_style_templates#block19",
+        "response_style_templates#block20",
+        "response_style_templates#block21",
+        "response_style_templates#block3",
+        "response_style_templates#block28",
+        "response_style_templates#block29",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/responseStyles.js:43",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/styleRouter.js:22",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/responseStyles.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/styleRouter.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t03_style_router_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t04_style_humanizer_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t09_style_variation_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_free_style_weekend",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_free_retrieval_search_unit",
+      "parent_g4_group_id": "g4_assistant_free_retrieval_registry_slot",
+      "output_shape": "plain_text_answer",
+      "route_scope": {
+        "primary_route": "POST /webhook/line free retrieval",
+        "selectors": [
+          "urgent regex or urgency=high -> Quick",
+          "topic=activity -> Weekend",
+          "topic in regulation/medical/visa/tax/school/pricing -> Checklist",
+          "deadline or journeyPhase pre/arrival -> Timeline",
+          "confused regex -> Coach",
+          "messageLength <= 24 -> Choice"
+        ],
+        "decision_nodes": [
+          "topic",
+          "urgency",
+          "journeyPhase",
+          "messageLength",
+          "timeOfDay",
+          "askClarifying",
+          "maxActions"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "faq"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Preserve the weekend style shell only; semantic action content remains dynamic.",
+          "Keep free retrieval style routing separate from contextual and paid lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not add new style ids or rename current style selectors."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new style families",
+          "cross-style hybrid copy"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "候補は次の通りです。\nよくある失敗: ...\n好みに合わせる確認: ...\n- まず対象手続きを1つ確定してください。\n状況の特定に必要な情報が不足しています。\n手続き名と期限が曖昧なまま進めることです。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "2-5文相当の単一メッセージとして保持し、shell lines のみで閉じています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "response_style_templates#block22",
+        "response_style_templates#block23",
+        "response_style_templates#block24",
+        "response_style_templates#block7",
+        "response_style_templates#block28",
+        "response_style_templates#block29",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/responseStyles.js:43",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/styleRouter.js:22",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/responseStyles.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/styleRouter.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t03_style_router_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t04_style_humanizer_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase717/phase717_t09_style_variation_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_paid_conversation_format_shell",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_paid_conversation_format_unit",
+      "parent_g4_group_id": "g4_assistant_paid_format_registry_slot",
+      "output_shape": "plain_text_answer",
+      "route_scope": {
+        "primary_route": "POST /webhook/line paid finalization",
+        "selectors": [
+          "generatePaidAssistantReply default path uses conversation format when ENABLE_PAID_ASSISTANT_CONVERSATION_FORMAT_V1 is not disabled",
+          "disclaimer appended if present"
+        ],
+        "decision_nodes": [
+          "conversation format flag",
+          "outputConstraints",
+          "disclaimer"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "faq"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep the paid conversation shell headings and question line placeholders.",
+          "Preserve conversation-format ownership separate from semantic answer policy."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not remove or rename fixed shell sections without changing downstream contract."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new sections"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "いまの状況を短く整理します。\nまずは次の一手です:\n多くの人が詰まりやすいのは <pitfall>。\n<gap> の認識で進めてもよいですか？",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "2-5文相当の単一メッセージとして保持し、shell lines のみで閉じています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "paid_assistant_conversation_format#block0",
+        "paid_assistant_conversation_format#block1",
+        "paid_assistant_conversation_format#block2",
+        "paid_assistant_conversation_format#block3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/assistant/generatePaidAssistantReply.js:565",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/assistant/generatePaidAssistantReply.js:874",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/assistant/generatePaidAssistantReply.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase653/phase653_t06_paid_assistant_template_guard_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_paid_reply_guard_defaults",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_paid_conversation_format_unit",
+      "parent_g4_group_id": "g4_assistant_paid_format_registry_slot",
+      "output_shape": "fallback_text",
+      "route_scope": {
+        "primary_route": "POST /webhook/line paid finalization",
+        "selectors": [
+          "sanitizePaidMainReply() invoked before final send",
+          "defaults applied when situation line or question line missing"
+        ],
+        "decision_nodes": [
+          "raw replyText",
+          "nextActions",
+          "pitfall",
+          "followupQuestion",
+          "conciseMode"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep guard-level default lines used when main paid reply is empty or malformed.",
+          "Preserve reply-guard role separate from readiness/refuse decisions."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not promote guard defaults into normal semantic answer copy."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "legacy template terms"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "状況を整理しながら進めましょう。\nまず最優先で進めたい手続きを1つ教えてください。\nまずは次の一手です。\n多くの人が詰まりやすいのは <pitfall>。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "答えられない理由 + 次に必要な入力の方向だけに絞っています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "paid_reply_guard_defaults#block0",
+        "paid_reply_guard_defaults#block1",
+        "paid_reply_guard_defaults#block2",
+        "paid_reply_guard_defaults#block3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/paidReplyGuard.js:3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/paidReplyGuard.js:114",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/paidReplyGuard.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase832/phase832_t03_reply_template_fingerprint_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_paid_readiness_clarify_default",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_paid_safety_gate_unit",
+      "parent_g4_group_id": "g4_assistant_paid_safety_registry_slot",
+      "output_shape": "clarify_prompt",
+      "route_scope": {
+        "primary_route": "paid orchestrator",
+        "selectors": [
+          "applyAnswerReadinessDecision decision=clarify|refuse|hedged|allow",
+          "clarifyText/refuseText may be injected by caller; otherwise defaults above apply"
+        ],
+        "decision_nodes": [
+          "decision clarify|refuse|hedged|allow"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "warning"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep readiness clarify/refuse/hedge defaults distinct by decision."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not collapse clarify, refuse, and hedge into one generic message."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new readiness states"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "まず対象手続きと期限を1つずつ教えてください。そこから案内を具体化します。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "必要な情報を 1-3 論点で聞く形に固定しています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "answer_readiness_gate_templates#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js:20",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase230/phase230_faq_confidence_blocks_low_confidence.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_paid_readiness_refuse_default",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_paid_safety_gate_unit",
+      "parent_g4_group_id": "g4_assistant_paid_safety_registry_slot",
+      "output_shape": "refuse_text",
+      "route_scope": {
+        "primary_route": "paid orchestrator",
+        "selectors": [
+          "applyAnswerReadinessDecision decision=clarify|refuse|hedged|allow",
+          "clarifyText/refuseText may be injected by caller; otherwise defaults above apply"
+        ],
+        "decision_nodes": [
+          "decision clarify|refuse|hedged|allow"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "warning"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep readiness clarify/refuse/hedge defaults distinct by decision."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not collapse clarify, refuse, and hedge into one generic message."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new readiness states"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを一緒に整理します。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "安全上の断定回避と確認先だけに留めています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "answer_readiness_gate_templates#block1",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js:20",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase230/phase230_faq_confidence_blocks_low_confidence.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_paid_readiness_hedge_suffix",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_paid_safety_gate_unit",
+      "parent_g4_group_id": "g4_assistant_paid_safety_registry_slot",
+      "output_shape": "disclaimer_block",
+      "route_scope": {
+        "primary_route": "paid orchestrator",
+        "selectors": [
+          "applyAnswerReadinessDecision decision=clarify|refuse|hedged|allow",
+          "clarifyText/refuseText may be injected by caller; otherwise defaults above apply"
+        ],
+        "decision_nodes": [
+          "decision clarify|refuse|hedged|allow"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "warning"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep readiness clarify/refuse/hedge defaults distinct by decision."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not collapse clarify, refuse, and hedge into one generic message."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new readiness states"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "補足: 情報は更新されるため、最終確認をお願いします。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "断定回避の短い補足ブロックに限定しています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "answer_readiness_gate_templates#block2",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js:20",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase230/phase230_faq_confidence_blocks_low_confidence.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_paid_finalizer_fallback",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_paid_safety_gate_unit",
+      "parent_g4_group_id": "g4_assistant_paid_safety_registry_slot",
+      "output_shape": "fallback_text",
+      "route_scope": {
+        "primary_route": "paid orchestrator",
+        "selectors": [
+          "finalizeCandidate() uses fallbackText when selected reply is empty or guard strips it",
+          "defaultQuestion used when verificationOutcome=clarify and no followup question remains",
+          "readinessClarifyText or default clarify/refuse text may overwrite guarded reply"
+        ],
+        "decision_nodes": [
+          "verificationOutcome",
+          "readinessDecision",
+          "selected.kind",
+          "atoms"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep empty-selected-reply fallback text separate from clarify/refuse overwrites."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new fallback reasons"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "状況を整理しながら進めます。優先手続きを1つ決めて進めましょう。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "答えられない理由 + 次に必要な入力の方向だけに絞っています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "finalize_candidate_fallback_templates#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/orchestrator/finalizeCandidate.js:37",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/orchestrator/finalizeCandidate.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase731/phase731_t02_paid_orchestrator_run_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_paid_finalizer_refuse",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_paid_safety_gate_unit",
+      "parent_g4_group_id": "g4_assistant_paid_safety_registry_slot",
+      "output_shape": "refuse_text",
+      "route_scope": {
+        "primary_route": "paid orchestrator",
+        "selectors": [
+          "finalizeCandidate() uses fallbackText when selected reply is empty or guard strips it",
+          "defaultQuestion used when verificationOutcome=clarify and no followup question remains",
+          "readinessClarifyText or default clarify/refuse text may overwrite guarded reply"
+        ],
+        "decision_nodes": [
+          "verificationOutcome",
+          "readinessDecision",
+          "selected.kind",
+          "atoms"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "warning"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep finalizer refuse override separate from clarify and empty fallback defaults."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new refusal rationales"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを整理します。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "安全上の断定回避と確認先だけに留めています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "finalize_candidate_fallback_templates#block3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/orchestrator/finalizeCandidate.js:37",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/orchestrator/finalizeCandidate.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase731/phase731_t02_paid_orchestrator_run_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_webhook_guard_missing_reply_fallback",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_webhook_top_level_unit",
+      "parent_g4_group_id": "g4_webhook_top_level_registry_slot",
+      "output_shape": "fallback_text",
+      "route_scope": {
+        "primary_route": "POST /webhook/line top-level",
+        "selectors": [
+          "low relevance gate invokes buildLowRelevanceConversationReply()",
+          "guardPaidMainReplyText used when paid reply missing",
+          "readiness clarify/refuse may be applied at webhook layer",
+          "consent commands and direct commands emit fixed ack text"
+        ],
+        "decision_nodes": [
+          "plan tier",
+          "low relevance",
+          "readiness",
+          "command parser",
+          "consent postback"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep top-level webhook fallback/ack semantics distinct from assistant answer lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not merge consent or command acknowledgements into assistant answer copy."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new webhook commands"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "状況を整理しながら進めましょう。まずは優先する手続きを1つ決めるのがおすすめです。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "答えられない理由 + 次に必要な入力の方向だけに絞っています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "webhook_assistant_top_level_templates#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_webhook_low_relevance_clarify",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_webhook_top_level_unit",
+      "parent_g4_group_id": "g4_webhook_top_level_registry_slot",
+      "output_shape": "clarify_prompt",
+      "route_scope": {
+        "primary_route": "POST /webhook/line top-level",
+        "selectors": [
+          "low relevance gate invokes buildLowRelevanceConversationReply()",
+          "guardPaidMainReplyText used when paid reply missing",
+          "readiness clarify/refuse may be applied at webhook layer",
+          "consent commands and direct commands emit fixed ack text"
+        ],
+        "decision_nodes": [
+          "plan tier",
+          "low relevance",
+          "readiness",
+          "command parser",
+          "consent postback"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "clarify"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep top-level webhook fallback/ack semantics distinct from assistant answer lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not merge consent or command acknowledgements into assistant answer copy."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new webhook commands"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "いまの質問だけでは対象手続きを特定できません。\n対象手続きを1つ指定する（例: ビザ更新 / 住居契約 / 税務）\n期限を1つ添える（例: 1週間後）\n対象手続きと期限が曖昧なまま進めると、案内の精度が下がります。\n対象手続き名と期限を1つずつ教えてください。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "必要な情報を 1-3 論点で聞く形に固定しています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "webhook_assistant_top_level_templates#block1",
+        "webhook_assistant_top_level_templates#block2",
+        "webhook_assistant_top_level_templates#block3",
+        "webhook_assistant_top_level_templates#block4",
+        "webhook_assistant_top_level_templates#block5",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_webhook_retrieval_failure_fallback",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_webhook_top_level_unit",
+      "parent_g4_group_id": "g4_webhook_top_level_registry_slot",
+      "output_shape": "fallback_text",
+      "route_scope": {
+        "primary_route": "POST /webhook/line top-level",
+        "selectors": [
+          "low relevance gate invokes buildLowRelevanceConversationReply()",
+          "guardPaidMainReplyText used when paid reply missing",
+          "readiness clarify/refuse may be applied at webhook layer",
+          "consent commands and direct commands emit fixed ack text"
+        ],
+        "decision_nodes": [
+          "plan tier",
+          "low relevance",
+          "readiness",
+          "command parser",
+          "consent postback"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep top-level webhook fallback/ack semantics distinct from assistant answer lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not merge consent or command acknowledgements into assistant answer copy."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new webhook commands"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "関連情報を取得できませんでした。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "答えられない理由 + 次に必要な入力の方向だけに絞っています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "webhook_assistant_top_level_templates#block6",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_webhook_readiness_clarify",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_webhook_top_level_unit",
+      "parent_g4_group_id": "g4_webhook_top_level_registry_slot",
+      "output_shape": "clarify_prompt",
+      "route_scope": {
+        "primary_route": "POST /webhook/line top-level",
+        "selectors": [
+          "low relevance gate invokes buildLowRelevanceConversationReply()",
+          "guardPaidMainReplyText used when paid reply missing",
+          "readiness clarify/refuse may be applied at webhook layer",
+          "consent commands and direct commands emit fixed ack text"
+        ],
+        "decision_nodes": [
+          "plan tier",
+          "low relevance",
+          "readiness",
+          "command parser",
+          "consent postback"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "warning"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep top-level webhook fallback/ack semantics distinct from assistant answer lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not merge consent or command acknowledgements into assistant answer copy."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new webhook commands"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "まず対象手続きと期限を1つずつ教えてください。そこから具体的な次の一手を整理します。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "必要な情報を 1-3 論点で聞く形に固定しています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "webhook_assistant_top_level_templates#block7",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_webhook_readiness_refuse",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_webhook_top_level_unit",
+      "parent_g4_group_id": "g4_webhook_top_level_registry_slot",
+      "output_shape": "refuse_text",
+      "route_scope": {
+        "primary_route": "POST /webhook/line top-level",
+        "selectors": [
+          "low relevance gate invokes buildLowRelevanceConversationReply()",
+          "guardPaidMainReplyText used when paid reply missing",
+          "readiness clarify/refuse may be applied at webhook layer",
+          "consent commands and direct commands emit fixed ack text"
+        ],
+        "decision_nodes": [
+          "plan tier",
+          "low relevance",
+          "readiness",
+          "command parser",
+          "consent postback"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "warning"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep top-level webhook fallback/ack semantics distinct from assistant answer lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not merge consent or command acknowledgements into assistant answer copy."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new webhook commands"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "この内容は安全に断定できないため、公式窓口で最終確認をお願いします。必要なら確認項目を整理します。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "安全上の断定回避と確認先だけに留めています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "webhook_assistant_top_level_templates#block8",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_webhook_synthetic_ack",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_webhook_top_level_unit",
+      "parent_g4_group_id": "g4_webhook_top_level_registry_slot",
+      "output_shape": "command_ack",
+      "route_scope": {
+        "primary_route": "POST /webhook/line top-level",
+        "selectors": [
+          "low relevance gate invokes buildLowRelevanceConversationReply()",
+          "guardPaidMainReplyText used when paid reply missing",
+          "readiness clarify/refuse may be applied at webhook layer",
+          "consent commands and direct commands emit fixed ack text"
+        ],
+        "decision_nodes": [
+          "plan tier",
+          "low relevance",
+          "readiness",
+          "command parser",
+          "consent postback"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep top-level webhook fallback/ack semantics distinct from assistant answer lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not merge consent or command acknowledgements into assistant answer copy."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new webhook commands"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "受け取りました。続けて状況を一緒に整理します。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "受理/状態反映のみで、余計な操作説明を足していません。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "webhook_assistant_top_level_templates#block9",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_webhook_consent_state_ack",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_webhook_top_level_unit",
+      "parent_g4_group_id": "g4_webhook_top_level_registry_slot",
+      "output_shape": "consent_ack",
+      "route_scope": {
+        "primary_route": "POST /webhook/line top-level",
+        "selectors": [
+          "low relevance gate invokes buildLowRelevanceConversationReply()",
+          "guardPaidMainReplyText used when paid reply missing",
+          "readiness clarify/refuse may be applied at webhook layer",
+          "consent commands and direct commands emit fixed ack text"
+        ],
+        "decision_nodes": [
+          "plan tier",
+          "low relevance",
+          "readiness",
+          "command parser",
+          "consent postback"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep top-level webhook fallback/ack semantics distinct from assistant answer lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not merge consent or command acknowledgements into assistant answer copy."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new webhook commands"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "AI機能の利用に同意しました。",
+        "structured_blocks": [
+          "AI機能の利用への同意を取り消しました。"
+        ],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "同意状態の確認のみで長文化していません。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "webhook_assistant_top_level_templates#block10",
+        "webhook_assistant_top_level_templates#block11",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_webhook_direct_command_ack",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_webhook_top_level_unit",
+      "parent_g4_group_id": "g4_webhook_top_level_registry_slot",
+      "output_shape": "command_ack",
+      "route_scope": {
+        "primary_route": "POST /webhook/line top-level",
+        "selectors": [
+          "low relevance gate invokes buildLowRelevanceConversationReply()",
+          "guardPaidMainReplyText used when paid reply missing",
+          "readiness clarify/refuse may be applied at webhook layer",
+          "consent commands and direct commands emit fixed ack text"
+        ],
+        "decision_nodes": [
+          "plan tier",
+          "low relevance",
+          "readiness",
+          "command parser",
+          "consent postback"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep top-level webhook fallback/ack semantics distinct from assistant answer lanes."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not merge consent or command acknowledgements into assistant answer copy."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new webhook commands"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "フェーズ更新を記録しました: <phaseCommand>",
+        "structured_blocks": [
+          "完了を記録しました: <doneKey>"
+        ],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "受理/状態反映のみで、余計な操作説明を足していません。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "webhook_assistant_top_level_templates#block12",
+        "webhook_assistant_top_level_templates#block13",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:376",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:4534",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase716/phase716_t05_webhook_concierge_audit_and_killswitch_contract.test.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase720/phase720_t05_paid_main_natural_reply_contract.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_welcome_message",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_welcome_message_unit",
+      "parent_g4_group_id": "g4_notification_registry_slot",
+      "output_shape": "welcome_text",
+      "route_scope": {
+        "primary_route": "welcome push flow",
+        "selectors": [
+          "sendWelcomeMessage() runs once when ensured user has not yet received welcome message"
+        ],
+        "decision_nodes": [
+          "already delivered?",
+          "line user ensured?"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "notification"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep one-time welcome notification wording and official-contact framing."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new onboarding steps"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "公式からのご案内はすべてこちらのLINEでお送りします。重要なお知らせは「公式連絡」からご確認ください。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "初回導入メッセージのみです。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "welcome_message#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/sendWelcomeMessage.js:6",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/sendWelcomeMessage.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase0/welcome.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_line_renderer_overflow_summary",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_line_renderer_service_fallback_unit",
+      "parent_g4_group_id": "g4_line_renderer_fallback_registry_slot",
+      "output_shape": "renderer_default_text",
+      "route_scope": {
+        "primary_route": "renderer fallback",
+        "selectors": [
+          "fallbackRenderer used for overflow/service ack",
+          "semanticLineMessage chooses flex/template/text by line surface policy",
+          "lineChannelRenderer normalizes arbitrary message objects and falls back to text defaults"
+        ],
+        "decision_nodes": [
+          "overflow",
+          "service ack request",
+          "resolveLineSurfacePlan",
+          "message object validity"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep renderer-service fallback wording separate from assistant answer content."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not add new LINE surface types or routing promises."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new renderer states"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "表示できる件数を超えたため要約して案内します。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "renderer fallback text としてだけ成立する短文に留めています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "line_surface_renderer_defaults#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js:3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js:44",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js:58",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase0/buildLineNotificationMessage.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_line_renderer_deeplink_with_url",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_line_renderer_service_fallback_unit",
+      "parent_g4_group_id": "g4_line_renderer_fallback_registry_slot",
+      "output_shape": "renderer_default_text",
+      "route_scope": {
+        "primary_route": "renderer fallback",
+        "selectors": [
+          "fallbackRenderer used for overflow/service ack",
+          "semanticLineMessage chooses flex/template/text by line surface policy",
+          "lineChannelRenderer normalizes arbitrary message objects and falls back to text defaults"
+        ],
+        "decision_nodes": [
+          "overflow",
+          "service ack request",
+          "resolveLineSurfacePlan",
+          "message object validity"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep renderer-service fallback wording separate from assistant answer content."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not add new LINE surface types or routing promises."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new renderer states"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "詳しくは次の画面で確認できます: <url>",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "renderer fallback text としてだけ成立する短文に留めています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "line_surface_renderer_defaults#block1",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js:3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js:44",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js:58",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase0/buildLineNotificationMessage.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_line_renderer_deeplink_generic",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_line_renderer_service_fallback_unit",
+      "parent_g4_group_id": "g4_line_renderer_fallback_registry_slot",
+      "output_shape": "renderer_default_text",
+      "route_scope": {
+        "primary_route": "renderer fallback",
+        "selectors": [
+          "fallbackRenderer used for overflow/service ack",
+          "semanticLineMessage chooses flex/template/text by line surface policy",
+          "lineChannelRenderer normalizes arbitrary message objects and falls back to text defaults"
+        ],
+        "decision_nodes": [
+          "overflow",
+          "service ack request",
+          "resolveLineSurfacePlan",
+          "message object validity"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep renderer-service fallback wording separate from assistant answer content."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not add new LINE surface types or routing promises."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new renderer states"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "続きはアプリ内画面で確認できます。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "renderer fallback text としてだけ成立する短文に留めています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "line_surface_renderer_defaults#block2",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js:3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js:44",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js:58",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase0/buildLineNotificationMessage.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_line_renderer_service_ack",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_line_renderer_service_fallback_unit",
+      "parent_g4_group_id": "g4_line_renderer_fallback_registry_slot",
+      "output_shape": "renderer_default_text",
+      "route_scope": {
+        "primary_route": "renderer fallback",
+        "selectors": [
+          "fallbackRenderer used for overflow/service ack",
+          "semanticLineMessage chooses flex/template/text by line surface policy",
+          "lineChannelRenderer normalizes arbitrary message objects and falls back to text defaults"
+        ],
+        "decision_nodes": [
+          "overflow",
+          "service ack request",
+          "resolveLineSurfacePlan",
+          "message object validity"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep renderer-service fallback wording separate from assistant answer content."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not add new LINE surface types or routing promises."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new renderer states"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "確認しています。少しお待ちください。",
+        "structured_blocks": [
+          "回答を準備しています。",
+          "回答を表示します。"
+        ],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "renderer fallback text としてだけ成立する短文に留めています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "line_surface_renderer_defaults#block3",
+        "line_surface_renderer_defaults#block4",
+        "line_surface_renderer_defaults#block5",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js:3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js:44",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js:58",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase0/buildLineNotificationMessage.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_line_renderer_render_failure",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_line_renderer_service_fallback_unit",
+      "parent_g4_group_id": "g4_line_renderer_fallback_registry_slot",
+      "output_shape": "renderer_default_text",
+      "route_scope": {
+        "primary_route": "renderer fallback",
+        "selectors": [
+          "fallbackRenderer used for overflow/service ack",
+          "semanticLineMessage chooses flex/template/text by line surface policy",
+          "lineChannelRenderer normalizes arbitrary message objects and falls back to text defaults"
+        ],
+        "decision_nodes": [
+          "overflow",
+          "service ack request",
+          "resolveLineSurfacePlan",
+          "message object validity"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "fallback"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep renderer-service fallback wording separate from assistant answer content."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not add new LINE surface types or routing promises."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new renderer states"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "メッセージを生成できませんでした。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "renderer fallback text としてだけ成立する短文に留めています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "line_surface_renderer_defaults#block8",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js:3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js:44",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js:58",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase0/buildLineNotificationMessage.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_notification_body_default",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_notification_renderer_unit",
+      "parent_g4_group_id": "g4_notification_registry_slot",
+      "output_shape": "notification_text",
+      "route_scope": {
+        "primary_route": "notification sender",
+        "selectors": [
+          "normalizeBody() returns - when title/body absent",
+          "normalizeAltText() falls back to notification",
+          "multi-CTA text mode appends label: url lines when template buttons unavailable or disabled"
+        ],
+        "decision_nodes": [
+          "preferTemplateButtons",
+          "ctas length",
+          "body/title presence"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "notification"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep notification renderer defaults separate from source notification title/body content.",
+          "Preserve text-mode CTA join semantics when template buttons are unavailable."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not invent CTA URLs or button counts."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new renderer fallback reasons"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "-",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "通知 body / CTA join placeholder として最小限に留めています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "notification_renderer_defaults#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js:14",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js:68",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase0/buildLineNotificationMessage.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_notification_textmode_cta_join",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_notification_renderer_unit",
+      "parent_g4_group_id": "g4_notification_registry_slot",
+      "output_shape": "notification_text",
+      "route_scope": {
+        "primary_route": "notification sender",
+        "selectors": [
+          "normalizeBody() returns - when title/body absent",
+          "normalizeAltText() falls back to notification",
+          "multi-CTA text mode appends label: url lines when template buttons unavailable or disabled"
+        ],
+        "decision_nodes": [
+          "preferTemplateButtons",
+          "ctas length",
+          "body/title presence"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "cta"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep notification renderer defaults separate from source notification title/body content.",
+          "Preserve text-mode CTA join semantics when template buttons are unavailable."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not invent CTA URLs or button counts."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new renderer fallback reasons"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "label: url",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "通知 body / CTA join placeholder として最小限に留めています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "notification_renderer_defaults#block2",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js:14",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js:68",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/tests/phase0/buildLineNotificationMessage.test.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_region_prompt_or_validation",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_journey_direct_command_unit",
+      "parent_g4_group_id": "g4_journey_text_registry_slot",
+      "output_shape": "clarify_prompt",
+      "route_scope": {
+        "primary_route": "journey direct command parser",
+        "selectors": [
+          "region direct command parser routes to region line messages helpers"
+        ],
+        "decision_nodes": [
+          "command form valid?",
+          "already registered?"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "clarify"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep parser-driven command reply semantics and examples bound to the current command family.",
+          "Preserve journey command ownership separate from task-detail surfaces and reminders."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not promise ticket creation or side effects beyond what the current source states."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new command verbs"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "地域（City, State）を入力してください。例: Austin, TX",
+        "structured_blocks": [
+          "地域の形式が読み取れませんでした。例: Austin, TX の形式で入力してください。"
+        ],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "必要な情報を 1-3 論点で聞く形に固定しています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "region_line_messages#block0",
+        "region_line_messages#block2",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/regionLineMessages.js:4",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/regionLineMessages.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_region_state_ack",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_journey_direct_command_unit",
+      "parent_g4_group_id": "g4_journey_text_registry_slot",
+      "output_shape": "command_ack",
+      "route_scope": {
+        "primary_route": "journey direct command parser",
+        "selectors": [
+          "region direct command parser routes to region line messages helpers"
+        ],
+        "decision_nodes": [
+          "command form valid?",
+          "already registered?"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "cta"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep parser-driven command reply semantics and examples bound to the current command family.",
+          "Preserve journey command ownership separate from task-detail surfaces and reminders."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not promise ticket creation or side effects beyond what the current source states."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new command verbs"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "地域を登録しました: <cityLabel>, <stateLabel>",
+        "structured_blocks": [
+          "地域は既に登録済みです。変更が必要な場合は管理者へご連絡ください。"
+        ],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "受理/状態反映のみで、余計な操作説明を足していません。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "region_line_messages#block1",
+        "region_line_messages#block3",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/regionLineMessages.js:4",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/regionLineMessages.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_citypack_feedback_received",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_journey_direct_command_unit",
+      "parent_g4_group_id": "g4_journey_text_registry_slot",
+      "output_shape": "command_ack",
+      "route_scope": {
+        "primary_route": "journey direct command parser",
+        "selectors": [
+          "city pack feedback direct command branch"
+        ],
+        "decision_nodes": [
+          "format valid?"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "cta"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep parser-driven command reply semantics and examples bound to the current command family.",
+          "Preserve journey command ownership separate from task-detail surfaces and reminders."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not promise ticket creation or side effects beyond what the current source states."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new command verbs"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "City Packの誤り報告を受け付けました。確認後に反映します。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "受理/状態反映のみで、余計な操作説明を足していません。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "citypack_feedback_messages#block0",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/cityPackFeedbackMessages.js:4",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/cityPackFeedbackMessages.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_citypack_feedback_usage",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_journey_direct_command_unit",
+      "parent_g4_group_id": "g4_journey_text_registry_slot",
+      "output_shape": "clarify_prompt",
+      "route_scope": {
+        "primary_route": "journey direct command parser",
+        "selectors": [
+          "city pack feedback direct command branch"
+        ],
+        "decision_nodes": [
+          "format valid?"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "clarify"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep parser-driven command reply semantics and examples bound to the current command family.",
+          "Preserve journey command ownership separate from task-detail surfaces and reminders."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not promise ticket creation or side effects beyond what the current source states."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new command verbs"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "City Pack Feedback: <内容> の形式で送信してください。",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "必要な情報を 1-3 論点で聞く形に固定しています。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "citypack_feedback_messages#block1",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/cityPackFeedbackMessages.js:4",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/cityPackFeedbackMessages.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_task_flex_labels",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_journey_task_surface_unit",
+      "parent_g4_group_id": "g4_journey_task_registry_slot",
+      "output_shape": "flex_label_set",
+      "route_scope": {
+        "primary_route": "journey task detail and postback",
+        "selectors": [
+          "task detail flex path when renderTaskFlexMessage() used"
+        ],
+        "decision_nodes": [
+          "manual/video/failure links present?",
+          "title present?"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "label"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep fixed section labels, headings, and card titles in the task flex surface.",
+          "Preserve task-flex ownership and do not merge with task-detail leak copy."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not invent new task sections or card titles."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new flex sections"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "",
+        "structured_blocks": [],
+        "labels": [
+          "いまやる理由",
+          "必要時間",
+          "やること",
+          "概要",
+          "よくある失敗",
+          "あなたの状況の注意",
+          "理解する",
+          "【<title>】",
+          "<title> のタスク詳細"
+        ],
+        "buttons": [],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "ラベル配列のみで文章化していません。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "task_flex_labels_and_buttons#block0",
+        "task_flex_labels_and_buttons#block1",
+        "task_flex_labels_and_buttons#block2",
+        "task_flex_labels_and_buttons#block3",
+        "task_flex_labels_and_buttons#block4",
+        "task_flex_labels_and_buttons#block5",
+        "task_flex_labels_and_buttons#block6",
+        "task_flex_labels_and_buttons#block11",
+        "task_flex_labels_and_buttons#block12",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:74",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:123",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:273",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert, output_shape_assert",
+      "open_questions": []
+    },
+    {
+      "leaf_id": "leaf_task_flex_buttons",
+      "draft_status": "draft_ready",
+      "parent_g3_unit_id": "g3_journey_task_surface_unit",
+      "parent_g4_group_id": "g4_journey_task_registry_slot",
+      "output_shape": "flex_button_set",
+      "route_scope": {
+        "primary_route": "journey task detail and postback",
+        "selectors": [
+          "task detail flex path when renderTaskFlexMessage() used"
+        ],
+        "decision_nodes": [
+          "manual/video/failure links present?",
+          "title present?"
+        ]
+      },
+      "audience_scope": {
+        "audience_type": "end_user",
+        "audience_leak": false
+      },
+      "safety_scope": {
+        "safety_role": "button"
+      },
+      "source_constraints_echo": {
+        "must_keep_facts": [
+          "Keep task-flex button labels and link-opening CTA labels fixed.",
+          "Preserve understanding-manual/video/failure action semantics."
+        ],
+        "optional_facts_used": [],
+        "prohibited_claims": [
+          "Do not invent new legal, tax, contract, or eligibility claims.",
+          "Do not promote shadow or dead templates into live output.",
+          "Do not merge operator/admin wording into unrelated end-user leaves.",
+          "Do not invent new task-detail postback actions or video assumptions."
+        ],
+        "prohibited_tone": [
+          "overconfident certainty",
+          "operator-only operational jargon unless already present in the source leaf",
+          "new promotional tone not observed in current runtime"
+        ],
+        "must_not_generate": [
+          "new button counts"
+        ]
+      },
+      "draft_payload": {
+        "primary_text": "",
+        "structured_blocks": [],
+        "labels": [],
+        "buttons": [
+          "📖 手順マニュアル",
+          "🎥 3分動画",
+          "⚠ よくある失敗",
+          "外部リンクを開く"
+        ],
+        "alt_text": ""
+      },
+      "shape_conformance_notes": "ボタンラベル配列のみです。",
+      "self_check": {
+        "respects_shape": true,
+        "respects_claim_boundary": true,
+        "respects_tone_boundary": true,
+        "respects_route_boundary": true,
+        "respects_audience_boundary": true
+      },
+      "evidence_refs": [
+        "task_flex_labels_and_buttons#block7",
+        "task_flex_labels_and_buttons#block8",
+        "task_flex_labels_and_buttons#block9",
+        "task_flex_labels_and_buttons#block10",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:74",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:123",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:273",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js"
+      ],
+      "test_anchor_notes": "missing anchors: exact_string_assert, route_contract_assert, output_shape_assert",
+      "open_questions": []
+    }
+  ],
+  "deferred_queue": [
+    {
+      "leaf_id": "leaf_faq_admin_disclaimer",
+      "reason": "audience is mixed",
+      "blocking_issue": "audience scope is mixed, not end_user-only",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_faq_admin_block_actions",
+      "reason": "audience is mixed",
+      "blocking_issue": "audience scope is mixed, not end_user-only",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_faq_admin_readiness_clarify",
+      "reason": "audience is mixed",
+      "blocking_issue": "audience scope is mixed, not end_user-only",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_faq_admin_readiness_refuse",
+      "reason": "audience is mixed",
+      "blocking_issue": "audience scope is mixed, not end_user-only",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_faq_admin_readiness_hedge",
+      "reason": "audience is mixed",
+      "blocking_issue": "audience scope is mixed, not end_user-only",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_faq_compat_disclaimer",
+      "reason": "audience is mixed",
+      "blocking_issue": "audience scope is mixed, not end_user-only",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_faq_compat_block_actions",
+      "reason": "audience is mixed",
+      "blocking_issue": "audience scope is mixed, not end_user-only",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_faq_compat_readiness_clarify",
+      "reason": "audience is mixed",
+      "blocking_issue": "audience scope is mixed, not end_user-only",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_faq_compat_readiness_refuse",
+      "reason": "audience is mixed",
+      "blocking_issue": "audience scope is mixed, not end_user-only",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_faq_compat_readiness_hedge",
+      "reason": "audience is mixed",
+      "blocking_issue": "audience scope is mixed, not end_user-only",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_free_retrieval_ranked_reply",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_free_style_choice",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_free_style_debug",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_free_style_story",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_free_contextual_followup",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_paid_casual",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_paid_domain_concierge",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_runtime_knowledge_fallback",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_paid_disclaimer",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_paid_safety_core_facts_clarify",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_paid_verify_candidate_clarify",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_paid_finalizer_clarify",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_line_renderer_generic_headers",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_notification_alt_text_default",
+      "reason": "output shape is unknown_shape",
+      "blocking_issue": "output shape is not stable enough for SAFE_ONLY drafting",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_redac_membership_status",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_redac_membership_guidance",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_redac_membership_unavailable",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_journey_command_validation",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_journey_command_state_ack",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_journey_command_feature_paused",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_journey_command_support_open",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_journey_command_citypack_subscription",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_journey_command_todo_status",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_journey_command_guidance_hints",
+      "reason": "human review gate present",
+      "blocking_issue": "human review gate is set",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_blocked_reason_labels",
+      "reason": "output shape is unknown_shape",
+      "blocking_issue": "output shape is not stable enough for SAFE_ONLY drafting",
+      "recommended_next_step": "human review before any draft generation"
+    },
+    {
+      "leaf_id": "leaf_adjacent_emergency_message",
+      "reason": "audience is mixed",
+      "blocking_issue": "audience scope is mixed, not end_user-only",
+      "recommended_next_step": "human review before any draft generation"
+    }
+  ],
+  "excluded_queue": [
+    {
+      "leaf_id": "leaf_task_detail_defaults_isolate",
+      "exclusion_type": "isolate_or_policy",
+      "reason": "isolate_for_human_or_separate_policy leaf"
+    },
+    {
+      "leaf_id": "leaf_journey_reminder_message",
+      "exclusion_type": "isolate_or_policy",
+      "reason": "isolate_for_human_or_separate_policy leaf"
+    },
+    {
+      "leaf_id": "leaf_ops_escalation_title_isolate",
+      "exclusion_type": "isolate_or_policy",
+      "reason": "isolate_for_human_or_separate_policy leaf"
+    },
+    {
+      "leaf_id": "leaf_ops_escalation_body_isolate",
+      "exclusion_type": "isolate_or_policy",
+      "reason": "isolate_for_human_or_separate_policy leaf"
+    },
+    {
+      "leaf_id": "leaf_ops_escalation_button_isolate",
+      "exclusion_type": "isolate_or_policy",
+      "reason": "isolate_for_human_or_separate_policy leaf"
+    },
+    {
+      "leaf_id": "leaf_policy_override_shadow",
+      "exclusion_type": "shadow_or_dead",
+      "reason": "shadow or dead/test-only leaf"
+    },
+    {
+      "leaf_id": "leaf_search_kb_replytext_shadow",
+      "exclusion_type": "shadow_or_dead",
+      "reason": "shadow or dead/test-only leaf"
+    },
+    {
+      "leaf_id": "leaf_paid_assistant_legacy_shadow",
+      "exclusion_type": "shadow_or_dead",
+      "reason": "shadow or dead/test-only leaf"
+    },
+    {
+      "leaf_id": "leaf_future_quick_reply_surface_slot",
+      "exclusion_type": "unknown_future_slot",
+      "reason": "unknown future surface slot"
+    }
+  ],
+  "open_questions": [
+    "Integrated spec exists, but value-level enum mapping remains partial.",
+    "standalone preset runtime-connected quick reply family remains not observed.",
+    "Some SAFE_ONLY leaves still have weak exact-string anchors; corpus is draft-only and not apply-ready."
+  ]
+}

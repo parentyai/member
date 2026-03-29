@@ -1,0 +1,237 @@
+{
+  "spec_version": "1.0",
+  "generated_at": "2026-03-19T19:29:32.815889",
+  "repo_root": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001",
+  "repo_head": "834eaf010876a6c08d21efd38a0e135df7987cb4",
+  "records": [
+    {
+      "token": "<title>",
+      "appears_in_leaf": "leaf_free_retrieval_empty_reply",
+      "token_class": "runtime_value_token",
+      "likely_binding_source": "normalized question text",
+      "binding_source_observed": true,
+      "safe_default_exists": true,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/assistant/generateFreeRetrievalReply.js:36",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/assistant/generateFreeRetrievalReply.js:37"
+      ]
+    },
+    {
+      "token": "...",
+      "appears_in_leaf": "leaf_free_style_quick",
+      "token_class": "ellipsis_placeholder",
+      "likely_binding_source": "not_observed",
+      "binding_source_observed": false,
+      "safe_default_exists": false,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_FAQ_LEAF_DRAFT_CORPUS/04_leaf_draft_corpus.json:92"
+      ]
+    },
+    {
+      "token": "...",
+      "appears_in_leaf": "leaf_free_style_coach",
+      "token_class": "ellipsis_placeholder",
+      "likely_binding_source": "not_observed",
+      "binding_source_observed": false,
+      "safe_default_exists": false,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_FAQ_LEAF_DRAFT_CORPUS/04_leaf_draft_corpus.json:169"
+      ]
+    },
+    {
+      "token": "...",
+      "appears_in_leaf": "leaf_free_style_checklist",
+      "token_class": "ellipsis_placeholder",
+      "likely_binding_source": "not_observed",
+      "binding_source_observed": false,
+      "safe_default_exists": false,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_FAQ_LEAF_DRAFT_CORPUS/04_leaf_draft_corpus.json:246"
+      ]
+    },
+    {
+      "token": "...",
+      "appears_in_leaf": "leaf_free_style_timeline",
+      "token_class": "ellipsis_placeholder",
+      "likely_binding_source": "not_observed",
+      "binding_source_observed": false,
+      "safe_default_exists": false,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_FAQ_LEAF_DRAFT_CORPUS/04_leaf_draft_corpus.json:323"
+      ]
+    },
+    {
+      "token": "...",
+      "appears_in_leaf": "leaf_free_style_weekend",
+      "token_class": "ellipsis_placeholder",
+      "likely_binding_source": "not_observed",
+      "binding_source_observed": false,
+      "safe_default_exists": false,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_FAQ_LEAF_DRAFT_CORPUS/04_leaf_draft_corpus.json:400"
+      ]
+    },
+    {
+      "token": "<pitfall>",
+      "appears_in_leaf": "leaf_paid_conversation_format_shell",
+      "token_class": "runtime_value_token",
+      "likely_binding_source": "upstream semantic risk/pitfall line",
+      "binding_source_observed": true,
+      "safe_default_exists": false,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/assistant/generatePaidAssistantReply.js:587",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/assistant/generatePaidAssistantReply.js:589"
+      ]
+    },
+    {
+      "token": "<gap>",
+      "appears_in_leaf": "leaf_paid_conversation_format_shell",
+      "token_class": "runtime_value_token",
+      "likely_binding_source": "upstream semantic gap/followup line",
+      "binding_source_observed": true,
+      "safe_default_exists": false,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/assistant/generatePaidAssistantReply.js:591",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/assistant/generatePaidAssistantReply.js:593"
+      ]
+    },
+    {
+      "token": "<pitfall>",
+      "appears_in_leaf": "leaf_paid_reply_guard_defaults",
+      "token_class": "runtime_value_token",
+      "likely_binding_source": "paid reply guard pitfall line",
+      "binding_source_observed": true,
+      "safe_default_exists": true,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/paidReplyGuard.js:82",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/paidReplyGuard.js:120"
+      ]
+    },
+    {
+      "token": "<phaseCommand>",
+      "appears_in_leaf": "leaf_webhook_direct_command_ack",
+      "token_class": "state_transition_token",
+      "likely_binding_source": "parseJourneyPhaseCommand(text)",
+      "binding_source_observed": true,
+      "safe_default_exists": false,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:5304",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:5313"
+      ]
+    },
+    {
+      "token": "<doneKey>",
+      "appears_in_leaf": "leaf_webhook_direct_command_ack",
+      "token_class": "state_transition_token",
+      "likely_binding_source": "parseNextActionCompletedCommand(text)",
+      "binding_source_observed": true,
+      "safe_default_exists": false,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:5317",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:5326"
+      ]
+    },
+    {
+      "token": "<url>",
+      "appears_in_leaf": "leaf_line_renderer_deeplink_with_url",
+      "token_class": "cta_url_token",
+      "likely_binding_source": "renderer payload.handoffUrl",
+      "binding_source_observed": true,
+      "safe_default_exists": true,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js:5",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js:6"
+      ]
+    },
+    {
+      "token": "-",
+      "appears_in_leaf": "leaf_notification_body_default",
+      "token_class": "format_placeholder",
+      "likely_binding_source": "normalizeBody fallback when title/body empty",
+      "binding_source_observed": true,
+      "safe_default_exists": false,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js:14",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js:19"
+      ]
+    },
+    {
+      "token": "label: url",
+      "appears_in_leaf": "leaf_notification_textmode_cta_join",
+      "token_class": "format_placeholder",
+      "likely_binding_source": "cta.ctaText + cta.url text mode join",
+      "binding_source_observed": true,
+      "safe_default_exists": false,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js:43",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js:49"
+      ]
+    },
+    {
+      "token": "<cityLabel>",
+      "appears_in_leaf": "leaf_region_state_ack",
+      "token_class": "ui_label_token",
+      "likely_binding_source": "declared region city label",
+      "binding_source_observed": true,
+      "safe_default_exists": true,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/regionLineMessages.js:7",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/regionLineMessages.js:10"
+      ]
+    },
+    {
+      "token": "<stateLabel>",
+      "appears_in_leaf": "leaf_region_state_ack",
+      "token_class": "ui_label_token",
+      "likely_binding_source": "declared region state label",
+      "binding_source_observed": true,
+      "safe_default_exists": true,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/regionLineMessages.js:7",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/regionLineMessages.js:10"
+      ]
+    },
+    {
+      "token": "<内容>",
+      "appears_in_leaf": "leaf_citypack_feedback_usage",
+      "token_class": "shell_placeholder",
+      "likely_binding_source": "unknown user-input slot or literal format example",
+      "binding_source_observed": false,
+      "safe_default_exists": false,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/cityPackFeedbackMessages.js:7",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/cityPackFeedbackMessages.js:8"
+      ]
+    },
+    {
+      "token": "<title>",
+      "appears_in_leaf": "leaf_task_flex_labels",
+      "token_class": "ui_label_token",
+      "likely_binding_source": "resolved task title",
+      "binding_source_observed": true,
+      "safe_default_exists": true,
+      "can_apply_without_binding": false,
+      "evidence_refs": [
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:26",
+        "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:112"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,242 @@
+{
+  "pack_version": "1.0",
+  "generated_at": "2026-03-19T19:42:22.191146",
+  "repo_root": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001",
+  "repo_head": "834eaf010876a6c08d21efd38a0e135df7987cb4",
+  "records": [
+    {
+      "leaf_id": "leaf_paid_reply_guard_defaults",
+      "freeze_topic": "pitfall_missing_policy",
+      "why_freeze_first": "`<pitfall>` 欠損時に line omit を正とするか、別 fallback literal を持つか未凍結。",
+      "observed_evidence": [
+        {
+          "leaf_id": "leaf_paid_reply_guard_defaults",
+          "token": "<pitfall>",
+          "token_meaning": "詰まりやすい注意点 1 行",
+          "binding_source_kind": "dynamic pitfall/gap text from upstream semantics",
+          "likely_source_symbol_or_field": "payload.pitfall via pickPitfallLine()",
+          "observed_in_repo": true,
+          "exact_path_or_symbol_if_observed": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/conversation/paidReplyGuard.js:120",
+          "safe_if_missing_policy": "pitfall line omit possible only if disablePitfall path is explicit",
+          "can_be_literalized_now": false
+        }
+      ],
+      "unresolved_decision": "pitfall absent path の canonical behavior",
+      "blocks_closure_class": "human_policy_freeze_required",
+      "unblocks": [
+        "binding freeze",
+        "exact-string anchor closure"
+      ]
+    },
+    {
+      "leaf_id": "leaf_line_renderer_deeplink_with_url",
+      "freeze_topic": "handoff_url_binding_owner",
+      "why_freeze_first": "`payload.handoffUrl` の owner と registry binding owner が未固定。",
+      "observed_evidence": [
+        {
+          "leaf_id": "leaf_line_renderer_deeplink_with_url",
+          "token": "<url>",
+          "token_meaning": "handoff deep link URL",
+          "binding_source_kind": "renderer payload field",
+          "likely_source_symbol_or_field": "payload.handoffUrl",
+          "observed_in_repo": true,
+          "exact_path_or_symbol_if_observed": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js:5",
+          "safe_if_missing_policy": "fallback generic leaf = 続きはアプリ内画面で確認できます。",
+          "can_be_literalized_now": false
+        }
+      ],
+      "unresolved_decision": "handoffUrl binding owner / fallback owner",
+      "blocks_closure_class": "human_policy_freeze_required",
+      "unblocks": [
+        "binding contract closure",
+        "route contract anchor"
+      ]
+    },
+    {
+      "leaf_id": "leaf_webhook_direct_command_ack",
+      "freeze_topic": "canonical_state_keys_for_phase_and_done",
+      "why_freeze_first": "phase_update / done_update の canonical state key naming を apply spec で固定していない。",
+      "observed_evidence": [
+        {
+          "leaf_id": "leaf_webhook_direct_command_ack",
+          "token": "<phaseCommand>",
+          "token_meaning": "journey phase command",
+          "binding_source_kind": "route param / command parse output",
+          "likely_source_symbol_or_field": "parseJourneyPhaseCommand(text)",
+          "observed_in_repo": true,
+          "exact_path_or_symbol_if_observed": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:5304",
+          "safe_if_missing_policy": "do not render phase ack branch",
+          "can_be_literalized_now": false
+        },
+        {
+          "leaf_id": "leaf_webhook_direct_command_ack",
+          "token": "<doneKey>",
+          "token_meaning": "completed next-action key",
+          "binding_source_kind": "route param / command parse output",
+          "likely_source_symbol_or_field": "parseNextActionCompletedCommand(text)",
+          "observed_in_repo": true,
+          "exact_path_or_symbol_if_observed": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js:5317",
+          "safe_if_missing_policy": "do not render done ack branch",
+          "can_be_literalized_now": false
+        }
+      ],
+      "unresolved_decision": "phase command と done command の正式 variant key 名",
+      "blocks_closure_class": "human_policy_freeze_required",
+      "unblocks": [
+        "variant freeze",
+        "binding contract anchor"
+      ]
+    },
+    {
+      "leaf_id": "leaf_task_flex_labels",
+      "freeze_topic": "slot_key_scheme_and_title_token_sharing",
+      "why_freeze_first": "section labels / hero title / alt text をどう分離命名するか未凍結。",
+      "observed_evidence": [
+        {
+          "leaf_id": "leaf_task_flex_labels",
+          "token": "<title>",
+          "token_meaning": "task card title / alt text title",
+          "binding_source_kind": "task title / city label / state label",
+          "likely_source_symbol_or_field": "resolveTitle(task, taskContent)",
+          "observed_in_repo": true,
+          "exact_path_or_symbol_if_observed": "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:26",
+          "safe_if_missing_policy": "fallback title = タスク詳細",
+          "can_be_literalized_now": false
+        },
+        {
+          "leaf_id": "leaf_task_flex_labels",
+          "variant_required": true,
+          "variant_keys_needed": [
+            "section_why_now",
+            "section_duration",
+            "section_checklist",
+            "section_summary",
+            "section_top_mistakes",
+            "section_context_tips",
+            "section_understanding",
+            "hero_title",
+            "alt_text_title"
+          ],
+          "why": "labels は 1 文字列ではなく UI slot 群。title 依存 label も混在する。",
+          "source_evidence": [
+            "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:120",
+            "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:247"
+          ],
+          "apply_risk_if_unkeyed": "section label と title/altText を 1 registry 値に潰す。"
+        }
+      ],
+      "unresolved_decision": "slot keys と `<title>` token 共有ポリシー",
+      "blocks_closure_class": "human_policy_freeze_required",
+      "unblocks": [
+        "variant freeze",
+        "binding freeze",
+        "output shape anchor"
+      ]
+    },
+    {
+      "leaf_id": "leaf_task_flex_buttons",
+      "freeze_topic": "button_slot_scheme_and_optional_button_policy",
+      "why_freeze_first": "manual/video/failure/external の optionality と slot key を仕様化していない。",
+      "observed_evidence": [
+        {
+          "leaf_id": "leaf_task_flex_buttons",
+          "variant_required": true,
+          "variant_keys_needed": [
+            "manual_button",
+            "video_button",
+            "mistake_button",
+            "external_link_button"
+          ],
+          "why": "button labels は action type/optional presence ごとに切る必要がある。",
+          "source_evidence": [
+            "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:65",
+            "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/tasks/renderTaskFlexMessage.js:267"
+          ],
+          "apply_risk_if_unkeyed": "optional video/external link ボタンが常設 literal と誤認される。"
+        }
+      ],
+      "unresolved_decision": "button slot keys と optional button presence policy",
+      "blocks_closure_class": "human_policy_freeze_required",
+      "unblocks": [
+        "variant freeze",
+        "output shape anchor"
+      ]
+    },
+    {
+      "leaf_id": "leaf_notification_body_default",
+      "freeze_topic": "empty_notification_body_policy",
+      "why_freeze_first": "bare `-` をどう扱うかは wording ではなく empty-body policy の問題。",
+      "observed_evidence": [
+        {
+          "token": "-",
+          "appears_in_leaf": "leaf_notification_body_default",
+          "token_class": "format_placeholder",
+          "likely_binding_source": "normalizeBody fallback when title/body empty",
+          "binding_source_observed": true,
+          "safe_default_exists": false,
+          "can_apply_without_binding": false,
+          "evidence_refs": [
+            "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js:14",
+            "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js:19"
+          ]
+        }
+      ],
+      "unresolved_decision": "empty body fallback を registry に持つか renderer-only に残すか",
+      "blocks_closure_class": "human_policy_freeze_required",
+      "unblocks": [
+        "format placeholder closure",
+        "route contract anchor"
+      ]
+    },
+    {
+      "leaf_id": "leaf_notification_textmode_cta_join",
+      "freeze_topic": "textmode_cta_join_policy",
+      "why_freeze_first": "`label: url` は copy ではなく format contract。",
+      "observed_evidence": [
+        {
+          "token": "label: url",
+          "appears_in_leaf": "leaf_notification_textmode_cta_join",
+          "token_class": "format_placeholder",
+          "likely_binding_source": "cta.ctaText + cta.url text mode join",
+          "binding_source_observed": true,
+          "safe_default_exists": false,
+          "can_apply_without_binding": false,
+          "evidence_refs": [
+            "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js:43",
+            "/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/buildLineNotificationMessage.js:49"
+          ]
+        }
+      ],
+      "unresolved_decision": "text-mode CTA join rule を registry literal とするか renderer contract とするか",
+      "blocks_closure_class": "human_policy_freeze_required",
+      "unblocks": [
+        "format placeholder closure",
+        "route contract anchor"
+      ]
+    },
+    {
+      "leaf_id": "leaf_citypack_feedback_usage",
+      "freeze_topic": "feedback_content_slot_semantics",
+      "why_freeze_first": "`<内容>` が literal example か semantic slot か現観測だけでは決めきれない。",
+      "observed_evidence": [
+        {
+          "leaf_id": "leaf_citypack_feedback_usage",
+          "token": "<内容>",
+          "token_meaning": "feedback body example slot",
+          "binding_source_kind": "unknown",
+          "likely_source_symbol_or_field": "not_observed",
+          "observed_in_repo": false,
+          "exact_path_or_symbol_if_observed": "not_observed",
+          "safe_if_missing_policy": "keep as shell or require human decision",
+          "can_be_literalized_now": false
+        }
+      ],
+      "unresolved_decision": "`<内容>` の source semantics",
+      "blocks_closure_class": "human_policy_freeze_required",
+      "unblocks": [
+        "binding contract closure",
+        "reauthoring decision"
+      ]
+    }
+  ]
+}

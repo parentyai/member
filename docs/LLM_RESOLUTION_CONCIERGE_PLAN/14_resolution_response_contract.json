@@ -1,0 +1,44 @@
+{
+  "contract_version": "resolution_response_v1_plan",
+  "status": "proposed_add_only_scaffold",
+  "base_compatibility": "Existing semantic response object remains; these fields are additive.",
+  "response_contract": {
+    "resolution_state": "informing|narrowing|actionable|handoff_ready|escalate_human",
+    "specificity_level": "integer",
+    "answer_summary": "string",
+    "next_best_action": "string",
+    "official_links": [
+      {
+        "link_id": "string"
+      }
+    ],
+    "task_deltas": [
+      {
+        "task_id": "string",
+        "change_type": "surfaced|advanced|blocked|unchanged"
+      }
+    ],
+    "blocker_notes": [
+      "string"
+    ],
+    "due_notes": [
+      "string"
+    ],
+    "follow_up_question": "string|null",
+    "menu_hint": "string|null",
+    "liff_handoff": {
+      "needed": "boolean",
+      "reason": "string|null"
+    },
+    "mini_app_handoff": {
+      "needed": "boolean",
+      "reason": "string|null"
+    },
+    "renderer_constraints": {
+      "max_questions": 1,
+      "prefer_disclaimer_postfix": true,
+      "one_turn_one_primary_goal": true
+    }
+  }
+}
+

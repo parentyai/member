@@ -1,6 +1,7 @@
 'use strict';
 
 const { resolveNumberEnvFlag } = require('../shared/flags');
+const { getMinSafeApplyLiteral } = require('../../domain/llm/closure/minSafeApplyRegistry');
 const { splitTextByUtf16 } = require('./messageChunker');
 const { buildOverflowFallbackMessage } = require('./fallbackRenderer');
 
@@ -88,7 +89,7 @@ function prepareLineMessages(messages, options) {
   });
 
   if (!expanded.length) {
-    return [{ type: 'text', text: 'メッセージを生成できませんでした。' }];
+    return [{ type: 'text', text: getMinSafeApplyLiteral('leaf_line_renderer_render_failure', 'メッセージを生成できませんでした。') }];
   }
 
   if (expanded.length <= MAX_LINE_MESSAGE_OBJECTS) return expanded;
