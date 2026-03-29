@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-29T07:00:02.893Z",
-  "gitCommit": "4f9d3ad28da481f2bfddf34f659013d6f7cc46b9",
-  "branch": "codex/desktop-approval-evidence-summary-T011",
-  "sourceDigest": "ceb4cb9f0622a200eefd456c74255872a3ecc6c1e95fa486a6a043cecb542107",
+  "generatedAt": "2026-03-29T07:08:54.609Z",
+  "gitCommit": "e852fdd643d37921cec24869dadf2ecb8b86c794",
+  "branch": "codex/desktop-approval-evidence-copy-T012",
+  "sourceDigest": "4773483215701f880604d9e12dde1adc143b8273c9fc67a8c8ec2f4c3ef7f9a8",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "6a0e7a4a711a539f037e25ec1c11b4146a7d1cf7642320999c050d4f9a646b4e",
-      "bytes": 2430
+      "sha256": "4e40e7019580acd883ee2abc52ff6eb9f1bf3f48e4ebef0e4b260b34b8fd1b40",
+      "bytes": 2427
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",
