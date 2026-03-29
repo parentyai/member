@@ -37,6 +37,11 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(js.includes("Copy next command"));
   assert.ok(js.includes("Copy remaining commands"));
   assert.ok(js.includes("Copy latest prompt path"));
+  assert.ok(js.includes("Copy latest artifact path"));
+  assert.ok(js.includes("Copy validation commands"));
+  assert.ok(js.includes("Copy operator instructions"));
+  assert.ok(js.includes("Copy worktree path"));
+  assert.ok(js.includes("Copy candidate edit paths"));
   assert.ok(js.includes("Plan next step"));
   assert.ok(js.includes("Run next step"));
   assert.ok(js.includes('/api/admin/quality-patrol/desktop-approval/plan'));
@@ -70,6 +75,11 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(ssot.includes('Plan next step'));
   assert.ok(ssot.includes('Run next step'));
   assert.ok(ssot.includes('Copy latest prompt path'));
+  assert.ok(ssot.includes('Copy latest artifact path'));
+  assert.ok(ssot.includes('Copy validation commands'));
+  assert.ok(ssot.includes('Copy operator instructions'));
+  assert.ok(ssot.includes('Copy worktree path'));
+  assert.ok(ssot.includes('Copy candidate edit paths'));
   assert.ok(ssot.includes('quality_patrol.desktop_approval.execute'));
   assert.ok(architecture.includes('promotion.latestArtifactKind'));
   assert.ok(architecture.includes('promotionReview.latestReviewArtifactKind'));
