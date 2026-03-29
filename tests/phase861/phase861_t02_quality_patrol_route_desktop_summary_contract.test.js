@@ -78,6 +78,8 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
         candidateEditCount: 2,
         operatorInstructionCount: 4,
         validationCommandCount: 4,
+        nextCommand: 'npm run line-desktop-patrol:synthesize-code-apply-signoff -- --proposal-id prop_002',
+        nextAction: 'code apply signoff を確認して記録する',
         remainingCommandCount: 1,
         updatedAt: '2026-03-27T23:01:00.000Z'
       },
@@ -126,6 +128,14 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalStopConditionCount, 1);
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalCandidateEditCount, 2);
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalOperatorInstructionCount, 4);
+  assert.equal(
+    auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalNextCommand,
+    'npm run line-desktop-patrol:synthesize-code-apply-signoff -- --proposal-id prop_002'
+  );
+  assert.equal(
+    auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalNextAction,
+    'code apply signoff を確認して記録する'
+  );
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalRemainingCommandCount, 1);
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalUpdatedAt, '2026-03-27T23:01:00.000Z');
 });

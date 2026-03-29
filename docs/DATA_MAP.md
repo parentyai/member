@@ -420,6 +420,8 @@ Typical fields:
   - `desktopPatrolPromotionApprovalStopConditionCount`
   - `desktopPatrolPromotionApprovalCandidateEditCount`
   - `desktopPatrolPromotionApprovalOperatorInstructionCount`
+  - `desktopPatrolPromotionApprovalNextCommand`
+  - `desktopPatrolPromotionApprovalNextAction`
   - `desktopPatrolPromotionApprovalRemainingCommandCount`
   - `desktopPatrolPromotionApprovalUpdatedAt`
 - admin desktop summary promotion batch view:
