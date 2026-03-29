@@ -33,6 +33,11 @@ test('phase760: line surface policy selects quick reply and template only when a
   assert.equal(degraded.surface, 'text');
   assert.equal(degraded.degraded, true);
   assert.equal(degraded.degradedFrom, 'template');
+  assert.equal(selectLineSurface({
+    requestedSurface: 'template',
+    text: '公式確認はこちらです。',
+    templateActions: [{ type: 'uri', label: 'SSA', uri: 'https://www.ssa.gov/number-card' }]
+  }), 'template');
 });
 
 test('phase760: semantic line renderer builds quick reply and template messages from canonical SRO', () => {
@@ -115,4 +120,46 @@ test('phase760: semantic line renderer builds quick reply and template messages 
   });
   assert.equal(template.message.type, 'template');
   assert.equal(template.surfacePlan.surface, 'template');
+
+  const templateWithUri = buildSemanticLineMessage({
+    templateActions: [{ type: 'uri', label: 'SSA', uri: 'https://www.ssa.gov/number-card' }],
+    semanticResponseObject: {
+      version: 'v1',
+      contract_version: 'sro_v2',
+      intent: 'ssn',
+      stage: 'arrival',
+      answer_mode: 'answer',
+      action_class: 'assist',
+      confidence_band: 'MEDIUM',
+      tasks: [],
+      warnings: [],
+      evidence_refs: [],
+      follow_up_questions: [],
+      memory_read_scopes: [],
+      memory_write_scopes: [],
+      handoff_state: 'NONE',
+      service_surface: 'template',
+      response_chunks: ['公式確認はこちらです。'],
+      response_markdown: '公式確認はこちらです。',
+      path_type: 'slow',
+      u_units: ['U-17'],
+      group_privacy_mode: 'direct',
+      quick_replies: [],
+      policy_trace: {},
+      citation_summary: {},
+      response_contract: {
+        style: 'coach',
+        intent: 'ssn',
+        summary: '公式確認はこちらです。',
+        next_steps: [],
+        pitfall: null,
+        followup_question: null,
+        evidence_footer: null,
+        safety_notes: []
+      }
+    }
+  });
+  assert.equal(templateWithUri.message.type, 'template');
+  assert.equal(templateWithUri.message.template.actions[0].type, 'uri');
+  assert.equal(templateWithUri.message.template.actions[0].uri, 'https://www.ssa.gov/number-card');
 });

@@ -88,6 +88,37 @@ function buildOfficialLinkSection(officialLinks) {
     .join('\n');
 }
 
+function buildTemplateActions(officialLinks, quickReplies) {
+  const links = Array.isArray(officialLinks) ? officialLinks : [];
+  const replies = Array.isArray(quickReplies) ? quickReplies : [];
+  const actions = [];
+
+  links.slice(0, 2).forEach((row) => {
+    const label = normalizeText(row && row.title).slice(0, 20) || '公式リンク';
+    const uri = normalizeText(row && row.url);
+    if (!uri) return;
+    actions.push({
+      type: 'uri',
+      label,
+      uri
+    });
+  });
+
+  replies.forEach((row) => {
+    if (actions.length >= 4) return;
+    const label = normalizeText(row && row.label).slice(0, 20);
+    const text = normalizeText(row && row.text).slice(0, 60);
+    if (!label || !text) return;
+    actions.push({
+      type: 'message',
+      label,
+      text
+    });
+  });
+
+  return actions;
+}
+
 function buildResolutionResponse(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const nextSteps = normalizeList(payload.nextSteps, 3);
@@ -146,6 +177,7 @@ function buildResolutionResponse(params) {
     requiredDocs,
     menuBucketPreferred: payload.menuBucketPreferred || null
   });
+  const templateActions = buildTemplateActions(officialLinks, hintBundle.quickReplies);
 
   const sections = [answerSummary];
   if (whyItMatters) sections.push(`実務上の意味: ${whyItMatters}`);
@@ -184,7 +216,7 @@ function buildResolutionResponse(params) {
     task_hint: hintBundle.taskHint,
     menu_hint: hintBundle.menuHint,
     follow_up_question: followUpQuestion,
-    service_surface: hintBundle.serviceSurface,
+    service_surface: templateActions.length > 0 ? 'template' : hintBundle.serviceSurface,
     output_shape: 'resolution_response_v1',
     safety_notes: safetyNotes,
     source_freshness: sourceFreshness,
@@ -196,7 +228,9 @@ function buildResolutionResponse(params) {
       readinessDecision: payload.readinessDecision || payload.sourceReadinessDecision || 'unknown',
       disclosureRequired: normalizeText(payload.readinessDecision).toLowerCase() !== 'allow'
     }),
-    quickReplies: hintBundle.quickReplies
+    quickReplies: hintBundle.quickReplies,
+    templateActions,
+    serviceSurface: templateActions.length > 0 ? 'template' : hintBundle.serviceSurface
   };
 }
 

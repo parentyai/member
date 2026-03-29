@@ -1802,6 +1802,7 @@ function buildSemanticReplyEnvelope(params) {
     requestedSurface: payload.serviceSurface,
     text: payload.replyText || '',
     quickReplies,
+    templateActions: Array.isArray(payload.templateActions) ? payload.templateActions : [],
     handoffRequired: payload.handoffRequired === true
       || ['OFFERED', 'REQUIRED', 'IN_PROGRESS'].includes(normalizeReplyText(payload.handoffState).toUpperCase()),
     miniAppUrl: payload.miniAppUrl,
@@ -1848,6 +1849,7 @@ function buildSemanticReplyEnvelope(params) {
   });
   const lineRender = buildSemanticLineMessage({
     semanticResponseObject: responseContractConformance.semanticResponseObject,
+    templateActions: Array.isArray(payload.templateActions) ? payload.templateActions : [],
     miniAppUrl: payload.miniAppUrl,
     liffUrl: payload.liffUrl
   });
@@ -1884,9 +1886,14 @@ function mergeSemanticReplyParams(baseParams, conciergeResolution) {
     quickReplies: Array.isArray(resolution.quickReplies)
       ? resolution.quickReplies
       : (Array.isArray(base.quickReplies) ? base.quickReplies : []),
+    templateActions: Array.isArray(resolution.templateActions)
+      ? resolution.templateActions
+      : (Array.isArray(base.templateActions) ? base.templateActions : []),
     serviceSurface: typeof resolution.service_surface === 'string' && resolution.service_surface
       ? resolution.service_surface
-      : base.serviceSurface,
+      : (typeof resolution.serviceSurface === 'string' && resolution.serviceSurface
+        ? resolution.serviceSurface
+        : base.serviceSurface),
     safetyNotes: Array.isArray(resolution.safety_notes)
       ? resolution.safety_notes
       : (Array.isArray(base.safetyNotes) ? base.safetyNotes : [])
