@@ -162,6 +162,17 @@ async function handleQualityPatrolQuery(req, res, deps) {
           desktopPatrolPromotionBatchPatchDraftReadyCount: desktopPatrolSummary && desktopPatrolSummary.promotionBatch
             ? Number(desktopPatrolSummary.promotionBatch.patchDraftReadyCount || 0)
             : 0,
+          desktopPatrolPromotionBatchBlockedCaseCount: desktopPatrolSummary && desktopPatrolSummary.promotionBatch
+            ? Array.isArray(desktopPatrolSummary.promotionBatch.blockedCaseIds)
+              ? desktopPatrolSummary.promotionBatch.blockedCaseIds.length
+              : 0
+            : 0,
+          desktopPatrolPromotionBatchNextAction: desktopPatrolSummary && desktopPatrolSummary.promotionBatch
+            ? desktopPatrolSummary.promotionBatch.nextAction || null
+            : null,
+          desktopPatrolPromotionBatchUpdatedAt: desktopPatrolSummary && desktopPatrolSummary.promotionBatch
+            ? desktopPatrolSummary.promotionBatch.updatedAt || null
+            : null,
           desktopPatrolPromotionReviewKind: desktopPatrolSummary && desktopPatrolSummary.promotionReview
             ? desktopPatrolSummary.promotionReview.latestReviewArtifactKind || null
             : null,

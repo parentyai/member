@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-29T11:04:54-04:00",
-  "gitCommit": "e3b3f58068273cceb6ed89793b425021e3189a8d",
-  "branch": "HEAD",
-  "sourceDigest": "7fc5d1a613b4583ef97ece455a741db3b74a2e3572508c7d462c4faca30ab91e",
+  "generatedAt": "2026-03-29T10:50:32-04:00",
+  "gitCommit": "0c8c06bd5e17f6726ef38f50ac93fe44215a9a6a",
+  "branch": "codex/desktop-batch-summary-T016",
+  "sourceDigest": "b2f2b1faae41d5b4d6f3cc4de29dc9db550f7259ebfc052ea1d400cda6ecda72",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
