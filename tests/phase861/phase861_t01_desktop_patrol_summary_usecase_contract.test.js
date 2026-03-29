@@ -99,3 +99,45 @@ test('phase861: desktop patrol summary redacts artifact paths for human audience
   assert.ok(result.artifactRefs.every((item) => item.path === null));
   assert.ok(result.artifactRefs.every((item) => !String(item.displayPath || '').includes(artifactRoot)));
 });
+
+test('phase861: desktop patrol summary exposes latest promotion review pointers add-only', async (t) => {
+  const artifactRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'phase861-desktop-patrol-review-'));
+  t.after(() => fs.rmSync(artifactRoot, { recursive: true, force: true }));
+
+  const promotionsRoot = path.join(artifactRoot, 'proposals', 'promotions');
+  const recordPath = path.join(promotionsRoot, 'prop_010.json');
+  const patchDraftPath = path.join(promotionsRoot, 'prop_010.patch_draft.md');
+  const codeEditTaskPath = path.join(promotionsRoot, 'prop_010.code_edit_task.md');
+  const codeApplyDraftPath = path.join(promotionsRoot, 'prop_010.code_apply_draft.md');
+  const codeReviewPacketPath = path.join(promotionsRoot, 'prop_010.code_review_packet.md');
+
+  writeJson(recordPath, {
+    proposal_id: 'prop_010',
+    status: 'ready_for_human_code_edit',
+    branch_name: 'codex/line-desktop-patrol-prop-010',
+    worktree_path: '/tmp/member-line-desktop-prop-010',
+    draft_pr_ref: 'refs/pull/1010/head',
+    updated_at: '2026-03-28T14:15:00.000Z'
+  });
+  fs.mkdirSync(promotionsRoot, { recursive: true });
+  fs.writeFileSync(patchDraftPath, '# patch draft\n');
+  fs.writeFileSync(codeEditTaskPath, '# code edit task\n');
+  fs.writeFileSync(codeApplyDraftPath, '# code apply draft\n');
+  fs.writeFileSync(codeReviewPacketPath, '# code review packet\n');
+
+  const result = await queryLatestDesktopPatrolSummary({ audience: 'operator' }, { artifactRoot });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.promotionReview.latestProposalId, 'prop_010');
+  assert.equal(result.promotionReview.reviewStatus, 'ready_for_human_code_edit');
+  assert.equal(result.promotionReview.latestReviewArtifactKind, 'code_review_packet');
+  assert.equal(result.promotionReview.latestReviewArtifactRef.path, codeReviewPacketPath);
+  assert.equal(result.promotionReview.branchName, 'codex/line-desktop-patrol-prop-010');
+  assert.equal(result.promotionReview.worktreeRef.path, '/tmp/member-line-desktop-prop-010');
+  assert.equal(result.promotionReview.latestDraftPrRef, 'refs/pull/1010/head');
+  assert.equal(result.promotionReview.patchDraftRef.path, patchDraftPath);
+  assert.equal(result.promotionReview.codeEditTaskRef.path, codeEditTaskPath);
+  assert.equal(result.promotionReview.codeApplyDraftRef.path, codeApplyDraftPath);
+  assert.equal(result.promotionReview.codeReviewPacketRef.path, codeReviewPacketPath);
+  assert.equal(result.promotionReview.updatedAt, '2026-03-28T14:15:00.000Z');
+});

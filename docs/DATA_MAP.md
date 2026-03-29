@@ -359,6 +359,19 @@ Typical fields:
   - `desktopPatrolSummary.promotion.latestArtifactStatus`
   - `desktopPatrolSummary.promotion.latestDraftPrRef`
   - `desktopPatrolSummary.promotion.updatedAt`
+- admin desktop summary promotion review view:
+  - `desktopPatrolSummary.promotionReview.latestProposalId`
+  - `desktopPatrolSummary.promotionReview.reviewStatus`
+  - `desktopPatrolSummary.promotionReview.latestDraftPrRef`
+  - `desktopPatrolSummary.promotionReview.latestReviewArtifactKind`
+  - `desktopPatrolSummary.promotionReview.latestReviewArtifactRef`
+  - `desktopPatrolSummary.promotionReview.worktreeRef`
+  - `desktopPatrolSummary.promotionReview.branchName`
+  - `desktopPatrolSummary.promotionReview.patchDraftRef`
+  - `desktopPatrolSummary.promotionReview.codeEditTaskRef`
+  - `desktopPatrolSummary.promotionReview.codeApplyDraftRef`
+  - `desktopPatrolSummary.promotionReview.codeReviewPacketRef`
+  - `desktopPatrolSummary.promotionReview.updatedAt`
 - admin desktop summary promotion batch view:
   - `desktopPatrolSummary.promotionBatch.batchRunId`
   - `desktopPatrolSummary.promotionBatch.stage`

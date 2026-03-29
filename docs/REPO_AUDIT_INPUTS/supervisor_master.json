@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-28T20:14:41-04:00",
-  "gitCommit": "a90311c8488412a5c6decfb512d4381ab19c6f36",
-  "branch": "codex/desktop-promotion-summary-T002",
-  "sourceDigest": "05cf56544d4bc9680d6e313c070c760687fc57a2dcc4fde2df48eb39f62e5350",
+  "generatedAt": "2026-03-28T20:21:19-04:00",
+  "gitCommit": "bda07d96208924bcb38e45e8d133b0ef0ddf8626",
+  "branch": "codex/desktop-batch-review-surface-T003",
+  "sourceDigest": "7a98bad530658a9c14689f2e267f7cc32d05b5834502cd8faefa7a57e60c6e78",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

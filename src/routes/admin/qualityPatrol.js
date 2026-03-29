@@ -112,6 +112,27 @@ async function handleQualityPatrolQuery(req, res, deps) {
             : null,
           desktopPatrolPromotionUpdatedAt: desktopPatrolSummary && desktopPatrolSummary.promotion
             ? desktopPatrolSummary.promotion.updatedAt || null
+            : null,
+          desktopPatrolPromotionBatchRunId: desktopPatrolSummary && desktopPatrolSummary.promotionBatch
+            ? desktopPatrolSummary.promotionBatch.batchRunId || null
+            : null,
+          desktopPatrolPromotionBatchCompletionStatus: desktopPatrolSummary && desktopPatrolSummary.promotionBatch
+            ? desktopPatrolSummary.promotionBatch.completionStatus || null
+            : null,
+          desktopPatrolPromotionBatchQueuedProposalCount: desktopPatrolSummary && desktopPatrolSummary.promotionBatch
+            ? Number(desktopPatrolSummary.promotionBatch.queuedProposalCount || 0)
+            : 0,
+          desktopPatrolPromotionBatchPatchDraftReadyCount: desktopPatrolSummary && desktopPatrolSummary.promotionBatch
+            ? Number(desktopPatrolSummary.promotionBatch.patchDraftReadyCount || 0)
+            : 0,
+          desktopPatrolPromotionReviewKind: desktopPatrolSummary && desktopPatrolSummary.promotionReview
+            ? desktopPatrolSummary.promotionReview.latestReviewArtifactKind || null
+            : null,
+          desktopPatrolPromotionReviewBranch: desktopPatrolSummary && desktopPatrolSummary.promotionReview
+            ? desktopPatrolSummary.promotionReview.branchName || null
+            : null,
+          desktopPatrolPromotionReviewUpdatedAt: desktopPatrolSummary && desktopPatrolSummary.promotionReview
+            ? desktopPatrolSummary.promotionReview.updatedAt || null
             : null
         }
       });

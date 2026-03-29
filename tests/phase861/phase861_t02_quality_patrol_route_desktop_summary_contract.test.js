@@ -60,6 +60,19 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
         latestArtifactStatus: 'completed',
         latestDraftPrRef: 'refs/pull/2002/head',
         updatedAt: '2026-03-27T22:58:00.000Z'
+      },
+      promotionReview: {
+        latestProposalId: 'prop_002',
+        reviewStatus: 'ready_for_human_code_edit',
+        latestReviewArtifactKind: 'code_edit_task',
+        branchName: 'codex/line-desktop-patrol-prop-002',
+        updatedAt: '2026-03-27T22:59:00.000Z'
+      },
+      promotionBatch: {
+        batchRunId: 'desktop-self-improve-002',
+        completionStatus: 'proposal_review_required',
+        queuedProposalCount: 3,
+        patchDraftReadyCount: 1
       }
     }),
     appendAuditLog: async (payload) => {
@@ -85,4 +98,11 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionStatus, 'completed');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionDraftPrRef, 'refs/pull/2002/head');
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionUpdatedAt, '2026-03-27T22:58:00.000Z');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionBatchRunId, 'desktop-self-improve-002');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionBatchCompletionStatus, 'proposal_review_required');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionBatchQueuedProposalCount, 3);
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionBatchPatchDraftReadyCount, 1);
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewKind, 'code_edit_task');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewBranch, 'codex/line-desktop-patrol-prop-002');
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionReviewUpdatedAt, '2026-03-27T22:59:00.000Z');
 });
