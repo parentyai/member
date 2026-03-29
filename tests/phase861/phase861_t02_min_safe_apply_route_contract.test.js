@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const { test } = require('node:test');
 
 const {
@@ -12,8 +13,10 @@ function read(path) {
   return fs.readFileSync(path, 'utf8');
 }
 
+const REPO_ROOT = path.resolve(__dirname, '../..');
+
 test('phase861: min safe apply registry stays aligned with webhook top-level literals', () => {
-  const source = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js');
+  const source = read(path.join(REPO_ROOT, 'src/routes/webhookLine.js'));
 
   assert.equal(
     getMinSafeApplyLeafRecord('leaf_webhook_guard_missing_reply_fallback').literalText,

@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const { test } = require('node:test');
 
 const {
@@ -12,8 +13,10 @@ function read(path) {
   return fs.readFileSync(path, 'utf8');
 }
 
+const REPO_ROOT = path.resolve(__dirname, '../..');
+
 test('phase862: webhook bridge uses registry-backed literals with existing fallback text preserved', () => {
-  const source = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js');
+  const source = read(path.join(REPO_ROOT, 'src/routes/webhookLine.js'));
 
   assert.ok(source.includes("getMinSafeApplyLiteral('leaf_webhook_guard_missing_reply_fallback'"));
   assert.ok(source.includes("getMinSafeApplyLiteral('leaf_webhook_retrieval_failure_fallback'"));
@@ -29,8 +32,8 @@ test('phase862: webhook bridge uses registry-backed literals with existing fallb
 });
 
 test('phase862: webhook bridge does not expand into intentionally excluded webhook leaves', () => {
-  const source = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js');
-  const rendererSource = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js');
+  const source = read(path.join(REPO_ROOT, 'src/routes/webhookLine.js'));
+  const rendererSource = read(path.join(REPO_ROOT, 'src/v1/line_renderer/fallbackRenderer.js'));
 
   assert.ok(!source.includes("getMinSafeApplyLiteral('leaf_webhook_low_relevance_clarify'"));
   assert.ok(!rendererSource.includes("getMinSafeApplyLiteral('leaf_line_renderer_overflow_summary'"));

@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const { test } = require('node:test');
 
 const { generateFreeRetrievalReply } = require('../../src/usecases/assistant/generateFreeRetrievalReply');
@@ -31,6 +32,8 @@ function readSource(path) {
   return fs.readFileSync(path, 'utf8');
 }
 
+const REPO_ROOT = path.resolve(__dirname, '../..');
+
 test('phase860: codex closure freezes free retrieval empty reply title binding to normalized question text', async () => {
   assert.equal(FREE_RETRIEVAL_EMPTY_REPLY_BINDING.leafId, 'leaf_free_retrieval_empty_reply');
   assert.deepEqual(FREE_RETRIEVAL_EMPTY_REPLY_BINDING.tokens, ['<title>']);
@@ -54,7 +57,7 @@ test('phase860: codex closure freezes free retrieval empty reply title binding t
 });
 
 test('phase860: webhook consent ack variants freeze observed keys and literals without wording changes', () => {
-  const webhookSource = readSource('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js');
+  const webhookSource = readSource(path.join(REPO_ROOT, 'src/routes/webhookLine.js'));
 
   assert.deepEqual(WEBHOOK_CONSENT_STATE_ACK_VARIANT_KEYS, ['consent_granted', 'consent_revoked']);
   assert.deepEqual(WEBHOOK_CONSENT_STATE_ACK_VARIANTS, {
@@ -66,8 +69,8 @@ test('phase860: webhook consent ack variants freeze observed keys and literals w
 });
 
 test('phase860: line renderer service ack variants freeze observed keys and fallback literals', () => {
-  const semanticSource = readSource('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/semanticLineMessage.js');
-  const webhookSource = readSource('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js');
+  const semanticSource = readSource(path.join(REPO_ROOT, 'src/v1/line_renderer/semanticLineMessage.js'));
+  const webhookSource = readSource(path.join(REPO_ROOT, 'src/routes/webhookLine.js'));
 
   assert.deepEqual(LINE_RENDERER_SERVICE_ACK_VARIANT_KEYS, [
     'service_ack_wait',
@@ -83,7 +86,7 @@ test('phase860: line renderer service ack variants freeze observed keys and fall
 });
 
 test('phase860: region variants preserve canonical keys and binding-aware declared text', () => {
-  const webhookSource = readSource('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js');
+  const webhookSource = readSource(path.join(REPO_ROOT, 'src/routes/webhookLine.js'));
 
   assert.deepEqual(REGION_PROMPT_OR_VALIDATION_VARIANT_KEYS, ['prompt_required', 'invalid_format']);
   assert.deepEqual(REGION_PROMPT_OR_VALIDATION_VARIANTS, {

@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const { test } = require('node:test');
 
 const { applyAnswerReadinessDecision } = require('../../src/domain/llm/quality/applyAnswerReadinessDecision');
@@ -17,8 +18,10 @@ function read(path) {
   return fs.readFileSync(path, 'utf8');
 }
 
+const REPO_ROOT = path.resolve(__dirname, '../..');
+
 test('phase862: readiness bridge consumes registry-backed defaults without wording drift', () => {
-  const source = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/quality/applyAnswerReadinessDecision.js');
+  const source = read(path.join(REPO_ROOT, 'src/domain/llm/quality/applyAnswerReadinessDecision.js'));
   const clarify = applyAnswerReadinessDecision({ decision: 'clarify', replyText: 'unused' });
   const refuse = applyAnswerReadinessDecision({ decision: 'refuse', replyText: 'unused' });
   const hedged = applyAnswerReadinessDecision({ decision: 'hedged', replyText: '現在の整理です。' });
@@ -33,7 +36,7 @@ test('phase862: readiness bridge consumes registry-backed defaults without wordi
 });
 
 test('phase862: finalizer refuse bridge stays parity-preserving and leaves non-target fallback untouched', () => {
-  const source = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/orchestrator/finalizeCandidate.js');
+  const source = read(path.join(REPO_ROOT, 'src/domain/llm/orchestrator/finalizeCandidate.js'));
   const refuse = finalizeCandidate({
     selected: { replyText: '' },
     readinessDecision: 'refuse'
@@ -45,9 +48,9 @@ test('phase862: finalizer refuse bridge stays parity-preserving and leaves non-t
 });
 
 test('phase862: renderer, welcome, and citypack bridges read registry-backed literals without shape drift', () => {
-  const rendererSource = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/lineChannelRenderer.js');
-  const welcomeSource = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/sendWelcomeMessage.js');
-  const citypackSource = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/cityPackFeedbackMessages.js');
+  const rendererSource = read(path.join(REPO_ROOT, 'src/v1/line_renderer/lineChannelRenderer.js'));
+  const welcomeSource = read(path.join(REPO_ROOT, 'src/usecases/notifications/sendWelcomeMessage.js'));
+  const citypackSource = read(path.join(REPO_ROOT, 'src/domain/cityPackFeedbackMessages.js'));
 
   assert.ok(rendererSource.includes("getMinSafeApplyLiteral('leaf_line_renderer_render_failure'"));
   assert.ok(welcomeSource.includes("getMinSafeApplyLiteral('leaf_welcome_message'"));

@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const { test } = require('node:test');
 
 const {
@@ -15,6 +16,8 @@ const {
 function read(path) {
   return fs.readFileSync(path, 'utf8');
 }
+
+const REPO_ROOT = path.resolve(__dirname, '../..');
 
 test('phase909: phase1 lane allowlist is fixed and excludes non-target families', () => {
   assert.deepEqual(Array.from(PHASE1_CONCIERGE_LANES), [
@@ -35,9 +38,9 @@ test('phase909: phase1 lane allowlist is fixed and excludes non-target families'
 });
 
 test('phase909: webhook and adjacent phase1 lanes are wired to concierge shaping helpers', () => {
-  const webhookSource = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js');
-  const welcomeSource = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/usecases/notifications/sendWelcomeMessage.js');
-  const fallbackRendererSource = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/v1/line_renderer/fallbackRenderer.js');
+  const webhookSource = read(path.join(REPO_ROOT, 'src/routes/webhookLine.js'));
+  const welcomeSource = read(path.join(REPO_ROOT, 'src/usecases/notifications/sendWelcomeMessage.js'));
+  const fallbackRendererSource = read(path.join(REPO_ROOT, 'src/v1/line_renderer/fallbackRenderer.js'));
 
   assert.ok(webhookSource.includes("lane: 'paid_domain'"));
   assert.ok(webhookSource.includes("lane: 'paid_orchestrated'"));

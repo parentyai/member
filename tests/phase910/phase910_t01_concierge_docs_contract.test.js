@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { test } = require('node:test');
 
-const DOC_ROOT = '/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/docs/LLM_RESOLUTION_CONCIERGE_IMPLEMENTATION';
+const DOC_ROOT = path.resolve(__dirname, '../../docs/LLM_RESOLUTION_CONCIERGE_IMPLEMENTATION');
 const REQUIRED_DOCS = [
   '00_start_guard.md',
   '01_input_validation.md',

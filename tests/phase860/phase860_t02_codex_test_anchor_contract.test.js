@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const { test } = require('node:test');
 
 const { applyAnswerReadinessDecision } = require('../../src/domain/llm/quality/applyAnswerReadinessDecision');
@@ -25,6 +26,8 @@ const { feedbackReceived } = require('../../src/domain/cityPackFeedbackMessages'
 function read(path) {
   return fs.readFileSync(path, 'utf8');
 }
+
+const REPO_ROOT = path.resolve(__dirname, '../..');
 
 function buildObservedLowRelevanceClarify(questionText) {
   const question = typeof questionText === 'string' ? questionText.trim() : '';
@@ -77,7 +80,7 @@ test('phase860: paid readiness defaults keep exact clarify/refuse/hedge strings 
 });
 
 test('phase860: paid finalizer fallback and refuse outputs stay exact without wording drift', () => {
-  const finalizeSource = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/domain/llm/orchestrator/finalizeCandidate.js');
+  const finalizeSource = read(path.join(REPO_ROOT, 'src/domain/llm/orchestrator/finalizeCandidate.js'));
   const fallback = finalizeCandidate({
     selected: { replyText: '' },
     readinessDecision: 'allow'
@@ -99,7 +102,7 @@ test('phase860: paid finalizer fallback and refuse outputs stay exact without wo
 });
 
 test('phase860: webhook top-level fallback and fixed ack strings remain anchored to current source', () => {
-  const source = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js');
+  const source = read(path.join(REPO_ROOT, 'src/routes/webhookLine.js'));
 
   assert.ok(source.includes("getMinSafeApplyLiteral('leaf_webhook_guard_missing_reply_fallback'"));
   assert.ok(source.includes("getMinSafeApplyLiteral('leaf_webhook_retrieval_failure_fallback'"));
@@ -147,7 +150,7 @@ test('phase860: line renderer fallback texts keep overflow, generic deeplink, an
 });
 
 test('phase860: welcome and citypack literals stay exact for their current runtime helpers', () => {
-  const webhookSource = read('/Volumes/Arumamihs/Member-llm-faq-template-audit-T001/src/routes/webhookLine.js');
+  const webhookSource = read(path.join(REPO_ROOT, 'src/routes/webhookLine.js'));
 
   assert.equal(WELCOME_TEXT, '公式からのご案内はすべてこちらのLINEでお送りします。重要なお知らせは「公式連絡」からご確認ください。');
   assert.equal(feedbackReceived(), 'City Packの誤り報告を受け付けました。確認後に反映します。');
