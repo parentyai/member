@@ -4814,6 +4814,8 @@ function renderQualityPatrolDesktopSummary(result) {
         `remainingCommands=${Number(promotionApproval.remainingCommandCount || 0)}`,
         `candidateEdits=${Number(promotionApproval.candidateEditCount || 0)}`,
         `evidenceRequirements=${Number(promotionApproval.evidenceRequirementCount || 0)}`,
+        `expectedOutputs=${Number(promotionApproval.expectedOutputCount || 0)}`,
+        `stopConditions=${Number(promotionApproval.stopConditionCount || 0)}`,
         `planReady=${plannedApprovalReady ? 'yes' : 'no'}`,
         promotionApproval.updatedAt ? `updatedAt=${formatDateLabel(promotionApproval.updatedAt)}` : 'updatedAt=-'
       ],

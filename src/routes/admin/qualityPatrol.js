@@ -180,6 +180,15 @@ async function handleQualityPatrolQuery(req, res, deps) {
           desktopPatrolPromotionApprovalCommandCount: desktopPatrolSummary && desktopPatrolSummary.promotionApproval
             ? Number(desktopPatrolSummary.promotionApproval.validationCommandCount || 0)
             : 0,
+          desktopPatrolPromotionApprovalEvidenceRequirementCount: desktopPatrolSummary && desktopPatrolSummary.promotionApproval
+            ? Number(desktopPatrolSummary.promotionApproval.evidenceRequirementCount || 0)
+            : 0,
+          desktopPatrolPromotionApprovalExpectedOutputCount: desktopPatrolSummary && desktopPatrolSummary.promotionApproval
+            ? Number(desktopPatrolSummary.promotionApproval.expectedOutputCount || 0)
+            : 0,
+          desktopPatrolPromotionApprovalStopConditionCount: desktopPatrolSummary && desktopPatrolSummary.promotionApproval
+            ? Number(desktopPatrolSummary.promotionApproval.stopConditionCount || 0)
+            : 0,
           desktopPatrolPromotionApprovalRemainingCommandCount: desktopPatrolSummary && desktopPatrolSummary.promotionApproval
             ? Number(desktopPatrolSummary.promotionApproval.remainingCommandCount || 0)
             : 0,
