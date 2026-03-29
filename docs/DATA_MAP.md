@@ -411,6 +411,17 @@ Typical fields:
   - `desktopPatrolSummary.promotionApproval.updatedAt`
   - plan response only: `planHash`
   - plan response only: `confirmToken`
+- admin quality patrol desktop audit payload summary:
+  - `desktopPatrolPromotionApprovalStage`
+  - `desktopPatrolPromotionApprovalStatus`
+  - `desktopPatrolPromotionApprovalCommandCount`
+  - `desktopPatrolPromotionApprovalEvidenceRequirementCount`
+  - `desktopPatrolPromotionApprovalExpectedOutputCount`
+  - `desktopPatrolPromotionApprovalStopConditionCount`
+  - `desktopPatrolPromotionApprovalCandidateEditCount`
+  - `desktopPatrolPromotionApprovalOperatorInstructionCount`
+  - `desktopPatrolPromotionApprovalRemainingCommandCount`
+  - `desktopPatrolPromotionApprovalUpdatedAt`
 - admin desktop summary promotion batch view:
   - `desktopPatrolSummary.promotionBatch.batchRunId`
   - `desktopPatrolSummary.promotionBatch.stage`

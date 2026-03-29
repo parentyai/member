@@ -75,6 +75,8 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
         evidenceRequirementCount: 2,
         expectedOutputCount: 3,
         stopConditionCount: 1,
+        candidateEditCount: 2,
+        operatorInstructionCount: 4,
         validationCommandCount: 4,
         remainingCommandCount: 1,
         updatedAt: '2026-03-27T23:01:00.000Z'
@@ -122,6 +124,8 @@ test('phase861: quality patrol route returns nested desktop patrol summary and a
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalEvidenceRequirementCount, 2);
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalExpectedOutputCount, 3);
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalStopConditionCount, 1);
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalCandidateEditCount, 2);
+  assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalOperatorInstructionCount, 4);
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalRemainingCommandCount, 1);
   assert.equal(auditCalls[0].payloadSummary.desktopPatrolPromotionApprovalUpdatedAt, '2026-03-27T23:01:00.000Z');
 });
