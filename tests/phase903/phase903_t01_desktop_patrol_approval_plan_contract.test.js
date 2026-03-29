@@ -7,8 +7,22 @@ const {
   planDesktopPatrolApprovalAction
 } = require('../../src/usecases/qualityPatrol/planDesktopPatrolApprovalAction');
 
+async function withConfirmTokenTestEnv(run) {
+  const previousNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'test';
+  try {
+    return await run();
+  } finally {
+    if (previousNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
+  }
+}
+
 test('phase903: approval plan returns command, planHash, and confirmToken for the latest operator lane', async () => {
-  const result = await planDesktopPatrolApprovalAction({
+  const result = await withConfirmTokenTestEnv(() => planDesktopPatrolApprovalAction({
     proposalId: 'prop_903'
   }, {
     queryLatestDesktopPatrolSummary: async () => ({
@@ -20,7 +34,7 @@ test('phase903: approval plan returns command, planHash, and confirmToken for th
         worktreeRef: { path: '/tmp/member-desktop-prop-903' }
       }
     })
-  });
+  }));
 
   assert.equal(result.ok, true);
   assert.equal(result.proposalId, 'prop_903');

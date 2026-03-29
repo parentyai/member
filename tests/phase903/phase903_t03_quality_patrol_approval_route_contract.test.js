@@ -8,6 +8,21 @@ const {
   handleQualityPatrolApprovalExecute
 } = require('../../src/routes/admin/qualityPatrol');
 
+async function withConfirmTokenTestEnv(run) {
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousEnvName = process.env.ENV_NAME;
+  process.env.NODE_ENV = 'test';
+  delete process.env.ENV_NAME;
+  try {
+    return await run();
+  } finally {
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousEnvName === undefined) delete process.env.ENV_NAME;
+    else process.env.ENV_NAME = previousEnvName;
+  }
+}
+
 function createResponseRecorder() {
   return {
     statusCode: null,
@@ -35,7 +50,7 @@ test('phase903: approval plan route returns planHash and confirmToken with audit
   };
   const res = createResponseRecorder();
 
-  await handleQualityPatrolApprovalPlan(req, res, JSON.stringify({
+  await withConfirmTokenTestEnv(() => handleQualityPatrolApprovalPlan(req, res, JSON.stringify({
     proposalId: 'prop_route_903'
   }), {
     queryLatestDesktopPatrolSummary: async () => ({
@@ -50,7 +65,7 @@ test('phase903: approval plan route returns planHash and confirmToken with audit
     appendAuditLog: async (entry) => {
       audits.push(entry);
     }
-  });
+  }));
 
   assert.equal(res.statusCode, 200);
   const body = JSON.parse(res.body);
