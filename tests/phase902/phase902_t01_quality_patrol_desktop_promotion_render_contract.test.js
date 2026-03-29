@@ -35,6 +35,10 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(js.includes('promotionApproval.evidenceRequirements'));
   assert.ok(js.includes('promotionApproval.expectedOutputs'));
   assert.ok(js.includes('promotionApproval.stopConditions'));
+  assert.ok(js.includes('promotionApproval.expectedOutputCount'));
+  assert.ok(js.includes('promotionApproval.stopConditionCount'));
+  assert.ok(js.includes('expectedOutputs='));
+  assert.ok(js.includes('stopConditions='));
   assert.ok(js.includes('promotionApproval.nextCommand'));
   assert.ok(js.includes('promotionApproval.remainingCommands'));
   assert.ok(js.includes('qualityPatrolApprovalPlanHash'));
@@ -69,11 +73,16 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(runbook.includes('evidenceRequirementCount'));
   assert.ok(runbook.includes('/api/admin/quality-patrol/desktop-approval/plan'));
   assert.ok(runbook.includes('/api/admin/quality-patrol/desktop-approval/execute'));
+  assert.ok(runbook.includes('desktopPatrolPromotionApprovalEvidenceRequirementCount'));
+  assert.ok(runbook.includes('desktopPatrolPromotionApprovalExpectedOutputCount'));
+  assert.ok(runbook.includes('desktopPatrolPromotionApprovalStopConditionCount'));
   assert.ok(lineRunbook.includes('desktopPatrolSummary.promotion'));
   assert.ok(lineRunbook.includes('desktopPatrolSummary.promotionReview'));
   assert.ok(lineRunbook.includes('desktopPatrolSummary.promotionApproval'));
   assert.ok(lineRunbook.includes('desktopPatrolSummary.promotionBatch'));
   assert.ok(lineRunbook.includes('remainingCommandCount'));
+  assert.ok(lineRunbook.includes('expectedOutputCount'));
+  assert.ok(lineRunbook.includes('stopConditionCount'));
   assert.ok(lineRunbook.includes('nextCommand'));
   assert.ok(lineRunbook.includes('latestPromptRef'));
   assert.ok(lineRunbook.includes('codeApplyEvidenceRef'));
@@ -100,6 +109,8 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(architecture.includes('promotionApproval.nextCommand'));
   assert.ok(architecture.includes('promotionApproval.latestPromptRef'));
   assert.ok(architecture.includes('promotionApproval.codeApplyEvidenceRef'));
+  assert.ok(architecture.includes('promotionApproval.expectedOutputCount'));
+  assert.ok(architecture.includes('promotionApproval.stopConditionCount'));
   assert.ok(architecture.includes('Copy evidence prompt path'));
   assert.ok(architecture.includes('/api/admin/quality-patrol/desktop-approval/execute'));
   assert.ok(architecture.includes('promotionBatch.batchRunId'));
@@ -112,6 +123,9 @@ test('phase902: desktop patrol admin render and docs surface latest promotion ad
   assert.ok(dataMap.includes('desktopPatrolSummary.promotionApproval.latestPromptRef'));
   assert.ok(dataMap.includes('desktopPatrolSummary.promotionApproval.codeApplyEvidenceRef'));
   assert.ok(dataMap.includes('desktopPatrolSummary.promotionApproval.evidenceRequirementCount'));
+  assert.ok(dataMap.includes('desktopPatrolPromotionApprovalEvidenceRequirementCount'));
+  assert.ok(dataMap.includes('desktopPatrolPromotionApprovalExpectedOutputCount'));
+  assert.ok(dataMap.includes('desktopPatrolPromotionApprovalStopConditionCount'));
   assert.ok(dataMap.includes('desktopPatrolSummary.promotionApproval.remainingCommandCount'));
   assert.ok(dataMap.includes('desktopPatrolSummary.promotionBatch.batchRunId'));
 });

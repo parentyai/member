@@ -179,6 +179,7 @@ Notes:
 - route: `POST /api/admin/quality-patrol/desktop-approval/execute`
 - the plan route returns `planHash` / `confirmToken` for the latest approval stage and does not mutate runtime state.
 - the execute route is `managedFlowGuard`-protected, local-only, and advances one approval artifact stage per call.
+- audit `payloadSummary` for `GET /api/admin/quality-patrol` may also include add-only `desktopPatrolPromotionApprovalEvidenceRequirementCount`, `desktopPatrolPromotionApprovalExpectedOutputCount`, and `desktopPatrolPromotionApprovalStopConditionCount`.
 
 ### Quality Patrol job artifacts (derived, filesystem, read-only by default)
 Purpose: allow manual or scheduled patrol runs to materialize stable JSON artifacts without changing runtime, Firestore collection meaning, or query route shape.
