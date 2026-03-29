@@ -43,3 +43,52 @@ test('phase901: desktop patrol summary exposes latest promotion kind/status/draf
   assert.equal(result.promotion.updatedAt, '2026-03-27T22:45:00.000Z');
   assert.ok(result.artifactRefs.some((item) => item.kind === 'promotion' && item.path === promotionPath));
 });
+
+test('phase901: desktop patrol summary exposes latest self-improvement promotion batch add-only', async (t) => {
+  const artifactRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'phase901-desktop-patrol-batch-'));
+  t.after(() => fs.rmSync(artifactRoot, { recursive: true, force: true }));
+
+  const summaryPath = path.join(
+    artifactRoot,
+    'self_improvement_runs',
+    'desktop-self-improve-001',
+    'summary.json'
+  );
+
+  writeJson(summaryPath, {
+    ok: true,
+    batchRunId: 'desktop-self-improve-001',
+    nextAction: 'Review the prepared human code edit tasks before any apply_patch step.',
+    roundSummary: {
+      completionStatus: 'proposal_review_required',
+      promotionSummary: {
+        statusCounts: {
+          skipped: 3,
+          patch_draft_ready: 2
+        },
+        queuedProposalCount: 4,
+        patchDraftReadyCount: 2,
+        blockedCaseIds: ['parent_friendly_rephrase']
+      }
+    }
+  });
+
+  const result = await queryLatestDesktopPatrolSummary({ audience: 'operator' }, { artifactRoot });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.promotionBatch.batchRunId, 'desktop-self-improve-001');
+  assert.equal(result.promotionBatch.completionStatus, 'proposal_review_required');
+  assert.equal(result.promotionBatch.queuedProposalCount, 4);
+  assert.equal(result.promotionBatch.patchDraftReadyCount, 2);
+  assert.deepEqual(result.promotionBatch.blockedCaseIds, ['parent_friendly_rephrase']);
+  assert.deepEqual(result.promotionBatch.statusCounts, {
+    skipped: 3,
+    patch_draft_ready: 2
+  });
+  assert.equal(
+    result.promotionBatch.nextAction,
+    'Review the prepared human code edit tasks before any apply_patch step.'
+  );
+  assert.ok(result.promotionBatch.updatedAt);
+  assert.ok(result.artifactRefs.some((item) => item.kind === 'promotion_batch_summary' && item.path === summaryPath));
+});

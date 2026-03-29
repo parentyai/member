@@ -71,7 +71,9 @@ macOS 上の LINE Desktop を対象にした閉域 self-evaluation harness。exe
 
 ## Admin Read Surface
 - admin quality patrol remains read-only and can surface add-only `desktopPatrolSummary.promotion.latestArtifactKind`, `desktopPatrolSummary.promotion.latestArtifactStatus`, `desktopPatrolSummary.promotion.latestDraftPrRef`, and `desktopPatrolSummary.promotion.updatedAt`
+- admin quality patrol can also surface add-only `desktopPatrolSummary.promotionBatch.batchRunId`, `desktopPatrolSummary.promotionBatch.completionStatus`, `desktopPatrolSummary.promotionBatch.queuedProposalCount`, `desktopPatrolSummary.promotionBatch.patchDraftReadyCount`, `desktopPatrolSummary.promotionBatch.blockedCaseIds`, `desktopPatrolSummary.promotionBatch.nextAction`, and `desktopPatrolSummary.promotionBatch.updatedAt`
 - promotion summary is derived from the latest local promotion artifact only and does not mutate the queue or runtime state
+- promotion batch summary is derived from the latest local self-improvement summary artifact only and does not mutate the queue or runtime state
 
 ## Non-goals
 - no always-on scheduler

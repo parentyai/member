@@ -67,6 +67,25 @@ async function latestPromotionRecord(promotionsRoot) {
   return latest;
 }
 
+async function latestSelfImprovementSummary(selfImprovementRoot) {
+  const entries = await readDirIfExists(selfImprovementRoot);
+  let latest = null;
+  let latestSortKey = 0;
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const summaryPath = path.join(selfImprovementRoot, entry.name, 'summary.json');
+    const stat = await statIfExists(summaryPath);
+    if (!stat) continue;
+    const payload = await readJsonIfExists(summaryPath);
+    const sortKey = resolveSortKey(payload, stat);
+    if (sortKey >= latestSortKey) {
+      latest = payload ? Object.assign({ __path: summaryPath, __sortKey: sortKey }, payload) : latest;
+      latestSortKey = sortKey;
+    }
+  }
+  return latest;
+}
+
 async function statIfExists(targetPath) {
   try {
     return await fs.promises.stat(targetPath);
@@ -194,6 +213,70 @@ function normalizeLatestPromotion(record) {
   };
 }
 
+function normalizeStringArray(items) {
+  return (Array.isArray(items) ? items : [])
+    .map((item) => normalizeText(String(item || ''), ''))
+    .filter(Boolean);
+}
+
+function normalizeStatusCounts(items) {
+  const counts = {};
+  if (!items || typeof items !== 'object') return counts;
+  Object.entries(items).forEach(([key, value]) => {
+    const label = normalizeText(key, '');
+    if (!label) return;
+    const numeric = Number(value);
+    counts[label] = Number.isFinite(numeric) ? numeric : 0;
+  });
+  return counts;
+}
+
+function normalizeLatestPromotionBatch(record) {
+  if (!record || typeof record !== 'object') {
+    return {
+      batchRunId: null,
+      stage: null,
+      completionStatus: null,
+      queuedProposalCount: 0,
+      patchDraftReadyCount: 0,
+      blockedCaseIds: [],
+      statusCounts: {},
+      nextAction: null,
+      updatedAt: null
+    };
+  }
+
+  const roundSummary = record.roundSummary && typeof record.roundSummary === 'object'
+    ? record.roundSummary
+    : {};
+  const promotionSummary = roundSummary.promotionSummary && typeof roundSummary.promotionSummary === 'object'
+    ? roundSummary.promotionSummary
+    : {};
+  const updatedAt = normalizeText(
+    record.updated_at
+    || record.updatedAt
+    || record.generated_at
+    || record.generatedAt
+    || (record.__sortKey ? new Date(record.__sortKey).toISOString() : null),
+    null
+  );
+  return {
+    batchRunId: normalizeText(record.batchRunId, null),
+    stage: normalizeText(record.stage, null),
+    completionStatus: normalizeText(roundSummary.completionStatus, null),
+    queuedProposalCount: Number.isFinite(Number(promotionSummary.queuedProposalCount))
+      ? Number(promotionSummary.queuedProposalCount)
+      : 0,
+    patchDraftReadyCount: Number.isFinite(Number(promotionSummary.patchDraftReadyCount))
+      ? Number(promotionSummary.patchDraftReadyCount)
+      : 0,
+    blockedCaseIds: normalizeStringArray(promotionSummary.blockedCaseIds),
+    statusCounts: normalizeStatusCounts(promotionSummary.statusCounts),
+    nextAction: normalizeText(record.nextAction, null),
+    updatedAt
+  };
+}
+
 function summarizeLatestProposalIds(linkage, queueEntries) {
   const ids = [];
   const add = (value) => {
@@ -293,6 +376,10 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
     const packetPaths = await listPacketPaths(packetRoot);
     const latestPromotion = await latestPromotionRecord(path.join(artifactRoot, 'proposals', 'promotions'));
     const promotion = normalizeLatestPromotion(latestPromotion);
+    const latestPromotionBatchRecord = await latestSelfImprovementSummary(
+      path.join(artifactRoot, 'self_improvement_runs')
+    );
+    const promotionBatch = normalizeLatestPromotionBatch(latestPromotionBatchRecord);
     const latestDraftPrRef = promotion.latestDraftPrRef || (latestQueueEntry && typeof latestQueueEntry === 'object'
       ? normalizeText(latestQueueEntry.draft_pr_ref, null)
       : null);
@@ -327,6 +414,9 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
     if (queueCount > 0) artifactRefs.push(toArtifactRef('proposal_queue', queuePath, audience));
     if (packetPaths.length > 0) artifactRefs.push(toArtifactRef('codex_packet', packetPaths[packetPaths.length - 1], audience));
     if (latestPromotion && latestPromotion.__path) artifactRefs.push(toArtifactRef('promotion', latestPromotion.__path, audience));
+    if (latestPromotionBatchRecord && latestPromotionBatchRecord.__path) {
+      artifactRefs.push(toArtifactRef('promotion_batch_summary', latestPromotionBatchRecord.__path, audience));
+    }
 
     const evaluation = latestRunRecord && latestRunRecord.evaluation && typeof latestRunRecord.evaluation === 'object'
       ? {
@@ -360,6 +450,7 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
         latestDraftPrRef
       },
       promotion,
+      promotionBatch,
       latestProposalIds,
       artifactRefs
     };
@@ -391,6 +482,17 @@ async function queryLatestDesktopPatrolSummary(params, deps) {
         latestArtifactKind: null,
         latestArtifactStatus: null,
         latestDraftPrRef: null,
+        updatedAt: null
+      },
+      promotionBatch: {
+        batchRunId: null,
+        stage: null,
+        completionStatus: null,
+        queuedProposalCount: 0,
+        patchDraftReadyCount: 0,
+        blockedCaseIds: [],
+        statusCounts: {},
+        nextAction: null,
         updatedAt: null
       },
       latestProposalIds: [],

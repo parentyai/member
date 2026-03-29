@@ -4324,6 +4324,7 @@ function renderQualityPatrolDesktopSummary(result) {
   const latestRun = payload.latestRun && typeof payload.latestRun === 'object' ? payload.latestRun : null;
   const queue = payload.queue && typeof payload.queue === 'object' ? payload.queue : {};
   const promotion = payload.promotion && typeof payload.promotion === 'object' ? payload.promotion : {};
+  const promotionBatch = payload.promotionBatch && typeof payload.promotionBatch === 'object' ? payload.promotionBatch : {};
   const evaluation = payload.evaluation && typeof payload.evaluation === 'object' ? payload.evaluation : {};
   const artifactRefs = Array.isArray(payload.artifactRefs) ? payload.artifactRefs : [];
   const latestProposalIds = Array.isArray(payload.latestProposalIds) ? payload.latestProposalIds : [];
@@ -4370,8 +4371,17 @@ function renderQualityPatrolDesktopSummary(result) {
     || promotion.latestArtifactStatus
     || promotion.latestDraftPrRef
   );
+  const hasPromotionBatch = Boolean(
+    promotionBatch.batchRunId
+    || promotionBatch.stage
+    || promotionBatch.completionStatus
+    || promotionBatch.nextAction
+    || Number(promotionBatch.queuedProposalCount || 0)
+    || Number(promotionBatch.patchDraftReadyCount || 0)
+    || (Array.isArray(promotionBatch.blockedCaseIds) && promotionBatch.blockedCaseIds.length)
+  );
 
-  if (!latestRun && !artifactRefs.length && !Number(queue.totalCount || 0) && !hasPromotion) {
+  if (!latestRun && !artifactRefs.length && !Number(queue.totalCount || 0) && !hasPromotion && !hasPromotionBatch) {
     renderQualityPatrolPlaceholder(
       'quality-patrol-desktop-latest',
       payload.status === 'error'
@@ -4427,6 +4437,37 @@ function renderQualityPatrolDesktopSummary(result) {
         `proposalId=${asText(promotion.latestProposalId, '-')}`,
         `draftPrRef=${asText(promotion.latestDraftPrRef, '-')}`,
         promotion.updatedAt ? `updatedAt=${formatDateLabel(promotion.updatedAt)}` : 'updatedAt=-'
+      ]
+    }));
+  }
+
+  if (hasPromotionBatch) {
+    const blockedCaseIds = Array.isArray(promotionBatch.blockedCaseIds) ? promotionBatch.blockedCaseIds : [];
+    const statusCounts = promotionBatch.statusCounts && typeof promotionBatch.statusCounts === 'object'
+      ? promotionBatch.statusCounts
+      : {};
+    const batchTone = blockedCaseIds.length > 0
+      ? 'warn'
+      : Number(promotionBatch.patchDraftReadyCount || 0) > 0
+        ? 'info'
+        : promotionBatch.completionStatus === 'stable_no_improvement_needed'
+          ? 'success'
+          : 'unset';
+    container.appendChild(createQualityPatrolItem({
+      title: 'Latest promotion batch',
+      summary: `queued=${Number(promotionBatch.queuedProposalCount || 0)} / patchDraft=${Number(promotionBatch.patchDraftReadyCount || 0)} / blocked=${blockedCaseIds.length}`,
+      badges: [
+        { label: asText(promotionBatch.completionStatus, promotionBatch.stage || 'batch'), tone: batchTone }
+      ],
+      meta: [
+        `batchRunId=${asText(promotionBatch.batchRunId, '-')}`,
+        promotionBatch.updatedAt ? `updatedAt=${formatDateLabel(promotionBatch.updatedAt)}` : 'updatedAt=-',
+        `stage=${asText(promotionBatch.stage, '-')}`
+      ],
+      details: [
+        `nextAction: ${asText(promotionBatch.nextAction, '-')}`,
+        `statusCounts: ${Object.keys(statusCounts).length ? Object.entries(statusCounts).map(([key, value]) => `${key}=${value}`).join(', ') : '-'}`,
+        `blockedCaseIds: ${blockedCaseIds.length ? blockedCaseIds.join(', ') : '-'}`
       ]
     }));
   }

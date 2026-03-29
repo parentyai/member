@@ -359,6 +359,16 @@ Typical fields:
   - `desktopPatrolSummary.promotion.latestArtifactStatus`
   - `desktopPatrolSummary.promotion.latestDraftPrRef`
   - `desktopPatrolSummary.promotion.updatedAt`
+- admin desktop summary promotion batch view:
+  - `desktopPatrolSummary.promotionBatch.batchRunId`
+  - `desktopPatrolSummary.promotionBatch.stage`
+  - `desktopPatrolSummary.promotionBatch.completionStatus`
+  - `desktopPatrolSummary.promotionBatch.queuedProposalCount`
+  - `desktopPatrolSummary.promotionBatch.patchDraftReadyCount`
+  - `desktopPatrolSummary.promotionBatch.blockedCaseIds[]`
+  - `desktopPatrolSummary.promotionBatch.statusCounts{}`
+  - `desktopPatrolSummary.promotionBatch.nextAction`
+  - `desktopPatrolSummary.promotionBatch.updatedAt`
 - loop state:
   - `updated_at`, `failure_streak`, `last_run_id`, `last_failure_reason`
   - `recent_runs[]`, `last_decision`, `recent_runs[].send_attempted`, `last_decision.send_attempted`

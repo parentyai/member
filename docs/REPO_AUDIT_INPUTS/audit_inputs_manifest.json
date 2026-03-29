@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-28T23:56:39.737Z",
-  "gitCommit": "6f13396426976932fd06f4308f7ee0052ca286ac",
-  "branch": "codex/desktop-self-improvement-promotion-T001",
-  "sourceDigest": "80bd5bd20214c7f8ae1e2e5e8fb8d4ccead1108e93b71f7235df3894606464c4",
+  "generatedAt": "2026-03-29T00:17:01.908Z",
+  "gitCommit": "a90311c8488412a5c6decfb512d4381ab19c6f36",
+  "branch": "codex/desktop-promotion-summary-T002",
+  "sourceDigest": "4530c71361ae84adf9c3b3bc05e54e92d008440783da838293ce00ec97b77b4e",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -76,7 +76,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "c6db0afc1af48f4970fb70583143600c67450f3f18ff6783697dfc1a33e1a347",
+      "sha256": "3446c4fa115b94409f9b1c5f02394a10185254d8d6a115ec57d9fb07ebc1395a",
       "bytes": 79340
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "730002d5b72063e41ebc2ab95d71da817fa7af4353c8cf603335380108ad75d2",
+      "sha256": "d4b55593a7633d7076cfaa7dad1154284e0ec0249fd4d93ec38d70a1b540d138",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "96d3c4787f18c6bef80da36560a72255c11852b8775ef8d02d4524af2d76c444",
+      "sha256": "eb872985cab29dbd932e1acf02587004285a46ed7dd0b38d140f208ea76fd4c8",
       "bytes": 487
     },
     {
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "2cbb4c266f9b8885745e20da49837909924bac43946dc6d7a3176a2ce669116a",
+      "sha256": "c3b38bd3be11ff09fc93997d51be591807a308ad535d9243aa5a26f5a2cb534f",
       "bytes": 453884
     },
     {
@@ -171,7 +171,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "bdc1a2473233fd32badc1fa412c854be07f1fb3609be896cf7828f04e981c75a",
+      "sha256": "880cc1cdcd91a2185e02f5685617a0867aed118719d7219b0908437b5fd3bbfd",
       "bytes": 2422
     },
     {
