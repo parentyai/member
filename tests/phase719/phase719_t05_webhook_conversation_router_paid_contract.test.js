@@ -1695,3 +1695,71 @@ test('phase719: budget-blocked docs followup keeps recent school domain even whe
   assert.equal(lastWrite.requestShape, 'summarize');
   assert.equal(lastWrite.routerReason, 'default_casual');
 });
+
+test('phase719: budget-blocked parent-friendly rewrite reanchors school domain after housing correction', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_V1_CHANNEL_EDGE: 'false',
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    budgetAllowed: false,
+    budgetBlockedReason: 'llm_disabled',
+    recentActionRows: [
+      {
+        createdAt: '2026-03-30T02:29:00.000Z',
+        domainIntent: 'general',
+        replyText: 'あとで公式確認が必要なのは、受付期限が公式窓口の案内と一致しているかです。',
+        followupIntent: null,
+        requestShape: 'answer',
+        outputForm: 'one_line'
+      },
+      {
+        createdAt: '2026-03-30T02:28:00.000Z',
+        domainIntent: 'housing',
+        replyText: '最初に確認するのは、契約条件と住所証明の2点です。',
+        followupIntent: 'next_step',
+        requestShape: 'summarize',
+        outputForm: 'one_line'
+      },
+      {
+        createdAt: '2026-03-30T02:27:00.000Z',
+        domainIntent: 'school',
+        replyText: '最初に確認するのは、受付期限と必要書類の2点です。',
+        followupIntent: 'next_step',
+        requestShape: 'summarize',
+        outputForm: 'one_line'
+      }
+    ]
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const body = createWebhookBody('小学生の保護者向けに、やさしい日本語で1文にして。');
+  const result = await loaded.handleLineWebhook({
+    body,
+    signature: signBody(body),
+    requestId: 'phase719_budget_blocked_parent_friendly_school_reanchor_contract',
+    logger: () => {},
+    allowWelcome: false,
+    replyFn: async () => {}
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(loaded.counters.retrievalCalled, 0);
+  assert.equal(loaded.counters.paidFaqCalled, 0);
+  assert.equal(loaded.snapshotWrites.length > 0, true);
+  const replyText = latestAssistantReplyText(loaded);
+  const lastWrite = loaded.actionLogWrites[loaded.actionLogWrites.length - 1];
+  assert.equal(replyText.split('\n').filter(Boolean).length, 1);
+  assert.equal(/[?？]$/.test(replyText), false);
+  assert.match(replyText, /期限|必要/);
+  assert.equal(lastWrite.domainIntent, 'school');
+  assert.equal(lastWrite.requestShape, 'rewrite');
+  assert.equal(lastWrite.routerReason, 'school_intent_detected');
+});

@@ -2,7 +2,7 @@
 
 const DOMAIN_INTENT_PATTERNS = Object.freeze({
   housing: /(住まい探し|住まい|住居|家探し|住宅|部屋探し|賃貸|内見|入居|lease|apartment|引っ越し|引っ越す|引越し|引越す|転居|移住|住みやすさ|家賃相場|家賃|初期費用|生活立ち上げ|生活費|暮らし|relocation|move|moving|rent|cost of living|neighborhood)/i,
-  school: /(学校|学区|入学|転校|ワクチン証明|school|district|enrollment)/i,
+  school: /(学校|学区|入学|転校|ワクチン証明|小学生|中学生|高校生|対象校|教育窓口|school|district|enrollment)/i,
   ssn: /(ssn|social security|ソーシャルセキュリティ|番号申請)/i,
   banking: /(銀行|口座|debit|checking|wire|bank account)/i
 });
