@@ -59,6 +59,25 @@ function containsOrderCue(text) {
   return /(順番|先に|次に|今日|今週|今月|優先)/.test(normalizeText(text));
 }
 
+function requiresCityUnknownGuardCue(text) {
+  const normalized = normalizeText(text);
+  return /(都市がまだ決まっていない|都市が未定|市がまだ決まっていない|市が未定)/.test(normalized)
+    && /(共通して先に確認すること|先に確認すること)/.test(normalized);
+}
+
+function hasCityUnknownGuardCue(text) {
+  return /(自治体|公式|窓口)/.test(normalizeText(text));
+}
+
+function requiresOfficialGroundingCue(text) {
+  const normalized = normalizeText(text);
+  return /(公式確認が必要になる点|公式確認が必要な点|公式に戻るべき確認点|公式に戻る確認点)/.test(normalized);
+}
+
+function hasOfficialGroundingCue(text) {
+  return /(公式|窓口|期限)/.test(normalizeText(text));
+}
+
 function containsPunctuationAnomaly(text) {
   return /(\.\.|。。|？？|！！|。？|？。|！。|。！)/.test(normalizeText(text));
 }
@@ -281,6 +300,12 @@ function collectViolationCodes(packet, selected, replyText) {
     violationCodes.push('detail_drop');
   }
   if (detailObligations.includes('preserve_order_axis') && !containsOrderCue(normalizedReply)) {
+    violationCodes.push('detail_drop');
+  }
+  if (requiresCityUnknownGuardCue(payload.messageText) && !hasCityUnknownGuardCue(normalizedReply)) {
+    violationCodes.push('detail_drop');
+  }
+  if (requiresOfficialGroundingCue(payload.messageText) && !hasOfficialGroundingCue(normalizedReply)) {
     violationCodes.push('detail_drop');
   }
   if (candidate.kind === 'clarify_candidate' && payload.answerability === 'answer_now') {

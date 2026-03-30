@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 
 const scenarios = require('../../tools/line_desktop_patrol/scenarios/strategic_self_improvement_batch_v1.json');
+const exploreLibrary = require('../../tools/line_desktop_patrol/scenarios/strategic_self_improvement_explore_library_v1.json');
 const { generatePaidDomainConciergeReply } = require('../../src/usecases/assistant/generatePaidDomainConciergeReply');
 const { generatePaidCasualReply } = require('../../src/usecases/assistant/generatePaidCasualReply');
 const { verifyCandidate } = require('../../src/domain/llm/orchestrator/verifyCandidate');
@@ -149,6 +150,33 @@ function buildScenarioParams(caseId) {
   }
 }
 
+function buildExploreScenarioParams(caseId) {
+  switch (caseId) {
+    case 'city_unknown_common_guard':
+      return {
+        domainIntent: 'school',
+        messageText: '都市がまだ決まっていない前提で、共通して先に確認することを1つだけ。',
+        requestContract: {
+          requestShape: 'answer',
+          primaryDomainIntent: 'school',
+          detailObligations: ['avoid_question_back']
+        }
+      };
+    case 'official_confirmation_direct':
+      return {
+        domainIntent: 'school',
+        messageText: '公式に戻るべき確認点を1つだけ、逃げずに言って。',
+        requestContract: {
+          requestShape: 'answer',
+          primaryDomainIntent: 'school',
+          detailObligations: ['avoid_question_back']
+        }
+      };
+    default:
+      throw new Error(`Unhandled explore scenario: ${caseId}`);
+  }
+}
+
 test('phase734: strategic self-improvement prompts stay human-direct under fixed reply contracts', () => {
   scenarios.cases.forEach((scenario) => {
     const result = generatePaidDomainConciergeReply(buildScenarioParams(scenario.case_id));
@@ -196,6 +224,87 @@ test('phase734: casual contract reply keeps strategic direct answer for reservat
   assert.equal(reply.replyText.includes('予約'), true);
   assert.equal(reply.replyText.includes('窓口') || reply.replyText.includes('公式'), true);
   assert.equal(hasQuestion(reply.replyText), false);
+});
+
+test('phase734: focused explore prompts stay grounded instead of collapsing to generic fallback', () => {
+  const targetedCases = new Set(['city_unknown_common_guard', 'official_confirmation_direct']);
+  exploreLibrary.cases
+    .filter((scenario) => targetedCases.has(scenario.case_id))
+    .forEach((scenario) => {
+      const result = generatePaidDomainConciergeReply(buildExploreScenarioParams(scenario.case_id));
+      const replyText = String(result.replyText || '');
+      const replyContract = scenario.reply_contract || {};
+
+      assert.equal(result.ok, true, `${scenario.case_id}: reply generation failed`);
+      assert.equal(countLines(replyText) <= Number(replyContract.max_lines || 99), true, `${scenario.case_id}: line overflow: ${replyText}`);
+      assert.equal(replyText.length <= Number(replyContract.max_chars || 999), true, `${scenario.case_id}: char overflow (${replyText.length}): ${replyText}`);
+      if (replyContract.disallow_question === true) {
+        assert.equal(hasQuestion(replyText), false, `${scenario.case_id}: unexpected question-back: ${replyText}`);
+      }
+      assert.equal(
+        (Array.isArray(replyContract.must_include_any) ? replyContract.must_include_any : []).some((token) => replyText.includes(token)),
+        true,
+        `${scenario.case_id}: missing required token: ${replyText}`
+      );
+      (Array.isArray(scenario.forbidden_reply_substrings) ? scenario.forbidden_reply_substrings : []).forEach((token) => {
+        assert.equal(replyText.includes(token), false, `${scenario.case_id}: forbidden token ${token}: ${replyText}`);
+      });
+      assert.notEqual(
+        replyText,
+        'まずは優先する1件だけ決める形で進めると、無理が少なそうです。',
+        `${scenario.case_id}: generic fallback leaked: ${replyText}`
+      );
+    });
+});
+
+test('phase734: verifier fallback stays specific for focused explore prompts', () => {
+  const cityUnknownVerified = verifyCandidate({
+    packet: {
+      messageText: '都市がまだ決まっていない前提で、共通して先に確認することを1つだけ。',
+      normalizedConversationIntent: 'school',
+      primaryDomainIntent: 'school',
+      requestShape: 'answer',
+      requestContract: {
+        requestShape: 'answer',
+        primaryDomainIntent: 'school'
+      },
+      recentAssistantCommitments: []
+    },
+    selected: {
+      id: 'generic_candidate',
+      kind: 'grounded_candidate',
+      replyText: 'まずは優先する1件だけ決める形で進めると、無理が少なそうです。'
+    },
+    evidenceSufficiency: 'full'
+  });
+
+  assert.equal(cityUnknownVerified.selected.replyText.includes('自治体'), true);
+  assert.equal(cityUnknownVerified.selected.replyText.includes('窓口') || cityUnknownVerified.selected.replyText.includes('公式'), true);
+  assert.equal(hasQuestion(cityUnknownVerified.selected.replyText), false);
+
+  const officialVerified = verifyCandidate({
+    packet: {
+      messageText: '公式に戻るべき確認点を1つだけ、逃げずに言って。',
+      normalizedConversationIntent: 'school',
+      primaryDomainIntent: 'school',
+      requestShape: 'answer',
+      requestContract: {
+        requestShape: 'answer',
+        primaryDomainIntent: 'school'
+      },
+      recentAssistantCommitments: []
+    },
+    selected: {
+      id: 'generic_candidate',
+      kind: 'grounded_candidate',
+      replyText: 'まずは優先する1件だけ決める形で進めると、無理が少なそうです。'
+    },
+    evidenceSufficiency: 'full'
+  });
+
+  assert.equal(officialVerified.selected.replyText.includes('公式'), true);
+  assert.equal(officialVerified.selected.replyText.includes('窓口') || officialVerified.selected.replyText.includes('期限'), true);
+  assert.equal(hasQuestion(officialVerified.selected.replyText), false);
 });
 
 test('phase734: verifier fallback converts awkward close-out into strategic two-line plan', () => {

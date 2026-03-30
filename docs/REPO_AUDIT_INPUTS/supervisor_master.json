@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-29T17:56:22-04:00",
-  "gitCommit": "22ec2ef505a48a6f9ab4738e2fd0757a0975b112",
-  "branch": "codex/line-url-buttons-T019",
-  "sourceDigest": "5989ebe12b59bb0ec0920a8df308c6fad5c33bf8c212a6e05e9fa105a159df1f",
+  "generatedAt": "2026-03-29T21:45:40-04:00",
+  "gitCommit": "0a9314bcbb8efa417d86152a30a11a9a09c07698",
+  "branch": "codex/desktop-explore-routing-fix-T020",
+  "sourceDigest": "0f575df40b8f46640367eadafbb90846bea5656c4e34457f87c16938a7c489a0",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
