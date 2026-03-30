@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-30T01:47:18.267Z",
-  "gitCommit": "0a9314bcbb8efa417d86152a30a11a9a09c07698",
-  "branch": "codex/desktop-explore-routing-fix-T020",
-  "sourceDigest": "801bd21d93322592a614df128a36ff69ed76e1e5b5b94733649810aad9d2124f",
+  "generatedAt": "2026-03-30T02:23:49.308Z",
+  "gitCommit": "42cdf7ac354eafc7422fd21f6aa78ce6ee468223",
+  "branch": "codex/document-pair-context-fix-T021",
+  "sourceDigest": "ed0f40175dbb8d0ef7f9409c575c8d09118b10b6d692416521c80be153e1932c",
   "counts": {
     "endpoints": 293,
     "routes": 131,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "cd9b1370902e57d7b219c9728cfccef03dfda2e1b50318cf3102a42ac4a9e0b8",
+      "sha256": "46c347d2d24241bbd67447eddf269a3959326263e06c14fc6200190508c07f0c",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "67fc3a1b6658e975533e09cbae09aa953c006f7a3d34b3ceec91c5ce4d340723",
+      "sha256": "3d86fe059e16f8f9d248a6fcaaef75822bec7153293392454a101cda00d28781",
       "bytes": 487
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "2076073c896dc50f4dfb9797974f17257e360146fd7ff3b8eada66a6b12ceb8c",
-      "bytes": 2424
+      "sha256": "0f0a3ca8a21e7f2c893459d14e5800b61b10960435106eb72dbce3bc348f7a52",
+      "bytes": 2422
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/ui_pr11_fold_noise_role_surface_1440x900.json",
