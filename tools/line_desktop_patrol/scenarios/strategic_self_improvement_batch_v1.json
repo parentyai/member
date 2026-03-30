@@ -77,7 +77,7 @@
       "case_id": "city_specificity_new_york_city",
       "strategic_goal": "Tighten the reply when the city is known and reduce vague regional language.",
       "improvement_axis": "city_specificity",
-      "user_input": "ニューヨーク市だとしたら、最初の確認先を1つだけ言って。",
+      "user_input": "ニューヨーク市の学校手続きだとしたら、最初の確認先を1つだけ言って。",
       "expected_reply_substrings": [
         "窓口",
         "市"
@@ -99,7 +99,7 @@
       "case_id": "official_confirmation_guard",
       "strategic_goal": "Point the user to a single official confirmation point without sounding evasive.",
       "improvement_axis": "official_grounding",
-      "user_input": "あとで公式確認が必要になる点を1つだけ教えて。",
+      "user_input": "学校手続きで、あとで公式確認が必要になる点を1つだけ教えて。",
       "expected_reply_substrings": [
         "公式",
         "窓口",
@@ -123,7 +123,7 @@
       "case_id": "parent_friendly_rephrase",
       "strategic_goal": "Rewrite in simple language so a parent can read it without feeling talked down to.",
       "improvement_axis": "plain_language",
-      "user_input": "小学生の保護者向けに、やさしい日本語で1文にして。",
+      "user_input": "学校手続きの話を、小学生の保護者向けに、やさしい日本語で1文にして。",
       "expected_reply_substrings": [
         "確認",
         "見る",
@@ -147,7 +147,7 @@
       "case_id": "single_todo_now",
       "strategic_goal": "Reduce anxiety by narrowing the answer to one immediate action.",
       "improvement_axis": "single_next_action",
-      "user_input": "今日やることを1個だけ、命令形で言って。",
+      "user_input": "学校手続きで今日やることを1個だけ、命令形で言って。",
       "expected_reply_substrings": [
         "確認",
         "集め",
@@ -173,7 +173,7 @@
       "case_id": "document_pair_specificity",
       "strategic_goal": "Avoid fabricated document names and anchor the answer to the official checklist.",
       "improvement_axis": "document_specificity",
-      "user_input": "必要書類を2つだけ挙げて。",
+      "user_input": "学校手続きの必要書類を2つだけ挙げて。",
       "expected_reply_substrings": [
         "必要書類",
         "一覧",
@@ -197,7 +197,7 @@
       "case_id": "reservation_pointer",
       "strategic_goal": "Answer the booking question directly and point to where the answer lives.",
       "improvement_axis": "booking_check",
-      "user_input": "予約が必要かどうかは、どこを見れば分かる？1文で。",
+      "user_input": "学校手続きで予約が必要かどうかは、どこを見れば分かる？1文で。",
       "expected_reply_substrings": [
         "窓口",
         "公式",
@@ -223,7 +223,7 @@
       "case_id": "close_with_two_line_plan",
       "strategic_goal": "Close the sequence with a calm two-step plan instead of another clarification turn.",
       "improvement_axis": "two_step_close",
-      "user_input": "最後に、今日やる順番を2行でまとめて。",
+      "user_input": "学校手続きで最後に、今日やる順番を2行でまとめて。",
       "expected_reply_substrings": [
         "期限",
         "書類",

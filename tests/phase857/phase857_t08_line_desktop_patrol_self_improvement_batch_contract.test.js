@@ -33,6 +33,23 @@ test('phase857: strategic self improvement batch stays fixed at ten strategic ca
   assert.ok(batch.cases.every((item) => item.improvementAxis.length > 0));
 });
 
+test('phase857: fixed core batch reintroduces explicit school grounding after the housing correction turn', () => {
+  const batch = loadStrategicBatch();
+  const caseMap = new Map(batch.cases.map((item) => [item.caseId, item]));
+  [
+    'city_specificity_new_york_city',
+    'official_confirmation_guard',
+    'parent_friendly_rephrase',
+    'single_todo_now',
+    'document_pair_specificity',
+    'reservation_pointer',
+    'close_with_two_line_plan',
+  ].forEach((caseId) => {
+    const userInput = String(caseMap.get(caseId)?.userInput || '');
+    assert.match(userInput, /(学校|小学生)/, `${caseId}: explicit school grounding missing`);
+  });
+});
+
 test('phase857: explore library exposes families and seeded selection stays reproducible', () => {
   const library = loadExploreLibrary();
   const left = selectExploreCases(library, 5, 'seed-123');

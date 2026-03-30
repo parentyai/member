@@ -69,11 +69,11 @@ function buildScenarioParams(caseId) {
       };
     case 'city_specificity_new_york_city':
       return {
-        domainIntent: 'housing',
-        messageText: 'ニューヨーク市だとしたら、最初の確認先を1つだけ言って。',
+        domainIntent: 'school',
+        messageText: 'ニューヨーク市の学校手続きだとしたら、最初の確認先を1つだけ言って。',
         requestContract: {
           requestShape: 'answer',
-          primaryDomainIntent: 'housing',
+          primaryDomainIntent: 'school',
           knowledgeScope: 'city',
           locationHint: buildCityHint(),
           detailObligations: ['avoid_question_back']
@@ -82,7 +82,7 @@ function buildScenarioParams(caseId) {
     case 'official_confirmation_guard':
       return {
         domainIntent: 'school',
-        messageText: 'あとで公式確認が必要になる点を1つだけ教えて。',
+        messageText: '学校手続きで、あとで公式確認が必要になる点を1つだけ教えて。',
         requestContract: {
           requestShape: 'answer',
           primaryDomainIntent: 'school',
@@ -92,7 +92,7 @@ function buildScenarioParams(caseId) {
     case 'parent_friendly_rephrase':
       return {
         domainIntent: 'school',
-        messageText: '小学生の保護者向けに、やさしい日本語で1文にして。',
+        messageText: '学校手続きの話を、小学生の保護者向けに、やさしい日本語で1文にして。',
         requestContract: {
           requestShape: 'rewrite',
           outputForm: 'one_line',
@@ -104,7 +104,7 @@ function buildScenarioParams(caseId) {
     case 'single_todo_now':
       return {
         domainIntent: 'school',
-        messageText: '今日やることを1個だけ、命令形で言って。',
+        messageText: '学校手続きで今日やることを1個だけ、命令形で言って。',
         requestContract: {
           requestShape: 'answer',
           primaryDomainIntent: 'school',
@@ -114,7 +114,7 @@ function buildScenarioParams(caseId) {
     case 'document_pair_specificity':
       return {
         domainIntent: 'school',
-        messageText: '必要書類を2つだけ挙げて。',
+        messageText: '学校手続きの必要書類を2つだけ挙げて。',
         followupIntent: 'docs_required',
         requestContract: {
           requestShape: 'answer',
@@ -125,7 +125,7 @@ function buildScenarioParams(caseId) {
     case 'reservation_pointer':
       return {
         domainIntent: 'school',
-        messageText: '予約が必要かどうかは、どこを見れば分かる？1文で。',
+        messageText: '学校手続きで予約が必要かどうかは、どこを見れば分かる？1文で。',
         followupIntent: 'appointment_needed',
         requestContract: {
           requestShape: 'answer',
@@ -137,7 +137,7 @@ function buildScenarioParams(caseId) {
     case 'close_with_two_line_plan':
       return {
         domainIntent: 'school',
-        messageText: '最後に、今日やる順番を2行でまとめて。',
+        messageText: '学校手続きで最後に、今日やる順番を2行でまとめて。',
         requestContract: {
           requestShape: 'summarize',
           outputForm: 'two_sentences',
