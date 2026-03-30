@@ -50,6 +50,7 @@ Local-only runbook for the LINE patrol MCP harness.
 14. when a blocking patrol guard fires mid-batch, later cases are recorded as blocked with the same code instead of pretending they were observed.
 15. if local policy keeps `proposal_mode=local_queue`, failed cases enqueue their eval-backed proposals into `artifacts/line_desktop_patrol/proposals/queue.jsonl`
 16. if local policy raises `auto_apply_level=patch_draft`, the batch also prepares human-reviewed code edit task bundles under `artifacts/line_desktop_patrol/proposals/promotions/`
+17. if readiness or a loop returns `desktop_session_logged_out`, stop immediately and sign back into LINE Desktop before retrying any execute flow
 
 ## Operator safe sequence
 1. `npm run line-desktop-patrol:doctor`
@@ -79,8 +80,10 @@ Debug-only:
   - updates `tmp/line_desktop_patrol_latest.json`
   - desktop loops include add-only header OCR evidence and transcript deltas in `result.json`
   - `desktop_readiness` returns `ready`, `accessibilityTrusted`, `lineRunning`, `contextResolved`, and optional title-match evidence
+  - when LINE Desktop has fallen back to its login window, `desktop_readiness` returns `ready=false` with `error=desktop_session_logged_out`
   - `desktop-self-test` returns both `readiness` and `loop` payloads, so operators can confirm the gate that allowed the send
   - `desktop-self-improvement` writes per-case patrol eval artifacts plus one aggregated summary that reports pass/fail by strategic axis, `core/explore` breakdown, explore-family coverage, per-case loop error codes, proposal-only next steps for future auto-improvement, and the preflight budget snapshot used to decide whether the selected suite could start
+  - if LINE logs out mid-batch, the failed case records `desktop_session_logged_out`, later cases are blocked with the same code, and eval/promotion work is skipped for that failed case
   - when explore cases fail, the batch also writes `focus_followup.json` with the failing explore case ids and a ready-to-run rerun command using `--explore-case-ids`
   - per-case `promotionResult` fields show whether proposals were skipped, queued, or promoted into human-reviewed patch-draft tasks
   - admin summary surfaces add-only `desktopPatrolSummary.promotion.latestArtifactKind`, `desktopPatrolSummary.promotion.latestArtifactStatus`, `desktopPatrolSummary.promotion.latestDraftPrRef`, and `desktopPatrolSummary.promotion.updatedAt`

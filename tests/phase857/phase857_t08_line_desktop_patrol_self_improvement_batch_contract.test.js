@@ -21,6 +21,8 @@ const {
   scoreReplyContract,
   selectExploreCases,
   selectExploreCasesByIds,
+  shouldSkipEvalForLoopFailure,
+  shouldStopBatchOnErrorCode,
   summarizeRound,
 } = require('../../tools/line_desktop_patrol/run_desktop_self_improvement_batch');
 
@@ -230,6 +232,12 @@ test('phase857: blocked case result preserves blocker code for later cases', () 
   assert.equal(blocked.loopVerdict, 'blocked');
   assert.equal(blocked.loopErrorCode, 'rate_limited');
   assert.equal(blocked.replyContract.verdict, false);
+});
+
+test('phase857: session logout is treated as a blocking batch error and skips eval work', () => {
+  assert.equal(shouldStopBatchOnErrorCode('desktop_session_logged_out'), true);
+  assert.equal(shouldSkipEvalForLoopFailure(false, 'desktop_session_logged_out'), true);
+  assert.equal(shouldSkipEvalForLoopFailure(true, 'desktop_session_logged_out'), false);
 });
 
 test('phase857: recent trace helpers expose ordered evidence for budget checks', () => {

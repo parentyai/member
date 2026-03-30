@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('node:fs');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const test = require('node:test');
@@ -145,4 +146,11 @@ test('phase857: line desktop patrol MCP server exposes guarded send_text tool', 
   } finally {
     await client.close();
   }
+});
+
+test('phase857: desktop MCP transport preserves explicit session logout error codes from the bridge', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'tools', 'line_desktop_patrol', 'src', 'member_line_patrol', 'mcp_server.py'), 'utf8');
+  assert.match(source, /classify_desktop_bridge_error/);
+  assert.match(source, /desktop_session_logged_out/);
+  assert.match(source, /payload_or_text\.get\("errorCode"\)/);
 });

@@ -33,6 +33,20 @@ class PatrolError(Exception):
         self.code = code
 
 
+def classify_desktop_bridge_error(payload_or_text) -> str:
+    if isinstance(payload_or_text, dict):
+        explicit_code = str(payload_or_text.get("errorCode") or payload_or_text.get("code") or "").strip()
+        if explicit_code:
+            return explicit_code
+        source = str(payload_or_text.get("error") or "")
+    else:
+        source = str(payload_or_text or "")
+    normalized = source.strip().lower()
+    if "desktop_session_logged_out" in normalized or "session_logged_out" in normalized:
+        return "desktop_session_logged_out"
+    return "desktop_ui_failed"
+
+
 @dataclass(frozen=True)
 class ToolSpec:
     name: str
@@ -737,13 +751,20 @@ def call_desktop_bridge(
     )
     output = completed.stdout.strip() or completed.stderr.strip()
     if completed.returncode != 0:
-        raise PatrolError("desktop_ui_failed", output or "desktop_ui_failed")
+        try:
+            payload = json.loads(output)
+        except json.JSONDecodeError:
+            code = classify_desktop_bridge_error(output)
+            raise PatrolError(code, output or code)
+        code = classify_desktop_bridge_error(payload)
+        raise PatrolError(code, str(payload.get("error") or code))
     try:
         payload = json.loads(output)
     except json.JSONDecodeError as error:
         raise PatrolError("desktop_ui_parse_failed", str(error)) from error
     if payload.get("ok") is not True:
-        raise PatrolError("desktop_ui_failed", str(payload.get("error") or "desktop_ui_failed"))
+        code = classify_desktop_bridge_error(payload)
+        raise PatrolError(code, str(payload.get("error") or code))
     return payload
 
 
