@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-29T21:45:40-04:00",
-  "gitCommit": "0a9314bcbb8efa417d86152a30a11a9a09c07698",
-  "branch": "codex/desktop-explore-routing-fix-T020",
-  "sourceDigest": "0f575df40b8f46640367eadafbb90846bea5656c4e34457f87c16938a7c489a0",
+  "generatedAt": "2026-03-29T22:12:58-04:00",
+  "gitCommit": "42cdf7ac354eafc7422fd21f6aa78ce6ee468223",
+  "branch": "codex/document-pair-context-fix-T021",
+  "sourceDigest": "0672c1bd6d04d81d55a077a9ac01c2c61ed17466a8b5798d86cf09bdfb4ef97d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
