@@ -27,6 +27,7 @@ Local-only LINE patrol harness for Codex. The current execution path is MCP over
   - macOS Accessibility permission is trusted for Codex
   - the target `expected_chat_title` contains `メンバー`
   - LINE Desktop is running and the target chat is reachable from the sidebar
+  - if `desktop_readiness` or a loop returns `desktop_session_logged_out`, sign back into LINE Desktop before any execute retry
 - for `send_text`:
   - `LINE_CHANNEL_ACCESS_TOKEN`
   - `LINE_DESKTOP_PATROL_TARGET_<ALIAS>_LINE_USER_ID`
@@ -78,6 +79,7 @@ Treat `generic LINE shell only` as a fail-closed preflight state: the LINE shell
 - when local policy keeps `proposal_mode=local_queue`, failed fixed-batch cases automatically bridge their eval artifacts into the existing local proposal queue.
 - when local policy raises `auto_apply_level=patch_draft`, the same batch also prepares human-reviewed code edit task bundles for the queued proposals. It still does not auto-apply code.
 - when a blocking local patrol error appears mid-batch, later cases are marked as blocked with the same code so the summary preserves why the strategic loop stopped.
+- `desktop_session_logged_out` is treated as a blocking local patrol error. When LINE falls back to the login surface mid-batch, later cases are marked as blocked and the runner skips eval/promotion work for the failed case instead of hanging on stale review steps.
 - execute mode still respects blocked hours, local rate limits, failure streak stop, target confirmation, and the existing global kill switch.
 - use `--explore-count 0` to fall back to core-only regression mode, or pass `--seed <value>` to replay the same explore selection later.
 - use `--explore-case-ids case_a,case_b` to rerun specific explore failures without rotating a new sample. When any explore case fails, `summary.json` also writes a ready-to-rerun `focus_followup.json`.

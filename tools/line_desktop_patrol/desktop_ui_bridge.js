@@ -19,6 +19,11 @@ function ensureString(value, label) {
   return value.trim();
 }
 
+function normalizeText(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
 function parseMultiFlag(argv, flag) {
   const out = [];
   for (let index = 0; index < argv.length; index += 1) {
@@ -54,6 +59,24 @@ function parseArgs(argv) {
 
 function normalizeTranscript(text) {
   return String(text || '').replace(/\r/g, '\n').split('\n').map((line) => line.trim()).filter(Boolean);
+}
+
+function extractBridgeErrorText(error) {
+  if (!error || typeof error !== 'object') return '';
+  return [
+    normalizeText(typeof error.stdout === 'string' ? error.stdout : ''),
+    normalizeText(typeof error.stderr === 'string' ? error.stderr : ''),
+    normalizeText(typeof error.message === 'string' ? error.message : ''),
+  ].filter(Boolean).join('\n');
+}
+
+function detectBridgeFailureCode(rawText) {
+  const normalized = normalizeText(String(rawText || '')).toLowerCase();
+  if (!normalized) return 'desktop_ui_failed';
+  if (normalized.includes('session_logged_out') || normalized.includes('desktop_session_logged_out')) {
+    return 'desktop_session_logged_out';
+  }
+  return 'desktop_ui_failed';
 }
 
 function toVisibleEntries(text) {
@@ -149,12 +172,22 @@ function ensureRunArtifactsDir(runId) {
 function runSwiftBridge(command, payload, deps) {
   const explicitDeps = deps && typeof deps === 'object' ? deps : {};
   const execImpl = typeof explicitDeps.execFileSync === 'function' ? explicitDeps.execFileSync : execFileSync;
-  const raw = execImpl('swift', [SWIFT_SCRIPT, command], {
-    cwd: ROOT,
-    encoding: 'utf8',
-    input: JSON.stringify(payload),
-    maxBuffer: 10 * 1024 * 1024,
-  });
+  let raw;
+  try {
+    raw = execImpl('swift', [SWIFT_SCRIPT, command], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      input: JSON.stringify(payload),
+      maxBuffer: 10 * 1024 * 1024,
+    });
+  } catch (error) {
+    const rawText = extractBridgeErrorText(error);
+    return {
+      ok: false,
+      errorCode: detectBridgeFailureCode(rawText),
+      error: rawText || 'desktop_ui_failed',
+    };
+  }
   return JSON.parse(String(raw || '{}'));
 }
 
@@ -166,6 +199,32 @@ function runDesktopSnapshot(args, deps) {
     expectedChatTitle: ensureString(payload.expectedChatTitle, 'expectedChatTitle'),
     screenshotBeforePath: payload.storeScreenshots === true ? path.join(runDir, 'ui_before.png') : null,
   }, deps);
+  if (result.ok !== true) {
+    return {
+      ok: false,
+      runId,
+      transport: 'line_desktop_user_account',
+      expectedChatTitle: payload.expectedChatTitle || null,
+      targetSelectionAttempted: false,
+      targetMatchedHeuristic: false,
+      searchQueryApplied: false,
+      sidebarVisibleRows: 0,
+      selectedRowIndex: null,
+      headerTextObserved: [],
+      windowTitle: '',
+      windowFrame: null,
+      transcriptBefore: '',
+      transcriptAfterSend: '',
+      transcriptAfterReply: '',
+      visibleBefore: [],
+      visibleAfter: [],
+      replyObserved: false,
+      screenshotBeforePath: null,
+      screenshotAfterPath: null,
+      errorCode: typeof result.errorCode === 'string' ? result.errorCode : 'desktop_ui_failed',
+      error: typeof result.error === 'string' ? result.error : 'desktop_ui_failed',
+    };
+  }
   return Object.assign({}, result, {
     ok: result.ok === true,
     runId,
@@ -179,6 +238,26 @@ function runDesktopReadiness(args, deps) {
   const result = runSwiftBridge('readiness', {
     expectedChatTitle: typeof payload.expectedChatTitle === 'string' ? payload.expectedChatTitle : null,
   }, deps);
+  const readinessErrorCode = typeof result.errorCode === 'string'
+    ? result.errorCode
+    : (typeof result.error === 'string' ? detectBridgeFailureCode(result.error) : null);
+  if (result.ok !== true) {
+    return {
+      ok: true,
+      ready: false,
+      transport: 'line_desktop_user_account',
+      accessibilityTrusted: true,
+      lineRunning: true,
+      contextResolved: false,
+      expectedChatTitle: typeof payload.expectedChatTitle === 'string' ? payload.expectedChatTitle : null,
+      expectedTitleMatched: null,
+      headerTextObserved: [],
+      windowTitle: null,
+      windowFrame: null,
+      errorCode: readinessErrorCode || 'desktop_ui_failed',
+      error: readinessErrorCode || (typeof result.error === 'string' ? result.error : 'desktop_ui_failed'),
+    };
+  }
   return {
     ok: result.ok === true,
     ready: result.ready === true,
@@ -191,6 +270,7 @@ function runDesktopReadiness(args, deps) {
     headerTextObserved: Array.isArray(result.headerTextObserved) ? result.headerTextObserved : [],
     windowTitle: typeof result.windowTitle === 'string' ? result.windowTitle : null,
     windowFrame: result.windowFrame || null,
+    errorCode: readinessErrorCode,
     error: typeof result.error === 'string' ? result.error : null,
   };
 }
@@ -210,6 +290,50 @@ function runDesktopConversationLoop(args, deps) {
     screenshotBeforePath: payload.storeScreenshots === true ? path.join(runDir, 'ui_before.png') : null,
     screenshotAfterPath: payload.storeScreenshots === true ? path.join(runDir, 'ui_after.png') : null,
   }, deps);
+  if (swiftResult.ok !== true) {
+    const loopErrorCode = typeof swiftResult.errorCode === 'string'
+      ? swiftResult.errorCode
+      : detectBridgeFailureCode(swiftResult.error);
+    return {
+      ok: false,
+      runId,
+      mode: sendMode,
+      transport: 'line_desktop_user_account',
+      expectedChatTitle,
+      targetMatchedHeuristic: false,
+      searchQueryApplied: false,
+      sidebarVisibleRows: 0,
+      selectedRowIndex: null,
+      headerTextObserved: [],
+      windowTitle: '',
+      windowFrame: null,
+      transcriptBefore: '',
+      transcriptAfterSend: '',
+      transcriptAfterReply: '',
+      visibleBefore: [],
+      visibleAfter: [],
+      replyObserved: false,
+      screenshotBeforePath: null,
+      screenshotAfterPath: null,
+      evaluatorScores: {
+        transport: 'line_desktop_user_account',
+        sendMode,
+        targetMatchedHeuristic: false,
+        searchQueryApplied: false,
+        transcriptChanged: false,
+        sentVisible: false,
+        replyObserved: false,
+        replyAppendedLineCount: 0,
+        expectedReplyMatched: false,
+        forbiddenReplyHit: false,
+        finalVisibleLineCount: 0,
+        verdict: 'fail',
+      },
+      proposal: null,
+      errorCode: loopErrorCode,
+      error: typeof swiftResult.error === 'string' ? swiftResult.error : 'desktop_ui_failed',
+    };
+  }
 
   const evaluatorScores = evaluateConversationLoop({
     sendMode,
@@ -301,9 +425,12 @@ if (require.main === module) {
 module.exports = {
   SWIFT_SCRIPT,
   buildDesktopProposal,
+  detectBridgeFailureCode,
   evaluateConversationLoop,
+  extractBridgeErrorText,
   extractAppendedLines,
   normalizeTranscript,
+  normalizeText,
   parseArgs,
   runDesktopConversationLoop,
   runDesktopReadiness,

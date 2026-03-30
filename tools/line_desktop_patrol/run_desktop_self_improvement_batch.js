@@ -21,6 +21,7 @@ const DEFAULT_BASE_REF = 'origin/main';
 const DEFAULT_EXPLORE_COUNT = 5;
 const STOP_BATCH_ERROR_CODES = new Set([
   'blocked_hours',
+  'desktop_session_logged_out',
   'desktop_target_title_guard',
   'failure_streak_threshold_reached',
   'kill_switch_on',
@@ -29,6 +30,14 @@ const STOP_BATCH_ERROR_CODES = new Set([
   'send_mode_not_allowed',
   'target_confirmation_required',
 ]);
+
+function shouldStopBatchOnErrorCode(code) {
+  return STOP_BATCH_ERROR_CODES.has(normalizeText(code));
+}
+
+function shouldSkipEvalForLoopFailure(loopOk, loopErrorCode) {
+  return loopOk !== true && shouldStopBatchOnErrorCode(loopErrorCode);
+}
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -1068,37 +1077,62 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
       const loopPayload = loop.payload || {};
       const runId = loopPayload.runId || (loopPayload.result && loopPayload.result.runId) || null;
       const artifactPaths = runId ? deriveArtifactPaths(runId) : { runRoot: null, tracePath: null, resultPath: null };
+      const loopVerdict = loopPayload.result && loopPayload.result.evaluatorScores
+        ? normalizeText(loopPayload.result.evaluatorScores.verdict)
+        : (loop.ok ? 'pass' : 'fail');
+      const loopErrorCode = loop.ok
+        ? null
+        : normalizeText(loopPayload.code || loopPayload.errorCode || (loopPayload.result && loopPayload.result.errorCode));
+      const loopError = loop.ok
+        ? null
+        : normalizeText(loopPayload.error || loopPayload.message || (loopPayload.result && loopPayload.result.error));
       const replyText = extractLatestAssistantReply(loopPayload);
       const replyContract = scoreReplyContract(caseDefinition, replyText);
       const evalRoot = path.join(batchRoot, 'evals');
-      const evalResult = artifactPaths.tracePath && fs.existsSync(artifactPaths.tracePath)
-        ? runDesktopEval(artifactPaths.tracePath, evalRoot, caseDefinition.caseId)
-        : {
+      const skipEval = shouldSkipEvalForLoopFailure(loop.ok, loopErrorCode);
+      const evalResult = skipEval
+        ? {
           ok: false,
-          error: 'trace_path_missing',
+          skipped: true,
+          error: `eval skipped after blocking loop error: ${loopErrorCode || 'unknown'}`,
           mainOutputPath: null,
           planningOutputPath: null,
           mainArtifact: null,
           planningArtifact: null,
-        };
-      const planningProposals = collectPlanningProposals(evalResult.planningArtifact);
-      const loopVerdict = loopPayload.result && loopPayload.result.evaluatorScores
-        ? normalizeText(loopPayload.result.evaluatorScores.verdict)
-        : (loop.ok ? 'pass' : 'fail');
-      const loopErrorCode = loop.ok ? null : normalizeText(loopPayload.code || loopPayload.errorCode);
-      const loopError = loop.ok ? null : normalizeText(loopPayload.error || loopPayload.message);
+        }
+        : (
+          artifactPaths.tracePath && fs.existsSync(artifactPaths.tracePath)
+            ? runDesktopEval(artifactPaths.tracePath, evalRoot, caseDefinition.caseId)
+            : {
+              ok: false,
+              skipped: false,
+              error: 'trace_path_missing',
+              mainOutputPath: null,
+              planningOutputPath: null,
+              mainArtifact: null,
+              planningArtifact: null,
+            }
+        );
+      const planningProposals = skipEval ? [] : collectPlanningProposals(evalResult.planningArtifact);
       const caseVerdict = loop.ok && loopVerdict === 'pass' && replyContract.verdict === true ? 'pass' : 'fail';
-      const promotionResult = runPromotionPipeline({
-        planningProposals,
-        tracePath: evalResult.mainOutputPath ? artifactPaths.tracePath : null,
-        planningOutputPath: evalResult.planningOutputPath,
-        mainOutputPath: evalResult.mainOutputPath,
-        policyRuntime,
-        queueRoot: deps && deps.queueRoot ? deps.queueRoot : DEFAULT_QUEUE_ROOT,
-        repoRoot: deps && deps.repoRoot ? deps.repoRoot : ROOT,
-        baseRef: deps && deps.baseRef ? deps.baseRef : DEFAULT_BASE_REF,
-        runner: deps && deps.runner ? deps.runner : spawnSync,
-      });
+      const promotionResult = skipEval
+        ? {
+          ok: false,
+          status: 'skipped_blocking_error',
+          error: `promotion skipped after blocking loop error: ${loopErrorCode || 'unknown'}`,
+          proposalIds: [],
+        }
+        : runPromotionPipeline({
+          planningProposals,
+          tracePath: evalResult.mainOutputPath ? artifactPaths.tracePath : null,
+          planningOutputPath: evalResult.planningOutputPath,
+          mainOutputPath: evalResult.mainOutputPath,
+          policyRuntime,
+          queueRoot: deps && deps.queueRoot ? deps.queueRoot : DEFAULT_QUEUE_ROOT,
+          repoRoot: deps && deps.repoRoot ? deps.repoRoot : ROOT,
+          baseRef: deps && deps.baseRef ? deps.baseRef : DEFAULT_BASE_REF,
+          runner: deps && deps.runner ? deps.runner : spawnSync,
+        });
       caseResults.push({
         caseId: caseDefinition.caseId,
         strategicGoal: caseDefinition.strategicGoal,
@@ -1122,7 +1156,7 @@ async function runStrategicSelfImprovementBatch(argv, deps) {
         promotionResult,
         evalResult,
       });
-      if (loop.ok !== true && STOP_BATCH_ERROR_CODES.has(loopErrorCode)) {
+      if (shouldStopBatchOnErrorCode(loopErrorCode)) {
         stopBlocker = {
           code: loopErrorCode,
           error: loopError || 'batch stopped after a blocking local patrol error',
@@ -1256,5 +1290,7 @@ module.exports = {
   scoreReplyContract,
   selectExploreCases,
   selectExploreCasesByIds,
+  shouldSkipEvalForLoopFailure,
+  shouldStopBatchOnErrorCode,
   summarizeRound,
 };

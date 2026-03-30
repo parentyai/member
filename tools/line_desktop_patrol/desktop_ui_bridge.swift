@@ -310,6 +310,39 @@ func headerMatchesExpected(_ observed: [String], expectedTitle: String) -> Bool 
     }
 }
 
+func isLoggedOutSessionWindow(_ window: AXUIElement) -> Bool {
+    let topChildren = children(window)
+    let textFields = topChildren.filter { role($0) == "AXTextField" }
+    let buttons = topChildren.filter { role($0) == "AXButton" }
+    let splitGroups = topChildren.filter { role($0) == "AXSplitGroup" }
+    if !splitGroups.isEmpty {
+        return false
+    }
+    return textFields.count >= 2 && buttons.count >= 2
+}
+
+func hasChatSplitWindow(_ window: AXUIElement) -> Bool {
+    children(window).contains { role($0) == "AXSplitGroup" }
+}
+
+func windowArea(_ window: AXUIElement) -> CGFloat {
+    guard let frame = cgRectAttr(window, "AXFrame"), !frame.isNull else { return 0 }
+    return max(frame.width * frame.height, 0)
+}
+
+func selectRelevantWindow(_ appEl: AXUIElement) -> AXUIElement? {
+    let windows = arrayAttr(appEl, kAXWindowsAttribute as String)
+    guard !windows.isEmpty else { return nil }
+    return windows.sorted { lhs, rhs in
+        let lhsRank = hasChatSplitWindow(lhs) ? 0 : (isLoggedOutSessionWindow(lhs) ? 1 : 2)
+        let rhsRank = hasChatSplitWindow(rhs) ? 0 : (isLoggedOutSessionWindow(rhs) ? 1 : 2)
+        if lhsRank != rhsRank {
+            return lhsRank < rhsRank
+        }
+        return windowArea(lhs) > windowArea(rhs)
+    }.first
+}
+
 func resolveContext() throws -> UIContext {
     guard AXIsProcessTrusted() else {
         throw BridgeError.contextNotFound("accessibility_not_trusted")
@@ -319,12 +352,15 @@ func resolveContext() throws -> UIContext {
     }
     activate(app)
     let appEl = AXUIElementCreateApplication(app.processIdentifier)
-    guard let window = arrayAttr(appEl, kAXWindowsAttribute as String).first else {
+    guard let window = selectRelevantWindow(appEl) else {
         throw BridgeError.windowNotFound
     }
     let windowTitle = stringAttr(window, kAXTitleAttribute as String) ?? "LINE"
     let windowFrame = cgRectAttr(window, "AXFrame")
     let topChildren = children(window)
+    if isLoggedOutSessionWindow(window) {
+        throw BridgeError.contextNotFound("session_logged_out")
+    }
     guard let rootSplit = topChildren.first(where: { role($0) == "AXSplitGroup" }) else {
         throw BridgeError.contextNotFound("root_split_missing")
     }

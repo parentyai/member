@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 
 const {
   buildDesktopProposal,
+  detectBridgeFailureCode,
   evaluateConversationLoop,
   extractAppendedLines,
   parseArgs,
@@ -138,6 +139,17 @@ test('phase857: desktop bridge evaluator does not satisfy expected substrings fr
   });
   assert.equal(scores.expectedReplyMatched, false);
   assert.equal(scores.verdict, 'fail');
+});
+
+test('phase857: desktop bridge maps logged-out session failures to a blocking desktop error code', () => {
+  assert.equal(
+    detectBridgeFailureCode('contextNotFound("session_logged_out")'),
+    'desktop_session_logged_out'
+  );
+  assert.equal(
+    detectBridgeFailureCode('desktop_session_logged_out'),
+    'desktop_session_logged_out'
+  );
 });
 
 test('phase857: transcript helpers preserve visible line ordering', () => {
