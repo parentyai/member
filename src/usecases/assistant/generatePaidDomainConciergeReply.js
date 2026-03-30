@@ -634,7 +634,11 @@ function isSingleCityCheckpointPrompt(messageText) {
 }
 
 function isOfficialSinglePointPrompt(messageText) {
-  return /((公式確認が必要になる点|公式確認が必要な点).*((1つ|一つ)だけ))/i.test(normalizeText(messageText));
+  return /((公式確認が必要になる点|公式確認が必要な点|公式に戻るべき確認点|公式に戻る確認点).*((1つ|一つ)だけ))/i.test(normalizeText(messageText));
+}
+
+function isCityUnknownCommonGuardPrompt(messageText) {
+  return /((都市がまだ決まっていない|都市が未定|市がまだ決まっていない|市が未定).*(共通して先に確認すること|先に確認すること).*((1つ|一つ)だけ))|((共通して先に確認すること|先に確認すること).*(都市がまだ決まっていない|都市が未定|市がまだ決まっていない|市が未定).*((1つ|一つ)だけ))/i.test(normalizeText(messageText));
 }
 
 function isDocumentPairPrompt(messageText) {
@@ -678,6 +682,12 @@ function buildSingleCityCheckpointLine(domainIntent) {
   if (domainIntent === 'school') return '市が分かっているなら、市の教育窓口を最初に確認してください';
   if (domainIntent === 'housing') return '市が分かっているなら、市の住宅窓口を最初に確認してください';
   return '市が分かっているなら、市の公式窓口を最初に確認してください';
+}
+
+function buildCityUnknownCommonGuardLine(domainIntent) {
+  if (domainIntent === 'school') return '都市が未定なら、まず自治体の教育窓口か公式案内で受付期限を確認してください';
+  if (domainIntent === 'housing') return '都市が未定なら、まず自治体の住宅窓口か公式案内で手続き条件を確認してください';
+  return '都市が未定なら、まず自治体の公式窓口で期限を確認してください';
 }
 
 function buildOfficialSinglePointLine(domainIntent) {
@@ -753,6 +763,9 @@ function buildStrategicHumanReplyLines(params) {
 
   if (isInitialKickoffGuidePrompt(messageText)) {
     return [buildInitialKickoffGuideLine(domainIntent)];
+  }
+  if (isCityUnknownCommonGuardPrompt(messageText)) {
+    return [buildCityUnknownCommonGuardLine(domainIntent)];
   }
   if (isSingleCityCheckpointPrompt(messageText) || ((locationHintKind === 'city' || locationHintKind === 'regionkey') && /(最初の確認先|確認先を(1つ|一つ)だけ)/i.test(messageText))) {
     return [buildSingleCityCheckpointLine(domainIntent)];
