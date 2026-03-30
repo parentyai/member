@@ -1635,3 +1635,63 @@ test('phase719: budget-blocked docs typo followup rebuilds school context from r
   assert.equal(lastWrite.requestShape, 'answer');
   assert.equal(lastWrite.routerReason, 'action_keyword');
 });
+
+test('phase719: budget-blocked docs followup keeps recent school domain even when latest reply text is generic', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_V1_CHANNEL_EDGE: 'false',
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    budgetAllowed: false,
+    budgetBlockedReason: 'llm_disabled',
+    recentActionRows: [
+      {
+        createdAt: '2026-03-30T02:08:00.000Z',
+        domainIntent: 'general',
+        replyText: '期限を先に確認してください。',
+        followupIntent: null,
+        requestShape: 'answer',
+        outputForm: 'one_line'
+      },
+      {
+        createdAt: '2026-03-30T02:07:00.000Z',
+        domainIntent: 'school',
+        replyText: '最初に確認するのは、受付期限と必要書類の2点です。',
+        followupIntent: 'next_step',
+        requestShape: 'summarize',
+        outputForm: 'one_line'
+      }
+    ]
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const body = createWebhookBody('必要書類を2つだけ挙げて。');
+  const result = await loaded.handleLineWebhook({
+    body,
+    signature: signBody(body),
+    requestId: 'phase719_budget_blocked_school_docs_from_recent_domain_contract',
+    logger: () => {},
+    allowWelcome: false,
+    replyFn: async () => {}
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(loaded.counters.retrievalCalled, 0);
+  assert.equal(loaded.counters.paidFaqCalled, 0);
+  assert.equal(loaded.snapshotWrites.length > 0, true);
+  const replyText = latestAssistantReplyText(loaded);
+  const lastWrite = loaded.actionLogWrites[loaded.actionLogWrites.length - 1];
+  assert.match(replyText, /必要書類一覧|受付期限/);
+  assert.equal(/住所証明と身分証/.test(replyText), false);
+  assert.equal(lastWrite.domainIntent, 'school');
+  assert.equal(lastWrite.followupIntent, 'docs_required');
+  assert.equal(lastWrite.requestShape, 'summarize');
+  assert.equal(lastWrite.routerReason, 'default_casual');
+});

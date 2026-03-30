@@ -190,6 +190,10 @@ function detectRecoverySignal(text) {
   return /(それは違う|それも違う|違う、|ちがう、|違います|いや|そうじゃない|それじゃない|誤解|訂正|修正|じゃなくて|考え直して|今度は逆)/i.test(normalized);
 }
 
+function isDocumentFollowupPrompt(text) {
+  return /(必要書類|必要な書類|書類|持ち物|証明書|証明|提出物)/i.test(normalizeText(text));
+}
+
 function resolveRecoveryFollowupIntent(text) {
   const normalized = normalizeText(text);
   if (!normalized) return null;
@@ -300,7 +304,17 @@ function buildConversationPacket(params) {
     );
   const requestContract = buildRequestContract({
     messageText,
-    fallbackDomain: normalizeText(preliminaryRequestContract.sourceDomainIntent).toLowerCase() || (contextResume ? resumeAnchorDomain : null),
+    fallbackDomain: (
+      (normalizeText(preliminaryRequestContract.sourceDomainIntent).toLowerCase() || '') !== 'general'
+        ? normalizeText(preliminaryRequestContract.sourceDomainIntent).toLowerCase()
+        : ''
+    ) || (
+      preliminaryRequestContract.currentTurnHasExplicitDomain !== true
+      && isDocumentFollowupPrompt(messageText)
+      && recentDomain
+        ? recentDomain
+        : null
+    ) || (contextResume ? resumeAnchorDomain : null),
     recentResponseHints: recentHistory.recentResponseHints,
     recentReplyRows: recentHistory.recentReplyRows,
     latestAssistantReplyText: recentHistory.latestAssistantReplyText,

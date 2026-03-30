@@ -126,6 +126,39 @@ test('phase752: history carry keeps previous followup intent for ultra-short con
   assert.equal(packet.contextCarryScore >= 0.85, true);
 });
 
+test('phase752: docs followup reuses recent school domain when latest reply text is generic', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE752_PKT_DOCS_RECENT_DOMAIN',
+    messageText: '必要書類を2つだけ挙げて。',
+    routerReason: 'default_casual',
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'general',
+        followupIntent: null,
+        replyText: '期限を先に確認してください。',
+        requestShape: 'answer',
+        outputForm: 'one_line'
+      },
+      {
+        createdAt: new Date(Date.now() - 60_000).toISOString(),
+        domainIntent: 'school',
+        followupIntent: 'next_step',
+        replyText: '最初に確認するのは、受付期限と必要書類の2点です。',
+        requestShape: 'summarize',
+        outputForm: 'one_line'
+      }
+    ],
+    llmFlags: {}
+  });
+
+  assert.equal(packet.followupIntent, 'docs_required');
+  assert.equal(packet.normalizedConversationIntent, 'school');
+  assert.equal(packet.requestContract.primaryDomainIntent, 'school');
+  assert.equal(packet.requestContract.fallbackDomainUsed, true);
+  assert.equal(packet.sourceDomainIntent, 'general');
+});
+
 test('phase752: snapshot domain does not hijack general planning followup without prior domain history', () => {
   const packet = buildConversationPacket({
     lineUserId: 'U_PHASE752_PKT_GENERAL',

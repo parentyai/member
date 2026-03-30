@@ -495,7 +495,14 @@ function buildRequestContract(params) {
     || requestShape === 'followup_continue'
     || transformSource === 'prior_assistant';
   const utilityGeneralOverride = explicitDomainSignals.length === 0
-    && (requestShape === 'criteria' || requestShape === 'summarize');
+    && (
+      requestShape === 'criteria'
+      || (
+        requestShape === 'summarize'
+        && isLowFrictionDirectPrompt(messageText) !== true
+        && isStandaloneStrategicPrompt(messageText) !== true
+      )
+    );
   const primaryDomainIntent = primaryFromCorrection
     || (echoSharedHousingSchoolContinuation ? 'general' : null)
     || (echoGeneralMixedContinuation ? 'general' : null)
