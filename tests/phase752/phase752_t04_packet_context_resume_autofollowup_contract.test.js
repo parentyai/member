@@ -441,5 +441,8 @@ test('phase752: parent-friendly one-line rewrite keeps rewrite contract even wit
 
   assert.equal(packet.requestShape, 'rewrite');
   assert.equal(packet.outputForm, 'one_line');
+  assert.equal(packet.normalizedConversationIntent, 'school');
+  assert.equal(packet.requestContract.primaryDomainIntent, 'school');
+  assert.equal(packet.requestContract.currentTurnHasExplicitDomain, true);
   assert.equal(packet.detailObligations.includes('avoid_question_back'), true);
 });
