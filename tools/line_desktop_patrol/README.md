@@ -71,7 +71,7 @@ Treat `generic LINE shell only` as a fail-closed preflight state: the LINE shell
 
 ## Notes
 - `send_text` is API-backed and local-only.
-- `desktop_readiness` is read-only and reports whether Codex can safely control LINE Desktop before attempting a loop.
+- `desktop_readiness` never sends a message, but when `expected_chat_title` is set it may use the same sidebar target-selection heuristic as the loop to confirm the intended chat is reachable before execute mode starts.
 - `desktop-self-test` runs `desktop_readiness` first and only then executes `desktop_run_conversation_loop` in the same local MCP session.
 - `desktop_run_conversation_loop` sends from the signed-in desktop LINE account, waits for a reply, captures transcript evidence, and enqueues a local proposal when the loop fails.
 - `desktop-self-improvement` runs one readiness gate and then a two-layer suite: the fixed strategic core 10 plus a seeded rotating explore pack of 5 cases by default. Each case keeps an explicit strategic goal, a human-natural reply contract, a patrol eval artifact, and an aggregated proposal summary for the future auto-improvement loop.
