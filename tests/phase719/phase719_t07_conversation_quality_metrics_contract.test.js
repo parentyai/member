@@ -35,6 +35,23 @@ test('phase719: conversation quality summary aggregates naturalness and domain c
       locationHintKind: 'city',
       requestedCityKey: 'new-york',
       citySpecificitySatisfied: true,
+      procedureKnowledgeUsed: true,
+      procedureScaffoldCovered: true,
+      oneTurnUtility: true,
+      decisionReadiness: true,
+      dependencyExplicitness: true,
+      relevanceFit: true,
+      offTargetAnswer: false,
+      fakeSpecificity: false,
+      userEffortShift: false,
+      transformBadFactCarry: false,
+      decisionCriticalMissingFactCount: 1,
+      officialCheckTargetCount: 2,
+      rawSourceLayerCount: 3,
+      procedureKnowledgeEntryCount: 1,
+      communityRawSourceCount: 1,
+      officialRawSourceCount: 1,
+      procedureScaffoldPartCount: 5,
       detailObligations: ['preserve_reason', 'preserve_order_axis'],
       answerability: 'answer_now',
       echoOfPriorAssistant: false,
@@ -64,6 +81,23 @@ test('phase719: conversation quality summary aggregates naturalness and domain c
       locationHintKind: 'city',
       requestedCityKey: 'new-york',
       citySpecificitySatisfied: false,
+      procedureKnowledgeUsed: true,
+      procedureScaffoldCovered: false,
+      oneTurnUtility: true,
+      decisionReadiness: false,
+      dependencyExplicitness: true,
+      relevanceFit: false,
+      offTargetAnswer: true,
+      fakeSpecificity: false,
+      userEffortShift: true,
+      transformBadFactCarry: true,
+      decisionCriticalMissingFactCount: 2,
+      officialCheckTargetCount: 1,
+      rawSourceLayerCount: 2,
+      procedureKnowledgeEntryCount: 1,
+      communityRawSourceCount: 1,
+      officialRawSourceCount: 0,
+      procedureScaffoldPartCount: 3,
       detailObligations: ['respect_correction', 'preserve_reason', 'preserve_source_facts', 'expand_source_facts'],
       answerability: 'answer_now',
       echoOfPriorAssistant: false,
@@ -90,6 +124,23 @@ test('phase719: conversation quality summary aggregates naturalness and domain c
       locationHintKind: 'none',
       requestedCityKey: null,
       citySpecificitySatisfied: false,
+      procedureKnowledgeUsed: false,
+      procedureScaffoldCovered: false,
+      oneTurnUtility: false,
+      decisionReadiness: false,
+      dependencyExplicitness: false,
+      relevanceFit: false,
+      offTargetAnswer: true,
+      fakeSpecificity: true,
+      userEffortShift: true,
+      transformBadFactCarry: false,
+      decisionCriticalMissingFactCount: 0,
+      officialCheckTargetCount: 0,
+      rawSourceLayerCount: 0,
+      procedureKnowledgeEntryCount: 0,
+      communityRawSourceCount: 0,
+      officialRawSourceCount: 0,
+      procedureScaffoldPartCount: 0,
       detailObligations: ['preserve_both_domains', 'message_only', 'preserve_source_facts'],
       answerability: 'answer_now',
       echoOfPriorAssistant: true,
@@ -104,6 +155,23 @@ test('phase719: conversation quality summary aggregates naturalness and domain c
   assert.equal(summary.pitfallIncludedRate, 0.6667);
   assert.equal(summary.avgActionCount, 1.6667);
   assert.equal(summary.domainIntentConciergeRate, 1);
+  assert.equal(summary.oneTurnUtilityRate, 0.6667);
+  assert.equal(summary.procedureScaffoldCoverageRate, 0.3333);
+  assert.equal(summary.relevanceFitRate, 0.3333);
+  assert.equal(summary.offTargetAnswerRate, 0.6667);
+  assert.equal(summary.decisionReadinessRate, 0.3333);
+  assert.equal(summary.dependencyExplicitnessRate, 0.6667);
+  assert.equal(summary.fakeSpecificityRate, 0.3333);
+  assert.equal(summary.userEffortShiftRate, 0.6667);
+  assert.equal(summary.procedureKnowledgeUseRate, 0.6667);
+  assert.equal(summary.transformBadFactCarryRate, 0.3333);
+  assert.equal(summary.avgDecisionCriticalMissingFactCount, 1);
+  assert.equal(summary.avgOfficialCheckTargetCount, 1);
+  assert.equal(summary.avgRawSourceLayerCount, 1.6667);
+  assert.equal(summary.avgProcedureKnowledgeEntryCount, 0.6667);
+  assert.equal(summary.avgCommunityRawSourceCount, 0.6667);
+  assert.equal(summary.avgOfficialRawSourceCount, 0.3333);
+  assert.equal(summary.avgProcedureScaffoldPartCount, 2.6667);
   assert.equal(summary.formatComplianceRate, 0.6667);
   assert.equal(summary.detailCarryRate, 0.3333);
   assert.equal(summary.correctionRecoveryRate, 0);
@@ -168,6 +236,31 @@ test('phase719: llm action log schema includes conversation quality metadata fie
     'citySpecificitySatisfied',
     'citySpecificityReason',
     'scopeDisclosureRequired',
+    'procedureKnowledgeUsed',
+    'replyObjective',
+    'answerMode',
+    'knowledgeMode',
+    'procedureComplexity',
+    'fitRisk',
+    'relevanceAnchor',
+    'decisionCriticalMissingFacts',
+    'officialCheckTargets',
+    'decisionCriticalMissingFactCount',
+    'officialCheckTargetCount',
+    'rawSourceLayerCount',
+    'procedureKnowledgeEntryCount',
+    'communityRawSourceCount',
+    'officialRawSourceCount',
+    'procedureScaffoldPartCount',
+    'procedureScaffoldCovered',
+    'oneTurnUtility',
+    'decisionReadiness',
+    'dependencyExplicitness',
+    'relevanceFit',
+    'offTargetAnswer',
+    'fakeSpecificity',
+    'userEffortShift',
+    'transformBadFactCarry',
     'detailObligations',
     'answerability',
     'echoOfPriorAssistant',
@@ -184,5 +277,16 @@ test('phase719: llm action log schema includes conversation quality metadata fie
   assert.ok(usageSummary.includes('cityOverclaimRate'));
   assert.ok(usageSummary.includes('transformSourceCarryRate'));
   assert.ok(usageSummary.includes('depthResetRate'));
+  assert.ok(usageSummary.includes('oneTurnUtilityRate'));
+  assert.ok(usageSummary.includes('procedureScaffoldCoverageRate'));
+  assert.ok(usageSummary.includes('offTargetAnswerRate'));
+  assert.ok(usageSummary.includes('decisionReadinessRate'));
+  assert.ok(usageSummary.includes('dependencyExplicitnessRate'));
+  assert.ok(usageSummary.includes('fakeSpecificityRate'));
+  assert.ok(usageSummary.includes('userEffortShiftRate'));
+  assert.ok(usageSummary.includes('procedureKnowledgeUseRate'));
+  assert.ok(usageSummary.includes('transformBadFactCarryRate'));
+  assert.ok(usageSummary.includes('avgRawSourceLayerCount'));
+  assert.ok(usageSummary.includes('avgProcedureKnowledgeEntryCount'));
   assert.ok(usageSummary.includes('violationCodeCounts'));
 });

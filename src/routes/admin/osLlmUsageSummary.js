@@ -1077,6 +1077,40 @@ function buildConversationQualitySummary(actionRows) {
   let parrotEchoCount = 0;
   let commandBoundaryCollisionCount = 0;
   let cityOverclaimCount = 0;
+  let procedureKnowledgeUseSeenCount = 0;
+  let procedureKnowledgeUseCount = 0;
+  let procedureScaffoldCoverageSeenCount = 0;
+  let procedureScaffoldCoverageCount = 0;
+  let oneTurnUtilitySeenCount = 0;
+  let oneTurnUtilityCount = 0;
+  let decisionReadinessSeenCount = 0;
+  let decisionReadinessCount = 0;
+  let dependencyExplicitnessSeenCount = 0;
+  let dependencyExplicitnessCount = 0;
+  let relevanceFitSeenCount = 0;
+  let relevanceFitCount = 0;
+  let offTargetAnswerSeenCount = 0;
+  let offTargetAnswerCount = 0;
+  let fakeSpecificitySeenCount = 0;
+  let fakeSpecificityCount = 0;
+  let userEffortShiftSeenCount = 0;
+  let userEffortShiftCount = 0;
+  let transformBadFactCarrySeenCount = 0;
+  let transformBadFactCarryCount = 0;
+  let decisionCriticalMissingFactCountTotal = 0;
+  let decisionCriticalMissingFactCountSeenCount = 0;
+  let officialCheckTargetCountTotal = 0;
+  let officialCheckTargetCountSeenCount = 0;
+  let rawSourceLayerCountTotal = 0;
+  let rawSourceLayerCountSeenCount = 0;
+  let procedureKnowledgeEntryCountTotal = 0;
+  let procedureKnowledgeEntryCountSeenCount = 0;
+  let communityRawSourceCountTotal = 0;
+  let communityRawSourceCountSeenCount = 0;
+  let officialRawSourceCountTotal = 0;
+  let officialRawSourceCountSeenCount = 0;
+  let procedureScaffoldPartCountTotal = 0;
+  let procedureScaffoldPartCountSeenCount = 0;
   const requiredCoreFactsGateDecisions = new Map();
 
   rows.forEach((row) => {
@@ -1173,6 +1207,16 @@ function buildConversationQualitySummary(actionRows) {
     const detailObligations = normalizeReasonList(row && row.detailObligations, 12);
     const violationCodes = normalizeReasonList(row && row.violationCodes, 16);
     const citySpecificitySatisfied = row && row.citySpecificitySatisfied === true;
+    const procedureKnowledgeUsed = row && row.procedureKnowledgeUsed === true;
+    const procedureScaffoldCovered = row && row.procedureScaffoldCovered === true;
+    const oneTurnUtility = row && row.oneTurnUtility === true;
+    const decisionReadiness = row && row.decisionReadiness === true;
+    const dependencyExplicitness = row && row.dependencyExplicitness === true;
+    const relevanceFit = row && row.relevanceFit === true;
+    const offTargetAnswer = row && row.offTargetAnswer === true;
+    const fakeSpecificity = row && row.fakeSpecificity === true;
+    const userEffortShift = row && row.userEffortShift === true;
+    const transformBadFactCarry = row && row.transformBadFactCarry === true;
 
     naturalnessVersions.set(naturalnessVersion, (naturalnessVersions.get(naturalnessVersion) || 0) + 1);
     domainCounts.set(domainIntent, (domainCounts.get(domainIntent) || 0) + 1);
@@ -1507,6 +1551,74 @@ function buildConversationQualitySummary(actionRows) {
     if (violationCodes.includes('parrot_echo')) parrotEchoCount += 1;
     if (violationCodes.includes('command_boundary_collision')) commandBoundaryCollisionCount += 1;
     if (violationCodes.includes('city_scope_overclaim')) cityOverclaimCount += 1;
+    if (Object.prototype.hasOwnProperty.call(row, 'procedureKnowledgeUsed')) {
+      procedureKnowledgeUseSeenCount += 1;
+      if (procedureKnowledgeUsed) procedureKnowledgeUseCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'procedureScaffoldCovered')) {
+      procedureScaffoldCoverageSeenCount += 1;
+      if (procedureScaffoldCovered) procedureScaffoldCoverageCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'oneTurnUtility')) {
+      oneTurnUtilitySeenCount += 1;
+      if (oneTurnUtility) oneTurnUtilityCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'decisionReadiness')) {
+      decisionReadinessSeenCount += 1;
+      if (decisionReadiness) decisionReadinessCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'dependencyExplicitness')) {
+      dependencyExplicitnessSeenCount += 1;
+      if (dependencyExplicitness) dependencyExplicitnessCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'relevanceFit')) {
+      relevanceFitSeenCount += 1;
+      if (relevanceFit) relevanceFitCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'offTargetAnswer')) {
+      offTargetAnswerSeenCount += 1;
+      if (offTargetAnswer) offTargetAnswerCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'fakeSpecificity')) {
+      fakeSpecificitySeenCount += 1;
+      if (fakeSpecificity) fakeSpecificityCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'userEffortShift')) {
+      userEffortShiftSeenCount += 1;
+      if (userEffortShift) userEffortShiftCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'transformBadFactCarry')) {
+      transformBadFactCarrySeenCount += 1;
+      if (transformBadFactCarry) transformBadFactCarryCount += 1;
+    }
+    if (Number.isFinite(Number(row && row.decisionCriticalMissingFactCount))) {
+      decisionCriticalMissingFactCountSeenCount += 1;
+      decisionCriticalMissingFactCountTotal += Number(row.decisionCriticalMissingFactCount);
+    }
+    if (Number.isFinite(Number(row && row.officialCheckTargetCount))) {
+      officialCheckTargetCountSeenCount += 1;
+      officialCheckTargetCountTotal += Number(row.officialCheckTargetCount);
+    }
+    if (Number.isFinite(Number(row && row.rawSourceLayerCount))) {
+      rawSourceLayerCountSeenCount += 1;
+      rawSourceLayerCountTotal += Number(row.rawSourceLayerCount);
+    }
+    if (Number.isFinite(Number(row && row.procedureKnowledgeEntryCount))) {
+      procedureKnowledgeEntryCountSeenCount += 1;
+      procedureKnowledgeEntryCountTotal += Number(row.procedureKnowledgeEntryCount);
+    }
+    if (Number.isFinite(Number(row && row.communityRawSourceCount))) {
+      communityRawSourceCountSeenCount += 1;
+      communityRawSourceCountTotal += Number(row.communityRawSourceCount);
+    }
+    if (Number.isFinite(Number(row && row.officialRawSourceCount))) {
+      officialRawSourceCountSeenCount += 1;
+      officialRawSourceCountTotal += Number(row.officialRawSourceCount);
+    }
+    if (Number.isFinite(Number(row && row.procedureScaffoldPartCount))) {
+      procedureScaffoldPartCountSeenCount += 1;
+      procedureScaffoldPartCountTotal += Number(row.procedureScaffoldPartCount);
+    }
   });
 
   const sampleCount = rows.length;
@@ -1527,6 +1639,57 @@ function buildConversationQualitySummary(actionRows) {
     retrieveNeededRate: sampleCount > 0 ? Math.round((retrieveNeededCount / sampleCount) * 10000) / 10000 : 0,
     contradictionRate: sampleCount > 0 ? Math.round((contradictionRowCount / sampleCount) * 10000) / 10000 : 0,
     domainIntentConciergeRate: domainIntentCount > 0 ? Math.round((domainConciergeCount / domainIntentCount) * 10000) / 10000 : 0,
+    oneTurnUtilityRate: oneTurnUtilitySeenCount > 0
+      ? Math.round((oneTurnUtilityCount / oneTurnUtilitySeenCount) * 10000) / 10000
+      : 0,
+    procedureScaffoldCoverageRate: procedureScaffoldCoverageSeenCount > 0
+      ? Math.round((procedureScaffoldCoverageCount / procedureScaffoldCoverageSeenCount) * 10000) / 10000
+      : 0,
+    relevanceFitRate: relevanceFitSeenCount > 0
+      ? Math.round((relevanceFitCount / relevanceFitSeenCount) * 10000) / 10000
+      : 0,
+    offTargetAnswerRate: offTargetAnswerSeenCount > 0
+      ? Math.round((offTargetAnswerCount / offTargetAnswerSeenCount) * 10000) / 10000
+      : 0,
+    decisionReadinessRate: decisionReadinessSeenCount > 0
+      ? Math.round((decisionReadinessCount / decisionReadinessSeenCount) * 10000) / 10000
+      : 0,
+    dependencyExplicitnessRate: dependencyExplicitnessSeenCount > 0
+      ? Math.round((dependencyExplicitnessCount / dependencyExplicitnessSeenCount) * 10000) / 10000
+      : 0,
+    fakeSpecificityRate: fakeSpecificitySeenCount > 0
+      ? Math.round((fakeSpecificityCount / fakeSpecificitySeenCount) * 10000) / 10000
+      : 0,
+    userEffortShiftRate: userEffortShiftSeenCount > 0
+      ? Math.round((userEffortShiftCount / userEffortShiftSeenCount) * 10000) / 10000
+      : 0,
+    procedureKnowledgeUseRate: procedureKnowledgeUseSeenCount > 0
+      ? Math.round((procedureKnowledgeUseCount / procedureKnowledgeUseSeenCount) * 10000) / 10000
+      : 0,
+    transformBadFactCarryRate: transformBadFactCarrySeenCount > 0
+      ? Math.round((transformBadFactCarryCount / transformBadFactCarrySeenCount) * 10000) / 10000
+      : 0,
+    avgDecisionCriticalMissingFactCount: decisionCriticalMissingFactCountSeenCount > 0
+      ? Math.round((decisionCriticalMissingFactCountTotal / decisionCriticalMissingFactCountSeenCount) * 10000) / 10000
+      : 0,
+    avgOfficialCheckTargetCount: officialCheckTargetCountSeenCount > 0
+      ? Math.round((officialCheckTargetCountTotal / officialCheckTargetCountSeenCount) * 10000) / 10000
+      : 0,
+    avgRawSourceLayerCount: rawSourceLayerCountSeenCount > 0
+      ? Math.round((rawSourceLayerCountTotal / rawSourceLayerCountSeenCount) * 10000) / 10000
+      : 0,
+    avgProcedureKnowledgeEntryCount: procedureKnowledgeEntryCountSeenCount > 0
+      ? Math.round((procedureKnowledgeEntryCountTotal / procedureKnowledgeEntryCountSeenCount) * 10000) / 10000
+      : 0,
+    avgCommunityRawSourceCount: communityRawSourceCountSeenCount > 0
+      ? Math.round((communityRawSourceCountTotal / communityRawSourceCountSeenCount) * 10000) / 10000
+      : 0,
+    avgOfficialRawSourceCount: officialRawSourceCountSeenCount > 0
+      ? Math.round((officialRawSourceCountTotal / officialRawSourceCountSeenCount) * 10000) / 10000
+      : 0,
+    avgProcedureScaffoldPartCount: procedureScaffoldPartCountSeenCount > 0
+      ? Math.round((procedureScaffoldPartCountTotal / procedureScaffoldPartCountSeenCount) * 10000) / 10000
+      : 0,
     strategies: sortCountEntries(strategies, 'strategy', 10),
     strategyReasons: sortCountEntries(strategyReasons, 'strategyReason', 12),
     strategyAlternatives: sortCountEntries(strategyAlternatives, 'strategyAlternative', 12),

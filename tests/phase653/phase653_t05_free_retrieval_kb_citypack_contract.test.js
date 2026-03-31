@@ -41,6 +41,17 @@ test('phase653: free retrieval enforces faq_search intent and returns citation k
   assert.ok(result.citations.includes('cp_tokyo_visa'));
   assert.equal(result.injectionFindings, false);
   assert.deepEqual(result.blockedReasons, []);
+  assert.equal(typeof result.procedurePacket, 'object');
+  assert.equal(Array.isArray(result.procedurePacket.overallFlow), true);
+  assert.equal(result.procedurePacket.overallFlow.length >= 3, true);
+  assert.equal(Array.isArray(result.procedurePacket.rawSourceLayer), true);
+  assert.equal(result.procedurePacket.rawSourceLayer.length >= 2, true);
+  assert.equal(Array.isArray(result.procedurePacket.procedureKnowledgeLayer), true);
+  assert.equal(result.procedurePacket.procedureKnowledgeLayer.length >= 1, true);
+  assert.equal(Array.isArray(result.nextSteps), true);
+  assert.equal(result.nextSteps.length >= 1, true);
+  assert.equal(Array.isArray(result.evidenceRefs), true);
+  assert.equal(result.evidenceRefs.length >= 1, true);
 });
 
 test('phase653: free retrieval empty mode shows fallback guidance', async () => {
@@ -60,6 +71,7 @@ test('phase653: free retrieval empty mode shows fallback guidance', async () => 
   assert.ok(result.replyText.includes('お問い合わせ'));
   assert.equal(result.injectionFindings, false);
   assert.deepEqual(result.blockedReasons, []);
+  assert.equal(result.procedurePacket, null);
 });
 
 test('phase653: free retrieval sanitizes injected external instructions and keeps audit flags', async () => {
@@ -90,4 +102,8 @@ test('phase653: free retrieval sanitizes injected external instructions and keep
   assert.equal(result.faqCandidates.length, 1);
   assert.equal(result.faqCandidates[0].title, 'Official guidance');
   assert.equal(result.faqCandidates[0].snippet, '');
+  assert.equal(typeof result.procedurePacket, 'object');
+  assert.equal(Array.isArray(result.procedurePacket.rawSourceLayer), true);
+  assert.equal(Array.isArray(result.procedurePacket.procedureKnowledgeLayer), true);
+  assert.equal(Array.isArray(result.evidenceRefs), true);
 });

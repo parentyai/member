@@ -3795,6 +3795,8 @@ const EVIDENCE_PLACEHOLDER_PRE_IDS = [
   'llm-policy-history-result',
   'llm-usage-summary-result',
   'llm-entry-control-dashboard',
+  'llm-raw-source-review',
+  'llm-procedure-knowledge-review',
   'llm-quality-scorecard',
   'llm-quality-slices',
   'llm-quality-judge',
@@ -20387,6 +20389,109 @@ function renderLlmEntryControlDashboard(summary) {
   }
 }
 
+function renderLlmRawSourceReview(summary) {
+  const conversationQuality = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
+    ? summary.conversationQuality
+    : null;
+  if (!conversationQuality) {
+    renderLlmResult('llm-raw-source-review', { ok: false, error: 'no_conversation_quality' });
+    return;
+  }
+  renderLlmResult('llm-raw-source-review', {
+    ok: true,
+    sampleCount: Number.isFinite(Number(conversationQuality.sampleCount)) ? Number(conversationQuality.sampleCount) : 0,
+    avgRawSourceLayerCount: Number.isFinite(Number(conversationQuality.avgRawSourceLayerCount))
+      ? Number(conversationQuality.avgRawSourceLayerCount)
+      : 0,
+    avgCommunityRawSourceCount: Number.isFinite(Number(conversationQuality.avgCommunityRawSourceCount))
+      ? Number(conversationQuality.avgCommunityRawSourceCount)
+      : 0,
+    avgOfficialRawSourceCount: Number.isFinite(Number(conversationQuality.avgOfficialRawSourceCount))
+      ? Number(conversationQuality.avgOfficialRawSourceCount)
+      : 0,
+    avgSourceAuthorityScore: Number.isFinite(Number(conversationQuality.avgSourceAuthorityScore))
+      ? Number(conversationQuality.avgSourceAuthorityScore)
+      : 0,
+    avgSourceFreshnessScore: Number.isFinite(Number(conversationQuality.avgSourceFreshnessScore))
+      ? Number(conversationQuality.avgSourceFreshnessScore)
+      : 0,
+    sourceReadinessDecisions: Array.isArray(conversationQuality.sourceReadinessDecisions)
+      ? conversationQuality.sourceReadinessDecisions
+      : [],
+    sourceReadinessDecisionSources: Array.isArray(conversationQuality.sourceReadinessDecisionSources)
+      ? conversationQuality.sourceReadinessDecisionSources
+      : [],
+    knowledgeGroundingKinds: Array.isArray(conversationQuality.knowledgeGroundingKinds)
+      ? conversationQuality.knowledgeGroundingKinds
+      : []
+  });
+}
+
+function renderLlmProcedureKnowledgeReview(summary) {
+  const conversationQuality = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
+    ? summary.conversationQuality
+    : null;
+  if (!conversationQuality) {
+    renderLlmResult('llm-procedure-knowledge-review', { ok: false, error: 'no_conversation_quality' });
+    return;
+  }
+  renderLlmResult('llm-procedure-knowledge-review', {
+    ok: true,
+    sampleCount: Number.isFinite(Number(conversationQuality.sampleCount)) ? Number(conversationQuality.sampleCount) : 0,
+    procedureKnowledgeUseRate: Number.isFinite(Number(conversationQuality.procedureKnowledgeUseRate))
+      ? Number(conversationQuality.procedureKnowledgeUseRate)
+      : 0,
+    avgProcedureKnowledgeEntryCount: Number.isFinite(Number(conversationQuality.avgProcedureKnowledgeEntryCount))
+      ? Number(conversationQuality.avgProcedureKnowledgeEntryCount)
+      : 0,
+    procedureScaffoldCoverageRate: Number.isFinite(Number(conversationQuality.procedureScaffoldCoverageRate))
+      ? Number(conversationQuality.procedureScaffoldCoverageRate)
+      : 0,
+    avgProcedureScaffoldPartCount: Number.isFinite(Number(conversationQuality.avgProcedureScaffoldPartCount))
+      ? Number(conversationQuality.avgProcedureScaffoldPartCount)
+      : 0,
+    oneTurnUtilityRate: Number.isFinite(Number(conversationQuality.oneTurnUtilityRate))
+      ? Number(conversationQuality.oneTurnUtilityRate)
+      : 0,
+    decisionReadinessRate: Number.isFinite(Number(conversationQuality.decisionReadinessRate))
+      ? Number(conversationQuality.decisionReadinessRate)
+      : 0,
+    dependencyExplicitnessRate: Number.isFinite(Number(conversationQuality.dependencyExplicitnessRate))
+      ? Number(conversationQuality.dependencyExplicitnessRate)
+      : 0,
+    relevanceFitRate: Number.isFinite(Number(conversationQuality.relevanceFitRate))
+      ? Number(conversationQuality.relevanceFitRate)
+      : 0,
+    offTargetAnswerRate: Number.isFinite(Number(conversationQuality.offTargetAnswerRate))
+      ? Number(conversationQuality.offTargetAnswerRate)
+      : 0,
+    fakeSpecificityRate: Number.isFinite(Number(conversationQuality.fakeSpecificityRate))
+      ? Number(conversationQuality.fakeSpecificityRate)
+      : 0,
+    userEffortShiftRate: Number.isFinite(Number(conversationQuality.userEffortShiftRate))
+      ? Number(conversationQuality.userEffortShiftRate)
+      : 0,
+    transformBadFactCarryRate: Number.isFinite(Number(conversationQuality.transformBadFactCarryRate))
+      ? Number(conversationQuality.transformBadFactCarryRate)
+      : 0,
+    avgDecisionCriticalMissingFactCount: Number.isFinite(Number(conversationQuality.avgDecisionCriticalMissingFactCount))
+      ? Number(conversationQuality.avgDecisionCriticalMissingFactCount)
+      : 0,
+    avgOfficialCheckTargetCount: Number.isFinite(Number(conversationQuality.avgOfficialCheckTargetCount))
+      ? Number(conversationQuality.avgOfficialCheckTargetCount)
+      : 0,
+    knowledgeRejectedReasons: Array.isArray(conversationQuality.knowledgeRejectedReasons)
+      ? conversationQuality.knowledgeRejectedReasons
+      : [],
+    cityPackRejectedReasons: Array.isArray(conversationQuality.cityPackRejectedReasons)
+      ? conversationQuality.cityPackRejectedReasons
+      : [],
+    savedFaqRejectedReasons: Array.isArray(conversationQuality.savedFaqRejectedReasons)
+      ? conversationQuality.savedFaqRejectedReasons
+      : []
+  });
+}
+
 function renderLlmQualityFrameworkDashboard(summary) {
   const quality = summary && summary.qualityFramework && typeof summary.qualityFramework === 'object'
     ? summary.qualityFramework
@@ -21128,11 +21233,15 @@ async function loadLlmUsageSummary(options) {
     const data = await readJsonResponse(res);
     renderLlmResult('llm-usage-summary-result', data);
     renderLlmEntryControlDashboard(data && data.summary ? data.summary : null);
+    renderLlmRawSourceReview(data && data.summary ? data.summary : null);
+    renderLlmProcedureKnowledgeReview(data && data.summary ? data.summary : null);
     renderLlmQualityFrameworkDashboard(data && data.summary ? data.summary : null);
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
     if (notify) showToast('LLM usage集計を取得しました', 'ok');
   } catch (_err) {
     renderLlmEntryControlDashboard(null);
+    renderLlmRawSourceReview(null);
+    renderLlmProcedureKnowledgeReview(null);
     renderLlmQualityFrameworkDashboard(null);
     if (notify) showToast('LLM usage集計の取得に失敗しました', 'danger');
   }

@@ -6,6 +6,11 @@ const { sanitizeRetrievalCandidates } = require('./retrieval/sanitizeRetrievalCa
 const { selectConversationStyle } = require('../../domain/llm/conversation/styleRouter');
 const { composeConversationDraftFromSignals } = require('../../domain/llm/conversation/conversationComposer');
 const { humanizeConversationMessage } = require('../../domain/llm/conversation/styleHumanizer');
+const {
+  resolveProcedureReplyPacket,
+  renderProcedureReplyPacket,
+  buildProcedureSemanticFields
+} = require('../../domain/llm/procedureKnowledge/resolveProcedureReplyPacket');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -16,6 +21,25 @@ function trimForLineMessage(value) {
   const text = normalizeText(value);
   if (!text) return '';
   return text.length > 4500 ? `${text.slice(0, 4500)}...` : text;
+}
+
+function isUrgentProcedurePrompt(question) {
+  const text = normalizeText(question);
+  if (!text) return false;
+  return /(至急|urgent|本日中|今日中|今すぐ|すぐ|急ぎ|期限切れ|間に合)/i.test(text);
+}
+
+function inferProcedureDomain(question, faqCandidates, cityPackCandidates) {
+  const sample = [
+    normalizeText(question),
+    ...(Array.isArray(faqCandidates) ? faqCandidates.slice(0, 2).map((item) => normalizeText(item && `${item.title || ''} ${item.body || ''}`)) : []),
+    ...(Array.isArray(cityPackCandidates) ? cityPackCandidates.slice(0, 2).map((item) => normalizeText(item && `${item.title || ''} ${item.reason || ''}`)) : [])
+  ].join(' ').toLowerCase();
+  if (/(school|学校|学区|転校|編入|enrollment)/.test(sample)) return 'school';
+  if (/(housing|住まい|住宅|賃貸|物件|内見)/.test(sample)) return 'housing';
+  if (/(ssn|social security|ソーシャルセキュリティ)/.test(sample)) return 'ssn';
+  if (/(bank|banking|銀行|口座|checking|savings)/.test(sample)) return 'banking';
+  return 'general';
 }
 
 function resolveFreeStyleDecision(question, topic) {
@@ -73,32 +97,28 @@ function buildCitationSection(faqCandidates, cityPackCandidates) {
 }
 
 function buildRankedReply(question, faqCandidates, cityPackCandidates) {
-  const title = normalizeText(question) || '検索結果';
-  const nextActions = [];
-  faqCandidates.slice(0, 2).forEach((item) => {
-    nextActions.push(`FAQ候補を確認する（${item.articleId}）`);
+  const domainIntent = inferProcedureDomain(question, faqCandidates, cityPackCandidates);
+  const procedurePacket = resolveProcedureReplyPacket({
+    messageText: question,
+    domainIntent,
+    faqCandidates,
+    cityPackCandidates,
+    supportingSourceRefs: []
   });
-  cityPackCandidates.slice(0, 1).forEach((item) => {
-    nextActions.push(`CityPack候補を確認する（${item.sourceId}）`);
+  const styleLead = isUrgentProcedurePrompt(question)
+    ? 'まずこの順です。'
+    : 'この順で進めると迷いにくいです。';
+  const procedureText = renderProcedureReplyPacket(procedurePacket, {
+    mode: 'default'
   });
-  if (!nextActions.length) {
-    nextActions.push('キーワードを変えて再検索する');
-  }
-  const draftPacket = composeConversationDraftFromSignals({
-    summary: `${title} の関連情報です。`,
-    nextActions,
-    pitfall: '候補を同時に進めると手続きが分散しやすくなります。',
-    question: '',
-    state: 'PLAN',
-    move: 'Offer'
-  });
-  const styleDecision = resolveFreeStyleDecision(question, faqCandidates.length ? 'visa' : 'other');
-  const humanized = humanizeConversationMessage({ draftPacket, styleDecision });
   const citationSection = buildCitationSection(faqCandidates, cityPackCandidates);
-  return [humanized.text, citationSection, '必要なら「抜け漏れチェック」「次アクション」を送ってPro支援を試せます。']
-    .filter(Boolean)
-    .join('\n\n')
-    .trim();
+  return {
+    replyText: [styleLead, procedureText, citationSection, '必要なら、このまま「次の一手」「確認先」「詰まりどころ」と送れば続けて整理できます。']
+      .filter(Boolean)
+      .join('\n\n')
+      .trim(),
+    procedurePacket
+  };
 }
 
 async function generateFreeRetrievalReply(params, deps) {
@@ -139,9 +159,20 @@ async function generateFreeRetrievalReply(params, deps) {
   });
 
   const mode = safeFaqCandidates.length || safeCityPackCandidates.length ? 'ranked' : 'empty';
-  const replyText = mode === 'ranked'
+  const ranked = mode === 'ranked'
     ? buildRankedReply(question, safeFaqCandidates, safeCityPackCandidates)
+    : null;
+  const replyText = mode === 'ranked'
+    ? ranked.replyText
     : buildEmptyReply(question);
+  const procedurePacket = ranked && ranked.procedurePacket ? ranked.procedurePacket : null;
+  const semanticFields = procedurePacket ? buildProcedureSemanticFields(procedurePacket, { maxQuickReplies: 3 }) : {
+    nextSteps: [],
+    warnings: [],
+    tasks: [],
+    quickReplies: [],
+    evidenceRefs: []
+  };
 
   return {
     ok: true,
@@ -151,7 +182,13 @@ async function generateFreeRetrievalReply(params, deps) {
     cityPackCandidates: safeCityPackCandidates,
     injectionFindings,
     blockedReasons,
-    replyText: trimForLineMessage(replyText)
+    replyText: trimForLineMessage(replyText),
+    procedurePacket,
+    nextSteps: semanticFields.nextSteps,
+    warnings: semanticFields.warnings,
+    tasks: semanticFields.tasks,
+    quickReplies: semanticFields.quickReplies,
+    evidenceRefs: semanticFields.evidenceRefs
   };
 }
 

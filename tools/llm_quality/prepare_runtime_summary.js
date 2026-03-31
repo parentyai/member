@@ -109,7 +109,17 @@ const STRICT_RUNTIME_REQUIRED_CONVERSATION_QUALITY_KEYS = Object.freeze([
   'officialOnlySatisfiedRate',
   'followupResolutionRate',
   'contextualResumeHandledRate',
-  'avgUnsupportedClaimCount'
+  'avgUnsupportedClaimCount',
+  'oneTurnUtilityRate',
+  'procedureScaffoldCoverageRate',
+  'relevanceFitRate',
+  'offTargetAnswerRate',
+  'decisionReadinessRate',
+  'dependencyExplicitnessRate',
+  'fakeSpecificityRate',
+  'userEffortShiftRate',
+  'procedureKnowledgeUseRate',
+  'transformBadFactCarryRate'
 ]);
 
 function missingStrictRuntimeKeys(payload) {

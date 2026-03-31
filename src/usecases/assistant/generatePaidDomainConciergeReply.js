@@ -3,6 +3,10 @@
 const { buildConciergeContextSnapshot } = require('./concierge/composeConciergeReply');
 const { detectConversationIntentHits } = require('../../domain/llm/router/normalizeConversationIntent');
 const { resolveFollowupIntent } = require('../../domain/llm/orchestrator/followupIntentResolver');
+const {
+  resolveProcedureReplyPacket,
+  buildProcedureSemanticFields
+} = require('../../domain/llm/procedureKnowledge/resolveProcedureReplyPacket');
 
 const FORBIDDEN_REPLY_PATTERN = /(FAQ候補|CityPack候補|根拠キー|score=|-\s*\[\]|関連情報です)/g;
 const TASK_LABEL_MAP = Object.freeze({
@@ -27,9 +31,9 @@ const DOMAIN_SPECS = Object.freeze({
     pitfall: '審査に必要な書類が不足すると契約手続きが止まりやすくなります。',
     question: '希望エリアと入居時期を教えてもらえますか？',
     directAnswers: {
-      docs_required: '住居契約では、本人確認と収入確認に使う書類を先にそろえるのが近道です。',
-      appointment_needed: '内見は予約が必要な物件が多いので、候補を絞って先に空き枠を確認しましょう。',
-      next_step: '次は、条件を1つ減らして候補物件を3件まで絞ると進みやすいです。'
+      docs_required: '必要書類は物件ごとに差があるので、まず申込予定の listing か管理会社の application requirements を確認するのが確実です。',
+      appointment_needed: '内見予約要否は listing の内見枠か管理会社・broker の案内で確認できます。',
+      next_step: 'いまやる一手は、must-have 条件を3つに絞って候補物件を3件まで減らすことです。'
     }
   },
   school: {
@@ -38,9 +42,9 @@ const DOMAIN_SPECS = Object.freeze({
     pitfall: '提出書類の不足や期限超過で入学手続きが止まりやすくなります。',
     question: '学年と希望エリアを教えてもらえますか？',
     directAnswers: {
-      docs_required: '学校手続きで先に見るのは、対象校の必要書類一覧と受付期限です。',
-      appointment_needed: '面談や学校登録は予約制のことが多いので、対象校が決まったら先に空き枠を確認しましょう。',
-      next_step: '学校手続きの次は、対象校を1校に絞って必要書類を先に確定するのが最短です。'
+      docs_required: '必要書類は school ごとに差があるので、まず対象校か district の enrollment / registration ページにある一覧を確認するのが確実です。',
+      appointment_needed: '予約要否は district enrollment office か対象校の registration / appointment 案内で確認できます。',
+      next_step: 'いまやる一手は、対象校か district を1つ決めて enrollment / registration ページの必要書類と受付スケジュールを見ることです。'
     }
   },
   ssn: {
@@ -49,9 +53,9 @@ const DOMAIN_SPECS = Object.freeze({
     pitfall: '本人確認書類の不備があると再訪が必要になりやすくなります。',
     question: 'いまの在留ステータスを教えてもらえますか？',
     directAnswers: {
-      docs_required: 'SSNは本人確認書類と在留資格が分かる書類を先にそろえるのが最優先です。',
-      appointment_needed: '窓口は予約が必要な地域もあるので、最寄り窓口の予約要否を先に確認しましょう。',
-      next_step: '次は、必要書類を1つの一覧にまとめてから窓口の予約要否を確認するのが確実です。'
+      docs_required: '必要書類は在留・就労条件で変わるので、まず SSA の document requirements と自分の status に合う組み合わせを確認するのが確実です。',
+      appointment_needed: '予約要否は行く office ごとに違うので、SSA office locator と office 案内を確認するのが確実です。',
+      next_step: 'いまやる一手は、行く SSA office を1つ決めて document requirements と予約要否を確認することです。'
     }
   },
   banking: {
@@ -60,9 +64,9 @@ const DOMAIN_SPECS = Object.freeze({
     pitfall: '住所証明の条件が合わないと口座開設が遅れやすくなります。',
     question: '使いたい銀行か用途を教えてもらえますか？',
     directAnswers: {
-      docs_required: '口座開設は本人確認と住所証明の2点を先にそろえると早いです。',
-      appointment_needed: '支店手続きは予約制のことがあるので、来店前に予約可否を確認してください。',
-      next_step: '次は、口座種別を1つ決めて必要書類を先に確定するのが最短です。'
+      docs_required: '必要書類は bank と口座種別で変わるので、まず候補 bank の account opening requirements を確認するのが確実です。',
+      appointment_needed: '来店予約要否は bank の branch appointment page か口座開設案内で確認できます。',
+      next_step: 'いまやる一手は、bank と account type を1つに絞って口座開設条件ページを見ることです。'
     }
   },
   general: {
@@ -666,16 +670,19 @@ function isParentFriendlyOneLinePrompt(messageText) {
 }
 
 function buildInitialCheckPairLine(domainIntent) {
-  if (domainIntent === 'school') return '最初に確認するのは、受付期限と必要書類の2点です';
-  if (domainIntent === 'housing') return '最初に確認するのは、契約条件と住所証明の2点です';
-  if (domainIntent === 'ssn') return '最初に確認するのは、必要書類と窓口予約の2点です';
-  if (domainIntent === 'banking') return '最初に確認するのは、必要書類と来店予約の2点です';
-  return '最初に確認するのは、期限と必要書類の2点です';
+  if (domainIntent === 'school') return '最初に見るのは、対象校かdistrictの enrollment / registration ページにある必要書類一覧と受付スケジュールです';
+  if (domainIntent === 'housing') return '最初に見るのは、申込条件と application requirements です';
+  if (domainIntent === 'ssn') return '最初に見るのは、SSA の必要書類案内と行く office の予約要否です';
+  if (domainIntent === 'banking') return '最初に見るのは、候補 bank の口座条件と必要書類案内です';
+  return '最初に見るのは、確認先と必要条件です';
 }
 
 function buildSinglePriorityPickLine(domainIntent) {
-  if (domainIntent === 'housing') return '先に確認するのは契約条件です';
-  return '先に確認するのは期限です';
+  if (domainIntent === 'housing') return '先に確認するのは、申込条件です';
+  if (domainIntent === 'school') return '先に確認するのは、受付スケジュールです';
+  if (domainIntent === 'ssn') return '先に確認するのは、行く office の予約要否です';
+  if (domainIntent === 'banking') return '先に確認するのは、口座条件です';
+  return '先に確認するのは、確認先です';
 }
 
 function buildSingleCityCheckpointLine(domainIntent) {
@@ -692,61 +699,74 @@ function buildCityUnknownCommonGuardLine(domainIntent) {
 
 function buildOfficialSinglePointLine(domainIntent) {
   if (domainIntent === 'housing') {
-    return 'あとで公式確認が必要なのは、契約条件が公式窓口の案内と一致しているかです';
+    return 'あとで確認すべきなのは、rule-sensitive な費用や disclosure が自治体や管理会社の案内と一致しているかです';
   }
-  return 'あとで公式確認が必要なのは、受付期限が公式窓口の案内と一致しているかです';
+  if (domainIntent === 'school') {
+    return 'あとで公式確認が必要なのは、district の受付スケジュールと enrollment 条件が最新かどうかです';
+  }
+  return 'あとで公式確認が必要なのは、窓口条件が最新案内と一致しているかです';
 }
 
 function buildSchoolDocsChecklistLine() {
-  return '対象校の必要書類一覧と受付期限です';
+  return '対象校か district の enrollment / registration ページにある必要書類一覧です';
 }
 
 function buildDocumentPairLine(domainIntent) {
   if (domainIntent === 'school') return buildSchoolDocsChecklistLine();
-  if (domainIntent === 'housing') return '住所証明と本人確認書類です';
-  if (domainIntent === 'ssn') return '本人確認書類と在留資格書類です';
-  if (domainIntent === 'banking') return '本人確認書類と住所証明です';
-  return '住所証明と身分証です';
+  if (domainIntent === 'housing') return '申込予定の物件や管理会社が出している application requirements 一覧です';
+  if (domainIntent === 'ssn') return 'SSA の document requirements と自分の status に対応する必要書類一覧です';
+  if (domainIntent === 'banking') return '候補 bank の口座開設ページにある必要書類一覧です';
+  return '対象手続きの official page にある必要条件一覧です';
 }
 
 function buildReservationPointerLine(domainIntent) {
-  if (domainIntent === 'school') return '予約要否は、学校か教育窓口の公式案内ページを見れば分かります';
-  if (domainIntent === 'housing') return '予約要否は、住宅窓口か物件案内ページを見れば分かります';
-  return '予約要否は、公式窓口の案内ページを見れば分かります';
+  if (domainIntent === 'school') return '予約要否は、district enrollment office か対象校の registration / appointment 案内を見れば分かります';
+  if (domainIntent === 'housing') return '予約要否は、listing の内見枠か管理会社・broker の案内を見れば分かります';
+  if (domainIntent === 'ssn') return '予約要否は、SSA office locator と office 案内を見れば分かります';
+  if (domainIntent === 'banking') return '予約要否は、bank の branch appointment page か口座開設案内を見れば分かります';
+  return '予約要否は、対象手続きの案内ページを見れば分かります';
 }
 
 function buildSingleTodoImperativeLine(domainIntent) {
-  if (domainIntent === 'school') return '受付期限を先に確認してください';
-  if (domainIntent === 'housing') return '契約条件を先に確認してください';
-  if (domainIntent === 'ssn') return '必要書類を先にそろえてください';
-  if (domainIntent === 'banking') return '必要書類を先に確認してください';
-  return '期限を先に確認してください';
+  if (domainIntent === 'school') return '対象校か district の enrollment / registration ページを開いてください';
+  if (domainIntent === 'housing') return 'must-have 条件を3つに絞ってください';
+  if (domainIntent === 'ssn') return '行く SSA office を1つ決めてください';
+  if (domainIntent === 'banking') return 'bank と口座種別を1つに絞ってください';
+  return '優先する手続きを1件に絞ってください';
 }
 
 function buildTwoLineCloseLines(domainIntent) {
   if (domainIntent === 'school') {
-    return ['先に受付期限を確認する', '次に必要書類か予約要否を確認する'];
+    return ['先に受付スケジュールを見る', '次に必要書類一覧と予約要否を確認する'];
   }
   if (domainIntent === 'housing') {
-    return ['先に契約条件を確認する', '次に必要書類か内見予約を確認する'];
+    return ['先に申込条件を見る', '次に必要書類か内見予約を確認する'];
   }
-  return ['先に期限を確認する', '次に必要書類か予約要否を確認する'];
+  if (domainIntent === 'ssn') {
+    return ['先に行く office を決める', '次に必要書類と予約要否を確認する'];
+  }
+  return ['先に確認先を決める', '次に必要条件か予約要否を確認する'];
 }
 
 function buildInitialKickoffGuideLine(domainIntent) {
-  if (domainIntent === 'school') return '最初に見るのは、学校の期限が出ている公式案内です';
-  if (domainIntent === 'housing') return '最初に見るのは、住まい手続きの期限が出ている公式案内です';
-  return '最初に見るのは、期限が出ている公式案内です';
+  if (domainIntent === 'school') return '最初に見るのは、対象校か district の enrollment / registration ページです';
+  if (domainIntent === 'housing') return '最初に見るのは、候補物件か管理会社の application requirements です';
+  if (domainIntent === 'ssn') return '最初に見るのは、SSA の必要書類案内です';
+  if (domainIntent === 'banking') return '最初に見るのは、候補 bank の口座開設条件ページです';
+  return '最初に見るのは、対象手続きの確認先ページです';
 }
 
 function buildParentFriendlyOneLine(domainIntent) {
   if (domainIntent === 'school') {
-    return '最初に期限を見てから、必要な書類を決めれば大丈夫です';
+    return '最初は、学校のページで必要書類と受付スケジュールを見るところからで大丈夫です';
   }
   if (domainIntent === 'housing') {
-    return '最初に条件を見てから、必要な書類を決めれば進めやすいです';
+    return '最初は、住みたい条件を3つまでに絞ってから申込条件を見ると進めやすいです';
   }
-  return '最初に期限を見てから、必要な書類を決めれば進めやすいです';
+  if (domainIntent === 'ssn') {
+    return '最初は、行く office と必要書類を見るところからで大丈夫です';
+  }
+  return '最初は、確認先と必要条件を見るところからで大丈夫です';
 }
 
 function buildStrategicHumanReplyLines(params) {
@@ -1490,6 +1510,21 @@ function generatePaidDomainConciergeReply(params) {
     recoverySignal: payload.recoverySignal === true,
     requestContract: payload.requestContract
   });
+  const procedurePacket = resolveProcedureReplyPacket({
+    messageText: payload.messageText,
+    domainIntent,
+    contextResumeDomain: payload.contextResumeDomain,
+    followupIntent,
+    requestContract: payload.requestContract,
+    supportingSourceRefs: []
+  });
+  const semanticFields = buildProcedureSemanticFields(procedurePacket, { maxQuickReplies: 3 });
+  const atoms = concise.atoms && typeof concise.atoms === 'object' ? concise.atoms : {};
+  const mergedAtoms = Object.assign({}, atoms, {
+    nextActions: Array.isArray(atoms.nextActions) && atoms.nextActions.length > 0
+      ? atoms.nextActions
+      : semanticFields.nextSteps
+  });
 
   return {
     ok: true,
@@ -1504,7 +1539,13 @@ function generatePaidDomainConciergeReply(params) {
     conciseModeApplied: true,
     preserveReplyText: concise.preserveReplyText === true,
     replyText: concise.replyText,
-    atoms: concise.atoms,
+    atoms: mergedAtoms,
+    procedurePacket,
+    nextSteps: semanticFields.nextSteps,
+    warnings: semanticFields.warnings,
+    tasks: semanticFields.tasks,
+    quickReplies: semanticFields.quickReplies,
+    evidenceRefs: semanticFields.evidenceRefs,
     auditMeta: buildDomainAuditMeta({
       domainIntent,
       blockedReason: payload.blockedReason || null

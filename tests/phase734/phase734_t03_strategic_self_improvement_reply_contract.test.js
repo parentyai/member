@@ -184,6 +184,14 @@ test('phase734: strategic self-improvement prompts stay human-direct under fixed
     const replyContract = scenario.reply_contract || {};
 
     assert.equal(result.ok, true, `${scenario.case_id}: reply generation failed`);
+    assert.equal(typeof result.procedurePacket, 'object', `${scenario.case_id}: missing procedure packet`);
+    assert.equal(Array.isArray(result.procedurePacket.overallFlow), true, `${scenario.case_id}: missing overall flow`);
+    assert.equal(result.procedurePacket.overallFlow.length >= 1, true, `${scenario.case_id}: empty overall flow`);
+    assert.equal(typeof result.procedurePacket.nextBestAction, 'string', `${scenario.case_id}: missing next best action`);
+    assert.equal(result.procedurePacket.nextBestAction.length > 0, true, `${scenario.case_id}: empty next best action`);
+    assert.equal(Array.isArray(result.procedurePacket.troublePoints), true, `${scenario.case_id}: missing trouble points`);
+    assert.equal(Array.isArray(result.procedurePacket.goodToDo), true, `${scenario.case_id}: missing good-to-do list`);
+    assert.equal(Array.isArray(result.procedurePacket.officialCheckTargets), true, `${scenario.case_id}: missing official check targets`);
     assert.equal(
       countLines(replyText) <= Number(replyContract.max_lines || 99),
       true,
@@ -205,6 +213,9 @@ test('phase734: strategic self-improvement prompts stay human-direct under fixed
     (Array.isArray(scenario.forbidden_reply_substrings) ? scenario.forbidden_reply_substrings : []).forEach((token) => {
       assert.equal(replyText.includes(token), false, `${scenario.case_id}: forbidden token ${token}: ${replyText}`);
     });
+    ['FAQ候補', 'CityPack候補', '根拠キー'].forEach((token) => {
+      assert.equal(replyText.includes(token), false, `${scenario.case_id}: legacy retrieval dump leaked: ${replyText}`);
+    });
   });
 });
 
@@ -222,8 +233,17 @@ test('phase734: casual contract reply keeps strategic direct answer for reservat
   assert.equal(reply.ok, true);
   assert.equal(countLines(reply.replyText), 1);
   assert.equal(reply.replyText.includes('予約'), true);
-  assert.equal(reply.replyText.includes('窓口') || reply.replyText.includes('公式'), true);
+  assert.equal(
+    reply.replyText.includes('窓口')
+      || reply.replyText.includes('公式')
+      || reply.replyText.includes('office')
+      || reply.replyText.includes('案内'),
+    true
+  );
   assert.equal(hasQuestion(reply.replyText), false);
+  assert.equal(typeof reply.procedurePacket, 'object');
+  assert.equal(Array.isArray(reply.nextSteps), true);
+  assert.equal(reply.nextSteps.length >= 1, true);
 });
 
 test('phase734: focused explore prompts stay grounded instead of collapsing to generic fallback', () => {
@@ -303,7 +323,12 @@ test('phase734: verifier fallback stays specific for focused explore prompts', (
   });
 
   assert.equal(officialVerified.selected.replyText.includes('公式'), true);
-  assert.equal(officialVerified.selected.replyText.includes('窓口') || officialVerified.selected.replyText.includes('期限'), true);
+  assert.equal(
+    officialVerified.selected.replyText.includes('窓口')
+      || officialVerified.selected.replyText.includes('期限')
+      || officialVerified.selected.replyText.includes('受付スケジュール'),
+    true
+  );
   assert.equal(hasQuestion(officialVerified.selected.replyText), false);
 });
 
@@ -330,7 +355,11 @@ test('phase734: verifier fallback converts awkward close-out into strategic two-
     evidenceSufficiency: 'full'
   });
 
-  assert.equal(verified.selected.replyText.includes('期限'), true);
+  assert.equal(
+    verified.selected.replyText.includes('期限')
+      || verified.selected.replyText.includes('受付スケジュール'),
+    true
+  );
   assert.equal(verified.selected.replyText.includes('必要書類') || verified.selected.replyText.includes('予約'), true);
   assert.equal(countLines(verified.selected.replyText), 2);
 });

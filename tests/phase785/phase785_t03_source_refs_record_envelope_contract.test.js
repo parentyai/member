@@ -55,7 +55,14 @@ test('phase785: sourceRefsRepo writes and updates recordEnvelope for source refs
       url: 'https://example.gov/source',
       sourceType: 'official',
       requiredLevel: 'required',
-      authorityLevel: 'federal'
+      authorityLevel: 'federal',
+      domain: 'school',
+      procedureKey: 'school_enrollment',
+      regionScope: 'ny::new-york',
+      applicability: 'district enrollment confirmation',
+      trustNotes: 'community blog corroborated by district page',
+      corroborationCount: 2,
+      staleHandling: 'confirm_before_use'
     });
     const created = docs.get('sr_phase785');
     assert.ok(created.recordEnvelope && typeof created.recordEnvelope === 'object');
@@ -63,13 +70,24 @@ test('phase785: sourceRefsRepo writes and updates recordEnvelope for source refs
     assert.equal(created.recordEnvelope.record_type, 'source_ref');
     assert.equal(created.recordEnvelope.authority_tier, 'T1_OFFICIAL_OPERATION');
     assert.equal(created.recordEnvelope.binding_level, 'POLICY');
+    assert.equal(created.procedureDomain, 'school');
+    assert.equal(created.procedureKey, 'school_enrollment');
+    assert.equal(created.regionScope, 'ny::new-york');
+    assert.equal(created.corroborationCount, 2);
 
-    await repo.updateSourceRef('sr_phase785', { status: 'needs_review', sourceType: 'community' });
+    await repo.updateSourceRef('sr_phase785', {
+      status: 'needs_review',
+      sourceType: 'community',
+      trustNotes: 'operator reviewed community write-up',
+      corroborationCount: 3
+    });
     const updated = docs.get('sr_phase785');
     assert.ok(updated.recordEnvelope && typeof updated.recordEnvelope === 'object');
     assert.equal(updated.recordEnvelope.record_id, 'sr_phase785');
     assert.equal(updated.recordEnvelope.record_type, 'source_ref');
     assert.equal(updated.recordEnvelope.authority_tier, 'T4_COMMUNITY');
+    assert.equal(updated.trustNotes, 'operator reviewed community write-up');
+    assert.equal(updated.corroborationCount, 3);
   } finally {
     if (savedInfra) require.cache[infraPath] = savedInfra;
     else delete require.cache[infraPath];

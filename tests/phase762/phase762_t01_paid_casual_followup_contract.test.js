@@ -15,10 +15,16 @@ test('phase762: paid casual uses domain follow-up direct answer in concise mode'
 
   assert.equal(result.ok, true);
   assert.equal(result.mode, 'casual');
-  assert.equal(/SSN/i.test(result.replyText), true);
+  assert.equal(/SSN|SSA/i.test(result.replyText), true);
   assert.equal(result.replyText.includes('優先したい手続きを1つだけ教えてください。'), false);
   const lines = String(result.replyText || '').split('\n').map((line) => line.trim()).filter(Boolean);
   assert.equal(lines.length <= 2, true);
+  assert.equal(typeof result.procedurePacket, 'object');
+  assert.equal(result.procedurePacket.domainIntent, 'ssn');
+  assert.equal(Array.isArray(result.nextSteps), true);
+  assert.equal(result.nextSteps.length >= 1, true);
+  assert.equal(Array.isArray(result.procedurePacket.officialCheckTargets), true);
+  assert.equal(result.procedurePacket.officialCheckTargets.length >= 1, true);
 });
 
 test('phase762: paid casual avoids repeating recent generic prompt line', () => {
@@ -33,6 +39,8 @@ test('phase762: paid casual avoids repeating recent generic prompt line', () => 
   assert.equal(result.mode, 'casual');
   assert.equal(result.replyText.includes(repeatedHint), false);
   assert.equal(result.replyText.includes('優先したい手続きを1つだけ教えてください。'), false);
+  assert.equal(typeof result.procedurePacket, 'object');
+  assert.equal(Array.isArray(result.nextSteps), true);
 });
 
 test('phase762: paid casual kickoff guide prompt returns one-line official pointer', () => {
@@ -51,10 +59,9 @@ test('phase762: paid casual kickoff guide prompt returns one-line official point
   assert.equal(result.mode, 'casual');
   const lines = String(result.replyText || '').split('\n').map((line) => line.trim()).filter(Boolean);
   assert.equal(lines.length, 1);
-  assert.match(result.replyText, /期限/);
-  assert.match(result.replyText, /公式/);
-  assert.match(result.replyText, /案内/);
+  assert.match(result.replyText, /確認先|page|ページ/);
   assert.equal(/[?？]$/.test(result.replyText), false);
+  assert.equal(result.procedurePacket.replyObjective, 'decide_next_step');
 });
 
 test('phase762: paid casual journey close prompt returns two ordered lines', () => {
@@ -72,5 +79,8 @@ test('phase762: paid casual journey close prompt returns two ordered lines', () 
   assert.equal(result.ok, true);
   assert.equal(result.mode, 'casual');
   const lines = String(result.replyText || '').split('\n').map((line) => line.trim()).filter(Boolean);
-  assert.deepEqual(lines, ['先に期限を確認する。', '次に必要書類か予約要否を確認する。']);
+  assert.deepEqual(lines, ['先に確認先を決める。', '次に必要条件か予約要否を確認する。']);
+  assert.equal(typeof result.procedurePacket, 'object');
+  assert.equal(Array.isArray(result.procedurePacket.overallFlow), true);
+  assert.equal(result.procedurePacket.overallFlow.length >= 1, true);
 });
