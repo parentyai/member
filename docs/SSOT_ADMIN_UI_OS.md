@@ -214,6 +214,9 @@ ServicePhase（1〜4）は SSOT として保持される（`docs/SSOT_SERVICE_PH
   - readiness v2 summary
   - trace join / operator resolution metrics
 - 既存の `LLM Route & Trace`、`LLM Runtime Status`、`Quality Scorecard`、`Slice-first Board` は維持する。
+- `履歴と品質` には add-only で `情報源レビュー` と `手続き知識レビュー` を追加できる。
+  - `情報源レビュー` は `avgRawSourceLayerCount` / `avgCommunityRawSourceCount` / `avgOfficialRawSourceCount` / `avgSourceAuthorityScore` / `avgSourceFreshnessScore` / `sourceReadinessDecisions` / `sourceReadinessDecisionSources` / `knowledgeGroundingKinds` を read-only で表示する。
+  - `手続き知識レビュー` は `procedureKnowledgeUseRate` / `avgProcedureKnowledgeEntryCount` / `procedureScaffoldCoverageRate` / `avgProcedureScaffoldPartCount` / `oneTurnUtilityRate` / `decisionReadinessRate` / `dependencyExplicitnessRate` / `relevanceFitRate` / `offTargetAnswerRate` / `fakeSpecificityRate` / `userEffortShiftRate` / `transformBadFactCarryRate` / `avgDecisionCriticalMissingFactCount` / `avgOfficialCheckTargetCount` / `knowledgeRejectedReasons` を read-only で表示する。
 
 ## Quality Patrol Local Desktop Summary（PR5 add-only）
 - `/admin/app?pane=quality-patrol` は既存 pane / route を維持したまま、`LINE Desktop Patrol (local)` の read-only panel を detail 側へ追加する。
