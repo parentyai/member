@@ -51,9 +51,14 @@ struct ReadinessResult: Codable {
     let contextResolved: Bool
     let expectedChatTitle: String?
     let expectedTitleMatched: Bool?
+    let targetSelectionAttempted: Bool?
+    let targetMatchedHeuristic: Bool?
+    let searchQueryApplied: Bool?
+    let sidebarVisibleRows: Int?
     let headerTextObserved: [String]
     let windowTitle: String?
     let windowFrame: WindowFrame?
+    let selectedRowIndex: Int?
     let error: String?
 }
 
@@ -568,9 +573,14 @@ func runReadiness(payload: Payload) -> ReadinessResult {
             contextResolved: false,
             expectedChatTitle: expectedTitle,
             expectedTitleMatched: nil,
+            targetSelectionAttempted: nil,
+            targetMatchedHeuristic: nil,
+            searchQueryApplied: nil,
+            sidebarVisibleRows: nil,
             headerTextObserved: [],
             windowTitle: nil,
             windowFrame: nil,
+            selectedRowIndex: nil,
             error: "accessibility_not_trusted"
         )
     }
@@ -584,16 +594,29 @@ func runReadiness(payload: Payload) -> ReadinessResult {
             contextResolved: false,
             expectedChatTitle: expectedTitle,
             expectedTitleMatched: nil,
+            targetSelectionAttempted: nil,
+            targetMatchedHeuristic: nil,
+            searchQueryApplied: nil,
+            sidebarVisibleRows: nil,
             headerTextObserved: [],
             windowTitle: nil,
             windowFrame: nil,
+            selectedRowIndex: nil,
             error: "line_not_running"
         )
     }
     do {
         let context = try resolveContext()
         let header = headerTextObserved(context: context)
-        let matched = expectedTitle.map { headerMatchesExpected(header, expectedTitle: $0) }
+        var readinessHeader = header
+        var matched = expectedTitle.map { headerMatchesExpected(header, expectedTitle: $0) }
+        var selectionEvidence: (attempted: Bool, matched: Bool, sidebarRows: Int, appliedQuery: Bool, selectedRowIndex: Int?, headerTextObserved: [String])? = nil
+        if matched == false, let expectedTitle, !expectedTitle.isEmpty {
+            let selection = try selectTarget(context: context, titleContains: expectedTitle)
+            selectionEvidence = selection
+            readinessHeader = selection.headerTextObserved
+            matched = selection.matched
+        }
         return ReadinessResult(
             ok: true,
             ready: matched ?? true,
@@ -603,9 +626,14 @@ func runReadiness(payload: Payload) -> ReadinessResult {
             contextResolved: true,
             expectedChatTitle: expectedTitle,
             expectedTitleMatched: matched,
-            headerTextObserved: header,
+            targetSelectionAttempted: selectionEvidence?.attempted,
+            targetMatchedHeuristic: selectionEvidence?.matched,
+            searchQueryApplied: selectionEvidence?.appliedQuery,
+            sidebarVisibleRows: selectionEvidence?.sidebarRows,
+            headerTextObserved: readinessHeader,
             windowTitle: context.windowTitle,
             windowFrame: context.windowFrame.map { WindowFrame(x: $0.origin.x, y: $0.origin.y, width: $0.size.width, height: $0.size.height) },
+            selectedRowIndex: selectionEvidence?.selectedRowIndex,
             error: matched == false ? "expected_title_not_visible" : nil
         )
     } catch {
@@ -618,9 +646,14 @@ func runReadiness(payload: Payload) -> ReadinessResult {
             contextResolved: false,
             expectedChatTitle: expectedTitle,
             expectedTitleMatched: nil,
+            targetSelectionAttempted: nil,
+            targetMatchedHeuristic: nil,
+            searchQueryApplied: nil,
+            sidebarVisibleRows: nil,
             headerTextObserved: [],
             windowTitle: nil,
             windowFrame: nil,
+            selectedRowIndex: nil,
             error: String(describing: error)
         )
     }

@@ -43,14 +43,15 @@ Local-only runbook for the LINE patrol MCP harness.
    - `send_mode=execute` only when intentional
    - optional `expected_reply_substrings[]` / `forbidden_reply_substrings[]`
 9. for the safest operator flow, prefer `desktop-self-test`, which aborts before send when `desktop_readiness.ready` is not true
-10. for the strategic self-improvement loop, prefer `desktop-self-improvement`, which sends the tracked core 10-case regression batch plus a seeded rotating explore pack of 5 cases by default and writes one aggregated review summary under `artifacts/line_desktop_patrol/self_improvement_runs/<batch_run_id>/summary.json`
-11. before the first send, confirm the local hourly budget can absorb the selected suite size. `desktop-self-improvement` now checks this automatically and fails closed with `stage=budget_preflight` when the remaining budget is too small.
-12. use `--explore-count 0` when you need core-only regression mode, or pass `--seed <value>` to replay the same explore selection later.
-13. use `--explore-case-ids case_a,case_b` when you want to rerun specific failed explore cases without sampling a new explore pack.
-14. when a blocking patrol guard fires mid-batch, later cases are recorded as blocked with the same code instead of pretending they were observed.
-15. if local policy keeps `proposal_mode=local_queue`, failed cases enqueue their eval-backed proposals into `artifacts/line_desktop_patrol/proposals/queue.jsonl`
-16. if local policy raises `auto_apply_level=patch_draft`, the batch also prepares human-reviewed code edit task bundles under `artifacts/line_desktop_patrol/proposals/promotions/`
-17. if readiness or a loop returns `desktop_session_logged_out`, stop immediately and sign back into LINE Desktop before retrying any execute flow
+10. `desktop_readiness` does not send a message, but when `expected_chat_title` is configured it may search/select the sidebar target once so readiness and the later loop share the same reachability heuristic
+11. for the strategic self-improvement loop, prefer `desktop-self-improvement`, which sends the tracked core 10-case regression batch plus a seeded rotating explore pack of 5 cases by default and writes one aggregated review summary under `artifacts/line_desktop_patrol/self_improvement_runs/<batch_run_id>/summary.json`
+12. before the first send, confirm the local hourly budget can absorb the selected suite size. `desktop-self-improvement` now checks this automatically and fails closed with `stage=budget_preflight` when the remaining budget is too small.
+13. use `--explore-count 0` when you need core-only regression mode, or pass `--seed <value>` to replay the same explore selection later.
+14. use `--explore-case-ids case_a,case_b` when you want to rerun specific failed explore cases without sampling a new explore pack.
+15. when a blocking patrol guard fires mid-batch, later cases are recorded as blocked with the same code instead of pretending they were observed.
+16. if local policy keeps `proposal_mode=local_queue`, failed cases enqueue their eval-backed proposals into `artifacts/line_desktop_patrol/proposals/queue.jsonl`
+17. if local policy raises `auto_apply_level=patch_draft`, the batch also prepares human-reviewed code edit task bundles under `artifacts/line_desktop_patrol/proposals/promotions/`
+18. if readiness or a loop returns `desktop_session_logged_out`, stop immediately and sign back into LINE Desktop before retrying any execute flow
 
 ## Operator safe sequence
 1. `npm run line-desktop-patrol:doctor`

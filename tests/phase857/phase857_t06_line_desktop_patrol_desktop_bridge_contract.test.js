@@ -9,6 +9,7 @@ const {
   evaluateConversationLoop,
   extractAppendedLines,
   parseArgs,
+  runDesktopReadiness,
   toVisibleEntries,
 } = require('../../tools/line_desktop_patrol/desktop_ui_bridge');
 
@@ -150,6 +151,42 @@ test('phase857: desktop bridge maps logged-out session failures to a blocking de
     detectBridgeFailureCode('desktop_session_logged_out'),
     'desktop_session_logged_out'
   );
+});
+
+test('phase857: desktop readiness preserves target-selection evidence when sidebar fallback confirms the title', () => {
+  const readiness = runDesktopReadiness(
+    { expectedChatTitle: 'メンバー' },
+    {
+      execFileSync: () => JSON.stringify({
+        ok: true,
+        ready: true,
+        transport: 'line_desktop_user_account',
+        accessibilityTrusted: true,
+        lineRunning: true,
+        contextResolved: true,
+        expectedChatTitle: 'メンバー',
+        expectedTitleMatched: true,
+        targetSelectionAttempted: true,
+        targetMatchedHeuristic: true,
+        searchQueryApplied: true,
+        sidebarVisibleRows: 4,
+        selectedRowIndex: 0,
+        headerTextObserved: ['メンバー★ビ'],
+        windowTitle: 'LINE',
+        windowFrame: { x: 0, y: 25, width: 960, height: 1390 },
+        error: null,
+      }),
+    }
+  );
+
+  assert.equal(readiness.ready, true);
+  assert.equal(readiness.expectedTitleMatched, true);
+  assert.equal(readiness.targetSelectionAttempted, true);
+  assert.equal(readiness.targetMatchedHeuristic, true);
+  assert.equal(readiness.searchQueryApplied, true);
+  assert.equal(readiness.sidebarVisibleRows, 4);
+  assert.equal(readiness.selectedRowIndex, 0);
+  assert.deepEqual(readiness.headerTextObserved, ['メンバー★ビ']);
 });
 
 test('phase857: transcript helpers preserve visible line ordering', () => {
