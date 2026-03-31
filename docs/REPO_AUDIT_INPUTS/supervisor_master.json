@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-30T22:05:24-04:00",
-  "gitCommit": "1edf672609751be1b5a8c07f2929231a9f78d454",
-  "branch": "codex/reply-ux-80-T018",
-  "sourceDigest": "a15426f222d4f456b4fe0316d8c5a553c23b37b4330c52014ffeff8bca03e52b",
+  "generatedAt": "2026-03-31T19:27:08-04:00",
+  "gitCommit": "3901f9e1571af34ac4a6aa208ac794190f972f20",
+  "branch": "codex/line-reply-fit-fix-T019",
+  "sourceDigest": "6dfb2dcd753f5bf0bfbbe106ebb54b624c549974ec2009330eff22673f909084",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
