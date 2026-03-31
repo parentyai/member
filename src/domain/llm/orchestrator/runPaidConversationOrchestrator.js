@@ -151,11 +151,15 @@ function shouldPreserveDirectAnswerFlow(packet, strategyPlan, selected) {
   const candidate = selected && typeof selected === 'object' ? selected : {};
   const domainIntent = normalizeText(payload.normalizedConversationIntent).toLowerCase();
   const requestShape = normalizeText(payload.requestShape).toLowerCase();
+  const answerability = normalizeText(payload.answerability || (payload.requestContract && payload.requestContract.answerability)).toLowerCase();
   const knowledgeScope = normalizeText(payload.knowledgeScope).toLowerCase() || 'none';
   const genericFallbackSlice = normalizeText(payload.genericFallbackSlice).toLowerCase();
   const strategy = normalizeText(plan.strategy).toLowerCase();
   const fallbackType = normalizeText(plan.fallbackType).toLowerCase();
   const selectedKind = normalizeText(candidate.kind).toLowerCase();
+  const detailObligations = Array.isArray(payload.detailObligations)
+    ? payload.detailObligations.map((item) => normalizeText(item).toLowerCase()).filter(Boolean)
+    : [];
   const requestShapeDirectAnswer = ['compare', 'correction', 'rewrite', 'summarize', 'message_template', 'criteria', 'followup_continue'].includes(requestShape)
     && (selectedKind === 'domain_concierge_candidate' || selectedKind === 'continuation_candidate' || selectedKind === 'structured_answer_candidate');
   const generalDirectAnswer = domainIntent === 'general'
@@ -185,11 +189,17 @@ function shouldPreserveDirectAnswerFlow(packet, strategyPlan, selected) {
       'saved_faq_candidate',
       'housing_knowledge_candidate'
     ].includes(selectedKind);
+  const schoolLowFrictionDirectAnswer = domainIntent === 'school'
+    && requestShape === 'answer'
+    && answerability === 'answer_now'
+    && detailObligations.includes('avoid_question_back')
+    && selectedKind === 'domain_concierge_candidate';
   return requestShapeDirectAnswer === true
     || generalDirectAnswer === true
     || utilityTransformDirectAnswer === true
     || mixedDomainDirectAnswer === true
-    || broadKickoffDirectAnswer === true;
+    || broadKickoffDirectAnswer === true
+    || schoolLowFrictionDirectAnswer === true;
 }
 
 function resolveMixedDomainCanonicalReply(replyText, packet, strategyPlan) {
@@ -246,7 +256,7 @@ function preserveDirectAnswerReadiness(readiness, packet, strategyPlan, selected
   return Object.assign({}, base, {
     decision: 'allow',
     safeResponseMode: 'answer',
-    reasonCodes: uniqueReasonCodes([].concat(base.reasonCodes || [], 'general_direct_answer_preserved'))
+    reasonCodes: uniqueReasonCodes([].concat(base.reasonCodes || [], 'direct_answer_preserved'))
   });
 }
 

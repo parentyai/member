@@ -61,6 +61,32 @@ function matchesAllowedIntent(allowedIntents, intent) {
   return normalized.includes(normalizedIntent) || normalized.includes('GENERAL') || normalized.includes('FAQ');
 }
 
+function hasDomainKeywordMatch(article, intent) {
+  const normalizedIntent = normalizeIntentToken(intent);
+  const payload = article && typeof article === 'object' ? article : {};
+  const searchText = `${normalizeText(payload.title)}\n${normalizeText(payload.body)}`.toLowerCase();
+  if (!searchText) return false;
+  if (normalizedIntent === 'SCHOOL') {
+    return /(学校|school|district|enrollment|registration|途中編入|編入|転校|学区)/i.test(searchText);
+  }
+  return false;
+}
+
+function matchesRuntimeKnowledgeIntent(article, packet) {
+  const payload = packet && typeof packet === 'object' ? packet : {};
+  const normalizedIntent = normalizeIntentToken(payload.normalizedConversationIntent || payload.paidIntent || 'FAQ');
+  if (!normalizedIntent || normalizedIntent === 'GENERAL' || normalizedIntent === 'FAQ') {
+    return matchesAllowedIntent(article && article.allowedIntents, normalizedIntent);
+  }
+  if (normalizedIntent === 'SCHOOL') {
+    const rows = Array.isArray(article && article.allowedIntents) ? article.allowedIntents : [];
+    const normalizedAllowed = rows.map((item) => normalizeIntentToken(item)).filter(Boolean);
+    if (normalizedAllowed.includes(normalizedIntent)) return true;
+    return hasDomainKeywordMatch(article, normalizedIntent);
+  }
+  return matchesAllowedIntent(article && article.allowedIntents, normalizedIntent);
+}
+
 function isValidUntilUsable(validUntil, nowMs) {
   if (!validUntil) return true;
   const parsed = toMillis(validUntil);
@@ -182,7 +208,7 @@ function buildSourceReadinessFromCityPack(sourceRefs, intentRiskTier) {
   });
 }
 
-function buildSavedFaqSignals(article, intentRiskTier, sourceReadiness, nowMs, requestedIntent) {
+function buildSavedFaqSignals(article, intentRiskTier, sourceReadiness, nowMs, requestedIntent, packet) {
   if (!article) {
     return {
       savedFaqReused: false,
@@ -195,7 +221,7 @@ function buildSavedFaqSignals(article, intentRiskTier, sourceReadiness, nowMs, r
     .concat(Array.isArray(article.sourceSnapshotRefs) ? article.sourceSnapshotRefs : [])
     .concat(Array.isArray(article.linkRegistryIds) ? article.linkRegistryIds : []), 8);
   const reasonCodes = [];
-  if (!matchesAllowedIntent(article.allowedIntents, requestedIntent)) {
+  if (!matchesRuntimeKnowledgeIntent(article, packet || { normalizedConversationIntent: requestedIntent })) {
     reasonCodes.push('saved_faq_intent_mismatch');
   }
   if (!isValidUntilUsable(article.validUntil, nowMs)) {
@@ -329,8 +355,17 @@ async function buildRuntimeKnowledgeCandidates(params, deps) {
     telemetry.knowledgeCandidateRejectedReason = faqResult.rejectReason || 'no_faq_match';
     appendReason(telemetry, 'knowledgeRejectedReasons', telemetry.knowledgeCandidateRejectedReason);
   } else {
+    const faqIntentMatched = matchesRuntimeKnowledgeIntent(faqResult.article, packet);
+    if (!faqIntentMatched) {
+      telemetry.knowledgeCandidateRejectedReason = 'faq_intent_mismatch';
+      appendReason(telemetry, 'knowledgeRejectedReasons', telemetry.knowledgeCandidateRejectedReason);
+      telemetry.savedFaqRejectedReason = 'saved_faq_intent_mismatch';
+    }
     const faqReadiness = buildSourceReadinessFromArticle(faqResult.article, intentRiskTier);
-    if (faqReadiness.sourceReadinessDecision !== 'allow') {
+    if (!faqIntentMatched) {
+      // Keep runtime FAQ candidates out of domain-specific school answers unless the article
+      // is explicitly school-scoped or obviously school-specific by title/body.
+    } else if (faqReadiness.sourceReadinessDecision !== 'allow') {
       telemetry.knowledgeCandidateRejectedReason = `faq_${faqReadiness.sourceReadinessDecision}`;
       appendReason(telemetry, 'knowledgeRejectedReasons', telemetry.knowledgeCandidateRejectedReason);
     } else {
@@ -358,7 +393,8 @@ async function buildRuntimeKnowledgeCandidates(params, deps) {
       intentRiskTier,
       faqReadiness,
       nowMs,
-      packet.normalizedConversationIntent || packet.paidIntent || 'FAQ'
+      packet.normalizedConversationIntent || packet.paidIntent || 'FAQ',
+      packet
     );
     telemetry.savedFaqCandidateAvailable = savedFaqSignals.savedFaqReused === true;
     if (savedFaqSignals.savedFaqReusePass === true) {

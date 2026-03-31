@@ -418,6 +418,9 @@ function verifyCandidate(params) {
   const selected = payload.selected && typeof payload.selected === 'object' ? payload.selected : null;
   const evidenceSufficiency = normalizeText(payload.evidenceSufficiency).toLowerCase();
   const contradictionFlags = [];
+  const detailObligations = Array.isArray(packet.detailObligations)
+    ? packet.detailObligations.map((item) => normalizeText(item).toLowerCase()).filter(Boolean)
+    : [];
 
   if (!selected) {
     const fallbackReplyText = buildConstrainedFallbackReply(verificationPacket);
@@ -445,12 +448,17 @@ function verifyCandidate(params) {
 
   let replyText = normalizeText(selected.replyText);
   let verificationOutcome = 'passed';
+  const preserveLowFrictionSchoolProcedureAnswer = normalizeText(packet.normalizedConversationIntent).toLowerCase() === 'school'
+    && normalizeText(packet.requestShape).toLowerCase() === 'answer'
+    && normalizeText(packet.answerability).toLowerCase() === 'answer_now'
+    && detailObligations.includes('avoid_question_back')
+    && normalizeText(selected.kind).toLowerCase() === 'domain_concierge_candidate';
 
   if (evidenceSufficiency === 'refuse') {
     replyText = 'この内容はこの場で断定せず、公式窓口や運用担当と一緒に確認したほうが安全です。必要なら確認観点を3つまで整理します。';
     verificationOutcome = 'refuse';
     contradictionFlags.push('unsupported_named_claim');
-  } else if (evidenceSufficiency === 'clarify') {
+  } else if (evidenceSufficiency === 'clarify' && !preserveLowFrictionSchoolProcedureAnswer) {
     replyText = buildClarifyReply(packet);
     verificationOutcome = 'clarify';
     contradictionFlags.push('insufficient_evidence');

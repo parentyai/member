@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 
 const { runPaidConversationOrchestrator } = require('../../src/domain/llm/orchestrator/runPaidConversationOrchestrator');
+const { generatePaidDomainConciergeReply } = require('../../src/usecases/assistant/generatePaidDomainConciergeReply');
 
 function futureIso(days) {
   return new Date(Date.now() + (Number(days || 90) * 24 * 60 * 60 * 1000)).toISOString();
@@ -207,6 +208,52 @@ test('phase731: orchestrator applies loop-break when repetitive casual candidate
   assert.equal(result.telemetry.actionGatewayDecision, 'bypass');
   assert.ok(result.replyText.includes('対象を絞って案内したい'));
   assert.equal(result.replyText.includes('優先したい手続きがあれば1つだけ教えてください。'), false);
+});
+
+test('phase731: school next-step question rejects generic saved FAQ reuse and falls back to school procedure guidance', async () => {
+  const result = await runPaidConversationOrchestrator({
+    lineUserId: 'U_PHASE731_SCHOOL',
+    messageText: '学校の途中編入で、district がまだ決まってない。今日やることを1つだけ教えて。',
+    paidIntent: 'situation_analysis',
+    planInfo: { plan: 'pro', status: 'active' },
+    llmFlags: {
+      llmConciergeEnabled: true,
+      llmWebSearchEnabled: true,
+      llmStyleEngineEnabled: true,
+      llmBanditEnabled: false,
+      qualityEnabled: true,
+      snapshotStrictMode: false
+    },
+    deps: {
+      generatePaidCasualReply: () => ({ replyText: 'こんにちは。' }),
+      generateGroundedReply: async () => ({
+        ok: false,
+        blockedReason: 'school_grounding_missing',
+        assistantQuality: {
+          intentResolved: 'situation_analysis',
+          kbTopScore: 0,
+          evidenceCoverage: 0,
+          blockedStage: 'retrieval',
+          fallbackReason: 'school_grounding_missing'
+        }
+      }),
+      generateDomainConciergeCandidate: async (params) => generatePaidDomainConciergeReply(params),
+      ...buildSavedFaqDeps({
+        id: 'phase731_saved_faq_general_only',
+        title: '着任後1か月の生活立ち上げ優先順位',
+        body: '最初の1か月は身分証、住居、金融、通信、医療導線の5領域を優先する。未完了タスクは期限と依存関係を明示し、週次でリスクを再評価する。',
+        allowedIntents: ['GENERAL', 'FAQ']
+      })
+    }
+  });
+
+  assert.equal(result.packet.normalizedConversationIntent, 'school');
+  assert.equal(result.telemetry.selectedCandidateKind, 'domain_concierge_candidate');
+  assert.equal(result.telemetry.knowledgeCandidateUsed, false);
+  assert.equal(result.telemetry.savedFaqRejectedReason, 'saved_faq_intent_mismatch');
+  assert.equal(result.telemetry.knowledgeCandidateRejectedReason, 'faq_intent_mismatch');
+  assert.equal(result.replyText.includes('身分証、住居、金融、通信、医療導線'), false);
+  assert.match(result.replyText, /(district|教育窓口|enrollment|対象校)/);
 });
 
 test('phase731: action gateway enforce mode clarifies assist strategy without confirmation token', async () => {
