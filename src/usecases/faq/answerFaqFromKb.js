@@ -23,6 +23,10 @@ const {
   createResponseQualityVerdict
 } = require('../../domain/llm/quality/responseQualityFoundation');
 const { resolveTelemetryCoverageSignals } = require('../../domain/llm/quality/resolveTelemetryCoverageSignals');
+const {
+  resolveProcedureReplyPacket,
+  buildProcedureSemanticFields
+} = require('../../domain/llm/procedureKnowledge/resolveProcedureReplyPacket');
 const { refineSavedFaqReuseSignals } = require('./refineSavedFaqReuseSignals');
 const { buildKnowledgeReadinessCandidates } = require('./buildKnowledgeReadinessCandidates');
 
@@ -113,6 +117,21 @@ function normalizeIntentToken(value) {
 function normalizeQuestion(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
+}
+
+function inferProcedureDomain(question, intent, candidates) {
+  const sample = [
+    normalizeQuestion(question),
+    normalizeIntent(intent) || '',
+    ...(Array.isArray(candidates)
+      ? candidates.slice(0, 2).map((item) => normalizeQuestion(`${item && item.title ? item.title : ''} ${item && item.body ? item.body : ''}`))
+      : [])
+  ].join(' ').toLowerCase();
+  if (/(school|学校|学区|転校|編入|enrollment)/.test(sample)) return 'school';
+  if (/(housing|住まい|住宅|賃貸|物件|内見)/.test(sample)) return 'housing';
+  if (/(ssn|social security|ソーシャルセキュリティ)/.test(sample)) return 'ssn';
+  if (/(bank|banking|銀行|口座|checking|savings)/.test(sample)) return 'banking';
+  return 'general';
 }
 
 function normalizeGuideMode(value) {
@@ -877,6 +896,29 @@ async function answerFaqFromKb(params, deps) {
   const suggestedFaqs = buildSuggestedFaqs(candidates);
   const confidence = evaluateConfidence(candidates);
   const kbMeta = buildKbMeta(candidates, confidence);
+  const procedurePacket = resolveProcedureReplyPacket({
+    messageText: question,
+    domainIntent: inferProcedureDomain(question, intent, candidates),
+    faqCandidates: candidates.map((item) => ({
+      articleId: item.id,
+      title: item.title || '',
+      body: item.body || ''
+    })),
+    supportingSourceRefs: candidates.slice(0, 4).map((item) => ({
+      ref_id: item.id,
+      label: item.title || item.id,
+      sourceType: 'community'
+    }))
+  });
+  const procedureSemanticFields = buildProcedureSemanticFields(procedurePacket, { maxQuickReplies: 3 });
+  const procedureReplyAdditions = {
+    procedurePacket,
+    nextSteps: procedureSemanticFields.nextSteps,
+    warnings: procedureSemanticFields.warnings,
+    tasks: procedureSemanticFields.tasks,
+    quickReplies: procedureSemanticFields.quickReplies,
+    evidenceRefs: procedureSemanticFields.evidenceRefs
+  };
   const riskSnapshot = resolveIntentRiskTier({
     domainIntent: intent || 'general',
     savedFaqContext: candidates.length > 0
@@ -1214,6 +1256,7 @@ async function answerFaqFromKb(params, deps) {
 
     return Object.assign(
       blocked,
+      procedureReplyAdditions,
       buildFaqTelemetryFields({
         legalSnapshot,
         riskSnapshot,
@@ -1368,6 +1411,7 @@ async function answerFaqFromKb(params, deps) {
 
     return Object.assign(
       blockedResult,
+      procedureReplyAdditions,
       buildFaqTelemetryFields({
         legalSnapshot,
         riskSnapshot,
@@ -1484,6 +1528,7 @@ async function answerFaqFromKb(params, deps) {
     ).catch(() => null);
     return Object.assign(
       blockedResult,
+      procedureReplyAdditions,
       buildFaqTelemetryFields({
         legalSnapshot,
         riskSnapshot,
@@ -1606,7 +1651,7 @@ async function answerFaqFromKb(params, deps) {
     disclaimer: disclaimer.text,
     inputFieldCategoriesUsed: view.inputFieldCategoriesUsed,
     auditId
-  }, buildFaqTelemetryFields({
+  }, procedureReplyAdditions, buildFaqTelemetryFields({
     legalSnapshot,
     riskSnapshot,
     sourceReadiness,

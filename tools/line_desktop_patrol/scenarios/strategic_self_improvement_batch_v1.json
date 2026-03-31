@@ -1,6 +1,6 @@
 {
   "batch_id": "strategic_desktop_self_improvement_v1",
-  "description": "Fixed ten-case desktop self-improvement batch focused on human-natural replies, direct answers, correction recovery, city specificity, and low-friction next steps.",
+  "description": "Fixed ten-case desktop self-improvement batch focused on procedure-guided replies, direct answers, correction recovery, city specificity, and low-friction next steps with a five-part scaffold behind the reply.",
   "fixed_case_count": 10,
   "auto_apply_mode": "proposal_only",
   "future_automation_goal": "Upgrade this fixed batch into an unattended patch-and-retest loop once proposal-to-code application is safe enough.",
@@ -55,8 +55,8 @@
       "improvement_axis": "correction_recovery",
       "user_input": "学校ではなく住居手続きだった。最初の確認事項を2点だけ言い直して。",
       "expected_reply_substrings": [
-        "住所",
-        "契約",
+        "申込",
+        "application requirements",
         "住居"
       ],
       "forbidden_reply_substrings": [
@@ -64,8 +64,8 @@
       ],
       "reply_contract": {
         "must_include_any": [
-          "住所",
-          "契約",
+          "申込",
+          "application requirements",
           "住居"
         ],
         "max_lines": 2,
@@ -162,10 +162,11 @@
           "確認",
           "集め",
           "見る",
-          "決め"
+          "決め",
+          "開いて"
         ],
         "max_lines": 1,
-        "max_chars": 45,
+        "max_chars": 70,
         "disallow_question": true
       }
     },
@@ -215,7 +216,7 @@
           "案内"
         ],
         "max_lines": 1,
-        "max_chars": 70,
+        "max_chars": 90,
         "disallow_question": true
       }
     },

@@ -26,5 +26,71 @@
       "家族の学校手続きどうする？"
     ],
     "mustPass": true
+  },
+  {
+    "fixtureId": "line_school_unknown_district_procedure",
+    "sliceKey": "domain_continuation",
+    "turns": [
+      "学校の途中編入で何から始めればいい？",
+      "district がまだ決まってない",
+      "今日やることを1つだけ"
+    ],
+    "mustPass": true
+  },
+  {
+    "fixtureId": "line_school_known_district_rule_check",
+    "sliceKey": "short_followup",
+    "turns": [
+      "NYCの学校手続き",
+      "予防接種は？",
+      "確認先は？"
+    ],
+    "mustPass": true
+  },
+  {
+    "fixtureId": "line_housing_procedure_guidance",
+    "sliceKey": "domain_continuation",
+    "turns": [
+      "住まい探しで何から始めればいい？",
+      "候補が多すぎる",
+      "今日やる一手だけ"
+    ],
+    "mustPass": true
+  },
+  {
+    "fixtureId": "line_ssn_office_variance",
+    "sliceKey": "short_followup",
+    "turns": [
+      "SSN手続き",
+      "予約いる？",
+      "必要書類は？"
+    ],
+    "mustPass": true
+  },
+  {
+    "fixtureId": "line_banking_docs_variance",
+    "sliceKey": "domain_continuation",
+    "turns": [
+      "銀行口座を作りたい",
+      "必要書類は？",
+      "次に何する？"
+    ],
+    "mustPass": true
+  },
+  {
+    "fixtureId": "line_low_energy_today_action",
+    "sliceKey": "japanese_service_quality",
+    "turns": [
+      "正直しんどい。今日やることを1個だけ言って"
+    ],
+    "mustPass": true
+  },
+  {
+    "fixtureId": "line_rewrite_preserves_usefulness",
+    "sliceKey": "japanese_service_quality",
+    "turns": [
+      "学校手続きの話を、やさしい日本語に言い換えて"
+    ],
+    "mustPass": true
   }
 ]

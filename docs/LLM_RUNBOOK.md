@@ -47,6 +47,43 @@ LLM 統合機能を advisory-only のまま安全に運用する。
 - `tmp/llm_quality_failure_register.json` と `tmp/llm_quality_counterexample_queue.json` は report 由来の運用証跡として確認する。
 - admin / audit で telemetry を追加する場合は add-only とし、既存 key の削除や改名は行わない。
 
+## Procedure Reply Policy
+- complex procedure 系の user-facing reply は、内部で `procedurePacket` を解決してから返す。
+- 既定 scaffold は以下の 5 点で、表示は複雑度に応じて圧縮してよい。
+  - `全体工程`
+  - `いまやる一手`
+  - `ポイント`
+  - `詰まりどころ`
+  - `やっておくと良いこと`
+- reply は本文が短くても、内部 packet では `nextBestAction` を必須とする。
+- 質問返しは、その回答で `nextBestAction` が変わる場合だけ許可する。
+- community/blog source は raw dump を返さず、procedure knowledge に正規化して使う。
+- packet では `rawSourceLayer` と `procedureKnowledgeLayer` を分ける。
+  - `rawSourceLayer`: source type / freshness / authority / region / notes を保持する review 用の層
+  - `procedureKnowledgeLayer`: raw source を解釈して手続き scaffold に正規化した層
+- official source は hard rule / deadline / immunization / appointment など rule-sensitive な確認先として扱う。
+- official URL が無い場合でも、窓口名またはページ名を `officialCheckTargets` に残す。
+- 以下は strict quality gate で block 対象とする。
+  - off-target answer
+  - generic but polite answer
+  - universal deadline/doc claim
+  - blog dump without interpretation
+  - rewrite での bad fact carry
+
+## Procedure Reply Runtime Signals
+- `conversationQuality` では次の signal を監視する。
+  - `oneTurnUtilityRate`
+  - `procedureScaffoldCoverageRate`
+  - `relevanceFitRate`
+  - `offTargetAnswerRate`
+  - `decisionReadinessRate`
+  - `dependencyExplicitnessRate`
+  - `fakeSpecificityRate`
+  - `userEffortShiftRate`
+  - `procedureKnowledgeUseRate`
+  - `transformBadFactCarryRate`
+- strict runtime seed / frozen snapshot / release policy は上記 key を必須 signal として扱う。
+
 ## Failure Modes
 - schema mismatch / citation mismatch / allow-list violation => fallback へ退避。
 - provider timeout / error => fallback へ退避。

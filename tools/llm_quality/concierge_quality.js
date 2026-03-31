@@ -17,7 +17,17 @@ const CONCIERGE_RUNTIME_SIGNAL_RULES = Object.freeze({
   officialOnlySatisfiedRate: { threshold: 0.9, direction: 'min', label: 'Official-only satisfied rate' },
   followupResolutionRate: { threshold: 0.85, direction: 'min', label: 'Follow-up resolution rate' },
   contextualResumeHandledRate: { threshold: 0.85, direction: 'min', label: 'Contextual resume handled rate' },
-  avgUnsupportedClaimCount: { threshold: 0.05, direction: 'max', label: 'Unsupported claim count' }
+  avgUnsupportedClaimCount: { threshold: 0.05, direction: 'max', label: 'Unsupported claim count' },
+  oneTurnUtilityRate: { threshold: 0.82, direction: 'min', label: 'One-turn utility rate' },
+  procedureScaffoldCoverageRate: { threshold: 0.68, direction: 'min', label: 'Procedure scaffold coverage rate' },
+  relevanceFitRate: { threshold: 0.9, direction: 'min', label: 'Relevance fit rate' },
+  offTargetAnswerRate: { threshold: 0.03, direction: 'max', label: 'Off-target answer rate' },
+  decisionReadinessRate: { threshold: 0.8, direction: 'min', label: 'Decision readiness rate' },
+  dependencyExplicitnessRate: { threshold: 0.72, direction: 'min', label: 'Dependency explicitness rate' },
+  fakeSpecificityRate: { threshold: 0.02, direction: 'max', label: 'Fake specificity rate' },
+  userEffortShiftRate: { threshold: 0.08, direction: 'max', label: 'User effort shift rate' },
+  procedureKnowledgeUseRate: { threshold: 0.45, direction: 'min', label: 'Procedure knowledge use rate' },
+  transformBadFactCarryRate: { threshold: 0.02, direction: 'max', label: 'Transform bad-fact carry rate' }
 });
 
 const CONCIERGE_RUNTIME_SIGNAL_KEYS = Object.freeze(Object.keys(CONCIERGE_RUNTIME_SIGNAL_RULES));

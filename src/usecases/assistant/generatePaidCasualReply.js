@@ -2,6 +2,11 @@
 
 const { detectMessagePosture } = require('./opportunity/detectMessagePosture');
 const { buildStrategicHumanReplyLines } = require('./generatePaidDomainConciergeReply');
+const {
+  resolveProcedureReplyPacket,
+  renderProcedureReplyPacket,
+  buildProcedureSemanticFields
+} = require('../../domain/llm/procedureKnowledge/resolveProcedureReplyPacket');
 
 const CONTEXT_LABEL_MAP = Object.freeze({
   school: '学校手続き',
@@ -142,10 +147,15 @@ function buildFollowupActionLine(followupIntent) {
 function resolveFollowupDirectAnswer(contextHint, followupIntent) {
   const domainKey = normalizeContextHintKey(contextHint);
   if (domainKey === 'general') return '';
-  const normalizedIntent = normalizeText(followupIntent).toLowerCase();
-  const byDomain = CASUAL_FOLLOWUP_DIRECT_ANSWER_MAP[domainKey];
-  if (!byDomain) return '';
-  return normalizeText(byDomain[normalizedIntent] || '');
+  const procedurePacket = resolveProcedureReplyPacket({
+    messageText: normalizeText(followupIntent),
+    domainIntent: domainKey,
+    followupIntent
+  });
+  return normalizeText(renderProcedureReplyPacket(procedurePacket, {
+    mode: 'followup',
+    outputForm: 'one_line'
+  }) || '');
 }
 
 function buildGeneralCasualReply(question, atoms, contextHint, followupIntent, recentResponseHints) {
@@ -260,19 +270,36 @@ function generatePaidCasualReply(params) {
     ? payload.requestContract
     : {};
   const posture = detectMessagePosture({ messageText });
+  const procedurePacket = resolveProcedureReplyPacket({
+    messageText,
+    domainIntent: contextHint || requestContract.primaryDomainIntent || 'general',
+    followupIntent,
+    requestContract
+  });
+  const semanticFields = buildProcedureSemanticFields(procedurePacket, { maxQuickReplies: 3 });
 
   if (posture.isGreeting) {
     return {
       ok: true,
       mode: 'casual',
-      replyText: trimForPaidLineMessage(buildGreetingReply())
+      replyText: trimForPaidLineMessage(buildGreetingReply()),
+      procedurePacket,
+      nextSteps: semanticFields.nextSteps,
+      warnings: semanticFields.warnings,
+      quickReplies: semanticFields.quickReplies,
+      evidenceRefs: semanticFields.evidenceRefs
     };
   }
   if (posture.isSmalltalk) {
     return {
       ok: true,
       mode: 'casual',
-      replyText: trimForPaidLineMessage(buildSmalltalkReply())
+      replyText: trimForPaidLineMessage(buildSmalltalkReply()),
+      procedurePacket,
+      nextSteps: semanticFields.nextSteps,
+      warnings: semanticFields.warnings,
+      quickReplies: semanticFields.quickReplies,
+      evidenceRefs: semanticFields.evidenceRefs
     };
   }
 
@@ -286,7 +313,12 @@ function generatePaidCasualReply(params) {
     return {
       ok: true,
       mode: 'casual',
-      replyText: contractReply
+      replyText: contractReply,
+      procedurePacket,
+      nextSteps: semanticFields.nextSteps,
+      warnings: semanticFields.warnings,
+      quickReplies: semanticFields.quickReplies,
+      evidenceRefs: semanticFields.evidenceRefs
     };
   }
 
@@ -295,7 +327,12 @@ function generatePaidCasualReply(params) {
     mode: 'casual',
     replyText: trimForPaidLineMessage(
       buildGeneralCasualReply(messageText, suggestedAtoms, contextHint, followupIntent, recentResponseHints)
-    )
+    ),
+    procedurePacket,
+    nextSteps: semanticFields.nextSteps,
+    warnings: semanticFields.warnings,
+    quickReplies: semanticFields.quickReplies,
+    evidenceRefs: semanticFields.evidenceRefs
   };
 }
 

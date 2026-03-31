@@ -36,7 +36,17 @@ test('phase755: runtime summary prepare seeds output when missing', () => {
     'retrieveNeededRate',
     'avgActionCount',
     'directAnswerAppliedRate',
-    'avgRepeatRiskScore'
+    'avgRepeatRiskScore',
+    'oneTurnUtilityRate',
+    'procedureScaffoldCoverageRate',
+    'relevanceFitRate',
+    'offTargetAnswerRate',
+    'decisionReadinessRate',
+    'dependencyExplicitnessRate',
+    'fakeSpecificityRate',
+    'userEffortShiftRate',
+    'procedureKnowledgeUseRate',
+    'transformBadFactCarryRate'
   ].forEach((key) => {
     assert.equal(Number.isFinite(Number(conversation[key])), true, `missing conversation signal: ${key}`);
   });

@@ -16,6 +16,46 @@ function runNode(args, env) {
   });
 }
 
+function buildConversationQuality(overrides) {
+  return Object.assign({
+    legacyTemplateHitRate: 0.003,
+    defaultCasualRate: 0.012,
+    followupQuestionIncludedRate: 0.1,
+    conciseModeAppliedRate: 0.08,
+    retrieveNeededRate: 0.2,
+    avgActionCount: 2.1,
+    directAnswerAppliedRate: 0.94,
+    avgRepeatRiskScore: 0.09,
+    formatComplianceRate: 0.99,
+    detailCarryRate: 0.97,
+    correctionRecoveryRate: 0.96,
+    mixedDomainRetentionRate: 0.95,
+    citySpecificityResolvedRate: 0.94,
+    cityOverclaimRate: 0,
+    transformSourceCarryRate: 0.97,
+    depthResetRate: 0.02,
+    followupOveraskRate: 0.01,
+    internalLabelLeakRate: 0,
+    parrotEchoRate: 0,
+    commandBoundaryCollisionRate: 0,
+    domainIntentConciergeRate: 0.92,
+    officialOnlySatisfiedRate: 0.94,
+    followupResolutionRate: 0.89,
+    contextualResumeHandledRate: 0.88,
+    avgUnsupportedClaimCount: 0.01,
+    oneTurnUtilityRate: 0.9,
+    procedureScaffoldCoverageRate: 0.82,
+    relevanceFitRate: 0.95,
+    offTargetAnswerRate: 0.01,
+    decisionReadinessRate: 0.87,
+    dependencyExplicitnessRate: 0.8,
+    fakeSpecificityRate: 0.01,
+    userEffortShiftRate: 0.04,
+    procedureKnowledgeUseRate: 0.74,
+    transformBadFactCarryRate: 0.01
+  }, overrides || {});
+}
+
 test('phase756: strict release policy blocks strict runtime signal regressions even with slices passing', () => {
   const baseline = runNode([
     'tools/llm_quality/compute_scorecard.js',
@@ -42,29 +82,12 @@ test('phase756: strict release policy blocks strict runtime signal regressions e
   const summaryPath = path.join(ROOT, 'tmp', 'phase756_summary.json');
   fs.writeFileSync(summaryPath, `${JSON.stringify({
     summary: {
-      conversationQuality: {
-        legacyTemplateHitRate: 0.003,
+      conversationQuality: buildConversationQuality({
         defaultCasualRate: 0.12,
-        followupQuestionIncludedRate: 0.1,
-        conciseModeAppliedRate: 0.08,
-        retrieveNeededRate: 0.2,
         avgActionCount: 2.6,
         directAnswerAppliedRate: 0.85,
-        avgRepeatRiskScore: 0.62,
-        formatComplianceRate: 0.99,
-        detailCarryRate: 0.97,
-        correctionRecoveryRate: 0.96,
-        mixedDomainRetentionRate: 0.95,
-        followupOveraskRate: 0.01,
-        internalLabelLeakRate: 0,
-        parrotEchoRate: 0,
-        commandBoundaryCollisionRate: 0,
-        domainIntentConciergeRate: 0.92,
-        officialOnlySatisfiedRate: 0.94,
-        followupResolutionRate: 0.89,
-        contextualResumeHandledRate: 0.88,
-        avgUnsupportedClaimCount: 0.01
-      }
+        avgRepeatRiskScore: 0.62
+      })
     }
   }, null, 2)}\n`);
 
@@ -139,6 +162,10 @@ test('phase756: strict release policy fails when extended runtime conversation s
   assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('avgActionCount'), true);
   assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('formatComplianceRate'), true);
   assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('internalLabelLeakRate'), true);
+  assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('oneTurnUtilityRate'), true);
+  assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('procedureScaffoldCoverageRate'), true);
+  assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('offTargetAnswerRate'), true);
+  assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('procedureKnowledgeUseRate'), true);
 });
 
 test('phase756: strict release policy blocks concierge runtime regressions for format and label leaks', () => {
@@ -167,29 +194,11 @@ test('phase756: strict release policy blocks concierge runtime regressions for f
   const summaryPath = path.join(ROOT, 'tmp', 'phase756_concierge_runtime_summary.json');
   fs.writeFileSync(summaryPath, `${JSON.stringify({
     summary: {
-      conversationQuality: {
-        legacyTemplateHitRate: 0.003,
+      conversationQuality: buildConversationQuality({
         defaultCasualRate: 0.01,
-        followupQuestionIncludedRate: 0.1,
-        conciseModeAppliedRate: 0.08,
-        retrieveNeededRate: 0.2,
-        avgActionCount: 2.1,
-        directAnswerAppliedRate: 0.94,
-        avgRepeatRiskScore: 0.09,
         formatComplianceRate: 0.9,
-        detailCarryRate: 0.97,
-        correctionRecoveryRate: 0.96,
-        mixedDomainRetentionRate: 0.95,
-        followupOveraskRate: 0.01,
-        internalLabelLeakRate: 0.02,
-        parrotEchoRate: 0,
-        commandBoundaryCollisionRate: 0,
-        domainIntentConciergeRate: 0.92,
-        officialOnlySatisfiedRate: 0.94,
-        followupResolutionRate: 0.89,
-        contextualResumeHandledRate: 0.88,
-        avgUnsupportedClaimCount: 0.01
-      }
+        internalLabelLeakRate: 0.02
+      })
     }
   }, null, 2)}\n`);
 
@@ -236,33 +245,13 @@ test('phase756: strict release policy blocks city specificity and deep-response 
   const summaryPath = path.join(ROOT, 'tmp', 'phase756_city_runtime_summary.json');
   fs.writeFileSync(summaryPath, `${JSON.stringify({
     summary: {
-      conversationQuality: {
-        legacyTemplateHitRate: 0.003,
+      conversationQuality: buildConversationQuality({
         defaultCasualRate: 0.01,
-        followupQuestionIncludedRate: 0.1,
-        conciseModeAppliedRate: 0.08,
-        retrieveNeededRate: 0.2,
-        avgActionCount: 2.1,
-        directAnswerAppliedRate: 0.94,
-        avgRepeatRiskScore: 0.09,
-        formatComplianceRate: 0.99,
-        detailCarryRate: 0.97,
-        correctionRecoveryRate: 0.96,
-        mixedDomainRetentionRate: 0.95,
         citySpecificityResolvedRate: 0.5,
         cityOverclaimRate: 0.02,
         transformSourceCarryRate: 0.82,
-        depthResetRate: 0.4,
-        followupOveraskRate: 0.01,
-        internalLabelLeakRate: 0,
-        parrotEchoRate: 0,
-        commandBoundaryCollisionRate: 0,
-        domainIntentConciergeRate: 0.92,
-        officialOnlySatisfiedRate: 0.94,
-        followupResolutionRate: 0.89,
-        contextualResumeHandledRate: 0.88,
-        avgUnsupportedClaimCount: 0.01
-      }
+        depthResetRate: 0.4
+      })
     }
   }, null, 2)}\n`);
 

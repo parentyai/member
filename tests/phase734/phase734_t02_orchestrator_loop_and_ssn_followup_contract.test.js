@@ -309,9 +309,8 @@ test('phase734: strategic kickoff and close prompts stay concise without stale r
     messageText: '初回案内として、最初に見るものを1つだけ教えて。'
   });
   assert.equal(String(kickoffGuide.replyText || '').split('\n').length, 1);
-  assert.match(kickoffGuide.replyText, /期限/);
-  assert.match(kickoffGuide.replyText, /公式/);
-  assert.match(kickoffGuide.replyText, /案内/);
+  assert.match(kickoffGuide.replyText, /確認先|公式|ページ/);
+  assert.match(kickoffGuide.replyText, /最初/);
   assert.equal(/[?？]$/.test(kickoffGuide.replyText), false);
 
   const closeGuide = generatePaidDomainConciergeReply({
@@ -319,7 +318,7 @@ test('phase734: strategic kickoff and close prompts stay concise without stale r
     messageText: 'ジャーニーを閉じる感じで、今日の順番を2行だけ。'
   });
   const closeLines = String(closeGuide.replyText || '').split('\n').map((line) => line.trim()).filter(Boolean);
-  assert.deepEqual(closeLines, ['先に期限を確認する。', '次に必要書類か予約要否を確認する。']);
+  assert.deepEqual(closeLines, ['先に確認先を決める。', '次に必要条件か予約要否を確認する。']);
 });
 
 test('phase734: utility transformation and correction presets stay concise and task-shaped', () => {
@@ -670,7 +669,8 @@ test('phase734: finalizer recovers parent-friendly one-line rewrite when multili
     verificationOutcome: 'passed'
   });
 
-  assert.equal(finalized.replyText, '最初に条件を見てから、必要な書類を決めれば進めやすいです');
+  assert.match(finalized.replyText, /条件/);
+  assert.match(finalized.replyText, /住みたい条件|申込条件/);
   assert.equal(finalized.replyText.includes('\n'), false);
   assert.equal(/[?？]$/.test(finalized.replyText), false);
 });

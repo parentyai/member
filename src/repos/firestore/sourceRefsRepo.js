@@ -135,6 +135,49 @@ function normalizeRegionKey(value) {
   return regionKey || null;
 }
 
+function normalizeProcedureDomain(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  return normalized || null;
+}
+
+function normalizeProcedureKey(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  return normalized || null;
+}
+
+function normalizeRegionScope(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  return normalized || null;
+}
+
+function normalizeApplicability(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return normalized || null;
+}
+
+function normalizeTrustNotes(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  if (!normalized) return null;
+  return normalized.slice(0, 500);
+}
+
+function normalizeCorroborationCount(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return Math.max(0, Math.min(20, Math.floor(num)));
+}
+
+function normalizeStaleHandling(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  return normalized || null;
+}
+
 function resolveSchoolTypeFilter(value) {
   if (typeof value !== 'string') return null;
   const schoolType = value.trim().toLowerCase();
@@ -235,6 +278,13 @@ function normalizeSourceRefData(data) {
     schoolType: normalizeSchoolType(payload.schoolType),
     eduScope: normalizeEduScope(payload.eduScope),
     regionKey: normalizeRegionKey(payload.regionKey),
+    procedureDomain: normalizeProcedureDomain(payload.procedureDomain || payload.domain),
+    procedureKey: normalizeProcedureKey(payload.procedureKey || payload.procedure_key),
+    regionScope: normalizeRegionScope(payload.regionScope || payload.region_scope),
+    applicability: normalizeApplicability(payload.applicability),
+    trustNotes: normalizeTrustNotes(payload.trustNotes || payload.trust_notes),
+    corroborationCount: normalizeCorroborationCount(payload.corroborationCount || payload.corroboration_count),
+    staleHandling: normalizeStaleHandling(payload.staleHandling || payload.stale_handling),
     evidenceLatestId: typeof payload.evidenceLatestId === 'string' ? payload.evidenceLatestId.trim() : null,
     usedByCityPackIds: normalizeArray(payload.usedByCityPackIds)
   };
@@ -366,6 +416,13 @@ function buildSourceRefCanonicalPayload(sourceRefId, normalized, recordEnvelope)
         schoolType: normalized.schoolType,
         eduScope: normalized.eduScope,
         regionKey: normalized.regionKey,
+        procedureDomain: normalized.procedureDomain,
+        procedureKey: normalized.procedureKey,
+        regionScope: normalized.regionScope,
+        applicability: normalized.applicability,
+        trustNotes: normalized.trustNotes,
+        corroborationCount: normalized.corroborationCount,
+        staleHandling: normalized.staleHandling,
         evidenceLatestId: normalized.evidenceLatestId,
         usedByCityPackIds: normalized.usedByCityPackIds,
         recordEnvelope
@@ -394,6 +451,13 @@ function buildSourceRefCanonicalPayload(sourceRefId, normalized, recordEnvelope)
         schoolType: normalized.schoolType,
         eduScope: normalized.eduScope,
         regionKey: normalized.regionKey,
+        procedureDomain: normalized.procedureDomain,
+        procedureKey: normalized.procedureKey,
+        regionScope: normalized.regionScope,
+        applicability: normalized.applicability,
+        trustNotes: normalized.trustNotes,
+        corroborationCount: normalized.corroborationCount,
+        staleHandling: normalized.staleHandling,
         confidenceScore: normalized.confidenceScore,
         lastResult: normalized.lastResult,
         lastAuditStage: normalized.lastAuditStage,
@@ -456,6 +520,13 @@ async function createSourceRef(data) {
     schoolType: normalized.schoolType,
     eduScope: normalized.eduScope,
     regionKey: normalized.regionKey,
+    procedureDomain: normalized.procedureDomain,
+    procedureKey: normalized.procedureKey,
+    regionScope: normalized.regionScope,
+    applicability: normalized.applicability,
+    trustNotes: normalized.trustNotes,
+    corroborationCount: normalized.corroborationCount,
+    staleHandling: normalized.staleHandling,
     evidenceLatestId: normalized.evidenceLatestId,
     usedByCityPackIds: normalized.usedByCityPackIds,
     recordEnvelope,
@@ -605,6 +676,27 @@ async function updateSourceRef(sourceRefId, patch) {
     fromState: currentLifecycleState,
     toState: nextLifecycleState
   });
+  if (Object.prototype.hasOwnProperty.call(payload, 'procedureDomain') || Object.prototype.hasOwnProperty.call(payload, 'domain')) {
+    payload.procedureDomain = normalizeProcedureDomain(payload.procedureDomain || payload.domain);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'procedureKey') || Object.prototype.hasOwnProperty.call(payload, 'procedure_key')) {
+    payload.procedureKey = normalizeProcedureKey(payload.procedureKey || payload.procedure_key);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'regionScope') || Object.prototype.hasOwnProperty.call(payload, 'region_scope')) {
+    payload.regionScope = normalizeRegionScope(payload.regionScope || payload.region_scope);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'applicability')) {
+    payload.applicability = normalizeApplicability(payload.applicability);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'trustNotes') || Object.prototype.hasOwnProperty.call(payload, 'trust_notes')) {
+    payload.trustNotes = normalizeTrustNotes(payload.trustNotes || payload.trust_notes);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'corroborationCount') || Object.prototype.hasOwnProperty.call(payload, 'corroboration_count')) {
+    payload.corroborationCount = normalizeCorroborationCount(payload.corroborationCount || payload.corroboration_count);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'staleHandling') || Object.prototype.hasOwnProperty.call(payload, 'stale_handling')) {
+    payload.staleHandling = normalizeStaleHandling(payload.staleHandling || payload.stale_handling);
+  }
   payload.knowledgeLifecycleState = nextLifecycleState;
   payload.knowledgeLifecycleBucket = resolveKnowledgeLifecycleBucket(nextLifecycleState);
   const mergedForEnvelope = normalizeSourceRefData(Object.assign({}, current || {}, payload));

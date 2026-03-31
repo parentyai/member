@@ -113,4 +113,8 @@ test('phase717: FAQ candidates sanitize body content and expose sanitize metadat
   assert.equal(Array.isArray(result.sanitizeBlockedReasons), true);
   assert.ok(result.sanitizeBlockedReasons.includes('external_instruction_detected'));
   assert.equal(result.injectionFindings, true);
+  assert.equal(typeof result.procedurePacket, 'object');
+  assert.equal(Array.isArray(result.nextSteps), true);
+  assert.equal(result.nextSteps.length >= 1, true);
+  assert.equal(Array.isArray(result.evidenceRefs), true);
 });

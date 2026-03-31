@@ -866,6 +866,9 @@ async function buildPaidDomainConciergeResult(params) {
       ? 'domain_concierge_city_pack_signal'
       : 'domain_concierge_strategy_default',
     knowledgeGroundingKind: cityPackSignals && cityPackSignals.cityPackGrounded === true ? 'city_pack' : null,
+    procedurePacket: domainReply && domainReply.procedurePacket ? domainReply.procedurePacket : null,
+    decisionCriticalMissingFacts: domainReply && domainReply.procedurePacket ? domainReply.procedurePacket.decisionCriticalMissingFacts : [],
+    officialCheckTargets: domainReply && domainReply.procedurePacket ? domainReply.procedurePacket.officialCheckTargets : [],
     genericFallbackSlice: resolveGenericFallbackSlice({
       messageText: text,
       domainIntent,
@@ -939,7 +942,9 @@ async function replyWithPaidDomainConcierge(params) {
       baseReplyText: result.replyText,
       domainIntent: payload.domainIntent || (result.conversationQuality && result.conversationQuality.domainIntent) || 'general',
       topic: payload.domainIntent || (result.conversationQuality && result.conversationQuality.domainIntent) || 'general',
-      nextSteps: result.atoms && Array.isArray(result.atoms.nextActions) ? result.atoms.nextActions : [],
+      nextSteps: Array.isArray(result.nextSteps) && result.nextSteps.length > 0
+        ? result.nextSteps
+        : (result.atoms && Array.isArray(result.atoms.nextActions) ? result.atoms.nextActions : []),
       followUpQuestion: result.atoms && typeof result.atoms.followupQuestion === 'string'
         ? result.atoms.followupQuestion
         : null,
@@ -967,7 +972,9 @@ async function replyWithPaidDomainConcierge(params) {
     uUnits: ['U-05', 'U-06', 'U-09', 'U-10', 'U-11', 'U-12', 'U-13', 'U-16', 'U-17', 'U-23'],
     nextSteps: shouldBypassResolutionEnvelope
       ? []
-      : (result.atoms && Array.isArray(result.atoms.nextActions) ? result.atoms.nextActions : []),
+      : (Array.isArray(result.nextSteps) && result.nextSteps.length > 0
+        ? result.nextSteps
+        : (result.atoms && Array.isArray(result.atoms.nextActions) ? result.atoms.nextActions : [])),
     followupQuestion: shouldBypassResolutionEnvelope
       ? null
       : (result.atoms && typeof result.atoms.followupQuestion === 'string'
@@ -975,9 +982,14 @@ async function replyWithPaidDomainConcierge(params) {
         : null),
     warnings: shouldBypassResolutionEnvelope
       ? []
-      : (mergedConciergeMeta && Array.isArray(mergedConciergeMeta.blockedReasons)
-        ? mergedConciergeMeta.blockedReasons
-        : []),
+      : ((Array.isArray(result.warnings) && result.warnings.length > 0)
+        ? result.warnings
+        : (mergedConciergeMeta && Array.isArray(mergedConciergeMeta.blockedReasons)
+          ? mergedConciergeMeta.blockedReasons
+          : [])),
+    tasks: shouldBypassResolutionEnvelope ? [] : (Array.isArray(result.tasks) ? result.tasks : []),
+    quickReplies: shouldBypassResolutionEnvelope ? [] : (Array.isArray(result.quickReplies) ? result.quickReplies : []),
+    evidenceRefs: shouldBypassResolutionEnvelope ? [] : (Array.isArray(result.evidenceRefs) ? result.evidenceRefs : []),
     legalSnapshot: payload.legalSnapshot || null,
     sourceAuthorityScore: mergedConciergeMeta && Number.isFinite(Number(mergedConciergeMeta.sourceAuthorityScore))
       ? Number(mergedConciergeMeta.sourceAuthorityScore)
@@ -1468,7 +1480,12 @@ function buildConversationQualityMeta(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const replyText = normalizeReplyText(payload.replyText);
   const domainIntent = normalizeDomainIntent(payload.domainIntent);
-  const actionCountFromAtoms = Array.isArray(payload.nextActions) ? payload.nextActions.length : null;
+  const procedurePacket = payload.procedurePacket && typeof payload.procedurePacket === 'object'
+    ? payload.procedurePacket
+    : null;
+  const actionCountFromAtoms = Array.isArray(payload.nextActions)
+    ? payload.nextActions.length
+    : (Array.isArray(payload.nextSteps) ? payload.nextSteps.length : null);
   const actionCountFromReply = countActionBullets(replyText);
   const actionCount = Number.isFinite(Number(actionCountFromAtoms))
     ? Math.max(0, Math.min(3, Math.floor(Number(actionCountFromAtoms))))
@@ -1527,6 +1544,68 @@ function buildConversationQualityMeta(params) {
       followupResolvedFromHistory: payload.followupResolvedFromHistory === true,
       continuationReason: payload.continuationReason || null
     });
+  const officialCheckTargets = Array.isArray(payload.officialCheckTargets)
+    ? payload.officialCheckTargets
+    : (procedurePacket && Array.isArray(procedurePacket.officialCheckTargets) ? procedurePacket.officialCheckTargets : []);
+  const decisionCriticalMissingFacts = Array.isArray(payload.decisionCriticalMissingFacts)
+    ? payload.decisionCriticalMissingFacts
+    : (procedurePacket && Array.isArray(procedurePacket.decisionCriticalMissingFacts)
+      ? procedurePacket.decisionCriticalMissingFacts
+      : []);
+  const fitRisk = normalizeReplyText(payload.fitRisk || (procedurePacket && procedurePacket.fitRisk)).toLowerCase() || 'low';
+  const relevanceAnchor = normalizeReplyText(payload.relevanceAnchor || (procedurePacket && procedurePacket.relevanceAnchor)) || null;
+  const procedureKnowledgeUsed = payload.procedureKnowledgeUsed === true || Boolean(procedurePacket);
+  const rawSourceReview = procedurePacket && procedurePacket.rawSourceReview && typeof procedurePacket.rawSourceReview === 'object'
+    ? procedurePacket.rawSourceReview
+    : {};
+  const procedureKnowledgeReview = procedurePacket && procedurePacket.procedureKnowledgeReview && typeof procedurePacket.procedureKnowledgeReview === 'object'
+    ? procedurePacket.procedureKnowledgeReview
+    : {};
+  const scaffoldPartCountFromPacket = procedurePacket
+    ? [
+      procedurePacket.overallFlow && procedurePacket.overallFlow.length > 0,
+      procedurePacket.nextBestAction,
+      procedurePacket.keyPoints && procedurePacket.keyPoints.length > 0,
+      procedurePacket.troublePoints && procedurePacket.troublePoints.length > 0,
+      procedurePacket.goodToDo && procedurePacket.goodToDo.length > 0
+    ].filter(Boolean).length
+    : 0;
+  const scaffoldPartCountFromReply = [
+    /全体工程/.test(replyText),
+    /いまやる一手/.test(replyText),
+    /ポイント/.test(replyText),
+    /詰まりどころ/.test(replyText),
+    /やっておくと良いこと/.test(replyText)
+  ].filter(Boolean).length;
+  const scaffoldPartCount = Math.max(scaffoldPartCountFromPacket, scaffoldPartCountFromReply);
+  const procedureComplexity = normalizeReplyText(payload.procedureComplexity || (procedurePacket && procedurePacket.procedureComplexity)).toLowerCase() || 'default';
+  const procedureScaffoldCovered = procedurePacket
+    ? (
+      procedureComplexity === 'full'
+        ? scaffoldPartCount >= 4
+        : scaffoldPartCount >= 2 && (actionCount > 0 || /いまやる一手/.test(replyText))
+    )
+    : scaffoldPartCount >= 2;
+  const oneTurnUtility = payload.oneTurnUtility === true
+    || (actionCount > 0 && (directAnswerApplied || /いまやる一手|まず/.test(replyText)));
+  const dependencyExplicitness = payload.dependencyExplicitness === true
+    || decisionCriticalMissingFacts.length > 0
+    || officialCheckTargets.length > 0
+    || /ごとに差|確認先|依存/.test(replyText);
+  const decisionReadiness = payload.decisionReadiness === true
+    || (actionCount > 0 && !followupQuestionIncluded);
+  const offTargetAnswer = payload.offTargetAnswer === true || fitRisk === 'high';
+  const relevanceFit = payload.relevanceFit === false ? false : !offTargetAnswer;
+  const fakeSpecificity = payload.fakeSpecificity === true
+    || (
+      procedurePacket
+      && procedurePacket.knowledgeMode === 'rule_check'
+      && officialCheckTargets.length === 0
+      && /(期限|必要書類|書類|予約|要件|予防接種)/.test(normalizeReplyText(payload.messageText || replyText))
+    );
+  const userEffortShift = payload.userEffortShift === true
+    || (followupQuestionIncluded && actionCount === 0);
+  const transformBadFactCarry = payload.transformBadFactCarry === true;
   const knowledgeCandidateCountBySource = payload.knowledgeCandidateCountBySource
     && typeof payload.knowledgeCandidateCountBySource === 'object'
     ? Object.assign({}, payload.knowledgeCandidateCountBySource)
@@ -1585,7 +1664,32 @@ function buildConversationQualityMeta(params) {
     groundedCandidateAvailable: payload.groundedCandidateAvailable === true,
     structuredCandidateAvailable: payload.structuredCandidateAvailable === true,
     continuationCandidateAvailable: payload.continuationCandidateAvailable === true,
-    genericFallbackSlice
+    genericFallbackSlice,
+    procedureKnowledgeUsed,
+    replyObjective: normalizeReplyText(payload.replyObjective || (procedurePacket && procedurePacket.replyObjective)).toLowerCase() || null,
+    answerMode: normalizeReplyText(payload.answerMode || (procedurePacket && procedurePacket.answerMode)).toLowerCase() || null,
+    knowledgeMode: normalizeReplyText(payload.knowledgeMode || (procedurePacket && procedurePacket.knowledgeMode)).toLowerCase() || null,
+    procedureComplexity,
+    relevanceAnchor,
+    fitRisk,
+    decisionCriticalMissingFacts,
+    officialCheckTargets,
+    officialCheckTargetCount: officialCheckTargets.length,
+    decisionCriticalMissingFactCount: decisionCriticalMissingFacts.length,
+    rawSourceLayerCount: Math.max(0, Math.min(8, Math.floor(Number(rawSourceReview.rawSourceCount || 0)))),
+    procedureKnowledgeEntryCount: Math.max(0, Math.min(8, Math.floor(Number(procedureKnowledgeReview.entryCount || 0)))),
+    communityRawSourceCount: Math.max(0, Math.min(8, Math.floor(Number(rawSourceReview.communitySourceCount || 0)))),
+    officialRawSourceCount: Math.max(0, Math.min(8, Math.floor(Number(rawSourceReview.officialSourceCount || 0)))),
+    procedureScaffoldPartCount: scaffoldPartCount,
+    procedureScaffoldCovered,
+    oneTurnUtility,
+    decisionReadiness,
+    dependencyExplicitness,
+    relevanceFit,
+    offTargetAnswer,
+    fakeSpecificity,
+    userEffortShift,
+    transformBadFactCarry
   };
 }
 
@@ -2849,6 +2953,43 @@ async function appendLlmActionLogBestEffort(data) {
       followupQuestionIncluded: qualityMeta.followupQuestionIncluded === true,
       actionCount: Number.isFinite(Number(qualityMeta.actionCount)) ? Number(qualityMeta.actionCount) : 0,
       pitfallIncluded: qualityMeta.pitfallIncluded === true,
+      procedureKnowledgeUsed: qualityMeta.procedureKnowledgeUsed === true,
+      replyObjective: typeof qualityMeta.replyObjective === 'string' && qualityMeta.replyObjective.trim()
+        ? qualityMeta.replyObjective.trim().toLowerCase()
+        : null,
+      answerMode: typeof qualityMeta.answerMode === 'string' && qualityMeta.answerMode.trim()
+        ? qualityMeta.answerMode.trim().toLowerCase()
+        : null,
+      knowledgeMode: typeof qualityMeta.knowledgeMode === 'string' && qualityMeta.knowledgeMode.trim()
+        ? qualityMeta.knowledgeMode.trim().toLowerCase()
+        : null,
+      procedureComplexity: typeof qualityMeta.procedureComplexity === 'string' && qualityMeta.procedureComplexity.trim()
+        ? qualityMeta.procedureComplexity.trim().toLowerCase()
+        : null,
+      fitRisk: typeof qualityMeta.fitRisk === 'string' && qualityMeta.fitRisk.trim()
+        ? qualityMeta.fitRisk.trim().toLowerCase()
+        : null,
+      relevanceAnchor: typeof qualityMeta.relevanceAnchor === 'string' && qualityMeta.relevanceAnchor.trim()
+        ? qualityMeta.relevanceAnchor.trim()
+        : null,
+      decisionCriticalMissingFactCount: Number.isFinite(Number(qualityMeta.decisionCriticalMissingFactCount))
+        ? Number(qualityMeta.decisionCriticalMissingFactCount)
+        : 0,
+      officialCheckTargetCount: Number.isFinite(Number(qualityMeta.officialCheckTargetCount))
+        ? Number(qualityMeta.officialCheckTargetCount)
+        : 0,
+      procedureScaffoldPartCount: Number.isFinite(Number(qualityMeta.procedureScaffoldPartCount))
+        ? Number(qualityMeta.procedureScaffoldPartCount)
+        : 0,
+      procedureScaffoldCovered: qualityMeta.procedureScaffoldCovered === true,
+      oneTurnUtility: qualityMeta.oneTurnUtility === true,
+      decisionReadiness: qualityMeta.decisionReadiness === true,
+      dependencyExplicitness: qualityMeta.dependencyExplicitness === true,
+      relevanceFit: qualityMeta.relevanceFit !== false,
+      offTargetAnswer: qualityMeta.offTargetAnswer === true,
+      fakeSpecificity: qualityMeta.fakeSpecificity === true,
+      userEffortShift: qualityMeta.userEffortShift === true,
+      transformBadFactCarry: qualityMeta.transformBadFactCarry === true,
       domainIntent: qualityMeta.domainIntent || 'general',
       intentRiskTier: riskSnapshot.intentRiskTier,
       riskReasonCodes: riskSnapshot.riskReasonCodes,
@@ -3961,13 +4102,22 @@ async function replyWithFreeRetrieval(params) {
     eventSource: payload.eventSource,
     pathType: 'slow',
     uUnits: ['U-05', 'U-06', 'U-09', 'U-10', 'U-11', 'U-16', 'U-17'],
-    nextSteps: [],
-    followupQuestion: contextualFollowup && typeof contextualFollowup.replyText === 'string'
-      ? contextualFollowup.replyText
-      : null,
-    warnings: conciergeMeta && Array.isArray(conciergeMeta.blockedReasons)
-      ? conciergeMeta.blockedReasons
-      : [],
+    nextSteps: contextualFollowup && Array.isArray(contextualFollowup.nextSteps) && contextualFollowup.nextSteps.length > 0
+      ? contextualFollowup.nextSteps
+      : (Array.isArray(retrieval.nextSteps) ? retrieval.nextSteps : []),
+    followupQuestion: null,
+    warnings: contextualFollowup && Array.isArray(contextualFollowup.warnings) && contextualFollowup.warnings.length > 0
+      ? contextualFollowup.warnings
+      : (Array.isArray(retrieval.warnings) ? retrieval.warnings : []),
+    tasks: contextualFollowup && Array.isArray(contextualFollowup.tasks) && contextualFollowup.tasks.length > 0
+      ? contextualFollowup.tasks
+      : (Array.isArray(retrieval.tasks) ? retrieval.tasks : []),
+    quickReplies: contextualFollowup && Array.isArray(contextualFollowup.quickReplies) && contextualFollowup.quickReplies.length > 0
+      ? contextualFollowup.quickReplies
+      : (Array.isArray(retrieval.quickReplies) ? retrieval.quickReplies : []),
+    evidenceRefs: contextualFollowup && Array.isArray(contextualFollowup.evidenceRefs) && contextualFollowup.evidenceRefs.length > 0
+      ? contextualFollowup.evidenceRefs
+      : (Array.isArray(retrieval.evidenceRefs) ? retrieval.evidenceRefs : []),
     legalSnapshot: payload.legalSnapshot || null,
     sourceAuthorityScore: conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceAuthorityScore))
       ? Number(conciergeMeta.sourceAuthorityScore)
@@ -3994,6 +4144,9 @@ async function replyWithFreeRetrieval(params) {
   const conversationQuality = buildConversationQualityMeta({
     replyText,
     domainIntent,
+    nextSteps: contextualFollowup && Array.isArray(contextualFollowup.nextSteps) && contextualFollowup.nextSteps.length > 0
+      ? contextualFollowup.nextSteps
+      : (Array.isArray(retrieval.nextSteps) ? retrieval.nextSteps : []),
     fallbackType: sanitizeLegacyTemplateForPaid
       ? 'free_retrieval_sanitized'
       : (contextualFollowup ? 'free_contextual_followup' : 'free_retrieval'),
@@ -4004,7 +4157,16 @@ async function replyWithFreeRetrieval(params) {
     clarifySuppressed: contextualFollowup ? contextualFollowup.qualityMeta.clarifySuppressed === true : false,
     repetitionPrevented: contextualFollowup ? contextualFollowup.qualityMeta.repetitionPrevented === true : false,
     contextCarryScore: contextualFollowup ? contextualFollowup.qualityMeta.contextCarryScore : 0,
-    repeatRiskScore: contextualFollowup ? contextualFollowup.qualityMeta.repeatRiskScore : 0
+    repeatRiskScore: contextualFollowup ? contextualFollowup.qualityMeta.repeatRiskScore : 0,
+    procedurePacket: contextualFollowup && contextualFollowup.procedurePacket
+      ? contextualFollowup.procedurePacket
+      : (retrieval && retrieval.procedurePacket ? retrieval.procedurePacket : null),
+    decisionCriticalMissingFacts: contextualFollowup && contextualFollowup.procedurePacket
+      ? contextualFollowup.procedurePacket.decisionCriticalMissingFacts
+      : (retrieval && retrieval.procedurePacket ? retrieval.procedurePacket.decisionCriticalMissingFacts : []),
+    officialCheckTargets: contextualFollowup && contextualFollowup.procedurePacket
+      ? contextualFollowup.procedurePacket.officialCheckTargets
+      : (retrieval && retrieval.procedurePacket ? retrieval.procedurePacket.officialCheckTargets : [])
   });
   return Object.assign({}, retrieval, {
     replyText,
@@ -4238,8 +4400,11 @@ async function handleAssistantMessage(params) {
       eventSource: payload.eventSource,
       pathType: 'fast',
       uUnits: ['U-02', 'U-17', 'U-26', 'U-27'],
-      nextSteps: [],
-      followupQuestion: null
+      nextSteps: Array.isArray(casual.nextSteps) ? casual.nextSteps : [],
+      followupQuestion: null,
+      warnings: Array.isArray(casual.warnings) ? casual.warnings : [],
+      quickReplies: Array.isArray(casual.quickReplies) ? casual.quickReplies : [],
+      evidenceRefs: Array.isArray(casual.evidenceRefs) ? casual.evidenceRefs : []
     }, casualConciergeResolution));
     const replyText = semanticReplyEnvelope.replyText;
     await payload.replyFn(
@@ -4256,11 +4421,15 @@ async function handleAssistantMessage(params) {
     const conversationQuality = buildConversationQualityMeta({
       replyText,
       domainIntent: normalizedConversationIntent,
+      nextSteps: Array.isArray(casual.nextSteps) ? casual.nextSteps : [],
       opportunityReasonKeys: routerReason ? [routerReason] : [],
       fallbackType: null,
       legacyTemplateHit: guardedReply.legacyTemplateHit === true,
       pitfallIncluded: guardedReply.pitfallIncluded === true,
-      followupQuestionIncluded: guardedReply.followupQuestionIncluded === true
+      followupQuestionIncluded: guardedReply.followupQuestionIncluded === true,
+      procedurePacket: casual && casual.procedurePacket ? casual.procedurePacket : null,
+      decisionCriticalMissingFacts: casual && casual.procedurePacket ? casual.procedurePacket.decisionCriticalMissingFacts : [],
+      officialCheckTargets: casual && casual.procedurePacket ? casual.procedurePacket.officialCheckTargets : []
     });
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -4929,8 +5098,11 @@ async function handleAssistantMessage(params) {
       eventSource: payload.eventSource,
       pathType: 'fast',
       uUnits: ['U-02', 'U-17', 'U-26', 'U-27'],
-      nextSteps: [],
-      followupQuestion: null
+      nextSteps: Array.isArray(casual.nextSteps) ? casual.nextSteps : [],
+      followupQuestion: null,
+      warnings: Array.isArray(casual.warnings) ? casual.warnings : [],
+      quickReplies: Array.isArray(casual.quickReplies) ? casual.quickReplies : [],
+      evidenceRefs: Array.isArray(casual.evidenceRefs) ? casual.evidenceRefs : []
     }, casualConciergeResolution));
     const replyText = semanticReplyEnvelope.replyText;
     await payload.replyFn(
@@ -4943,6 +5115,19 @@ async function handleAssistantMessage(params) {
       evidenceCoverage: 0,
       blockedStage: null,
       fallbackReason: null
+    });
+    const conversationQuality = buildConversationQualityMeta({
+      replyText,
+      domainIntent: normalizedConversationIntent,
+      nextSteps: Array.isArray(casual.nextSteps) ? casual.nextSteps : [],
+      opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
+      fallbackType: null,
+      legacyTemplateHit: guardedReply.legacyTemplateHit === true,
+      pitfallIncluded: guardedReply.pitfallIncluded === true,
+      followupQuestionIncluded: guardedReply.followupQuestionIncluded === true,
+      procedurePacket: casual && casual.procedurePacket ? casual.procedurePacket : null,
+      decisionCriticalMissingFacts: casual && casual.procedurePacket ? casual.procedurePacket.decisionCriticalMissingFacts : [],
+      officialCheckTargets: casual && casual.procedurePacket ? casual.procedurePacket.officialCheckTargets : []
     });
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -5525,12 +5710,19 @@ async function handleAssistantMessage(params) {
     clarifyText: getMinSafeApplyLiteral('leaf_webhook_readiness_clarify', 'まず対象手続きと期限を1つずつ教えてください。そこから具体的な次の一手を整理します。'),
     refuseText: getMinSafeApplyLiteral('leaf_webhook_readiness_refuse', 'この内容は安全に断定できないため、公式窓口で最終確認をお願いします。必要なら確認項目を整理します。')
   });
+  const paidSemanticNextSteps = Array.isArray(paid.nextSteps) && paid.nextSteps.length > 0
+    ? paid.nextSteps
+    : (paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : []);
+  const paidSemanticWarnings = Array.isArray(paid.warnings) ? paid.warnings : [];
+  const paidSemanticTasks = Array.isArray(paid.tasks) ? paid.tasks : [];
+  const paidSemanticQuickReplies = Array.isArray(paid.quickReplies) ? paid.quickReplies : [];
+  const paidSemanticEvidenceRefs = Array.isArray(paid.evidenceRefs) ? paid.evidenceRefs : [];
   const mainConciergeResolution = buildConversationConciergeEnvelope({
     lane: 'paid_main',
     baseReplyText: responseQualityVerdict.replyText,
     domainIntent: normalizedConversationIntent,
     topic: normalizedConversationIntent || 'general',
-    nextSteps: paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : [],
+    nextSteps: paidSemanticNextSteps,
     followUpQuestion: paid && paid.output && Array.isArray(paid.output.gaps) ? paid.output.gaps[0] : '',
     officialLinkCandidates: conciergeMeta && Array.isArray(conciergeMeta.urls) ? conciergeMeta.urls : [],
     blockerNotes: []
@@ -5559,13 +5751,17 @@ async function handleAssistantMessage(params) {
     pathType: 'slow',
     uUnits: ['U-05', 'U-06', 'U-09', 'U-11', 'U-12', 'U-13', 'U-14', 'U-15', 'U-16', 'U-17'],
     disableAutoQuickReplies: normalizedConversationIntent !== 'general',
-    nextSteps: paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : [],
+    nextSteps: paidSemanticNextSteps,
     followupQuestion: paid && paid.output && Array.isArray(paid.output.gaps) ? paid.output.gaps[0] : '',
     warnings: []
+      .concat(paidSemanticWarnings)
       .concat(conciergeMeta && Array.isArray(conciergeMeta.blockedReasons) ? conciergeMeta.blockedReasons : [])
       .concat(readinessTelemetry.readiness && Array.isArray(readinessTelemetry.readiness.reasonCodes)
         ? readinessTelemetry.readiness.reasonCodes
         : []),
+    tasks: paidSemanticTasks,
+    quickReplies: paidSemanticQuickReplies,
+    evidenceRefs: paidSemanticEvidenceRefs,
     legalSnapshot,
     sourceAuthorityScore: conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceAuthorityScore))
       ? Number(conciergeMeta.sourceAuthorityScore)
@@ -5606,12 +5802,15 @@ async function handleAssistantMessage(params) {
   const conversationQuality = buildConversationQualityMeta({
     replyText,
     domainIntent: normalizedConversationIntent,
-    nextActions: paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : [],
+    nextActions: paidSemanticNextSteps,
     opportunityReasonKeys,
     fallbackType: null,
     legacyTemplateHit: guardedMainReply.legacyTemplateHit === true,
     pitfallIncluded: guardedMainReply.pitfallIncluded === true,
-    followupQuestionIncluded: guardedMainReply.followupQuestionIncluded === true
+    followupQuestionIncluded: guardedMainReply.followupQuestionIncluded === true,
+    procedurePacket: paid && paid.procedurePacket ? paid.procedurePacket : null,
+    decisionCriticalMissingFacts: paid && paid.procedurePacket ? paid.procedurePacket.decisionCriticalMissingFacts : [],
+    officialCheckTargets: paid && paid.procedurePacket ? paid.procedurePacket.officialCheckTargets : []
   });
   const usage = await recordLlmUsage({
     userId: lineUserId,

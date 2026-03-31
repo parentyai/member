@@ -16,5 +16,47 @@
     "title": "over_clarification",
     "sliceKey": "short_followup",
     "expectedGuard": "clarification_burden_budget"
+  },
+  {
+    "counterexampleId": "CE-07",
+    "title": "generic_but_polite",
+    "sliceKey": "japanese_service_quality",
+    "expectedGuard": "one_turn_utility_guard"
+  },
+  {
+    "counterexampleId": "CE-08",
+    "title": "off_target_but_fluent",
+    "sliceKey": "domain_continuation",
+    "expectedGuard": "relevance_fit_check"
+  },
+  {
+    "counterexampleId": "CE-09",
+    "title": "universal_deadline_claim",
+    "sliceKey": "domain_continuation",
+    "expectedGuard": "procedure_dependency_guard"
+  },
+  {
+    "counterexampleId": "CE-10",
+    "title": "blog_dump_without_interpretation",
+    "sliceKey": "short_followup",
+    "expectedGuard": "procedure_knowledge_synthesis"
+  },
+  {
+    "counterexampleId": "CE-11",
+    "title": "question_without_decision_impact",
+    "sliceKey": "short_followup",
+    "expectedGuard": "decision_impact_question_gate"
+  },
+  {
+    "counterexampleId": "CE-12",
+    "title": "rewrite_preserves_bad_fact",
+    "sliceKey": "japanese_service_quality",
+    "expectedGuard": "transform_bad_fact_guard"
+  },
+  {
+    "counterexampleId": "CE-13",
+    "title": "procedure_missing_five_pack",
+    "sliceKey": "domain_continuation",
+    "expectedGuard": "procedure_scaffold_guard"
   }
 ]

@@ -81,6 +81,27 @@ function runNodeScript(scriptPath, args, cwd) {
   };
 }
 
+function runCommandCheck(definition, cwd) {
+  const payload = definition && typeof definition === 'object' ? definition : {};
+  const fixture = typeof payload.fixture === 'string' ? payload.fixture.trim() : '';
+  const command = Array.isArray(payload.command)
+    ? payload.command.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  if (!fixture || command.length === 0) return null;
+  const run = spawnSync(command[0], command.slice(1), {
+    cwd,
+    encoding: 'utf8'
+  });
+  return {
+    fixture,
+    pass: run.status === 0,
+    critical: payload.critical !== false,
+    reason: run.status === 0 ? null : 'command_check_failed',
+    command,
+    exitStatus: Number.isInteger(run.status) ? run.status : 1
+  };
+}
+
 function evaluateScorecardSlices(baseline, candidate) {
   const baselineSlices = toMap(normalizeSliceArray(baseline), 'sliceKey');
   const candidateSlices = toMap(normalizeSliceArray(candidate), 'sliceKey');
@@ -150,6 +171,14 @@ function main(argv) {
   });
 
   checks.push(...evaluateScorecardSlices(baseline, candidate));
+
+  const commandChecks = Array.isArray(fixtureList && fixtureList.commandChecks)
+    ? fixtureList.commandChecks
+    : [];
+  commandChecks.forEach((definition) => {
+    const result = runCommandCheck(definition, root);
+    if (result) checks.push(result);
+  });
 
   const required = Array.isArray(fixtureList && fixtureList.required) ? fixtureList.required : [];
   const checkMap = new Map(checks.map((row) => [row.fixture, row]));
