@@ -21,6 +21,15 @@ test('phase765: classifyCounterexample maps loop/default_casual to CE-06', () =>
   assert.equal(row.counterexampleId, 'CE-06');
 });
 
+test('phase765: classifyCounterexample maps off-target school line fit failures to CE-14', () => {
+  const row = classifyCounterexample({
+    category: 'line_fit_failure',
+    signal: 'offTargetAnswerRate',
+    severity: 'high'
+  });
+  assert.equal(row.counterexampleId, 'CE-14');
+});
+
 test('phase765: buildQueue deduplicates by counterexampleId + signal and respects limit', () => {
   const queue = buildQueue({
     latest: {

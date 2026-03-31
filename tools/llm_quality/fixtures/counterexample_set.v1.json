@@ -58,5 +58,11 @@
     "title": "procedure_missing_five_pack",
     "sliceKey": "domain_continuation",
     "expectedGuard": "procedure_scaffold_guard"
+  },
+  {
+    "counterexampleId": "CE-14",
+    "title": "school_one_step_saved_faq_mismatch",
+    "sliceKey": "domain_continuation",
+    "expectedGuard": "runtime_knowledge_intent_fit_guard"
   }
 ]
