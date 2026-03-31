@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-29T22:36:31-04:00",
-  "gitCommit": "0ba71a2fa74444bf4571d5ffb39edd87a65c36f5",
-  "branch": "codex/document-pair-mixed-domain-fix-T022",
-  "sourceDigest": "7346b63f3c80152f171f2729c158cd40d5caecdb211af08717c194c237989ca8",
+  "generatedAt": "2026-03-30T22:05:24-04:00",
+  "gitCommit": "1edf672609751be1b5a8c07f2929231a9f78d454",
+  "branch": "codex/reply-ux-80-T018",
+  "sourceDigest": "a15426f222d4f456b4fe0316d8c5a553c23b37b4330c52014ffeff8bca03e52b",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

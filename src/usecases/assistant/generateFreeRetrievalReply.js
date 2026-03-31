@@ -23,6 +23,12 @@ function trimForLineMessage(value) {
   return text.length > 4500 ? `${text.slice(0, 4500)}...` : text;
 }
 
+function isUrgentProcedurePrompt(question) {
+  const text = normalizeText(question);
+  if (!text) return false;
+  return /(至急|urgent|本日中|今日中|今すぐ|すぐ|急ぎ|期限切れ|間に合)/i.test(text);
+}
+
 function inferProcedureDomain(question, faqCandidates, cityPackCandidates) {
   const sample = [
     normalizeText(question),
@@ -99,12 +105,15 @@ function buildRankedReply(question, faqCandidates, cityPackCandidates) {
     cityPackCandidates,
     supportingSourceRefs: []
   });
+  const styleLead = isUrgentProcedurePrompt(question)
+    ? 'まずこの順です。'
+    : 'この順で進めると迷いにくいです。';
   const procedureText = renderProcedureReplyPacket(procedurePacket, {
     mode: 'default'
   });
   const citationSection = buildCitationSection(faqCandidates, cityPackCandidates);
   return {
-    replyText: [procedureText, citationSection, '必要なら、このまま「次の一手」「確認先」「詰まりどころ」と送れば続けて整理できます。']
+    replyText: [styleLead, procedureText, citationSection, '必要なら、このまま「次の一手」「確認先」「詰まりどころ」と送れば続けて整理できます。']
       .filter(Boolean)
       .join('\n\n')
       .trim(),
