@@ -10,6 +10,7 @@
     "slice:minority_personas",
     "slice:cultural_slices",
     "contract:procedure_strategic_reply",
+    "contract:school_one_step_runtime_fit",
     "contract:free_contextual_followup_procedure",
     "contract:paid_casual_procedure",
     "contract:free_retrieval_procedure",
@@ -19,6 +20,10 @@
     {
       "fixture": "contract:procedure_strategic_reply",
       "command": ["node", "--test", "tests/phase734/phase734_t03_strategic_self_improvement_reply_contract.test.js"]
+    },
+    {
+      "fixture": "contract:school_one_step_runtime_fit",
+      "command": ["node", "--test", "tests/phase731/phase731_t02_paid_orchestrator_run_contract.test.js"]
     },
     {
       "fixture": "contract:free_contextual_followup_procedure",

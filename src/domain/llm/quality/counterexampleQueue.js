@@ -35,6 +35,17 @@ function defaultSeverityByCategory(category) {
 function classifyCounterexampleSignal(entry) {
   const signal = normalizeSignal(entry && entry.signal);
   const category = normalizeCategory(entry && entry.category);
+  if (
+    signal.includes('offtarget')
+    || signal.includes('relevancefit')
+    || signal.includes('saved_faq_intent_mismatch')
+  ) {
+    return {
+      counterexampleId: 'CE-14',
+      owner: 'knowledge_orchestrator',
+      remediation: 'enforce runtime intent-fit guards and preserve low-friction school one-step answers before saved FAQ reuse'
+    };
+  }
   if (signal.includes('default_casual') || category.includes('loop')) {
     return {
       counterexampleId: 'CE-06',
