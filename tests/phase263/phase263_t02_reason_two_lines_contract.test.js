@@ -13,7 +13,7 @@ test('phase263: decision reasons are built via shared 2-line formatter (contract
   assert.ok(js.includes("reason1: `${pendingLabel}: ${pending}`"));
   assert.ok(js.includes("reason2: `${primaryLabel}: ${primary}`"));
 
-  // All panes must route through the formatter to keep the 2-line contract stable.
+  // Shared formatter remains the stable fallback for dashboard and evidence-style panes.
   assert.ok(js.includes('resolveHomeDecisionVm()'));
   assert.ok(js.includes('resolveComposerDecisionVm()'));
   assert.ok(js.includes('resolveMonitorDecisionVm()'));
@@ -36,7 +36,8 @@ test('phase263: decision reasons are built via shared 2-line formatter (contract
     assert.ok(count >= 1, `missing function: ${name}`);
   });
 
-  // The formatter should be referenced multiple times (>= 6) across resolve* functions.
-  assert.ok((js.match(/buildDecisionReasons\(/g) || []).length >= 6);
+  // Task-first panes may surface human-readable task notes instead of the generic 2-line formatter.
+  assert.ok((js.match(/buildDecisionReasons\(/g) || []).length >= 4);
+  assert.ok(js.includes('reason1: taskSummary.primaryNote'));
+  assert.ok(js.includes('reason2: taskSummary.secondaryNote'));
 });
-

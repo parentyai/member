@@ -14,7 +14,8 @@ test('phase261: decision state rules are fixed to READY/ATTENTION/STOP', () => {
 
   assert.ok(js.includes("const decisionState = counts.DANGER > 0 ? 'STOP' : counts.WARN > 0 ? 'ATTENTION' : 'READY';"));
   assert.ok(js.includes("const decisionState = warnLinks > 0 ? 'STOP' : retryQueue > 0 ? 'ATTENTION' : 'READY';"));
-  assert.ok(js.includes("const decisionState = blocked > 0 ? 'STOP' : needsReview > 0 ? 'ATTENTION' : 'READY';"));
+  assert.ok(js.includes("const decisionState = taskSummary.blockedCount > 0 ? 'STOP' : taskSummary.needsReviewCount > 0 ? 'ATTENTION' : 'READY';"));
+  assert.ok(js.includes("const decisionState = taskSummary.criticalCount > 0 ? 'STOP' : taskSummary.draftCount > 0 ? 'ATTENTION' : 'READY';"));
   assert.ok(js.includes("const decisionState = warnCount >= 3 ? 'STOP' : (warnCount > 0 || staleCount > 0) ? 'ATTENTION' : 'READY';"));
 });
 

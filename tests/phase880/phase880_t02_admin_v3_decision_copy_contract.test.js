@@ -23,11 +23,19 @@ test('phase880: ops shell rewrites decision card copy and meaningful pane CTA be
   assert.ok(js.includes("document.getElementById('users-summary-reload')?.click();"));
   assert.ok(js.includes("document.getElementById('city-pack-unified-reload')?.click();"));
   assert.ok(js.includes("document.getElementById('emergency-bulletin-reload')?.click();"));
+  assert.ok(js.includes("titleFallback: '送る内容を仕上げる'"));
+  assert.ok(js.includes("titleFallback: '配信結果から次の対応先を決める'"));
+  assert.ok(js.includes("titleFallback: '異常の種類を見分ける'"));
+  assert.ok(js.includes('hideTertiary: true'));
 
   assert.ok(dict.includes('"ui.label.v3.decision.home.title": "最初にやることを決める"'));
   assert.ok(dict.includes('"ui.label.v3.decision.alerts.secondary": "一覧を更新する"'));
-  assert.ok(dict.includes('"ui.label.v3.decision.composer.title": "送信内容を整える"'));
-  assert.ok(dict.includes('"ui.label.v3.decision.monitor.secondary": "結果を更新する"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.composer.title": "送る内容を仕上げる"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.composer.secondary": "次の操作を開く"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.monitor.title": "配信結果から次の対応先を決める"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.monitor.secondary": "一覧を更新する"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.errors.title": "異常の種類を見分ける"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.errors.secondary": "次の対応先を開く"'));
   assert.ok(dict.includes('"ui.label.v3.decision.readModel.title": "会員の状態から次の確認先を決める"'));
   assert.ok(dict.includes('"ui.label.v3.decision.readModel.primary": "会員を絞り込む"'));
   assert.ok(dict.includes('"ui.label.v3.decision.cityPack.title": "地域案内の要確認を片づける"'));

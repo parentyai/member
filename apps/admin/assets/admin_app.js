@@ -991,32 +991,32 @@ const V3_DECISION_CARD_COPY_MAP = Object.freeze({
   }),
   composer: Object.freeze({
     titleKey: 'ui.label.v3.decision.composer.title',
-    titleFallback: '送信内容を整える',
+    titleFallback: '送る内容を仕上げる',
     primaryKey: 'ui.label.v3.decision.composer.primary',
-    primaryFallback: '本文を編集する',
+    primaryFallback: '本文を整える',
     secondaryKey: 'ui.label.v3.decision.composer.secondary',
-    secondaryFallback: '送信前確認へ進む',
+    secondaryFallback: '次の操作を開く',
     hideTertiary: true
   }),
   monitor: Object.freeze({
     titleKey: 'ui.label.v3.decision.monitor.title',
-    titleFallback: '配信結果を確認する',
+    titleFallback: '配信結果から次の対応先を決める',
     primaryKey: 'ui.label.v3.decision.monitor.primary',
-    primaryFallback: '送信内容へ戻る',
+    primaryFallback: '履歴を絞り込む',
     secondaryKey: 'ui.label.v3.decision.monitor.secondary',
-    secondaryFallback: '結果を更新する',
+    secondaryFallback: '一覧を更新する',
     hideTertiary: true
   }),
   errors: Object.freeze({
     titleKey: 'ui.label.v3.decision.errors.title',
-    titleFallback: '復旧の次の一手',
+    titleFallback: '異常の種類を見分ける',
     primaryKey: 'ui.label.v3.decision.errors.primary',
-    primaryFallback: '配信結果を見る',
+    primaryFallback: '異常の内容を確認する',
     secondaryKey: 'ui.label.v3.decision.errors.secondary',
-    secondaryFallback: 'システム記録を見る',
+    secondaryFallback: '次の対応先を開く',
     tertiaryKey: 'ui.label.v3.decision.errors.tertiary',
     tertiaryFallback: '保守画面を開く',
-    hideTertiary: false
+    hideTertiary: true
   }),
   'read-model': Object.freeze({
     titleKey: 'ui.label.v3.decision.readModel.title',
@@ -7889,48 +7889,42 @@ function computeTopAnomaly(items) {
 }
 
 function resolveComposerDecisionVm() {
+  const taskSummary = resolveComposerTaskSummary();
   const tone = state.composerTone || 'unknown';
   const decisionState = tone === 'danger'
     ? 'STOP'
     : tone === 'warn'
       ? 'ATTENTION'
       : 'READY';
-  const reasons = buildDecisionReasons(decisionState === 'READY' ? 0 : 1, state.lastRisk || state.currentComposerStatus || t('ui.desc.composer.riskDefault', 'Plan未実行'));
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote,
+    reason2: taskSummary.secondaryNote,
     updatedAt: state.composerUpdatedAt || resolvePaneUpdatedAt('composer')
   };
 }
 
 function resolveMonitorDecisionVm() {
   const counts = getHealthCounts(state.monitorItems);
+  const taskSummary = resolveMonitorTaskSummary();
   const decisionState = counts.DANGER > 0 ? 'STOP' : counts.WARN > 0 ? 'ATTENTION' : 'READY';
-  const reasons = buildDecisionReasons(counts.DANGER || 0, state.topCauses || '-');
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote,
+    reason2: taskSummary.secondaryNote,
     updatedAt: resolvePaneUpdatedAt('monitor')
   };
 }
 
 function resolveErrorsDecisionVm() {
-  const summary = state.errorsSummary && typeof state.errorsSummary === 'object' ? state.errorsSummary : null;
-  const warnLinks = Array.isArray(summary && summary.warnLinks) ? summary.warnLinks.length : 0;
-  const retryQueue = Array.isArray(summary && summary.retryQueuePending) ? summary.retryQueuePending.length : 0;
+  const taskSummary = resolveErrorsTaskSummary();
+  const warnLinks = taskSummary.warnLinks;
+  const retryQueue = taskSummary.retryQueue;
   const decisionState = warnLinks > 0 ? 'STOP' : retryQueue > 0 ? 'ATTENTION' : 'READY';
-  const primary = warnLinks > 0
-    ? t('ui.label.errors.warnLinks', '危険リンク一覧')
-    : retryQueue > 0
-      ? t('ui.label.errors.retryQueue', '再送待ち一覧')
-      : t('ui.status.ok', '問題なし');
-  const reasons = buildDecisionReasons(warnLinks + retryQueue, primary);
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote,
+    reason2: taskSummary.secondaryNote,
     updatedAt: resolvePaneUpdatedAt('errors')
   };
 }
@@ -8051,6 +8045,225 @@ function resolveAlertsDecisionVm() {
   };
 }
 
+function resolveComposerTaskSummary() {
+  const payload = buildDraftPayload();
+  const issues = buildComposerLocalSafetyIssues(payload);
+  const gate = state.composerActionGateState && typeof state.composerActionGateState === 'object'
+    ? state.composerActionGateState
+    : computeComposerActionGateState(payload, issues);
+  const mappedStatus = mapComposerStatusLabel(state.currentComposerStatus);
+  const targetText = Number.isFinite(Number(payload && payload.target && payload.target.limit))
+    ? `${Math.floor(Number(payload.target.limit))}件まで`
+    : '-';
+  const stageText = {
+    draft: '下書き準備',
+    approved: '承認済み',
+    planned: '送信前確認済み',
+    executed: '送信済み'
+  }[mappedStatus] || '下書き準備';
+  const safetyText = gate.validationError
+    ? '入力待ち'
+    : gate.hasSafetyIssue
+      ? '要修正'
+      : gate.canExecute
+        ? '送信可'
+        : gate.hasPlanToken
+          ? '確認済み'
+          : gate.hasNotificationId
+            ? '承認済み'
+            : '下書き前';
+
+  if (gate.validationError || !gate.hasNotificationId) {
+    return {
+      stageText,
+      safetyText,
+      targetText,
+      primaryTask: '下書きを作る',
+      primaryNote: gate.validationError || '本文と対象を整えたら、まず下書きを作ります。',
+      secondaryTask: 'プレビューで見え方を確認する',
+      secondaryNote: '保存前でも、LINEでどう見えるかを確認できます。'
+    };
+  }
+  if (gate.hasSafetyIssue) {
+    return {
+      stageText,
+      safetyText,
+      targetText,
+      primaryTask: '安全チェックを直す',
+      primaryNote: Array.isArray(issues) && issues.length ? String(issues[0]) : '送信前に修正が必要な項目があります。',
+      secondaryTask: '次の操作を見直す',
+      secondaryNote: '修正後に、左側の主操作から次の段階へ進めます。'
+    };
+  }
+  if (mappedStatus === 'draft') {
+    return {
+      stageText,
+      safetyText,
+      targetText,
+      primaryTask: '承認に進む',
+      primaryNote: '下書きは保存済みです。内容を確かめて承認に進みます。',
+      secondaryTask: 'プレビューを見直す',
+      secondaryNote: '最終確認として、本文とリンクの見え方を確認します。'
+    };
+  }
+  if (!gate.hasPlanToken) {
+    return {
+      stageText,
+      safetyText,
+      targetText,
+      primaryTask: '送信前確認を開く',
+      primaryNote: '承認済みです。対象人数と抑制対象を確認してから送信します。',
+      secondaryTask: '本文を微調整する',
+      secondaryNote: '違和感があれば、この画面の入力欄で文面を調整できます。'
+    };
+  }
+  if (mappedStatus === 'executed') {
+    return {
+      stageText,
+      safetyText: '送信済み',
+      targetText,
+      primaryTask: '配信結果を確認する',
+      primaryNote: '送信は完了しています。配信結果で反応を確認します。',
+      secondaryTask: '次の通知を準備する',
+      secondaryNote: '必要ならこの内容をもとに次の通知を作り直します。'
+    };
+  }
+  return {
+    stageText,
+    safetyText,
+    targetText,
+    primaryTask: '送信実行を確認する',
+    primaryNote: '送信条件がそろいました。左側の主操作から送信実行へ進めます。',
+    secondaryTask: '対象人数を見直す',
+    secondaryNote: '不安があれば、送信前に対象人数をもう一度確認します。'
+  };
+}
+
+function renderComposerTaskSummary() {
+  const summary = resolveComposerTaskSummary();
+  setTextContent('composer-summary-stage', summary.stageText);
+  setTextContent('composer-summary-safety', summary.safetyText);
+  setTextContent('composer-summary-target', summary.targetText);
+  setTextContent('composer-priority-task', summary.primaryTask);
+  setTextContent('composer-priority-note', summary.primaryNote);
+  setTextContent('composer-priority-secondary-task', summary.secondaryTask);
+  setTextContent('composer-priority-secondary-note', summary.secondaryNote);
+}
+
+function resolveMonitorTaskSummary() {
+  const visibleItems = resolveMonitorVisibleItems(state.monitorItems);
+  const counts = getHealthCounts(visibleItems);
+  const totalCount = visibleItems.length;
+  const stopCount = Number(counts.DANGER || 0);
+  const attentionCount = Number(counts.WARN || 0);
+
+  if (stopCount > 0) {
+    return {
+      totalCount,
+      stopCount,
+      attentionCount,
+      primaryTask: '要停止の配信を見る',
+      primaryNote: `${stopCount}件が要停止です。状態が重い配信から順に確認します。`,
+      secondaryTask: '表示条件を絞り込む',
+      secondaryNote: '表示ビューを「要対応」にすると、異常のある配信だけに絞れます。'
+    };
+  }
+  if (attentionCount > 0) {
+    return {
+      totalCount,
+      stopCount,
+      attentionCount,
+      primaryTask: '注意がある配信を見る',
+      primaryNote: `${attentionCount}件に注意が必要です。タイトルや状態で絞って確認します。`,
+      secondaryTask: '一覧を更新する',
+      secondaryNote: '必要なときだけ更新して、最新の結果を確認します。'
+    };
+  }
+  if (totalCount > 0) {
+    return {
+      totalCount,
+      stopCount,
+      attentionCount,
+      primaryTask: '履歴を絞り込む',
+      primaryNote: `${totalCount}件を表示中です。見たい通知だけに絞り込んで確認します。`,
+      secondaryTask: '一覧を更新する',
+      secondaryNote: '新しい配信結果が必要なときだけ更新します。'
+    };
+  }
+  return {
+    totalCount,
+    stopCount,
+    attentionCount,
+    primaryTask: '一覧を更新する',
+    primaryNote: '配信結果がまだありません。まず一覧を更新して状況を確認します。',
+    secondaryTask: '履歴を絞り込む',
+    secondaryNote: '一覧が入ったら、状態やキーワードで必要な通知だけに絞れます。'
+  };
+}
+
+function renderMonitorTaskSummary() {
+  const summary = resolveMonitorTaskSummary();
+  setTextContent('monitor-summary-total', summary.totalCount);
+  setTextContent('monitor-summary-stop', summary.stopCount);
+  setTextContent('monitor-summary-attention', summary.attentionCount);
+  setTextContent('monitor-priority-task', summary.primaryTask);
+  setTextContent('monitor-priority-note', summary.primaryNote);
+  setTextContent('monitor-priority-secondary-task', summary.secondaryTask);
+  setTextContent('monitor-priority-secondary-note', summary.secondaryNote);
+}
+
+function resolveErrorsTaskSummary() {
+  const summary = state.errorsSummary && typeof state.errorsSummary === 'object' ? state.errorsSummary : null;
+  const warnLinks = Array.isArray(summary && summary.warnLinks) ? summary.warnLinks.length : 0;
+  const retryQueue = Array.isArray(summary && summary.retryQueuePending) ? summary.retryQueuePending.length : 0;
+  const totalCount = warnLinks + retryQueue;
+
+  if (warnLinks > 0) {
+    return {
+      totalCount,
+      warnLinks,
+      retryQueue,
+      primaryTask: '危険リンクを確認する',
+      primaryNote: `${warnLinks}件の危険リンクがあります。まずリンク先の修正要否を確認します。`,
+      secondaryTask: retryQueue > 0 ? '再送待ちを確認する' : '設定と回復を開く',
+      secondaryNote: retryQueue > 0
+        ? `${retryQueue}件の再送待ちがあります。危険リンクの確認後に見ます。`
+        : '危険リンクの補正が必要なときだけ設定と回復を開きます。'
+    };
+  }
+  if (retryQueue > 0) {
+    return {
+      totalCount,
+      warnLinks,
+      retryQueue,
+      primaryTask: '再送待ちを確認する',
+      primaryNote: `${retryQueue}件が再送待ちです。最新エラーと対象を確認します。`,
+      secondaryTask: '配信結果を開く',
+      secondaryNote: '必要なら配信結果画面で対象通知の履歴を見直します。'
+    };
+  }
+  return {
+    totalCount,
+    warnLinks,
+    retryQueue,
+    primaryTask: '一覧を更新する',
+    primaryNote: '今すぐの異常はありません。更新して問題がないことを再確認します。',
+    secondaryTask: '配信結果を開く',
+    secondaryNote: '異常がなくても、必要なら配信結果から最近の実行状況を確認できます。'
+  };
+}
+
+function renderErrorsTaskSummary() {
+  const summary = resolveErrorsTaskSummary();
+  setTextContent('errors-summary-total', summary.totalCount);
+  setTextContent('errors-summary-warn-links', summary.warnLinks);
+  setTextContent('errors-summary-retry-queue', summary.retryQueue);
+  setTextContent('errors-priority-task', summary.primaryTask);
+  setTextContent('errors-priority-note', summary.primaryNote);
+  setTextContent('errors-priority-secondary-task', summary.secondaryTask);
+  setTextContent('errors-priority-secondary-note', summary.secondaryNote);
+}
+
 function renderAllDecisionCards() {
   renderDecisionCard('home', resolveHomeDecisionVm());
   renderDecisionCard('alerts', resolveAlertsDecisionVm());
@@ -8061,6 +8274,9 @@ function renderAllDecisionCards() {
   renderDecisionCard('emergency-layer', resolveEmergencyLayerDecisionVm());
   renderDecisionCard('city-pack', resolveCityPackDecisionVm());
   renderDecisionCard('vendors', resolveVendorsDecisionVm());
+  renderComposerTaskSummary();
+  renderMonitorTaskSummary();
+  renderErrorsTaskSummary();
   renderReadModelTaskSummary();
   renderCityPackTaskSummary();
   renderEmergencyLayerTaskSummary();
@@ -8220,6 +8436,8 @@ function renderMonitorRows(items) {
     tbody.appendChild(tr);
     state.selectedMonitorNotificationId = null;
     renderMonitorDetail(null);
+    renderMonitorTaskSummary();
+    renderDecisionCard('monitor', resolveMonitorDecisionVm());
     return;
   }
   visibleItems.forEach((item, idx) => {
@@ -8269,6 +8487,8 @@ function renderMonitorRows(items) {
   } else {
     renderMonitorDetail(null);
   }
+  renderMonitorTaskSummary();
+  renderDecisionCard('monitor', resolveMonitorDecisionVm());
 }
 
 function renderReadModelRows(items) {
@@ -12324,6 +12544,8 @@ function renderErrors(summary) {
   } else {
     renderSafeNextStep(safeStepEl, t('ui.desc.errors.safeStepNone', '次にやる安全な1手: 更新を押して異常がないことを再確認する'));
   }
+  renderErrorsTaskSummary();
+  renderDecisionCard('errors', resolveErrorsDecisionVm());
 }
 
 async function loadMonitorData(options) {
@@ -18054,6 +18276,8 @@ function updateComposerSummary() {
   applyComposerActionGateState(gateState);
   renderComposerCurrentActionRail(gateState);
   renderComposerCategoryWizard(payload, gateState);
+  renderComposerTaskSummary();
+  renderDecisionCard('composer', resolveComposerDecisionVm());
   syncComposerOptionalSections();
 }
 
@@ -20760,18 +20984,29 @@ function setupDecisionActions() {
   });
   document.getElementById('composer-action-activate')?.addEventListener('click', () => {
     activatePane('composer');
-    document.getElementById('approve')?.focus();
-    showToast('実行操作は Composer Workbench 内の承認ボタンから実施してください', 'warn');
+    const details = document.getElementById('composer-pane-details');
+    if (details) details.open = true;
+    const currentActionId = resolveComposerCurrentPrimaryAction(state.composerActionGateState);
+    const focusTarget = (currentActionId && document.getElementById(currentActionId))
+      || document.getElementById('composer-preview-trigger')
+      || document.getElementById('title');
+    focusTarget?.focus();
+    showToast('左側の主操作から、次の段階へ進めます', 'ok');
   });
   document.getElementById('composer-action-disable')?.addEventListener('click', () => {
     activatePane('errors');
   });
 
   document.getElementById('monitor-action-edit')?.addEventListener('click', () => {
-    activatePane('composer');
+    activatePane('monitor');
+    const details = document.getElementById('monitor-pane-details');
+    if (details) details.open = true;
+    (document.getElementById('monitor-toolbar-status') || document.getElementById('monitor-toolbar-query') || document.getElementById('monitor-reload'))?.focus();
   });
   document.getElementById('monitor-action-activate')?.addEventListener('click', () => {
     activatePane('monitor');
+    const details = document.getElementById('monitor-pane-details');
+    if (details) details.open = true;
     document.getElementById('monitor-reload')?.click();
   });
   document.getElementById('monitor-action-disable')?.addEventListener('click', () => {
@@ -20779,12 +21014,25 @@ function setupDecisionActions() {
   });
 
   document.getElementById('errors-action-edit')?.addEventListener('click', () => {
-    activatePane('monitor');
+    activatePane('errors');
+    const details = document.getElementById('errors-pane-details');
+    if (details) details.open = true;
+    document.getElementById('errors-reload')?.focus();
   });
   document.getElementById('errors-action-activate')?.addEventListener('click', () => {
-    void openAuditFromSource('errors', ensureTraceInput('errors-trace') || ensureTraceInput('traceId'), { historyMode: 'push' }).catch(() => {
-      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
-    });
+    const summary = resolveErrorsTaskSummary();
+    if (summary.warnLinks > 0) {
+      activatePane('maintenance');
+      return;
+    }
+    activatePane('monitor');
+    const details = document.getElementById('monitor-pane-details');
+    if (details) details.open = true;
+    if (summary.retryQueue > 0) {
+      (document.getElementById('monitor-toolbar-status') || document.getElementById('monitor-reload'))?.focus();
+      return;
+    }
+    document.getElementById('monitor-reload')?.click();
   });
   document.getElementById('errors-action-disable')?.addEventListener('click', () => {
     activatePane('maintenance');
