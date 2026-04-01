@@ -18,6 +18,10 @@ function uniqueStrings(values) {
   return Array.from(new Set((Array.isArray(values) ? values : []).filter(Boolean))).sort((left, right) => left.localeCompare(right, 'ja'));
 }
 
+function normalizeText(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 function mergePlans(plans) {
   const grouped = new Map();
   (Array.isArray(plans) ? plans : []).forEach((plan) => {
@@ -53,10 +57,19 @@ function isHistoricalOnlyObservationPlan(entry) {
     && OBSERVATION_PROPOSAL_TYPES.includes(entry.mapped.proposalType);
 }
 
-function resolvePlanningStatus(reports, activeReports, proposals) {
+function resolvePlanningStatus(reports, activeReports, proposals, context) {
   const sourceReports = Array.isArray(reports) ? reports : [];
   const activeSourceReports = Array.isArray(activeReports) ? activeReports : [];
-  if (!sourceReports.length) return 'insufficient_evidence';
+  const payload = context && typeof context === 'object' ? context : {};
+  const reviewUnitCount = Number(payload.reviewUnitCount || 0);
+  const issueCount = Number(payload.issueCount || 0);
+  const readinessStatus = normalizeText(payload.readinessStatus);
+  if (!sourceReports.length) {
+    if (reviewUnitCount > 0 && issueCount === 0 && readinessStatus === 'readiness_candidate') {
+      return 'planned';
+    }
+    return 'insufficient_evidence';
+  }
   if ((!Array.isArray(proposals) || proposals.length === 0)
     && activeSourceReports.length === 0) {
     return 'planned';
@@ -109,7 +122,11 @@ function buildImprovementPlan(params) {
     },
     recommendedPr,
     observationBlockers,
-    planningStatus: resolvePlanningStatus(rootCauseReports, activeReports, recommendedPr),
+    planningStatus: resolvePlanningStatus(rootCauseReports, activeReports, recommendedPr, {
+      reviewUnitCount: payload.reviewUnitCount,
+      issueCount: payload.issueCount,
+      readinessStatus: payload.readinessStatus
+    }),
     provenance: IMPROVEMENT_PLANNER_PROVENANCE
   };
 }

@@ -123,6 +123,21 @@ const HOUSING_KEYWORDS = Object.freeze([
   '引っ越し'
 ]);
 
+const SCHOOL_KEYWORDS = Object.freeze([
+  'school',
+  'district',
+  'enrollment',
+  'registration',
+  'immunization',
+  'vaccin',
+  '学校',
+  '学区',
+  '編入',
+  '転校',
+  '予防接種',
+  '接種'
+]);
+
 const KNOWLEDGE_CANDIDATE_KINDS = Object.freeze([
   'grounded_candidate',
   'city_grounded_candidate',
@@ -145,5 +160,6 @@ module.exports = {
   SOFT_TONE_PATTERNS,
   CITY_KEYWORDS,
   HOUSING_KEYWORDS,
+  SCHOOL_KEYWORDS,
   KNOWLEDGE_CANDIDATE_KINDS
 };

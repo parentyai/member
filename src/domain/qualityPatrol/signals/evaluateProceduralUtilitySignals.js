@@ -73,6 +73,16 @@ function evaluateProceduralUtilitySignals(reviewUnit) {
     ));
   }
 
+  if (Array.isArray(telemetry.officialCheckTargets) && telemetry.officialCheckTargets.length > 0) {
+    score += 0.12;
+    supportingSignals.push(createSupportingSignal(
+      'official_check_targets_present',
+      'positive',
+      'telemetry recorded concrete check targets for the next step',
+      { count: telemetry.officialCheckTargets.length }
+    ));
+  }
+
   if (telemetry.directAnswerApplied === true) {
     score += 0.08;
     supportingSignals.push(createSupportingSignal(

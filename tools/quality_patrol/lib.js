@@ -282,9 +282,18 @@ async function runStage(stageKey, executor, fallbackBuilder) {
   }
 }
 
-function summarizeAnalysisStatus(rootCauseResult) {
+function summarizeAnalysisStatus(rootCauseResult, context) {
+  const payload = context && typeof context === 'object' ? context : {};
+  const rootCauseStageStatus = typeof payload.rootCauseStageStatus === 'string' ? payload.rootCauseStageStatus : 'ok';
+  if (rootCauseStageStatus !== 'ok') return 'insufficient_evidence';
   if (rootCauseResult && rootCauseResult.summary && rootCauseResult.summary.blockedCount > 0) return 'blocked';
   if (rootCauseResult && rootCauseResult.summary && rootCauseResult.summary.analyzedCount > 0) return 'analyzed';
+  if (
+    Number(payload.reviewUnitCount || 0) > 0
+    && Number(rootCauseResult && rootCauseResult.detectionResult && rootCauseResult.detectionResult.summary && rootCauseResult.detectionResult.summary.issueCount || 0) === 0
+  ) {
+    return 'analyzed';
+  }
   return 'insufficient_evidence';
 }
 
@@ -332,7 +341,10 @@ function buildMainArtifact(job) {
     artifactVersion: MAIN_ARTIFACT_VERSION,
     mode: job.options.mode,
     planningStatus: job.planResult.planningStatus || 'insufficient_evidence',
-    analysisStatus: summarizeAnalysisStatus(job.rootCauseResult),
+    analysisStatus: summarizeAnalysisStatus(job.rootCauseResult, {
+      reviewUnitCount: Array.isArray(job.reviewUnits) ? job.reviewUnits.length : 0,
+      rootCauseStageStatus: job.runtimeFetchStatus && job.runtimeFetchStatus.rootCause && job.runtimeFetchStatus.rootCause.status
+    }),
     transcriptCoverage: humanSurface ? humanSurface.transcriptCoverage : (job.kpiResult.transcriptCoverage || createEmptyKpiResult().transcriptCoverage),
     decayAwareReadiness: humanSurface ? humanSurface.decayAwareReadiness : (job.kpiResult.decayAwareReadiness || createEmptyDecayAwareReadiness()),
     decayAwareOpsGate: humanSurface ? humanSurface.decayAwareOpsGate : (job.kpiResult.decayAwareOpsGate || createEmptyDecayAwareOpsGate()),
@@ -403,7 +415,10 @@ function buildDetectionArtifact(job) {
       ? (job.queryResult.recommendedPr || [])
       : (job.detectionResult.backlogCandidates || []),
     observationBlockers: job.queryResult.observationBlockers || [],
-    analysisStatus: summarizeAnalysisStatus(job.rootCauseResult),
+    analysisStatus: summarizeAnalysisStatus(job.rootCauseResult, {
+      reviewUnitCount: Array.isArray(job.reviewUnits) ? job.reviewUnits.length : 0,
+      rootCauseStageStatus: job.runtimeFetchStatus && job.runtimeFetchStatus.rootCause && job.runtimeFetchStatus.rootCause.status
+    }),
     planningStatus: job.planResult.planningStatus || 'insufficient_evidence',
     provenance: 'quality_patrol_job_detection',
     sourceCollections: job.detectionResult.sourceCollections || [],
@@ -441,7 +456,10 @@ function buildPlanningArtifact(job) {
       : (job.rootCauseResult.rootCauseReports || []),
     observationBlockers: job.queryResult.observationBlockers || [],
     planningStatus: job.planResult.planningStatus || 'insufficient_evidence',
-    analysisStatus: summarizeAnalysisStatus(job.rootCauseResult),
+    analysisStatus: summarizeAnalysisStatus(job.rootCauseResult, {
+      reviewUnitCount: Array.isArray(job.reviewUnits) ? job.reviewUnits.length : 0,
+      rootCauseStageStatus: job.runtimeFetchStatus && job.runtimeFetchStatus.rootCause && job.runtimeFetchStatus.rootCause.status
+    }),
     provenance: 'quality_patrol_job_planning',
     sourceCollections: uniqueStrings([].concat(job.rootCauseResult.sourceCollections || [], job.planResult.sourceCollections || [])),
     sourceWindow: job.sourceWindow,

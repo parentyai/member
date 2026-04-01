@@ -13,7 +13,10 @@ async function planQualityImprovements(params, deps) {
     : await analyzer(payload, deps);
   const plan = planner({
     rootCauseResult,
-    generatedAt: payload.generatedAt
+    generatedAt: payload.generatedAt,
+    reviewUnits: payload.reviewUnits,
+    detectionResult: payload.detectionResult,
+    kpiResult: payload.kpiResult
   });
   return Object.assign({
     ok: true,

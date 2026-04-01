@@ -20,10 +20,19 @@ function evaluateContinuitySignals(reviewUnit) {
   const telemetry = reviewUnit && reviewUnit.telemetrySignals ? reviewUnit.telemetrySignals : {};
   const slice = reviewUnit && reviewUnit.slice;
   const replyText = normalizeText(reviewUnit && reviewUnit.assistantReply && reviewUnit.assistantReply.text);
-  const followupExpected = slice === 'follow-up'
-    || telemetry.priorContextUsed === true
-    || telemetry.followupResolvedFromHistory === true
-    || (reviewUnit && reviewUnit.priorContextSummary && reviewUnit.priorContextSummary.available === true);
+  const explicitExpectation = typeof telemetry.followupContinuityExpected === 'boolean'
+    ? telemetry.followupContinuityExpected
+    : null;
+  const followupExpected = explicitExpectation === true
+    || (
+      explicitExpectation !== false
+      && (
+        slice === 'follow-up'
+        || telemetry.priorContextUsed === true
+        || telemetry.followupResolvedFromHistory === true
+        || (reviewUnit && reviewUnit.priorContextSummary && reviewUnit.priorContextSummary.available === true)
+      )
+    );
 
   if (!followupExpected) {
     return {

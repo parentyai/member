@@ -5,7 +5,8 @@ const {
   GENERIC_TEMPLATE_TOKENS,
   ABSTRACT_EXPLANATION_PATTERNS,
   CITY_KEYWORDS,
-  HOUSING_KEYWORDS
+  HOUSING_KEYWORDS,
+  SCHOOL_KEYWORDS
 } = require('../constants');
 const {
   SIGNAL_STATUS,
@@ -38,6 +39,11 @@ function evaluateSpecificitySignals(reviewUnit) {
   }
 
   const telemetry = reviewUnit && reviewUnit.telemetrySignals ? reviewUnit.telemetrySignals : {};
+  const normalizedDomainIntent = normalizeText(
+    telemetry.normalizedConversationIntent
+    || telemetry.domainIntent
+    || reviewUnit && reviewUnit.domainIntent
+  ).toLowerCase();
   const overlap = tokenOverlap(userText, replyText);
   const supportingSignals = [];
   let score = 0.28 + Math.min(0.32, overlap.ratio * 0.45);
@@ -76,6 +82,43 @@ function evaluateSpecificitySignals(reviewUnit) {
       score -= 0.18;
       supportingSignals.push(createSupportingSignal('housing_terms_missing', 'negative', 'housing slice answer stays generic'));
     }
+  }
+
+  if (normalizedDomainIntent === 'school') {
+    if (includesKeyword(replyText, SCHOOL_KEYWORDS)) {
+      score += 0.22;
+      supportingSignals.push(createSupportingSignal(
+        'school_terms_present',
+        'positive',
+        'school-specific terms are present in the answer'
+      ));
+    } else {
+      score -= 0.22;
+      supportingSignals.push(createSupportingSignal(
+        'school_terms_missing',
+        'negative',
+        'school answer stays generic instead of naming school-specific conditions'
+      ));
+    }
+  }
+
+  if (Array.isArray(telemetry.officialCheckTargets) && telemetry.officialCheckTargets.length > 0) {
+    score += 0.12;
+    supportingSignals.push(createSupportingSignal(
+      'official_check_target_visible',
+      'positive',
+      'assistant reply exposes a concrete check target instead of staying abstract',
+      { count: telemetry.officialCheckTargets.length }
+    ));
+  }
+
+  if (telemetry.knowledgeCandidateUsed === true && normalizeText(telemetry.knowledgeGroundingKind)) {
+    score += 0.08;
+    supportingSignals.push(createSupportingSignal(
+      'knowledge_grounding_visible',
+      'positive',
+      'knowledge grounding metadata aligns with concrete reply wording'
+    ));
   }
 
   if (reviewUnit && reviewUnit.slice === 'broad' && includesTemplateToken(telemetry.fallbackTemplateKind, GENERIC_TEMPLATE_TOKENS)) {

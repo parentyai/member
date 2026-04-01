@@ -9,6 +9,7 @@ const assert = require('node:assert/strict');
 const {
   buildConversationReviewUnitsFromDesktopTrace
 } = require('../../src/usecases/qualityPatrol/buildConversationReviewUnitsFromDesktopTrace');
+const { evaluateConversationQuality } = require('../../src/domain/qualityPatrol/evaluateConversationQuality');
 
 test('phase870: execute trace bridge infers user message and assistant reply from unknown visible rows', async (t) => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'phase870-execute-bridge-'));
@@ -52,6 +53,7 @@ test('phase870: execute trace bridge infers user message and assistant reply fro
   assert.equal(result.reviewUnits[0].assistantReply.text, 'まず市区町村の窓口かコンビニ交付の可否を確認してください。');
   assert.equal(result.reviewUnits[0].executeMetadata.sendMode, 'execute_once');
   assert.equal(result.reviewUnits[0].executeMetadata.replyObservationStatus, 'reply_observed');
+  assert.equal(result.reviewUnits[0].telemetrySignals.followupContinuityExpected, true);
   assert.equal(result.transcriptCoverage.transcriptCoverageStatus, 'ready');
 });
 
@@ -113,4 +115,68 @@ test('phase870: execute trace bridge hydrates sparse desktop traces from sibling
   assert.equal(result.transcriptCoverage.transcriptCoverageStatus, 'ready');
   assert.ok(result.sourceCollections.includes('line_desktop_patrol_result'));
   assert.equal(result.counts.traceBundles, 1);
+});
+
+test('phase870: execute trace bridge synthesizes knowledge and procedure signals for single-turn desktop patrol replies', async () => {
+  const result = await buildConversationReviewUnitsFromDesktopTrace({
+    trace: {
+      run_id: 'ldp_execute_trace_knowledge_01',
+      scenario_id: 'desktop_conversation_loop',
+      session_id: 'session_execute_knowledge_01',
+      started_at: '2026-04-01T01:52:58.142Z',
+      finished_at: '2026-04-01T01:53:19.690Z',
+      target_id: 'member-self-test',
+      sent_text: '学校の途中編入で、district は決まっている。予防接種も気になる。今日やることを1つだけ教えて。',
+      send_mode: 'execute_once',
+      send_result: { result: { status: 'sent' } },
+      correlation_status: 'reply_observed',
+      visible_before: [
+        { role: 'user', text: '学校の途中編入で、district は決まっている。予防接種も気になる。今日やることを1つだけ教えて。' },
+        { role: 'assistant', text: '学校手続きですね。\n次は学区と対象校の条件を確認する。' }
+      ],
+      visible_after: [
+        { role: 'user', text: '学校の途中編入で、district は決まっている。予防接種も気になる。今日やることを1つだけ教えて。' },
+        {
+          role: 'assistant',
+          text: [
+            '途中編入で予防接種も気になるなら、まず決まっている district の immunization requirements page を開いて、必要な接種記録と不足分を確認するのが確実です。',
+            'いまやる一手は、決まっている district の immunization requirements page を開いて、必要な接種記録と不足分をメモすることです。',
+            '確認先は、district immunization requirements pageです。'
+          ].join('\n')
+        }
+      ],
+      retrieval_refs: []
+    },
+    result: {
+      result: {
+        mode: 'execute',
+        targetMatchedHeuristic: true,
+        replyObserved: true,
+        transcriptAfterReply: 'reply observed',
+        evaluatorScores: {
+          sentVisible: true,
+          replyObserved: true
+        }
+      }
+    }
+  });
+
+  const reviewUnit = result.reviewUnits[0];
+  const telemetry = reviewUnit.telemetrySignals;
+  const quality = evaluateConversationQuality(reviewUnit);
+
+  assert.equal(telemetry.normalizedConversationIntent, 'school');
+  assert.equal(telemetry.selectedCandidateKind, 'grounded_candidate');
+  assert.equal(telemetry.knowledgeCandidateUsed, true);
+  assert.equal(telemetry.groundedCandidateAvailable, true);
+  assert.equal(telemetry.knowledgeGroundingKind, 'desktop_reply_reference');
+  assert.equal(telemetry.followupContinuityExpected, false);
+  assert.deepEqual(telemetry.committedNextActions, [
+    '決まっている district の immunization requirements page を開いて、必要な接種記録と不足分をメモする'
+  ]);
+  assert.deepEqual(telemetry.officialCheckTargets, ['district immunization requirements page']);
+  assert.equal(quality.status, 'pass');
+  assert.equal(quality.observationBlockers.some((item) => item.code === 'insufficient_knowledge_signals'), false);
+  assert.equal(quality.signals.knowledgeUse.status, 'pass');
+  assert.equal(quality.signals.continuity.status, 'unavailable');
 });
