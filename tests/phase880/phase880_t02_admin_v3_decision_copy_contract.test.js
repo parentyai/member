@@ -28,8 +28,13 @@ test('phase880: ops shell rewrites decision card copy and meaningful pane CTA be
   assert.ok(dict.includes('"ui.label.v3.decision.alerts.secondary": "一覧を更新する"'));
   assert.ok(dict.includes('"ui.label.v3.decision.composer.title": "送信内容を整える"'));
   assert.ok(dict.includes('"ui.label.v3.decision.monitor.secondary": "結果を更新する"'));
-  assert.ok(dict.includes('"ui.label.v3.decision.readModel.primary": "会員を探す"'));
-  assert.ok(dict.includes('"ui.label.v3.decision.cityPack.secondary": "候補を更新する"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.readModel.title": "会員の状態から次の確認先を決める"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.readModel.primary": "会員を絞り込む"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.cityPack.title": "地域案内の要確認を片づける"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.cityPack.primary": "要確認の候補を見る"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.cityPack.secondary": "一覧を更新する"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.emergencyLayer.title": "受信箱から緊急対応を判断する"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.emergencyLayer.primary": "受信箱を確認する"'));
   assert.ok(dict.includes('"ui.label.v3.decision.emergencyLayer.secondary": "受信箱を更新する"'));
 
   assert.ok(ssot.includes('## Ops First-View Noise Budget（Phase880 add-only）'));

@@ -1020,27 +1020,27 @@ const V3_DECISION_CARD_COPY_MAP = Object.freeze({
   }),
   'read-model': Object.freeze({
     titleKey: 'ui.label.v3.decision.readModel.title',
-    titleFallback: '会員を探して確認する',
+    titleFallback: '会員の状態から次の確認先を決める',
     primaryKey: 'ui.label.v3.decision.readModel.primary',
-    primaryFallback: '会員を探す',
+    primaryFallback: '会員を絞り込む',
     secondaryKey: 'ui.label.v3.decision.readModel.secondary',
     secondaryFallback: '一覧を更新する',
     hideTertiary: true
   }),
   'city-pack': Object.freeze({
     titleKey: 'ui.label.v3.decision.cityPack.title',
-    titleFallback: '地域案内の候補を確認する',
+    titleFallback: '地域案内の要確認を片づける',
     primaryKey: 'ui.label.v3.decision.cityPack.primary',
-    primaryFallback: '地域案内を開く',
+    primaryFallback: '要確認の候補を見る',
     secondaryKey: 'ui.label.v3.decision.cityPack.secondary',
-    secondaryFallback: '候補を更新する',
+    secondaryFallback: '一覧を更新する',
     hideTertiary: true
   }),
   'emergency-layer': Object.freeze({
     titleKey: 'ui.label.v3.decision.emergencyLayer.title',
-    titleFallback: '緊急対応の受信箱を確認する',
+    titleFallback: '受信箱から緊急対応を判断する',
     primaryKey: 'ui.label.v3.decision.emergencyLayer.primary',
-    primaryFallback: '受信箱を開く',
+    primaryFallback: '受信箱を確認する',
     secondaryKey: 'ui.label.v3.decision.emergencyLayer.secondary',
     secondaryFallback: '受信箱を更新する',
     hideTertiary: true
@@ -7575,6 +7575,190 @@ function renderAlertsSummary(payload) {
   renderDecisionCard('alerts', resolveAlertsDecisionVm());
 }
 
+function resolveReadModelTaskSummary() {
+  const items = Array.isArray(state.usersSummaryFilteredItems) && state.usersSummaryFilteredItems.length
+    ? state.usersSummaryFilteredItems
+    : (Array.isArray(state.usersSummaryItems) ? state.usersSummaryItems : []);
+  const analyze = state.usersSummaryAnalyze && typeof state.usersSummaryAnalyze === 'object'
+    ? state.usersSummaryAnalyze
+    : null;
+  const totalCount = items.length;
+  const attentionCount = items.filter((item) => {
+    const billingState = String(item && item.billingIntegrityState || '').toLowerCase();
+    const subscriptionStatus = String(item && item.subscriptionStatus || '').toLowerCase();
+    return billingState === 'conflict'
+      || billingState === 'unknown'
+      || subscriptionStatus === 'past_due'
+      || subscriptionStatus === 'incomplete'
+      || subscriptionStatus === 'unknown';
+  }).length;
+  const proActiveCount = analyze && Number.isFinite(Number(analyze.proActiveCount))
+    ? Number(analyze.proActiveCount)
+    : items.filter((item) => String(item && item.plan || '') === 'pro' && String(item && item.subscriptionStatus || '') === 'active').length;
+  if (attentionCount > 0) {
+    return {
+      totalCount,
+      attentionCount,
+      proActiveCount,
+      primaryTask: t('ui.label.v3.decision.readModel.primary', '会員を絞り込む'),
+      primaryNote: `${attentionCount}件は課金や整合の確認が必要です。ユーザーIDかステータスで絞り込みます。`,
+      secondaryTask: '詳細を確認する',
+      secondaryNote: '1人選ぶと、右側に課金・LLM・Journey の詳細が表示されます。'
+    };
+  }
+  if (totalCount > 0) {
+    return {
+      totalCount,
+      attentionCount,
+      proActiveCount,
+      primaryTask: t('ui.label.v3.decision.readModel.primary', '会員を絞り込む'),
+      primaryNote: `${totalCount}件の中から、確認したい会員だけを絞り込みます。`,
+      secondaryTask: proActiveCount > 0 ? '有料会員を確認する' : '必要な詳細を見る',
+      secondaryNote: proActiveCount > 0
+        ? `${proActiveCount}件の有料会員を含みます。必要なら Plan で絞り込みます。`
+        : '必要なときだけ詳細や補助集計を開きます。'
+    };
+  }
+  return {
+    totalCount,
+    attentionCount,
+    proActiveCount,
+    primaryTask: t('ui.label.v3.decision.readModel.secondary', '一覧を更新する'),
+    primaryNote: '会員データを更新してから、確認したい対象を絞り込みます。',
+    secondaryTask: '詳細を確認する',
+    secondaryNote: '一覧が入ると、1人ずつ詳細を確認できます。'
+  };
+}
+
+function renderReadModelTaskSummary() {
+  const summary = resolveReadModelTaskSummary();
+  setTextContent('read-model-summary-total', summary.totalCount);
+  setTextContent('read-model-summary-attention', summary.attentionCount);
+  setTextContent('read-model-summary-pro-active', summary.proActiveCount);
+  setTextContent('read-model-priority-task', summary.primaryTask);
+  setTextContent('read-model-priority-note', summary.primaryNote);
+  setTextContent('read-model-priority-secondary-task', summary.secondaryTask);
+  setTextContent('read-model-priority-secondary-note', summary.secondaryNote);
+}
+
+function resolveCityPackTaskSummary() {
+  const inbox = Array.isArray(state.cityPackInboxItems) ? state.cityPackInboxItems : [];
+  const filteredItems = Array.isArray(state.cityPackUnifiedFilteredItems) ? state.cityPackUnifiedFilteredItems : [];
+  const totalCount = filteredItems.length;
+  const needsReviewCount = inbox.filter((item) => String(item && item.status || '') === 'needs_review').length;
+  const blockedCount = inbox.filter((item) => {
+    const status = String(item && item.status || '');
+    return status === 'blocked' || status === 'dead';
+  }).length;
+  const activeCount = filteredItems.filter((item) => String(item && item.status || '') === 'active').length;
+  if (blockedCount > 0) {
+    return {
+      totalCount,
+      needsReviewCount,
+      blockedCount,
+      primaryTask: '止まっている候補を確認する',
+      primaryNote: `${blockedCount}件が停止中です。理由を見て、先に止まりを外します。`,
+      secondaryTask: needsReviewCount > 0 ? '要確認の候補を見る' : '公開中の案内を見る',
+      secondaryNote: needsReviewCount > 0
+        ? `${needsReviewCount}件が確認待ちです。停止中を見たあとで確認します。`
+        : `${activeCount}件が公開中です。必要な更新だけ確認します。`
+    };
+  }
+  if (needsReviewCount > 0) {
+    return {
+      totalCount,
+      needsReviewCount,
+      blockedCount,
+      primaryTask: t('ui.label.v3.decision.cityPack.primary', '地域案内を開く'),
+      primaryNote: `${needsReviewCount}件が確認待ちです。要確認から順に見ていきます。`,
+      secondaryTask: activeCount > 0 ? '公開中の案内を見る' : '一覧を更新する',
+      secondaryNote: activeCount > 0
+        ? `${activeCount}件が公開中です。確認後に公開状態を見直します。`
+        : '必要なら一覧を更新して新しい候補を確認します。'
+    };
+  }
+  return {
+    totalCount,
+    needsReviewCount,
+    blockedCount,
+    primaryTask: activeCount > 0 ? '公開中の案内を見る' : t('ui.label.v3.decision.cityPack.secondary', '一覧を更新する'),
+    primaryNote: activeCount > 0
+      ? `${activeCount}件が公開中です。必要な更新候補だけ確認します。`
+      : '新しい候補が入っていないか一覧を更新します。',
+    secondaryTask: '一覧を更新する',
+    secondaryNote: totalCount > 0
+      ? `${totalCount}件を表示中です。必要な候補だけ絞り込みます。`
+      : '新しい候補が入るまでこの一覧を基準に確認します。'
+  };
+}
+
+function renderCityPackTaskSummary() {
+  const summary = resolveCityPackTaskSummary();
+  setTextContent('city-pack-summary-total', summary.totalCount);
+  setTextContent('city-pack-summary-needs-review', summary.needsReviewCount);
+  setTextContent('city-pack-summary-blocked', summary.blockedCount);
+  setTextContent('city-pack-priority-task', summary.primaryTask);
+  setTextContent('city-pack-priority-note', summary.primaryNote);
+  setTextContent('city-pack-priority-secondary-task', summary.secondaryTask);
+  setTextContent('city-pack-priority-secondary-note', summary.secondaryNote);
+}
+
+function resolveEmergencyLayerTaskSummary() {
+  const items = Array.isArray(state.emergencyBulletinItems) ? state.emergencyBulletinItems : [];
+  const totalCount = items.length;
+  const criticalCount = items.filter((item) => String(item && item.severity || '') === 'CRITICAL').length;
+  const draftCount = items.filter((item) => String(item && item.status || '') === 'draft').length;
+  const approvedCount = items.filter((item) => String(item && item.status || '') === 'approved').length;
+  if (criticalCount > 0) {
+    return {
+      totalCount,
+      criticalCount,
+      draftCount,
+      primaryTask: '至急確認の案件を見る',
+      primaryNote: `${criticalCount}件が至急確認です。受信箱の上から判断します。`,
+      secondaryTask: draftCount > 0 ? '判断待ちの案件を見る' : '最近の案件を見直す',
+      secondaryNote: draftCount > 0
+        ? `${draftCount}件が判断待ちです。至急確認のあとで順に見ます。`
+        : `${approvedCount}件は承認済みです。必要な案件だけ見直します。`
+    };
+  }
+  if (draftCount > 0) {
+    return {
+      totalCount,
+      criticalCount,
+      draftCount,
+      primaryTask: t('ui.label.v3.decision.emergencyLayer.primary', '受信箱を開く'),
+      primaryNote: `${draftCount}件が判断待ちです。通知の要否を先に決めます。`,
+      secondaryTask: approvedCount > 0 ? '承認済みの案件を見る' : '一覧を更新する',
+      secondaryNote: approvedCount > 0
+        ? `${approvedCount}件は承認済みです。必要なら送信前に見直します。`
+        : '新しい案件が入っていないか受信箱を更新します。'
+    };
+  }
+  return {
+    totalCount,
+    criticalCount,
+    draftCount,
+    primaryTask: totalCount > 0 ? '最近の案件を見直す' : t('ui.label.v3.decision.emergencyLayer.secondary', '受信箱を更新する'),
+    primaryNote: totalCount > 0
+      ? `${totalCount}件の案件があります。通知判断が必要な案件だけ見直します。`
+      : '新しい案件が入っていないか受信箱を更新します。',
+    secondaryTask: '地域や状態で絞り込む',
+    secondaryNote: '必要なときだけ状態や地域で絞り込んで確認します。'
+  };
+}
+
+function renderEmergencyLayerTaskSummary() {
+  const summary = resolveEmergencyLayerTaskSummary();
+  setTextContent('emergency-summary-total', summary.totalCount);
+  setTextContent('emergency-summary-critical', summary.criticalCount);
+  setTextContent('emergency-summary-draft', summary.draftCount);
+  setTextContent('emergency-priority-task', summary.primaryTask);
+  setTextContent('emergency-priority-note', summary.primaryNote);
+  setTextContent('emergency-priority-secondary-task', summary.secondaryTask);
+  setTextContent('emergency-priority-secondary-note', summary.secondaryNote);
+}
+
 async function loadAlertsSummary(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const notify = opts.notify === true;
@@ -7753,53 +7937,38 @@ function resolveErrorsDecisionVm() {
 
 function resolveReadModelDecisionVm() {
   const counts = getHealthCounts(state.readModelItems);
-  const decisionState = counts.DANGER > 0 ? 'STOP' : counts.WARN > 0 ? 'ATTENTION' : 'READY';
-  const reasons = buildDecisionReasons(counts.DANGER || 0, counts.WARN > 0 ? statusLabel('WARN') : statusLabel('OK'));
+  const taskSummary = resolveReadModelTaskSummary();
+  const decisionState = counts.DANGER > 0
+    ? 'STOP'
+    : (taskSummary.attentionCount > 0 || counts.WARN > 0)
+      ? 'ATTENTION'
+      : 'READY';
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote,
+    reason2: taskSummary.secondaryNote,
     updatedAt: resolvePaneUpdatedAt('read-model')
   };
 }
 
 function resolveCityPackDecisionVm() {
-  const inbox = Array.isArray(state.cityPackInboxItems) ? state.cityPackInboxItems : [];
-  const needsReview = inbox.filter((item) => String(item && item.status) === 'needs_review').length;
-  const blocked = inbox.filter((item) => {
-    const status = String(item && item.status);
-    return status === 'dead' || status === 'blocked';
-  }).length;
-  const decisionState = blocked > 0 ? 'STOP' : needsReview > 0 ? 'ATTENTION' : 'READY';
-  const primary = blocked > 0
-    ? t('ui.label.cityPack.col.result', 'result')
-    : needsReview > 0
-      ? t('ui.value.cityPack.status.needsReview', '要確認')
-      : t('ui.status.ok', '問題なし');
-  const reasons = buildDecisionReasons(blocked + needsReview, primary);
+  const taskSummary = resolveCityPackTaskSummary();
+  const decisionState = taskSummary.blockedCount > 0 ? 'STOP' : taskSummary.needsReviewCount > 0 ? 'ATTENTION' : 'READY';
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote,
+    reason2: taskSummary.secondaryNote,
     updatedAt: resolvePaneUpdatedAt('city-pack')
   };
 }
 
 function resolveEmergencyLayerDecisionVm() {
-  const items = Array.isArray(state.emergencyBulletinItems) ? state.emergencyBulletinItems : [];
-  const draftCount = items.filter((item) => String(item && item.status) === 'draft').length;
-  const criticalCount = items.filter((item) => String(item && item.severity) === 'CRITICAL').length;
-  const decisionState = criticalCount > 0 ? 'STOP' : draftCount > 0 ? 'ATTENTION' : 'READY';
-  const primary = criticalCount > 0
-    ? 'CRITICAL'
-    : draftCount > 0
-      ? 'draft'
-      : t('ui.status.ok', '問題なし');
-  const reasons = buildDecisionReasons(draftCount, primary);
+  const taskSummary = resolveEmergencyLayerTaskSummary();
+  const decisionState = taskSummary.criticalCount > 0 ? 'STOP' : taskSummary.draftCount > 0 ? 'ATTENTION' : 'READY';
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote,
+    reason2: taskSummary.secondaryNote,
     updatedAt: resolvePaneUpdatedAt('emergency-layer')
   };
 }
@@ -7892,6 +8061,9 @@ function renderAllDecisionCards() {
   renderDecisionCard('emergency-layer', resolveEmergencyLayerDecisionVm());
   renderDecisionCard('city-pack', resolveCityPackDecisionVm());
   renderDecisionCard('vendors', resolveVendorsDecisionVm());
+  renderReadModelTaskSummary();
+  renderCityPackTaskSummary();
+  renderEmergencyLayerTaskSummary();
 }
 
 function renderSafeNextStep(el, message) {
@@ -9441,6 +9613,8 @@ function renderCityPackUnifiedRows() {
     tr.appendChild(td);
     tbody.appendChild(tr);
     renderCityPackV2DetailPanel();
+    renderCityPackTaskSummary();
+    renderDecisionCard('city-pack', resolveCityPackDecisionVm());
     return;
   }
   items.forEach((item) => {
@@ -9483,6 +9657,8 @@ function renderCityPackUnifiedRows() {
     tbody.appendChild(tr);
   });
   renderCityPackV2DetailPanel();
+  renderCityPackTaskSummary();
+  renderDecisionCard('city-pack', resolveCityPackDecisionVm());
 }
 
 function refreshCityPackUnifiedRows() {
@@ -12683,6 +12859,8 @@ function renderUsersSummaryRows() {
     tr.appendChild(td);
     tbody.appendChild(tr);
     renderUsersSummaryBillingDetail(null);
+    renderReadModelTaskSummary();
+    renderDecisionCard('read-model', resolveReadModelDecisionVm());
     return;
   }
 
@@ -12767,6 +12945,8 @@ function renderUsersSummaryRows() {
     tbody.appendChild(tr);
   });
   applyUsersSummaryColumnVisibility();
+  renderReadModelTaskSummary();
+  renderDecisionCard('read-model', resolveReadModelDecisionVm());
 }
 
 function buildUsersSummaryQuery(limit, analyticsLimit) {
@@ -12813,10 +12993,12 @@ async function loadUsersSummaryAnalyze(options) {
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
     state.usersSummaryAnalyze = data.analyze || null;
     renderUsersSummaryAnalyzeResult();
+    renderAllDecisionCards();
     if (notify) showToast('Analyze を更新しました', 'ok');
   } catch (_err) {
     state.usersSummaryAnalyze = null;
     renderUsersSummaryAnalyzeResult();
+    renderAllDecisionCards();
     if (notify) showToast('Analyze の取得に失敗しました', 'danger');
   }
 }
@@ -19593,13 +19775,16 @@ function renderEmergencyBulletinRows(items) {
   if (!tbody) return;
   tbody.innerHTML = '';
   const rows = Array.isArray(items) ? items : [];
+  const showSystemColumns = !(isAdminUiV3Enabled() && state.uiShell === UI_SHELL_OPS);
   if (!rows.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 8;
+    td.colSpan = showSystemColumns ? 8 : 6;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
+    renderEmergencyLayerTaskSummary();
+    renderDecisionCard('emergency-layer', resolveEmergencyLayerDecisionVm());
     return;
   }
   rows.forEach((row) => {
@@ -19628,10 +19813,12 @@ function renderEmergencyBulletinRows(items) {
       tr.appendChild(td);
     });
 
-    const evidenceTd = document.createElement('td');
-    const refs = row && row.evidenceRefs && typeof row.evidenceRefs === 'object' ? row.evidenceRefs : {};
-    evidenceTd.textContent = refs.diffId || refs.snapshotId || '-';
-    tr.appendChild(evidenceTd);
+    if (showSystemColumns) {
+      const evidenceTd = document.createElement('td');
+      const refs = row && row.evidenceRefs && typeof row.evidenceRefs === 'object' ? row.evidenceRefs : {};
+      evidenceTd.textContent = refs.diffId || refs.snapshotId || '-';
+      tr.appendChild(evidenceTd);
+    }
 
     const actionsTd = document.createElement('td');
     if (EMERGENCY_MANUAL_APPROVE_FALLBACK) {
@@ -19642,21 +19829,27 @@ function renderEmergencyBulletinRows(items) {
       ));
     }
     actionsTd.appendChild(createUnifiedActionButton(
-      t('ui.label.emergency.reject', 'Reject'),
-      () => { void rejectEmergencyBulletinAction(bulletinId); },
-      { actionKey: 'emergency.bulletin.reject' }
-    ));
-    actionsTd.appendChild(createUnifiedActionButton(
-      t('ui.label.emergency.evidence', 'Evidence'),
-      () => { void loadEmergencyEvidence(bulletinId, { notify: true }); }
-    ));
+        t('ui.label.emergency.reject', 'Reject'),
+        () => { void rejectEmergencyBulletinAction(bulletinId); },
+        { actionKey: 'emergency.bulletin.reject' }
+      ));
+    if (showSystemColumns) {
+      actionsTd.appendChild(createUnifiedActionButton(
+        t('ui.label.emergency.evidence', 'Evidence'),
+        () => { void loadEmergencyEvidence(bulletinId, { notify: true }); }
+      ));
+    }
     tr.appendChild(actionsTd);
 
-    const traceTd = document.createElement('td');
-    traceTd.textContent = row && row.traceId ? String(row.traceId) : '-';
-    tr.appendChild(traceTd);
+    if (showSystemColumns) {
+      const traceTd = document.createElement('td');
+      traceTd.textContent = row && row.traceId ? String(row.traceId) : '-';
+      tr.appendChild(traceTd);
+    }
     tbody.appendChild(tr);
   });
+  renderEmergencyLayerTaskSummary();
+  renderDecisionCard('emergency-layer', resolveEmergencyLayerDecisionVm());
 }
 
 function sanitizeEmergencyEvidence(item) {
@@ -20611,11 +20804,17 @@ function setupDecisionActions() {
 
   document.getElementById('emergency-layer-action-edit')?.addEventListener('click', () => {
     activatePane('emergency-layer');
-    document.getElementById('emergency-rule-reload')?.click();
-    document.getElementById('emergency-bulletin-reload')?.click();
+    const details = document.getElementById('emergency-layer-pane-details');
+    if (details) details.open = true;
+    if (!Array.isArray(state.emergencyBulletinItems) || state.emergencyBulletinItems.length === 0) {
+      document.getElementById('emergency-bulletin-reload')?.click();
+    }
+    document.getElementById('emergency-bulletin-status-filter')?.focus();
   });
   document.getElementById('emergency-layer-action-activate')?.addEventListener('click', () => {
     activatePane('emergency-layer');
+    const details = document.getElementById('emergency-layer-pane-details');
+    if (details) details.open = true;
     document.getElementById('emergency-bulletin-reload')?.click();
   });
   document.getElementById('emergency-layer-action-disable')?.addEventListener('click', () => {
@@ -20625,14 +20824,13 @@ function setupDecisionActions() {
 
   document.getElementById('city-pack-action-edit')?.addEventListener('click', () => {
     activatePane('city-pack');
-    const supportDetails = document.getElementById('city-pack-pane-details');
-    if (supportDetails) supportDetails.open = true;
-    document.getElementById('city-pack-request-reload')?.click();
-    document.getElementById('city-pack-template-library-reload')?.click();
-    document.getElementById('city-pack-education-reload')?.click();
-    if (ADMIN_CITY_PACK_CONTENT_MANAGE_V1) {
-      document.getElementById('city-pack-manage-refresh')?.click();
+    const statusFilter = document.getElementById('city-pack-unified-filter-status');
+    const summary = resolveCityPackTaskSummary();
+    if (statusFilter && !getSelectValue('city-pack-unified-filter-status') && summary.needsReviewCount > 0) {
+      statusFilter.value = 'needs_review';
+      renderCityPackUnifiedRows();
     }
+    statusFilter?.focus();
   });
   document.getElementById('city-pack-action-activate')?.addEventListener('click', () => {
     activatePane('city-pack');
