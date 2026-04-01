@@ -1,15 +1,16 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-28T19:42:41.346Z
-- gitCommit: 26d91b819ae25e64bc3a85e4bdce78e0489d76ff
-- branch: codex/parent-friendly-finalizer-fix
-- flagCount: 93
+- generatedAt: 2026-04-01T03:02:51.072Z
+- gitCommit: ff984c3dda786002534297344750e9aa07bf4da5
+- branch: codex/admin-ui-v3-shell
+- flagCount: 98
 - source: src/**/*.js
 - check: `npm run feature-flags:check`
 
 | Flag | Owner | Default | ReviewBy | BlastRadius | Purpose | Source |
 | --- | --- | --- | --- | --- | --- | --- |
 | ENABLE_ADMIN_BUILD_META | admin-ops | true | 2026-09-30 | ops_facing | Runtime gate for enable_admin_build_meta | src/index.js:64 |
+| ENABLE_ADMIN_COPY_V3 | admin-ops | true | 2026-06-30 | ops_facing | Enables task-first Admin UI v3 copy for pane titles, subtitles, CTAs, and search labels. | src/index.js:138 |
 | ENABLE_ADMIN_DEVELOPER_SURFACE_V1 | admin-ops | false | 2026-09-30 | ops_facing | Runtime gate for enable_admin_developer_surface_v1 | src/index.js:120 |
 | ENABLE_ADMIN_HISTORY_SYNC | admin-ops | true | 2026-09-30 | ops_facing | Runtime gate for enable_admin_history_sync | src/index.js:80 |
 | ENABLE_ADMIN_HOME_CLEAN_SURFACE_V1 | admin-ops | true | 2026-09-30 | ops_facing | Runtime gate for enable_admin_home_clean_surface_v1 | src/index.js:100 |
@@ -20,11 +21,15 @@
 | ENABLE_ADMIN_NAV_ROLLOUT_V1 | admin-ops | true | 2026-09-30 | ops_facing | Runtime gate for enable_admin_nav_rollout_v1 | src/index.js:68 |
 | ENABLE_ADMIN_NO_COLLAPSE_V1 | admin-ops | true | 2026-09-30 | ops_facing | Runtime gate for enable_admin_no_collapse_v1 | src/index.js:92 |
 | ENABLE_ADMIN_OPS_ONLY_NAV_V1 | admin-ops | true | 2026-09-30 | ops_facing | Runtime gate for enable_admin_ops_only_nav_v1 | src/index.js:116 |
+| ENABLE_ADMIN_OPS_UI_V3 | admin-ops | true | 2026-06-30 | ops_facing | Enables the parallel Ops UI v3 shell for operator-first task navigation. | src/index.js:130 |
 | ENABLE_ADMIN_ROLE_PERSIST | admin-ops | true | 2026-09-30 | ops_facing | Runtime gate for enable_admin_role_persist | src/index.js:76 |
+| ENABLE_ADMIN_SYSTEM_CONSOLE_V1 | admin-ops | true | 2026-06-30 | ops_facing | Enables the separate System Console shell for audit, diagnostics, maintenance, and developer panes. | src/index.js:134 |
 | ENABLE_ADMIN_TOP_SUMMARY_V1 | admin-ops | false | 2026-09-30 | ops_facing | Runtime gate for enable_admin_top_summary_v1 | src/index.js:96 |
 | ENABLE_ADMIN_TREND_UI | admin-ops | false | 2026-09-30 | ops_facing | Runtime gate for enable_admin_trend_ui | src/index.js:176<br>src/index.js:184 |
 | ENABLE_ADMIN_UI_FOUNDATION_V1 | admin-ops | false | 2026-09-30 | ops_facing | Runtime gate for enable_admin_ui_foundation_v1 | src/index.js:47 |
 | ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1 | admin-ops | true | 2026-09-30 | ops_facing | Runtime gate for enable_admin_users_stripe_layout_v1 | src/index.js:104 |
+| ENABLE_ADMIN_V3_CUTOVER | admin-ops | true | 2026-06-30 | ops_facing | Switches the default admin shell from legacy chrome to the v3 ops/system shell split while preserving legacy DOM contracts. | src/index.js:142 |
+| ENABLE_ADMIN_V3_KILL_SWITCH | admin-ops | false | 2026-06-30 | ops_facing | Emergency rollback switch that disables Admin UI v3 shell behavior and restores legacy chrome without route changes. | src/index.js:146 |
 | ENABLE_BILLING_LIFECYCLE_AUTOMATION | billing | false | 2026-09-30 | cross_module | Runtime gate for enable_billing_lifecycle_automation | src/usecases/billing/handleBillingLifecycleAutomation.js:22 |
 | ENABLE_CANONICAL_CORE_OUTBOX_DUAL_WRITE_V1 | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_canonical_core_outbox_dual_write_v1 | src/domain/data/canonicalCoreBridge.js:13 |
 | ENABLE_CANONICAL_CORE_OUTBOX_STRICT_V1 | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_canonical_core_outbox_strict_v1 | src/domain/data/canonicalCoreBridge.js:17 |

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-03-28T19:42:41.346Z",
-  "gitCommit": "26d91b819ae25e64bc3a85e4bdce78e0489d76ff",
-  "branch": "codex/parent-friendly-finalizer-fix",
+  "generatedAt": "2026-04-01T03:02:51.072Z",
+  "gitCommit": "ff984c3dda786002534297344750e9aa07bf4da5",
+  "branch": "codex/admin-ui-v3-shell",
   "flags": [
     {
       "name": "ENABLE_ADMIN_BUILD_META",
@@ -13,6 +13,19 @@
       "blastRadius": "ops_facing",
       "sourceRefs": [
         "src/index.js:64"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_COPY_V3",
+      "owner": "admin-ops",
+      "purpose": "Enables task-first Admin UI v3 copy for pane titles, subtitles, CTAs, and search labels.",
+      "defaultValue": true,
+      "defaultRationale": "default on to replace ambiguous AI-like admin wording with operator-friendly action labels.",
+      "reviewBy": "2026-06-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:138"
       ],
       "status": "active"
     },
@@ -147,6 +160,19 @@
       "status": "active"
     },
     {
+      "name": "ENABLE_ADMIN_OPS_UI_V3",
+      "owner": "admin-ops",
+      "purpose": "Enables the parallel Ops UI v3 shell for operator-first task navigation.",
+      "defaultValue": true,
+      "defaultRationale": "default on so non-engineer operators land in the simplified ops workspace while legacy routes still resolve.",
+      "reviewBy": "2026-06-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:130"
+      ],
+      "status": "active"
+    },
+    {
       "name": "ENABLE_ADMIN_ROLE_PERSIST",
       "owner": "admin-ops",
       "purpose": "Runtime gate for enable_admin_role_persist",
@@ -156,6 +182,19 @@
       "blastRadius": "ops_facing",
       "sourceRefs": [
         "src/index.js:76"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_SYSTEM_CONSOLE_V1",
+      "owner": "admin-ops",
+      "purpose": "Enables the separate System Console shell for audit, diagnostics, maintenance, and developer panes.",
+      "defaultValue": true,
+      "defaultRationale": "default on so system-only surfaces are isolated from day-to-day operations without removing deep links.",
+      "reviewBy": "2026-06-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:134"
       ],
       "status": "active"
     },
@@ -209,6 +248,32 @@
       "blastRadius": "ops_facing",
       "sourceRefs": [
         "src/index.js:104"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_V3_CUTOVER",
+      "owner": "admin-ops",
+      "purpose": "Switches the default admin shell from legacy chrome to the v3 ops/system shell split while preserving legacy DOM contracts.",
+      "defaultValue": true,
+      "defaultRationale": "default on so the new information hierarchy is the primary experience during phased rollout.",
+      "reviewBy": "2026-06-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:142"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_V3_KILL_SWITCH",
+      "owner": "admin-ops",
+      "purpose": "Emergency rollback switch that disables Admin UI v3 shell behavior and restores legacy chrome without route changes.",
+      "defaultValue": false,
+      "defaultRationale": "default off so v3 stays active unless an operator or release owner explicitly reverts to the legacy shell.",
+      "reviewBy": "2026-06-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:146"
       ],
       "status": "active"
     },
