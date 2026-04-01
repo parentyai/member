@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-31T23:41:25-04:00",
-  "gitCommit": "74e87ce2a8beca004c6ac7036a14dbe1c710f30a",
-  "branch": "codex/admin-ui-v3-shell",
-  "sourceDigest": "4116b25de395c36a731d9590802572a769981daf0fadd309fb345a48209f0194",
+  "generatedAt": "2026-04-01T00:09:53-04:00",
+  "gitCommit": "1b465db61e5183d19ad192f29fea0f54103c4248",
+  "branch": "codex/admin-ui-v3-taskflow",
+  "sourceDigest": "d98da68fec27b076788175daf50d4c0618ddb0b9f1629595671c7dbf3ffbf2ed",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
