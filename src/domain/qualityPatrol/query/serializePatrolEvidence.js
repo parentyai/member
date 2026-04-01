@@ -1,13 +1,23 @@
 'use strict';
 
-const crypto = require('node:crypto');
 const { resolveAudienceView } = require('./resolveAudienceView');
 const {
   buildPatrolBacklogSeparation
 } = require('./buildPatrolBacklogSeparation');
 
-function buildEvidenceKey(seed) {
-  return `qpe_${crypto.createHash('sha256').update(seed, 'utf8').digest('hex').slice(0, 16)}`;
+function slugifyEvidencePart(value, fallback) {
+  const normalized = String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 24);
+  return normalized || fallback;
+}
+
+function buildEvidenceKey(item, index) {
+  const kind = slugifyEvidencePart(item && item.kind, 'summary');
+  const provenance = slugifyEvidencePart(item && item.provenance, 'quality-patrol');
+  return `qpe-${kind}-${provenance}-${index + 1}`;
 }
 
 function pushEvidence(rows, seen, item) {
@@ -16,7 +26,7 @@ function pushEvidence(rows, seen, item) {
   if (seen.has(key)) return;
   seen.add(key);
   rows.push(Object.assign({
-    evidenceKey: buildEvidenceKey(key),
+    evidenceKey: buildEvidenceKey(item, rows.length),
     traceId: null
   }, item));
 }

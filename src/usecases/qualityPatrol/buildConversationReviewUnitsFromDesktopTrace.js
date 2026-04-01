@@ -290,6 +290,116 @@ function deriveSlice(trace) {
   return normalizeReviewSlice(trace && trace.slice_hint) || 'other';
 }
 
+function inferConversationIntent() {
+  const text = normalizeText([].concat(...Array.from(arguments)).filter(Boolean).join('\n'));
+  if (!text) return null;
+  if (/(学校|学区|途中編入|編入|転校|入学|district|school|enrollment|registration|immunization|vaccin)/i.test(text)) {
+    return 'school';
+  }
+  if (/(住まい|物件|家賃|housing|rent|lease|内見|引っ越し)/i.test(text)) {
+    return 'housing';
+  }
+  if (/(ssn|social security|ソーシャルセキュリティ)/i.test(text)) {
+    return 'ssn';
+  }
+  if (/(銀行|bank|口座|debit|checking|savings)/i.test(text)) {
+    return 'banking';
+  }
+  if (/(住民票|市区町村|市役所|区役所|education office|教育窓口|コンビニ交付|municipal)/i.test(text)) {
+    return 'city';
+  }
+  return null;
+}
+
+function cleanDerivedText(value) {
+  return normalizeText(value)
+    .replace(/^[・\-]\s*/u, '')
+    .replace(/[。.!！]+$/u, '')
+    .replace(/(?:こと|予定)です$/u, '')
+    .replace(/です$/u, '')
+    .replace(/のが確実です$/u, '')
+    .replace(/と進めやすいです$/u, '')
+    .trim();
+}
+
+function uniqueNormalized(values) {
+  const output = [];
+  const seen = new Set();
+  (Array.isArray(values) ? values : []).forEach((value) => {
+    const cleaned = cleanDerivedText(value);
+    if (!cleaned) return;
+    const token = normalizeToken(cleaned);
+    if (!token || seen.has(token)) return;
+    seen.add(token);
+    output.push(cleaned);
+  });
+  return output;
+}
+
+function deriveOfficialCheckTargets(replyText) {
+  const normalizedReply = normalizeText(replyText);
+  if (!normalizedReply) return [];
+  const targets = [];
+  normalizedReply.split(/\n+/u).forEach((line) => {
+    const normalizedLine = normalizeText(line);
+    if (!normalizedLine) return;
+    const explicitTarget = normalizedLine.replace(/^確認先は[、:：]?\s*/u, '');
+    if (explicitTarget !== normalizedLine) {
+      targets.push(explicitTarget);
+      return;
+    }
+    if (
+      (
+        /窓口/u.test(normalizedLine)
+        || (
+          /(page|office|requirements|registration|enrollment|appointment)/i.test(normalizedLine)
+          && !/まず/u.test(normalizedLine)
+        )
+      )
+      && !/^いまやる一手/u.test(normalizedLine)
+    ) {
+      targets.push(normalizedLine);
+    }
+  });
+  return uniqueNormalized(targets);
+}
+
+function deriveCommittedNextActions(replyText) {
+  const normalizedReply = normalizeText(replyText);
+  if (!normalizedReply) return [];
+  const explicitActions = [];
+  const inferredActions = [];
+  normalizedReply.split(/\n+/u).forEach((line) => {
+    const normalizedLine = normalizeText(line);
+    if (!normalizedLine) return;
+    if (/^確認先は/u.test(normalizedLine)) return;
+    let candidate = '';
+    if (/^いまやる一手/u.test(normalizedLine)) {
+      candidate = normalizedLine.replace(/^いまやる一手は?[、:：]?\s*/u, '');
+      explicitActions.push(candidate);
+      return;
+    } else if (/^今日やる一手/u.test(normalizedLine)) {
+      candidate = normalizedLine.replace(/^今日やる一手は?[、:：]?\s*/u, '');
+      explicitActions.push(candidate);
+      return;
+    } else if (normalizedLine.includes('まず')) {
+      candidate = normalizedLine.slice(normalizedLine.indexOf('まず'));
+    } else if (/^次に/u.test(normalizedLine) || /^次は/u.test(normalizedLine)) {
+      candidate = normalizedLine.replace(/^次[には]?[、:：]?\s*/u, '');
+    }
+    if (!candidate && /(確認|申請|予約|連絡|開いて|メモ|提出)/u.test(normalizedLine)) {
+      candidate = normalizedLine;
+    }
+    inferredActions.push(
+      normalizeText(candidate)
+        .replace(/^まず[、\s]*/u, '')
+        .replace(/^次[には]?[、\s]*/u, '')
+    );
+  });
+  const preferred = explicitActions.length > 0 ? explicitActions : inferredActions;
+  return uniqueNormalized(preferred).slice(0, 3);
+}
+
 function derivePriorContextSummary(trace) {
   const rows = buildVisibleMessages(trace && trace.visible_before).slice(-4);
   if (rows.length <= 0) {
@@ -368,20 +478,34 @@ function buildEvidenceRefs(trace) {
   return refs;
 }
 
-function buildTelemetrySignals(trace, slice, priorContextSummary, assistantReply) {
+function buildTelemetrySignals(trace, slice, priorContextSummary, assistantReply, userMessage) {
   const retrievalRefs = Array.isArray(trace && trace.retrieval_refs) ? trace.retrieval_refs : [];
   const expectedRouting = Array.isArray(trace && trace.scenario_expectations && trace.scenario_expectations.expected_routing)
     ? trace.scenario_expectations.expected_routing.map((value) => normalizeToken(value)).filter(Boolean)
     : [];
-  const routeKind = expectedRouting[0] || normalizeToken(trace && trace.intent) || normalizeToken(trace && trace.target_id);
-  const groundedCandidateAvailable = retrievalRefs.length > 0 ? true : null;
+  const inferredDomainIntent = inferConversationIntent(
+    userMessage && userMessage.text,
+    assistantReply && assistantReply.text,
+    trace && trace.sent_text
+  );
+  const officialCheckTargets = deriveOfficialCheckTargets(assistantReply && assistantReply.text);
+  const committedNextActions = deriveCommittedNextActions(assistantReply && assistantReply.text);
+  const groundedCandidateAvailable = retrievalRefs.length > 0 || officialCheckTargets.length > 0 ? true : null;
+  const explicitFollowupExpected = expectedRouting.includes('follow-up') || expectedRouting.includes('followup')
+    ? true
+    : (isExecuteMode(trace) ? false : null);
+  const routeKind = expectedRouting[0]
+    || normalizeToken(trace && trace.intent)
+    || inferredDomainIntent
+    || normalizeToken(trace && trace.target_id);
 
   return {
     routeKind,
-    domainIntent: normalizeToken(trace && trace.scenario_id),
+    domainIntent: inferredDomainIntent || normalizeToken(trace && trace.scenario_id),
+    normalizedConversationIntent: inferredDomainIntent || null,
     strategy: null,
     strategyReason: normalizeToken(trace && trace.failure_reason) || 'desktop_trace_observation',
-    selectedCandidateKind: null,
+    selectedCandidateKind: groundedCandidateAvailable === true ? 'grounded_candidate' : null,
     fallbackTemplateKind: null,
     finalizerTemplateKind: null,
     genericFallbackSlice: null,
@@ -389,27 +513,31 @@ function buildTelemetrySignals(trace, slice, priorContextSummary, assistantReply
     retrievalPermitReason: null,
     priorContextUsed: null,
     followupResolvedFromHistory: slice === 'follow-up' && priorContextSummary.available === true ? null : null,
+    followupContinuityExpected: explicitFollowupExpected,
     transcriptSnapshotOutcome: assistantReply.available === true ? 'written' : 'skipped_unreviewable_transcript',
     transcriptSnapshotReason: assistantReply.available === true ? 'desktop_trace_observed' : 'assistant_reply_missing',
     transcriptSnapshotLineUserKeyAvailable: trace && trace.target_id ? true : null,
-    transcriptSnapshotUserMessageAvailable: null,
+    transcriptSnapshotUserMessageAvailable: userMessage && userMessage.available === true,
     transcriptSnapshotAssistantReplyAvailable: assistantReply.available === true,
     transcriptSnapshotPriorContextSummaryAvailable: priorContextSummary.available === true,
-    knowledgeCandidateUsed: null,
+    knowledgeCandidateUsed: groundedCandidateAvailable === true ? true : null,
     groundedCandidateAvailable,
     cityPackCandidateAvailable: null,
     cityPackUsedInAnswer: null,
     savedFaqCandidateAvailable: null,
     savedFaqUsedInAnswer: null,
-    knowledgeGroundingKind: groundedCandidateAvailable === true ? 'desktop_trace_reference' : null,
+    knowledgeGroundingKind: groundedCandidateAvailable === true
+      ? (retrievalRefs.length > 0 ? 'desktop_trace_reference' : 'desktop_reply_reference')
+      : null,
     readinessDecision: null,
     replyTemplateFingerprint: null,
-    repeatRiskScore: null,
+    repeatRiskScore: 0,
     contextCarryScore: null,
     directAnswerApplied: assistantReply.available === true ? true : null,
     repetitionPrevented: null,
     conciseModeApplied: null,
-    committedNextActions: [],
+    officialCheckTargets,
+    committedNextActions,
     committedFollowupQuestion: ''
   };
 }
@@ -487,7 +615,7 @@ async function buildConversationReviewUnitsFromDesktopTrace(params) {
   const userMessage = deriveUserMessage(trace);
   const assistantReply = deriveAssistantReply(trace);
   const priorContextSummary = derivePriorContextSummary(trace);
-  const telemetrySignals = buildTelemetrySignals(trace, slice, priorContextSummary, assistantReply);
+  const telemetrySignals = buildTelemetrySignals(trace, slice, priorContextSummary, assistantReply, userMessage);
   const executeBlockerCodes = isExecuteMode(trace) ? deriveExecuteBlockerCodes(trace) : [];
   const hasResultBridgeEvidence = Boolean(
     trace

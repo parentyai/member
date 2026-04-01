@@ -27,6 +27,7 @@ test('phase855: patrol job emits query-aligned output artifact shape', async () 
   assert.ok(Array.isArray(artifact.issues));
   assert.ok(Array.isArray(artifact.observationBlockers));
   assert.ok(Array.isArray(artifact.evidence));
+  assert.ok(artifact.evidence.every((item) => /^qpe-[a-z0-9-]+-\d+$/.test(String(item && item.evidenceKey || ''))));
   assert.ok(Array.isArray(artifact.traceRefs));
   assert.ok(Array.isArray(artifact.recommendedPr));
   assert.ok(artifact.planningStatus);

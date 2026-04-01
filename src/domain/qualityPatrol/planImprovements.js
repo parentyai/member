@@ -19,7 +19,14 @@ function planImprovements(params) {
   const rootCauseReports = Array.isArray(rootCauseResult.rootCauseReports) ? rootCauseResult.rootCauseReports : [];
   const plan = buildImprovementPlan({
     rootCauseReports,
-    generatedAt: payload.generatedAt
+    generatedAt: payload.generatedAt,
+    reviewUnitCount: Array.isArray(payload.reviewUnits)
+      ? payload.reviewUnits.length
+      : Number(payload.kpiResult && payload.kpiResult.summary && payload.kpiResult.summary.reviewUnitCount || 0),
+    issueCount: Number(payload.detectionResult && payload.detectionResult.summary && payload.detectionResult.summary.issueCount || 0),
+    readinessStatus: payload.kpiResult
+      && payload.kpiResult.decayAwareReadiness
+      && payload.kpiResult.decayAwareReadiness.overallReadinessStatus
   });
   return Object.assign({}, plan, {
     sourceCollections: mergeSourceCollections(

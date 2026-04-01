@@ -56,3 +56,29 @@ test('phase852: historical-only insufficient evidence does not keep active plann
   assert.deepEqual(result.recommendedPr, []);
   assert.deepEqual(result.observationBlockers, []);
 });
+
+test('phase852: reviewable runtime with zero issues stays planned instead of insufficient evidence', () => {
+  const result = planImprovements({
+    reviewUnits: [{ reviewUnitId: 'ru_ready_01' }],
+    detectionResult: {
+      summary: {
+        issueCount: 0
+      }
+    },
+    kpiResult: {
+      summary: {
+        reviewUnitCount: 1
+      },
+      decayAwareReadiness: {
+        overallReadinessStatus: 'readiness_candidate'
+      }
+    },
+    rootCauseResult: buildRootCauseResult({
+      rootCauseReports: []
+    })
+  });
+
+  assert.equal(result.planningStatus, 'planned');
+  assert.deepEqual(result.recommendedPr, []);
+  assert.deepEqual(result.observationBlockers, []);
+});
