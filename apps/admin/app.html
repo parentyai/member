@@ -870,7 +870,7 @@
                       <span id="composer-status-pill" class="badge badge-info">draft</span>
                       <div id="composer-next-step" class="note composer-next-step">-</div>
                     </div>
-                    <div class="composer-primary-actions">
+                    <div class="composer-primary-actions" data-v3-ops-hidden="true">
                       <button id="create-draft" type="button" class="composer-hidden-action" data-dict-key="ui.label.composer.create">下書き作成</button>
                       <button id="approve" type="button" class="composer-hidden-action" data-workbench-zone="true" data-workbench-action="notifications.approve" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
                       <button id="preview" type="button" class="composer-hidden-action" data-dict-key="ui.label.composer.preview">プレビュー</button>
@@ -878,7 +878,7 @@
                       <button id="execute" type="button" class="composer-hidden-action" data-workbench-zone="true" data-workbench-action="notifications.send.execute" data-dict-key="ui.label.composer.execute">送信実行</button>
                     </div>
                   </div>
-                  <div class="composer-state-machine" data-ui="composer-workbench-state">
+                  <div class="composer-state-machine" data-ui="composer-workbench-state" data-v3-ops-hidden="true">
                     <div class="composer-workbench-title">Notification Workbench</div>
                     <ol id="composer-state-bar" class="composer-state-bar">
                       <li class="composer-state-step" data-composer-state-step="draft">Draft</li>
@@ -897,7 +897,7 @@
                       <div class="composer-overview-subtitle">Step</div>
                       <div id="composer-flow-steps" class="composer-chip-row"></div>
                     </div>
-                    <div class="composer-overview-card" data-ui="composer-type-schema-overview">
+                    <div class="composer-overview-card" data-ui="composer-type-schema-overview" data-v3-ops-hidden="true">
                       <div class="composer-overview-title">タイプ別入力スキーマ</div>
                       <div id="composer-schema-selected" class="note">-</div>
                       <div class="composer-schema-columns">
@@ -942,8 +942,8 @@
                       </div>
                       <ul id="composer-safety-reasons" class="composer-safety-reasons"></ul>
                       <div id="composer-fix-guidance" class="composer-fix-guidance"></div>
-                      <div class="note">証跡確認は Evidence 画面で行います（監査ログ / 配信結果）。</div>
-                      <div class="composer-evidence-links" data-ui="composer-evidence-nav">
+                      <div class="note" data-v3-ops-hidden="true">証跡確認は Evidence 画面で行います（監査ログ / 配信結果）。</div>
+                      <div class="composer-evidence-links" data-ui="composer-evidence-nav" data-v3-ops-hidden="true">
                         <button id="composer-open-audit" type="button" class="button-subtle">監査ログを開く</button>
                         <button id="composer-open-trace-monitor" type="button" class="button-subtle">traceで配信結果へ</button>
                       </div>
@@ -1302,7 +1302,7 @@
               <button id="monitor-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <div id="monitor-reflection-state" class="panel data-reflection-panel" data-reflection-pane="monitor" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
+          <div id="monitor-reflection-state" class="panel data-reflection-panel" data-reflection-pane="monitor" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" data-v3-ops-hidden="true" role="status" aria-live="polite">
             <div class="panel-title">データ反映状態</div>
             <div class="panel-body">
               <div class="note"><strong>状態:</strong> <span id="monitor-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
@@ -1316,7 +1316,7 @@
               </div>
             </div>
           </div>
-          <div id="monitor-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="monitor" role="status" aria-live="polite">
+          <div id="monitor-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="monitor" data-v3-ops-hidden="true" role="status" aria-live="polite">
             監視情報は全ロールで参照できます。設定ビューは管理ロールのみ表示されます。
           </div>
           <details id="monitor-pane-details" class="decision-details section" data-surface-tier="primary">
@@ -1325,7 +1325,7 @@
               <div class="monitor-view-actions">
                 <button id="monitor-view-monitoring" type="button" class="secondary-btn monitor-view-btn is-active" data-monitor-view-target="monitoring" aria-pressed="true">監視</button>
                 <button id="monitor-view-summary" type="button" class="secondary-btn monitor-view-btn" data-monitor-view-target="summary" aria-pressed="false">通知集計</button>
-                <button id="monitor-view-configuration" type="button" class="secondary-btn monitor-view-btn" data-monitor-view-target="configuration" data-role-allow="admin,developer" aria-pressed="false">設定</button>
+                <button id="monitor-view-configuration" type="button" class="secondary-btn monitor-view-btn" data-monitor-view-target="configuration" data-role-allow="admin,developer" data-v3-ops-hidden="true" aria-pressed="false">設定</button>
               </div>
               <div id="monitor-view-note" class="note">監視を表示中です。設定変更が必要な場合のみ「設定」を開いてください。</div>
               <div id="monitor-view-permission-notice" class="inline-notice is-hidden" data-ui-message-level="inline" aria-hidden="true" role="status" aria-live="polite">
@@ -2335,11 +2335,11 @@
 	                      </div>
 	                    </details>
 	                  </div>
-                  <div id="monitor-insights-system-handoff" class="note monitor-system-diagnostics-handoff">
+                  <div id="monitor-insights-system-handoff" class="note monitor-system-diagnostics-handoff" data-v3-ops-hidden="true">
                     <span id="monitor-insights-handoff-reason">診断情報はSystemレイヤーで確認します。</span>
                     <button id="monitor-open-system-diagnostics" type="button" class="secondary-btn">System状態へ</button>
                   </div>
-                  <div id="monitor-insights-diagnostics-panel" class="panel is-hidden">
+                  <div id="monitor-insights-diagnostics-panel" class="panel is-hidden" data-v3-ops-hidden="true">
                     <div class="panel-title" data-dict-key="ui.label.monitor.insightsDiagnostics">診断情報</div>
                     <div class="panel-body">
                       <div id="monitor-insights-diagnostics" class="note">-</div>
@@ -2431,11 +2431,11 @@
                 <div class="panel-body">
                   <div id="monitor-detail" class="note">行を選択すると詳細を表示します。</div>
                   <div id="monitor-safe-next-step" class="safe-next-step" data-dict-key="ui.desc.monitor.safeNextStep">次の安全な一手: 反応率が低い通知の詳細を確認する</div>
-                  <div class="note">配信状況の確認はこの画面、trace/auditの証跡追跡は監査ログ画面で行います。</div>
-                  <div class="row row-top">
+                  <div class="note" data-v3-ops-hidden="true">配信状況の確認はこの画面、trace/auditの証跡追跡は監査ログ画面で行います。</div>
+                  <div class="row row-top" data-v3-ops-hidden="true">
                     <button id="monitor-open-audit-from-detail" type="button" class="button-subtle">監査ログへ（trace）</button>
                   </div>
-                  <details data-json-collapsible="true">
+                  <details data-json-collapsible="true" data-v3-ops-hidden="true">
                     <summary data-dict-key="ui.label.monitor.raw">RAW JSON</summary>
                     <pre id="monitor-raw" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
@@ -2504,7 +2504,7 @@
           </div>
           <details id="emergency-layer-pane-details" class="decision-details section" data-workbench-zone="true">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
-            <div class="panel">
+            <div class="panel" data-v3-ops-hidden="true">
               <div class="panel-title" data-dict-key="ui.label.emergency.providerControl">Provider Control</div>
               <div class="panel-body">
                 <div class="row row-top">
@@ -2532,7 +2532,7 @@
             <div class="panel">
               <div class="panel-title" data-dict-key="ui.label.emergency.inbox">Emergency Inbox</div>
               <div class="panel-body">
-                <div class="panel">
+                <div class="panel" data-v3-ops-hidden="true">
                   <div class="panel-title">Emergency Rules（事前承認ルール）</div>
                   <div class="panel-body">
                     <div class="row">
@@ -2599,8 +2599,8 @@
                         <tbody id="emergency-rule-rows"></tbody>
                       </table>
                     </div>
-                    <div id="emergency-rule-preview-summary" class="note">Rule preview結果はここに表示されます。</div>
-                    <details data-json-collapsible="true">
+                    <div id="emergency-rule-preview-summary" class="note" data-v3-ops-hidden="true">Rule preview結果はここに表示されます。</div>
+                    <details data-json-collapsible="true" data-v3-ops-hidden="true">
                       <summary>Rule Preview JSON</summary>
                       <pre id="emergency-rule-preview-json">-</pre>
                     </details>
@@ -2643,7 +2643,7 @@
                 </div>
               </div>
             </div>
-            <div class="panel">
+            <div class="panel" data-v3-ops-hidden="true">
               <div class="panel-title" data-dict-key="ui.label.emergency.evidenceViewer">Evidence Viewer</div>
               <div class="panel-body">
                 <div id="emergency-evidence-summary" class="note" data-dict-key="ui.desc.emergency.evidenceEmpty">bulletinを選択すると証跡を表示します。</div>
@@ -2674,7 +2674,7 @@
               <button id="city-pack-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <div id="city-pack-reflection-state" class="panel data-reflection-panel" data-reflection-pane="city-pack" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
+          <div id="city-pack-reflection-state" class="panel data-reflection-panel" data-reflection-pane="city-pack" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" data-v3-ops-hidden="true" role="status" aria-live="polite">
             <div class="panel-title">データ反映状態</div>
             <div class="panel-body">
               <div class="note"><strong>状態:</strong> <span id="city-pack-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
@@ -2745,15 +2745,15 @@
                         <option value="template">Template</option>
                       </select>
                     </div>
-                    <div class="flex-1">
+                    <div class="flex-1" data-v3-advanced-filter="true">
                       <label for="city-pack-unified-filter-relation">関係ID</label>
                       <input id="city-pack-unified-filter-relation" type="text" placeholder="cityPackId / linkRegistryId / requestId" />
                     </div>
-                    <div class="flex-1">
+                    <div class="flex-1" data-v3-advanced-filter="true">
                       <label for="city-pack-unified-filter-date-from">作成日 from</label>
                       <input id="city-pack-unified-filter-date-from" type="date" />
                     </div>
-                    <div class="flex-1">
+                    <div class="flex-1" data-v3-advanced-filter="true">
                       <label for="city-pack-unified-filter-date-to">作成日 to</label>
                       <input id="city-pack-unified-filter-date-to" type="date" />
                     </div>
@@ -3750,7 +3750,7 @@
               <button id="read-model-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <div id="read-model-reflection-state" class="panel data-reflection-panel" data-reflection-pane="read-model" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
+          <div id="read-model-reflection-state" class="panel data-reflection-panel" data-reflection-pane="read-model" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" data-v3-ops-hidden="true" role="status" aria-live="polite">
             <div class="panel-title">データ反映状態</div>
             <div class="panel-body">
               <div class="note"><strong>状態:</strong> <span id="read-model-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
@@ -3806,7 +3806,7 @@
                           <option value="帰任前">帰任前</option>
                         </select>
                       </div>
-                      <div class="flex-1">
+                      <div class="flex-1" data-v3-advanced-filter="true">
                         <label for="users-filter-plan">Plan</label>
                         <select id="users-filter-plan">
                           <option value="">all</option>
@@ -3814,7 +3814,7 @@
                           <option value="pro">pro</option>
                         </select>
                       </div>
-                      <div class="flex-1">
+                      <div class="flex-1" data-v3-advanced-filter="true">
                         <label for="users-filter-subscription-status">課金状態</label>
                         <select id="users-filter-subscription-status">
                           <option value="">all</option>
@@ -3826,7 +3826,7 @@
                           <option value="unknown">unknown</option>
                         </select>
                       </div>
-                      <div class="flex-1">
+                      <div class="flex-1" data-v3-advanced-filter="true">
                         <label for="users-filter-billing-integrity">課金整合</label>
                         <select id="users-filter-billing-integrity">
                           <option value="">all</option>
@@ -3839,7 +3839,7 @@
                         <label for="users-filter-limit">件数</label>
                         <input id="users-filter-limit" type="number" min="1" max="500" value="200" class="input-sm" />
                       </div>
-                      <div class="flex-1">
+                      <div class="flex-1" data-v3-advanced-filter="true">
                         <label for="users-filter-analytics-limit">集計上限</label>
                         <input id="users-filter-analytics-limit" type="number" min="1" max="2000" value="1200" class="input-sm" />
                       </div>
@@ -3847,9 +3847,9 @@
                   </div>
                   <div class="row row-top">
                     <button id="users-summary-reload" type="button">更新</button>
-                    <button id="users-summary-analyze" type="button">Analyze</button>
-                    <button id="users-summary-export" type="button">Export CSV</button>
-                    <button id="users-summary-edit-columns" type="button">Edit columns</button>
+                    <button id="users-summary-analyze" type="button" data-v3-ops-hidden="true">Analyze</button>
+                    <button id="users-summary-export" type="button" data-v3-ops-hidden="true">Export CSV</button>
+                    <button id="users-summary-edit-columns" type="button" data-v3-ops-hidden="true">Edit columns</button>
                   </div>
                   <div id="users-summary-quick-filters" class="users-quick-filters">
                     <button type="button" class="users-quick-filter-pill is-active" data-users-quick-filter="all">All</button>

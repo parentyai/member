@@ -3867,12 +3867,19 @@ details:not([open]) > *:not(summary) {
 .app-shell.admin-v3-shell-active[data-ui-shell="ops"] #admin-local-preflight-banner,
 .app-shell.admin-v3-shell-active[data-ui-shell="ops"] #ui-fixture-success-banner,
 .app-shell.admin-v3-shell-active[data-ui-shell="ops"] #home-reflection-state,
-.app-shell.admin-v3-shell-active[data-ui-shell="ops"] #dashboard-link-system {
+.app-shell.admin-v3-shell-active[data-ui-shell="ops"] #dashboard-link-system,
+.app-shell.admin-v3-shell-active[data-ui-shell="ops"] [data-v3-ops-hidden="true"],
+.app-shell.admin-v3-shell-active[data-ui-shell="ops"] [data-v3-advanced-filter="true"],
+.app-shell.admin-v3-shell-active[data-ui-shell="ops"] .decision-action-btn[data-v3-action-hidden="true"] {
   display: none !important;
 }
 
 .app-shell.admin-v3-shell-active[data-ui-shell="ops"] .page-header {
   margin-bottom: var(--space-4);
+}
+
+.app-shell.admin-v3-shell-active[data-ui-shell="ops"] .decision-card .decision-actions {
+  gap: var(--space-2);
 }
 
 @media (max-width: 1200px) {

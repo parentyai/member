@@ -970,6 +970,65 @@ const PAGE_HEADER_ACTION_MAP = Object.freeze({
   })
 });
 
+const V3_DECISION_CARD_COPY_MAP = Object.freeze({
+  composer: Object.freeze({
+    titleKey: 'ui.label.v3.decision.composer.title',
+    titleFallback: '送信内容を整える',
+    primaryKey: 'ui.label.v3.decision.composer.primary',
+    primaryFallback: '本文を編集する',
+    secondaryKey: 'ui.label.v3.decision.composer.secondary',
+    secondaryFallback: '送信前確認へ進む',
+    hideTertiary: true
+  }),
+  monitor: Object.freeze({
+    titleKey: 'ui.label.v3.decision.monitor.title',
+    titleFallback: '配信結果を確認する',
+    primaryKey: 'ui.label.v3.decision.monitor.primary',
+    primaryFallback: '送信内容へ戻る',
+    secondaryKey: 'ui.label.v3.decision.monitor.secondary',
+    secondaryFallback: '結果を更新する',
+    hideTertiary: true
+  }),
+  errors: Object.freeze({
+    titleKey: 'ui.label.v3.decision.errors.title',
+    titleFallback: '復旧の次の一手',
+    primaryKey: 'ui.label.v3.decision.errors.primary',
+    primaryFallback: '配信結果を見る',
+    secondaryKey: 'ui.label.v3.decision.errors.secondary',
+    secondaryFallback: 'システム記録を見る',
+    tertiaryKey: 'ui.label.v3.decision.errors.tertiary',
+    tertiaryFallback: '保守画面を開く',
+    hideTertiary: false
+  }),
+  'read-model': Object.freeze({
+    titleKey: 'ui.label.v3.decision.readModel.title',
+    titleFallback: '会員を探して確認する',
+    primaryKey: 'ui.label.v3.decision.readModel.primary',
+    primaryFallback: '会員を探す',
+    secondaryKey: 'ui.label.v3.decision.readModel.secondary',
+    secondaryFallback: '一覧を更新する',
+    hideTertiary: true
+  }),
+  'city-pack': Object.freeze({
+    titleKey: 'ui.label.v3.decision.cityPack.title',
+    titleFallback: '地域案内の候補を確認する',
+    primaryKey: 'ui.label.v3.decision.cityPack.primary',
+    primaryFallback: '地域案内を開く',
+    secondaryKey: 'ui.label.v3.decision.cityPack.secondary',
+    secondaryFallback: '候補を更新する',
+    hideTertiary: true
+  }),
+  'emergency-layer': Object.freeze({
+    titleKey: 'ui.label.v3.decision.emergencyLayer.title',
+    titleFallback: '緊急対応の受信箱を確認する',
+    primaryKey: 'ui.label.v3.decision.emergencyLayer.primary',
+    primaryFallback: '受信箱を開く',
+    secondaryKey: 'ui.label.v3.decision.emergencyLayer.secondary',
+    secondaryFallback: '受信箱を更新する',
+    hideTertiary: true
+  })
+});
+
 const NAV_POLICY = Object.freeze({
   operator: ['home', 'ops-feature-catalog', 'ops-system-health', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'quality-patrol', 'settings'],
   admin: ['home', 'ops-feature-catalog', 'ops-system-health', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'quality-patrol', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user'],
@@ -2832,6 +2891,29 @@ function syncV3TaskContext(paneKey) {
   taskContextEl.dataset.taskContext = String(paneKey || 'home');
 }
 
+function syncV3DecisionCard(paneKey) {
+  if (!isAdminUiV3Enabled() || !ADMIN_COPY_V3) return;
+  const pane = String(paneKey || '').trim();
+  const meta = V3_DECISION_CARD_COPY_MAP[pane] || null;
+  const card = document.getElementById(`${pane}-decision-card`);
+  if (!card) return;
+  const titleEl = card.querySelector('.decision-title');
+  const primaryBtn = card.querySelector('.decision-action-btn[data-action-kind="primary"]');
+  const secondaryBtn = card.querySelector('.decision-action-btn[data-action-kind="secondary"]');
+  const tertiaryBtn = card.querySelector('.decision-action-btn[data-action-kind="tertiary"]');
+  if (titleEl && meta) titleEl.textContent = t(meta.titleKey, meta.titleFallback);
+  if (primaryBtn && meta) primaryBtn.textContent = t(meta.primaryKey, meta.primaryFallback);
+  if (secondaryBtn && meta) secondaryBtn.textContent = t(meta.secondaryKey, meta.secondaryFallback);
+  if (tertiaryBtn) {
+    if (meta && meta.hideTertiary === true) {
+      tertiaryBtn.setAttribute('data-v3-action-hidden', 'true');
+    } else {
+      tertiaryBtn.removeAttribute('data-v3-action-hidden');
+      if (meta && meta.tertiaryKey) tertiaryBtn.textContent = t(meta.tertiaryKey, meta.tertiaryFallback);
+    }
+  }
+}
+
 function isNavItemVisibleForCurrentShell(element) {
   if (!element || element.getAttribute('data-nav-item-visible') === 'false') return false;
   if (element.classList.contains('role-hidden') || element.getAttribute('aria-hidden') === 'true') return false;
@@ -4021,6 +4103,7 @@ function updatePageHeader(paneKey) {
     secondaryAction.setAttribute('data-open-pane', actionMeta.secondary.paneTarget);
     secondaryAction.classList.remove('hidden');
   }
+  syncV3DecisionCard(paneKey);
   renderBlockedPaneNotice();
 }
 
@@ -20363,11 +20446,12 @@ function setupDecisionActions() {
   });
 
   document.getElementById('read-model-action-edit')?.addEventListener('click', () => {
-    activatePane('composer');
+    activatePane('read-model');
+    document.getElementById('users-filter-line-user-id')?.focus();
   });
   document.getElementById('read-model-action-activate')?.addEventListener('click', () => {
     activatePane('read-model');
-    document.getElementById('read-model-reload')?.click();
+    document.getElementById('users-summary-reload')?.click();
   });
   document.getElementById('read-model-action-disable')?.addEventListener('click', () => {
     activatePane('errors');
@@ -20380,7 +20464,7 @@ function setupDecisionActions() {
   });
   document.getElementById('emergency-layer-action-activate')?.addEventListener('click', () => {
     activatePane('emergency-layer');
-    showToast('実行操作は Emergency Workbench 内の行アクションから実施してください', 'warn');
+    document.getElementById('emergency-bulletin-reload')?.click();
   });
   document.getElementById('emergency-layer-action-disable')?.addEventListener('click', () => {
     activatePane('emergency-layer');
@@ -20400,7 +20484,7 @@ function setupDecisionActions() {
   });
   document.getElementById('city-pack-action-activate')?.addEventListener('click', () => {
     activatePane('city-pack');
-    showToast('実行操作は City Pack Workbench 内の行アクションから実施してください', 'warn');
+    document.getElementById('city-pack-unified-reload')?.click();
   });
   document.getElementById('city-pack-action-disable')?.addEventListener('click', () => {
     activatePane('city-pack');
