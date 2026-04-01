@@ -126,6 +126,26 @@ function resolveAdminLegacyStatusFlag() {
   return resolveBooleanEnvFlag('ENABLE_ADMIN_LEGACY_STATUS_V1', true);
 }
 
+function resolveAdminOpsUiV3Flag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_OPS_UI_V3', true);
+}
+
+function resolveAdminSystemConsoleV1Flag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_SYSTEM_CONSOLE_V1', true);
+}
+
+function resolveAdminCopyV3Flag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_COPY_V3', true);
+}
+
+function resolveAdminV3CutoverFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_V3_CUTOVER', true);
+}
+
+function resolveAdminV3KillSwitchFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_V3_KILL_SWITCH', false);
+}
+
 function resolveOpsRealtimeDashboardFlag() {
   return resolveBooleanEnvFlag('ENABLE_OPS_REALTIME_DASHBOARD_V1', true);
 }
@@ -205,6 +225,11 @@ function buildAdminAppBootScript() {
   const adminOpsOnlyNavEnabled = resolveAdminOpsOnlyNavFlag();
   const adminDeveloperSurfaceEnabled = resolveAdminDeveloperSurfaceFlag();
   const adminLegacyStatusEnabled = resolveAdminLegacyStatusFlag();
+  const adminOpsUiV3Enabled = resolveAdminOpsUiV3Flag();
+  const adminSystemConsoleV1Enabled = resolveAdminSystemConsoleV1Flag();
+  const adminCopyV3Enabled = resolveAdminCopyV3Flag();
+  const adminV3CutoverEnabled = resolveAdminV3CutoverFlag();
+  const adminV3KillSwitchEnabled = resolveAdminV3KillSwitchFlag();
   const opsRealtimeDashboardEnabled = resolveOpsRealtimeDashboardFlag();
   const opsSystemSnapshotEnabled = resolveOpsSystemSnapshotFlag();
   const composerCategoryWizardEnabled = resolveComposerCategoryWizardFlag();
@@ -213,7 +238,7 @@ function buildAdminAppBootScript() {
   const uxOsFatigueWarnEnabled = resolveUxOsFatigueWarnFlag();
   const buildMeta = buildMetaEnabled ? resolveAdminBuildMeta() : null;
   const safeBuildMeta = JSON.stringify(buildMeta);
-  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1=${localPreflightBlockingEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_NO_COLLAPSE_V1=${noCollapseEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_TOP_SUMMARY_V1=${topSummaryEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_HOME_CLEAN_SURFACE_V1=${homeCleanSurfaceEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1=${usersStripeLayoutEnabled ? 'true' : 'false'};window.ENABLE_CITY_PACK_CONTENT_MANAGE_V1=${cityPackContentManageEnabled ? 'true' : 'false'};window.ENABLE_CITY_PACK_UI_V2=${cityPackUiV2Enabled ? 'true' : 'false'};window.ENABLE_ADMIN_OPS_ONLY_NAV_V1=${adminOpsOnlyNavEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_DEVELOPER_SURFACE_V1=${adminDeveloperSurfaceEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LEGACY_STATUS_V1=${adminLegacyStatusEnabled ? 'true' : 'false'};window.ENABLE_OPS_REALTIME_DASHBOARD_V1=${opsRealtimeDashboardEnabled ? 'true' : 'false'};window.ENABLE_OPS_SYSTEM_SNAPSHOT_V1=${opsSystemSnapshotEnabled ? 'true' : 'false'};window.ENABLE_COMPOSER_CATEGORY_WIZARD_V1=${composerCategoryWizardEnabled ? 'true' : 'false'};window.ENABLE_COMPOSER_AB_OPTION_V1=${composerAbOptionEnabled ? 'true' : 'false'};window.ENABLE_UXOS_POLICY_READONLY_V1=${uxOsPolicyReadonlyEnabled ? 'true' : 'false'};window.ENABLE_UXOS_FATIGUE_WARN_V1=${uxOsFatigueWarnEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
+  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1=${localPreflightBlockingEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_NO_COLLAPSE_V1=${noCollapseEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_TOP_SUMMARY_V1=${topSummaryEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_HOME_CLEAN_SURFACE_V1=${homeCleanSurfaceEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1=${usersStripeLayoutEnabled ? 'true' : 'false'};window.ENABLE_CITY_PACK_CONTENT_MANAGE_V1=${cityPackContentManageEnabled ? 'true' : 'false'};window.ENABLE_CITY_PACK_UI_V2=${cityPackUiV2Enabled ? 'true' : 'false'};window.ENABLE_ADMIN_OPS_ONLY_NAV_V1=${adminOpsOnlyNavEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_DEVELOPER_SURFACE_V1=${adminDeveloperSurfaceEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LEGACY_STATUS_V1=${adminLegacyStatusEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_OPS_UI_V3=${adminOpsUiV3Enabled ? 'true' : 'false'};window.ENABLE_ADMIN_SYSTEM_CONSOLE_V1=${adminSystemConsoleV1Enabled ? 'true' : 'false'};window.ENABLE_ADMIN_COPY_V3=${adminCopyV3Enabled ? 'true' : 'false'};window.ENABLE_ADMIN_V3_CUTOVER=${adminV3CutoverEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_V3_KILL_SWITCH=${adminV3KillSwitchEnabled ? 'true' : 'false'};window.ENABLE_OPS_REALTIME_DASHBOARD_V1=${opsRealtimeDashboardEnabled ? 'true' : 'false'};window.ENABLE_OPS_SYSTEM_SNAPSHOT_V1=${opsSystemSnapshotEnabled ? 'true' : 'false'};window.ENABLE_COMPOSER_CATEGORY_WIZARD_V1=${composerCategoryWizardEnabled ? 'true' : 'false'};window.ENABLE_COMPOSER_AB_OPTION_V1=${composerAbOptionEnabled ? 'true' : 'false'};window.ENABLE_UXOS_POLICY_READONLY_V1=${uxOsPolicyReadonlyEnabled ? 'true' : 'false'};window.ENABLE_UXOS_FATIGUE_WARN_V1=${uxOsFatigueWarnEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
 }
 
 function parseCookies(headerValue) {

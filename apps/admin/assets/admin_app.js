@@ -113,6 +113,26 @@ const ADMIN_LEGACY_STATUS_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_ADMIN_LEGACY_STATUS_V1 : null,
   false
 );
+const ADMIN_OPS_UI_V3 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_OPS_UI_V3 : null,
+  true
+);
+const ADMIN_SYSTEM_CONSOLE_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_SYSTEM_CONSOLE_V1 : null,
+  true
+);
+const ADMIN_COPY_V3 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_COPY_V3 : null,
+  true
+);
+const ADMIN_V3_CUTOVER = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_V3_CUTOVER : null,
+  true
+);
+const ADMIN_V3_KILL_SWITCH = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_V3_KILL_SWITCH : null,
+  false
+);
 const OPS_REALTIME_DASHBOARD_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_OPS_REALTIME_DASHBOARD_V1 : null,
   true
@@ -138,6 +158,12 @@ const UXOS_FATIGUE_WARN_V1 = resolveFrontendFeatureFlag(
   false
 );
 const EMERGENCY_MANUAL_APPROVE_FALLBACK = false;
+const ADMIN_UI_V3_ENABLED = ADMIN_UI_FOUNDATION_V1
+  && ADMIN_V3_CUTOVER
+  && !ADMIN_V3_KILL_SWITCH
+  && (ADMIN_OPS_UI_V3 || ADMIN_SYSTEM_CONSOLE_V1);
+const UI_SHELL_OPS = 'ops';
+const UI_SHELL_SYSTEM = 'system';
 
 function isOpsRealtimeSnapshotEnabled() {
   return OPS_REALTIME_DASHBOARD_V1 && OPS_SYSTEM_SNAPSHOT_V1;
@@ -146,6 +172,7 @@ function isOpsRealtimeSnapshotEnabled() {
 const state = {
   dict: {},
   role: 'operator',
+  uiShell: UI_SHELL_OPS,
   blockedPaneNotice: null,
   localPreflight: null,
   recoveryUx: {
@@ -842,6 +869,97 @@ const PANE_V2_META = Object.freeze({
   maintenance: Object.freeze({ paneMode: 'system-recovery', taskContext: 'system-recovery', taskContextKey: 'ui.label.v2.task.systemRecovery', taskContextFallback: '回復操作と保守手順を管理する' })
 });
 
+const OPS_UI_V3_PANES = Object.freeze([
+  'home',
+  'alerts',
+  'composer',
+  'monitor',
+  'errors',
+  'read-model',
+  'city-pack',
+  'emergency-layer'
+]);
+
+const SYSTEM_CONSOLE_V1_PANES = Object.freeze([
+  'settings',
+  'ops-system-health',
+  'ops-feature-catalog',
+  'audit',
+  'quality-patrol',
+  'maintenance',
+  'llm',
+  'vendors',
+  'developer-map',
+  'developer-manual-redac',
+  'developer-manual-user'
+]);
+
+const V3_PANE_HEADER_MAP = Object.freeze({
+  home: Object.freeze({ titleKey: 'ui.label.v3.page.home', titleFallback: '今日の優先', subtitleKey: 'ui.desc.v3.page.home', subtitleFallback: '今日の優先タスクを確認し、最初に着手する作業を決めます。' }),
+  alerts: Object.freeze({ titleKey: 'ui.label.v3.page.alerts', titleFallback: '要対応', subtitleKey: 'ui.desc.v3.page.alerts', subtitleFallback: '要対応を優先順に確認し、この画面から対応開始できます。' }),
+  composer: Object.freeze({ titleKey: 'ui.label.v3.page.composer', titleFallback: '送信内容を作る', subtitleKey: 'ui.desc.v3.page.composer', subtitleFallback: '送信内容を作成し、実行前の最終確認まで進めます。' }),
+  monitor: Object.freeze({ titleKey: 'ui.label.v3.page.monitor', titleFallback: '配信結果を見る', subtitleKey: 'ui.desc.v3.page.monitor', subtitleFallback: '配信結果を確認し、対応が必要な対象を特定します。' }),
+  errors: Object.freeze({ titleKey: 'ui.label.v3.page.errors', titleFallback: '異常対応', subtitleKey: 'ui.desc.v3.page.errors', subtitleFallback: '復旧が必要な異常を確認し、次の対応を決めます。' }),
+  'read-model': Object.freeze({ titleKey: 'ui.label.v3.page.readModel', titleFallback: '会員を確認', subtitleKey: 'ui.desc.v3.page.readModel', subtitleFallback: '会員の状態を比較し、必要な対象の確認に進みます。' }),
+  'city-pack': Object.freeze({ titleKey: 'ui.label.v3.page.cityPack', titleFallback: '地域案内', subtitleKey: 'ui.desc.v3.page.cityPack', subtitleFallback: '地域案内の内容を確認・更新し、公開状態を管理します。' }),
+  'emergency-layer': Object.freeze({ titleKey: 'ui.label.v3.page.emergencyLayer', titleFallback: '緊急対応', subtitleKey: 'ui.desc.v3.page.emergencyLayer', subtitleFallback: '緊急情報を確認し、通知が必要かを判断します。' }),
+  settings: Object.freeze({ titleKey: 'ui.label.v3.page.settings', titleFallback: '運用設定', subtitleKey: 'ui.desc.v3.page.settings', subtitleFallback: '設定値の確認と変更判断を行います。' }),
+  'ops-system-health': Object.freeze({ titleKey: 'ui.label.v3.page.systemHealth', titleFallback: 'システム健全性', subtitleKey: 'ui.desc.v3.page.systemHealth', subtitleFallback: 'システム状態を確認し、問題の切り分けに使います。' }),
+  'ops-feature-catalog': Object.freeze({ titleKey: 'ui.label.v3.page.featureCatalog', titleFallback: '機能一覧', subtitleKey: 'ui.desc.v3.page.featureCatalog', subtitleFallback: '運用で使う機能の状態と公開条件を確認します。' }),
+  audit: Object.freeze({ titleKey: 'ui.label.v3.page.audit', titleFallback: 'システム記録', subtitleKey: 'ui.desc.v3.page.audit', subtitleFallback: 'trace と操作記録を確認し、必要な証跡を追います。' }),
+  'quality-patrol': Object.freeze({ titleKey: 'ui.label.v3.page.qualityPatrol', titleFallback: '品質レビュー', subtitleKey: 'ui.desc.v3.page.qualityPatrol', subtitleFallback: '品質観測の結果と改善候補を確認します。' }),
+  maintenance: Object.freeze({ titleKey: 'ui.label.v3.page.maintenance', titleFallback: '保守と復旧', subtitleKey: 'ui.desc.v3.page.maintenance', subtitleFallback: '回復操作と保守手順を確認します。' }),
+  llm: Object.freeze({ titleKey: 'ui.label.v3.page.llm', titleFallback: 'LLM設定と検証', subtitleKey: 'ui.desc.v3.page.llm', subtitleFallback: 'LLM の設定、実行、品質確認を行います。' }),
+  vendors: Object.freeze({ titleKey: 'ui.label.v3.page.vendors', titleFallback: 'ベンダー連携', subtitleKey: 'ui.desc.v3.page.vendors', subtitleFallback: 'ベンダーの状態と連携情報を確認します。' }),
+  'developer-map': Object.freeze({ titleKey: 'ui.label.v3.page.developerMap', titleFallback: '開発マップ', subtitleKey: 'ui.desc.v3.page.developerMap', subtitleFallback: '構造と依存関係を開発者向けに確認します。' }),
+  'developer-manual-redac': Object.freeze({ titleKey: 'ui.label.v3.page.developerManualRedac', titleFallback: '取説（Redac）', subtitleKey: 'ui.desc.v3.page.developerManualRedac', subtitleFallback: 'Redac 向けの運用手順を確認します。' }),
+  'developer-manual-user': Object.freeze({ titleKey: 'ui.label.v3.page.developerManualUser', titleFallback: '取説（ユーザー）', subtitleKey: 'ui.desc.v3.page.developerManualUser', subtitleFallback: 'ユーザー向けの運用手順を確認します。' })
+});
+
+const V3_TASK_CONTEXT_MAP = Object.freeze({
+  home: Object.freeze({ key: 'ui.label.v3.task.home', fallback: 'Today / 今日の優先タスク' }),
+  alerts: Object.freeze({ key: 'ui.label.v3.task.alerts', fallback: 'Today / 要対応を確認する' }),
+  composer: Object.freeze({ key: 'ui.label.v3.task.composer', fallback: 'Messages / 送信内容を作る' }),
+  monitor: Object.freeze({ key: 'ui.label.v3.task.monitor', fallback: 'Messages / 配信結果を見る' }),
+  errors: Object.freeze({ key: 'ui.label.v3.task.errors', fallback: 'Recovery / 異常対応を進める' }),
+  'read-model': Object.freeze({ key: 'ui.label.v3.task.readModel', fallback: 'Members / 会員を確認する' }),
+  'city-pack': Object.freeze({ key: 'ui.label.v3.task.cityPack', fallback: 'Regional Ops / 地域案内を管理する' }),
+  'emergency-layer': Object.freeze({ key: 'ui.label.v3.task.emergencyLayer', fallback: 'Regional Ops / 緊急対応を進める' }),
+  settings: Object.freeze({ key: 'ui.label.v3.task.settings', fallback: 'System Console / 運用設定を確認する' }),
+  'ops-system-health': Object.freeze({ key: 'ui.label.v3.task.systemHealth', fallback: 'System Console / システム状態を確認する' }),
+  'ops-feature-catalog': Object.freeze({ key: 'ui.label.v3.task.featureCatalog', fallback: 'System Console / 機能状態を確認する' }),
+  audit: Object.freeze({ key: 'ui.label.v3.task.audit', fallback: 'System Console / 記録を確認する' }),
+  'quality-patrol': Object.freeze({ key: 'ui.label.v3.task.qualityPatrol', fallback: 'System Console / 品質を確認する' }),
+  maintenance: Object.freeze({ key: 'ui.label.v3.task.maintenance', fallback: 'System Console / 保守と復旧を進める' }),
+  llm: Object.freeze({ key: 'ui.label.v3.task.llm', fallback: 'System Console / LLM設定と検証を進める' }),
+  vendors: Object.freeze({ key: 'ui.label.v3.task.vendors', fallback: 'System Console / ベンダー連携を確認する' }),
+  'developer-map': Object.freeze({ key: 'ui.label.v3.task.developerMap', fallback: 'System Console / 開発マップを確認する' }),
+  'developer-manual-redac': Object.freeze({ key: 'ui.label.v3.task.developerManualRedac', fallback: 'System Console / Redac 向け手順を確認する' }),
+  'developer-manual-user': Object.freeze({ key: 'ui.label.v3.task.developerManualUser', fallback: 'System Console / ユーザー向け手順を確認する' })
+});
+
+const V3_PANE_SEARCH_INDEX = Object.freeze({
+  home: Object.freeze(['today', '今日', '優先', 'dashboard', 'ダッシュボード']),
+  alerts: Object.freeze(['alert', '要対応', '対応', 'today']),
+  composer: Object.freeze(['compose', 'composer', '送信', '作成', 'message']),
+  monitor: Object.freeze(['monitor', '配信結果', '結果', 'delivery']),
+  errors: Object.freeze(['error', 'errors', '異常', '復旧', 'recovery']),
+  'read-model': Object.freeze(['member', 'members', '会員', 'read model']),
+  'city-pack': Object.freeze(['city', 'pack', '地域案内', 'regional']),
+  'emergency-layer': Object.freeze(['emergency', '緊急', 'alert', 'regional']),
+  settings: Object.freeze(['setting', 'settings', '設定', 'system']),
+  'ops-system-health': Object.freeze(['health', 'system health', '健全性', 'system']),
+  'ops-feature-catalog': Object.freeze(['catalog', '機能一覧', 'feature', 'system']),
+  audit: Object.freeze(['audit', 'record', '記録', 'trace', 'system']),
+  'quality-patrol': Object.freeze(['quality', '品質', 'patrol', 'system']),
+  maintenance: Object.freeze(['maintenance', '保守', '復旧', 'system']),
+  llm: Object.freeze(['llm', 'ai', '検証', 'system']),
+  vendors: Object.freeze(['vendor', 'vendors', 'ベンダー', 'system']),
+  'developer-map': Object.freeze(['developer map', '開発マップ', 'system']),
+  'developer-manual-redac': Object.freeze(['redac', '取説', 'manual', 'system']),
+  'developer-manual-user': Object.freeze(['user manual', 'ユーザー取説', 'manual', 'system'])
+});
+
 const PAGE_HEADER_ACTION_MAP = Object.freeze({
   'city-pack': Object.freeze({
     primary: Object.freeze({
@@ -849,6 +967,65 @@ const PAGE_HEADER_ACTION_MAP = Object.freeze({
       fallback: 'City Pack管理',
       paneTarget: 'city-pack'
     })
+  })
+});
+
+const V3_DECISION_CARD_COPY_MAP = Object.freeze({
+  composer: Object.freeze({
+    titleKey: 'ui.label.v3.decision.composer.title',
+    titleFallback: '送信内容を整える',
+    primaryKey: 'ui.label.v3.decision.composer.primary',
+    primaryFallback: '本文を編集する',
+    secondaryKey: 'ui.label.v3.decision.composer.secondary',
+    secondaryFallback: '送信前確認へ進む',
+    hideTertiary: true
+  }),
+  monitor: Object.freeze({
+    titleKey: 'ui.label.v3.decision.monitor.title',
+    titleFallback: '配信結果を確認する',
+    primaryKey: 'ui.label.v3.decision.monitor.primary',
+    primaryFallback: '送信内容へ戻る',
+    secondaryKey: 'ui.label.v3.decision.monitor.secondary',
+    secondaryFallback: '結果を更新する',
+    hideTertiary: true
+  }),
+  errors: Object.freeze({
+    titleKey: 'ui.label.v3.decision.errors.title',
+    titleFallback: '復旧の次の一手',
+    primaryKey: 'ui.label.v3.decision.errors.primary',
+    primaryFallback: '配信結果を見る',
+    secondaryKey: 'ui.label.v3.decision.errors.secondary',
+    secondaryFallback: 'システム記録を見る',
+    tertiaryKey: 'ui.label.v3.decision.errors.tertiary',
+    tertiaryFallback: '保守画面を開く',
+    hideTertiary: false
+  }),
+  'read-model': Object.freeze({
+    titleKey: 'ui.label.v3.decision.readModel.title',
+    titleFallback: '会員を探して確認する',
+    primaryKey: 'ui.label.v3.decision.readModel.primary',
+    primaryFallback: '会員を探す',
+    secondaryKey: 'ui.label.v3.decision.readModel.secondary',
+    secondaryFallback: '一覧を更新する',
+    hideTertiary: true
+  }),
+  'city-pack': Object.freeze({
+    titleKey: 'ui.label.v3.decision.cityPack.title',
+    titleFallback: '地域案内の候補を確認する',
+    primaryKey: 'ui.label.v3.decision.cityPack.primary',
+    primaryFallback: '地域案内を開く',
+    secondaryKey: 'ui.label.v3.decision.cityPack.secondary',
+    secondaryFallback: '候補を更新する',
+    hideTertiary: true
+  }),
+  'emergency-layer': Object.freeze({
+    titleKey: 'ui.label.v3.decision.emergencyLayer.title',
+    titleFallback: '緊急対応の受信箱を確認する',
+    primaryKey: 'ui.label.v3.decision.emergencyLayer.primary',
+    primaryFallback: '受信箱を開く',
+    secondaryKey: 'ui.label.v3.decision.emergencyLayer.secondary',
+    secondaryFallback: '受信箱を更新する',
+    hideTertiary: true
   })
 });
 
@@ -2653,6 +2830,119 @@ function t(key, fallback) {
   return '';
 }
 
+function isAdminUiV3Enabled() {
+  return ADMIN_UI_V3_ENABLED;
+}
+
+function isOpsUiV3Pane(paneKey) {
+  return OPS_UI_V3_PANES.includes(String(paneKey || '').trim());
+}
+
+function isSystemConsolePane(paneKey) {
+  return SYSTEM_CONSOLE_V1_PANES.includes(String(paneKey || '').trim());
+}
+
+function resolveUiShellForPane(paneKey, fallbackShell) {
+  const preferred = fallbackShell === UI_SHELL_SYSTEM ? UI_SHELL_SYSTEM : UI_SHELL_OPS;
+  const pane = String(paneKey || '').trim();
+  if (isSystemConsolePane(pane)) return UI_SHELL_SYSTEM;
+  if (isOpsUiV3Pane(pane)) return UI_SHELL_OPS;
+  return preferred;
+}
+
+function getRoleDisplayLabel(roleValue) {
+  if (roleValue === 'admin') return t('ui.label.role.adminMode', '管理');
+  if (roleValue === 'developer') return t('ui.label.role.developer', '開発');
+  return t('ui.label.role.operatorMode', '運用');
+}
+
+function getShellDisplayLabel(shellValue) {
+  if (shellValue === UI_SHELL_SYSTEM) return t('ui.label.v3.shell.system', 'System Console');
+  return t('ui.label.v3.shell.ops', 'Ops UI');
+}
+
+function updateAdminV3ShellChrome() {
+  if (!appShell) return;
+  const enabled = isAdminUiV3Enabled();
+  appShell.classList.toggle('admin-v3-shell-active', enabled);
+  if (!enabled) {
+    appShell.removeAttribute('data-ui-shell');
+    return;
+  }
+  const nextShell = resolveUiShellForPane(state.activePane, state.uiShell);
+  state.uiShell = nextShell;
+  appShell.setAttribute('data-ui-shell', nextShell);
+  const scopeEl = document.getElementById('v3-shell-scope');
+  if (scopeEl) scopeEl.textContent = `${getShellDisplayLabel(nextShell)} / ${getRoleDisplayLabel(state.role)}`;
+  const badgeEl = document.getElementById('page-shell-badge');
+  if (badgeEl) badgeEl.textContent = getShellDisplayLabel(nextShell);
+  document.querySelectorAll('[data-ui-shell-target]').forEach((buttonEl) => {
+    buttonEl.classList.toggle('is-active', buttonEl.getAttribute('data-ui-shell-target') === nextShell);
+  });
+}
+
+function syncV3TaskContext(paneKey) {
+  if (!isAdminUiV3Enabled()) return;
+  const taskContextEl = document.getElementById('page-task-context');
+  if (!taskContextEl) return;
+  const meta = V3_TASK_CONTEXT_MAP[paneKey] || null;
+  if (!meta) return;
+  taskContextEl.textContent = t(meta.key, meta.fallback);
+  taskContextEl.dataset.taskContext = String(paneKey || 'home');
+}
+
+function syncV3DecisionCard(paneKey) {
+  if (!isAdminUiV3Enabled() || !ADMIN_COPY_V3) return;
+  const pane = String(paneKey || '').trim();
+  const meta = V3_DECISION_CARD_COPY_MAP[pane] || null;
+  const card = document.getElementById(`${pane}-decision-card`);
+  if (!card) return;
+  const titleEl = card.querySelector('.decision-title');
+  const primaryBtn = card.querySelector('.decision-action-btn[data-action-kind="primary"]');
+  const secondaryBtn = card.querySelector('.decision-action-btn[data-action-kind="secondary"]');
+  const tertiaryBtn = card.querySelector('.decision-action-btn[data-action-kind="tertiary"]');
+  if (titleEl && meta) titleEl.textContent = t(meta.titleKey, meta.titleFallback);
+  if (primaryBtn && meta) primaryBtn.textContent = t(meta.primaryKey, meta.primaryFallback);
+  if (secondaryBtn && meta) secondaryBtn.textContent = t(meta.secondaryKey, meta.secondaryFallback);
+  if (tertiaryBtn) {
+    if (meta && meta.hideTertiary === true) {
+      tertiaryBtn.setAttribute('data-v3-action-hidden', 'true');
+    } else {
+      tertiaryBtn.removeAttribute('data-v3-action-hidden');
+      if (meta && meta.tertiaryKey) tertiaryBtn.textContent = t(meta.tertiaryKey, meta.tertiaryFallback);
+    }
+  }
+}
+
+function isNavItemVisibleForCurrentShell(element) {
+  if (!element || element.getAttribute('data-nav-item-visible') === 'false') return false;
+  if (element.classList.contains('role-hidden') || element.getAttribute('aria-hidden') === 'true') return false;
+  if (!isAdminUiV3Enabled()) return true;
+  if (element.closest('[data-nav-legacy="1"]')) return false;
+  const shellContainer = element.closest('[data-ui-shell-context]');
+  if (!shellContainer) return false;
+  return shellContainer.getAttribute('data-ui-shell-context') === state.uiShell;
+}
+
+function findPaneForV3Search(query) {
+  const normalized = String(query || '').trim().toLowerCase();
+  if (!normalized) return null;
+  const candidates = Object.keys(V3_PANE_SEARCH_INDEX);
+  for (const paneKey of candidates) {
+    const terms = V3_PANE_SEARCH_INDEX[paneKey] || [];
+    if (terms.some((term) => String(term || '').toLowerCase().includes(normalized))) {
+      return paneKey;
+    }
+    const headerMeta = V3_PANE_HEADER_MAP[paneKey];
+    if (headerMeta) {
+      const title = t(headerMeta.titleKey, headerMeta.titleFallback).toLowerCase();
+      const subtitle = t(headerMeta.subtitleKey, headerMeta.subtitleFallback).toLowerCase();
+      if (title.includes(normalized) || subtitle.includes(normalized)) return paneKey;
+    }
+  }
+  return null;
+}
+
 function toUnifiedDisplay(value, fallbackValue) {
   const tableCore = resolveCoreSlice('tableCore');
   if (tableCore && typeof tableCore.toDisplayValue === 'function') {
@@ -3636,6 +3926,7 @@ function setRole(role, options) {
   const visibleEntries = resolveVisibleNavEntries(nextRole);
   applyNavGroupVisibilityPolicy(nextRole, visibleEntries);
   applyNavItemVisibilityPolicy(nextRole, visibleEntries);
+  updateAdminV3ShellChrome();
   reconcileBlockedPaneNotice(nextRole);
   applyMonitorWorkspaceView(state.monitorWorkspaceView, { persist: true });
   applyLlmWorkspaceView(state.llmWorkspaceView, { persist: true });
@@ -3678,6 +3969,51 @@ function setRole(role, options) {
   applyBuildMetaBadge();
   renderAllPaneReflectionStates();
   renderPaneVisibilityReasons();
+  updateAdminV3ShellChrome();
+}
+
+function setUiShellContext(shellValue, options) {
+  if (!isAdminUiV3Enabled()) return;
+  const opts = options && typeof options === 'object' ? options : {};
+  const requested = shellValue === UI_SHELL_SYSTEM ? UI_SHELL_SYSTEM : UI_SHELL_OPS;
+  const nextShell = requested === UI_SHELL_SYSTEM && ADMIN_SYSTEM_CONSOLE_V1 ? UI_SHELL_SYSTEM : UI_SHELL_OPS;
+  state.uiShell = nextShell;
+  updateAdminV3ShellChrome();
+  if (opts.activateDefaultPane === true) {
+    const activePane = String(state.activePane || '').trim();
+    if (nextShell === UI_SHELL_OPS && !isOpsUiV3Pane(activePane)) {
+      activatePane('home', { historyMode: opts.historyMode || 'push' });
+      return;
+    }
+    if (nextShell === UI_SHELL_SYSTEM && !isSystemConsolePane(activePane)) {
+      activatePane('settings', { historyMode: opts.historyMode || 'push' });
+      return;
+    }
+  }
+}
+
+function setupAdminV3ShellControls() {
+  if (!isAdminUiV3Enabled()) return;
+  document.getElementById('v3-shell-switch-ops')?.addEventListener('click', () => {
+    setUiShellContext(UI_SHELL_OPS, { activateDefaultPane: true, historyMode: 'push' });
+  });
+  document.getElementById('v3-shell-switch-system')?.addEventListener('click', () => {
+    setUiShellContext(UI_SHELL_SYSTEM, { activateDefaultPane: true, historyMode: 'push' });
+  });
+  document.getElementById('v3-open-alerts')?.addEventListener('click', () => {
+    activatePane('alerts', { historyMode: 'push' });
+  });
+  document.getElementById('v3-pane-search-form')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const inputEl = document.getElementById('v3-pane-search');
+    const paneKey = findPaneForV3Search(inputEl ? inputEl.value : '');
+    if (!paneKey) {
+      showToast(t('ui.toast.v3.searchNotFound', '一致する画面が見つかりませんでした'), 'warn');
+      return;
+    }
+    activatePane(paneKey, { historyMode: 'push' });
+  });
+  updateAdminV3ShellChrome();
 }
 
 function setupRoleSwitch() {
@@ -3723,19 +4059,26 @@ function syncPaneV2Metadata(paneKey) {
 }
 
 function updatePageHeader(paneKey) {
-  const meta = PANE_HEADER_MAP[paneKey] || PANE_HEADER_MAP.home;
+  const v3Meta = isAdminUiV3Enabled() && ADMIN_COPY_V3
+    ? (V3_PANE_HEADER_MAP[paneKey] || null)
+    : null;
+  const meta = v3Meta || PANE_HEADER_MAP[paneKey] || PANE_HEADER_MAP.home;
   const actionMeta = PAGE_HEADER_ACTION_MAP[paneKey] || null;
   const titleEl = document.getElementById('page-title');
   const subtitleEl = document.getElementById('page-subtitle');
   const updatedEl = document.getElementById('page-last-updated');
   const primaryAction = document.getElementById('page-action-primary');
   const secondaryAction = document.getElementById('page-action-secondary');
-  if (titleEl) titleEl.textContent = t(meta.titleKey, titleEl.textContent || '');
+  if (titleEl) {
+    titleEl.textContent = t(meta.titleKey, meta.titleFallback || titleEl.textContent || '');
+  }
   if (subtitleEl) {
-    subtitleEl.textContent = t(meta.subtitleKey, subtitleEl.textContent || '');
+    subtitleEl.textContent = t(meta.subtitleKey, meta.subtitleFallback || subtitleEl.textContent || '');
     subtitleEl.setAttribute('data-pane-purpose', paneKey);
   }
   syncPaneV2Metadata(paneKey);
+  syncV3TaskContext(paneKey);
+  updateAdminV3ShellChrome();
   if (updatedEl) {
     const updatedAt = resolvePaneUpdatedAt(paneKey);
     updatedEl.textContent = `最終更新: ${updatedAt && updatedAt !== '-' ? formatDateLabel(updatedAt) : '-'}`;
@@ -3760,6 +4103,7 @@ function updatePageHeader(paneKey) {
     secondaryAction.setAttribute('data-open-pane', actionMeta.secondary.paneTarget);
     secondaryAction.classList.remove('hidden');
   }
+  syncV3DecisionCard(paneKey);
   renderBlockedPaneNotice();
 }
 
@@ -6234,17 +6578,25 @@ function activatePane(target, options) {
       }
     }
   }
+  if (isAdminUiV3Enabled()) {
+    state.uiShell = resolveUiShellForPane(nextPane, state.uiShell);
+    updateAdminV3ShellChrome();
+  }
   const navItems = Array.from(document.querySelectorAll('.nav-item[data-pane-target]'));
+  const shellVisibleNavItems = navItems.filter((element) => isNavItemVisibleForCurrentShell(element));
   let activeButton = null;
   if (opts.clickedButton
       && opts.clickedButton.dataset
       && opts.clickedButton.dataset.paneTarget === nextPane
-      && opts.clickedButton.getAttribute('data-nav-item-visible') !== 'false') {
+      && isNavItemVisibleForCurrentShell(opts.clickedButton)) {
     activeButton = opts.clickedButton;
+  }
+  if (!activeButton && shellVisibleNavItems.length > 0) {
+    activeButton = shellVisibleNavItems.find((element) => element.dataset && element.dataset.paneTarget === nextPane) || null;
   }
   if (!activeButton && ADMIN_NAV_ALL_ACCESSIBLE_V1) {
     const resolved = resolvePreferredNavEntry(state.role, nextPane);
-    if (resolved && resolved.element) activeButton = resolved.element;
+    if (resolved && resolved.element && isNavItemVisibleForCurrentShell(resolved.element)) activeButton = resolved.element;
   }
   if (!activeButton && navCore && typeof navCore.resolveActiveNavItem === 'function') {
     const legacyResolved = navCore.resolveActiveNavItem(collectNavItemsForCore(), nextPane, state.role, {
@@ -6252,11 +6604,11 @@ function activatePane(target, options) {
       rolloutEnabled: ADMIN_NAV_ROLLOUT_V1,
       fallbackPane: nextPane
     });
-    if (legacyResolved && legacyResolved.element) activeButton = legacyResolved.element;
+    if (legacyResolved && legacyResolved.element && isNavItemVisibleForCurrentShell(legacyResolved.element)) activeButton = legacyResolved.element;
   }
   if (!activeButton) {
     activeButton = navItems.find((element) => {
-      return element.getAttribute('data-nav-item-visible') !== 'false'
+      return isNavItemVisibleForCurrentShell(element)
         && element.dataset
         && element.dataset.paneTarget === nextPane;
     }) || null;
@@ -20094,11 +20446,12 @@ function setupDecisionActions() {
   });
 
   document.getElementById('read-model-action-edit')?.addEventListener('click', () => {
-    activatePane('composer');
+    activatePane('read-model');
+    document.getElementById('users-filter-line-user-id')?.focus();
   });
   document.getElementById('read-model-action-activate')?.addEventListener('click', () => {
     activatePane('read-model');
-    document.getElementById('read-model-reload')?.click();
+    document.getElementById('users-summary-reload')?.click();
   });
   document.getElementById('read-model-action-disable')?.addEventListener('click', () => {
     activatePane('errors');
@@ -20111,7 +20464,7 @@ function setupDecisionActions() {
   });
   document.getElementById('emergency-layer-action-activate')?.addEventListener('click', () => {
     activatePane('emergency-layer');
-    showToast('実行操作は Emergency Workbench 内の行アクションから実施してください', 'warn');
+    document.getElementById('emergency-bulletin-reload')?.click();
   });
   document.getElementById('emergency-layer-action-disable')?.addEventListener('click', () => {
     activatePane('emergency-layer');
@@ -20131,7 +20484,7 @@ function setupDecisionActions() {
   });
   document.getElementById('city-pack-action-activate')?.addEventListener('click', () => {
     activatePane('city-pack');
-    showToast('実行操作は City Pack Workbench 内の行アクションから実施してください', 'warn');
+    document.getElementById('city-pack-unified-reload')?.click();
   });
   document.getElementById('city-pack-action-disable')?.addEventListener('click', () => {
     activatePane('city-pack');
@@ -21393,6 +21746,7 @@ function setupLlmControls() {
   applyUsersStripeLayoutVisibility();
   applyCityPackUiV2Visibility();
   hydrateListState();
+  setupAdminV3ShellControls();
   setupRoleSwitch();
   setupNav();
   setupHeaderActions();

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-31T22:13:06-04:00",
-  "gitCommit": "73996f692e2c53b13d3f2ef8ce5cadf0429b15bf",
-  "branch": "codex/line-desktop-knowledge-signals-T022",
-  "sourceDigest": "343848eb6fd4c49f0d258f97a6a77035486acfbb7e43965d25bb0ed832a0c63e",
+  "generatedAt": "2026-03-31T23:41:25-04:00",
+  "gitCommit": "74e87ce2a8beca004c6ac7036a14dbe1c710f30a",
+  "branch": "codex/admin-ui-v3-shell",
+  "sourceDigest": "4116b25de395c36a731d9590802572a769981daf0fadd309fb345a48209f0194",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

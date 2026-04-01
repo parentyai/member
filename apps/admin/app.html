@@ -9,9 +9,118 @@
   <body class="app-body">
     <div id="app-shell" class="app-shell" data-role="operator" data-ui="admin-shell" data-ui-v2-foundation="true" data-surface-tier="shell" data-pane-mode="decision-console" data-task-context="today-judgment">
       <aside class="app-nav" data-ui="left-nav" data-surface-tier="navigation">
-        <div class="nav-title" data-dict-key="ui.label.nav.title">運用ナビ</div>
+        <div class="nav-title" data-dict-key="ui.label.nav.title" data-nav-legacy="1">運用ナビ</div>
 
-        <div class="nav-group nav-group-dashboard" data-nav-group="dashboard" data-nav-surface="primary">
+        <div class="nav-shell-switch" data-v3-chrome="nav-shell-switch">
+          <div class="nav-shell-title" data-dict-key="ui.label.v3.nav.workspace">Workspace</div>
+          <div class="nav-shell-actions" role="group" aria-label="Workspace switch">
+            <button id="v3-shell-switch-ops" type="button" class="shell-switch-btn is-active" data-ui-shell-target="ops" data-dict-key="ui.label.v3.shell.ops">Ops UI</button>
+            <button id="v3-shell-switch-system" type="button" class="shell-switch-btn" data-ui-shell-target="system" data-dict-key="ui.label.v3.shell.system">System Console</button>
+          </div>
+        </div>
+
+        <div class="nav-group nav-group-v3" data-v3-nav-group="today" data-ui-shell-context="ops">
+          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.today">Today</div>
+          <button class="nav-item nav-item-v3" data-pane-target="home" data-nav-priority="410">
+            <span class="nav-icon" aria-hidden="true">T</span>
+            <span data-dict-key="ui.label.v3.nav.home">今日の優先</span>
+          </button>
+          <button class="nav-item nav-item-v3" data-pane-target="alerts" data-nav-priority="409">
+            <span class="nav-icon" aria-hidden="true">!</span>
+            <span data-dict-key="ui.label.v3.nav.alerts">要対応</span>
+          </button>
+        </div>
+
+        <div class="nav-group nav-group-v3" data-v3-nav-group="messages" data-ui-shell-context="ops">
+          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.messages">Messages</div>
+          <button class="nav-item nav-item-v3" data-pane-target="composer" data-nav-priority="408">
+            <span class="nav-icon" aria-hidden="true">C</span>
+            <span data-dict-key="ui.label.v3.nav.composer">送信内容を作る</span>
+          </button>
+          <button class="nav-item nav-item-v3" data-pane-target="monitor" data-nav-priority="407">
+            <span class="nav-icon" aria-hidden="true">M</span>
+            <span data-dict-key="ui.label.v3.nav.monitor">配信結果を見る</span>
+          </button>
+        </div>
+
+        <div class="nav-group nav-group-v3" data-v3-nav-group="members" data-ui-shell-context="ops">
+          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.members">Members</div>
+          <button class="nav-item nav-item-v3" data-pane-target="read-model" data-nav-priority="406">
+            <span class="nav-icon" aria-hidden="true">MB</span>
+            <span data-dict-key="ui.label.v3.nav.readModel">会員を確認</span>
+          </button>
+        </div>
+
+        <div class="nav-group nav-group-v3" data-v3-nav-group="regional-ops" data-ui-shell-context="ops">
+          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.regionalOps">Regional Ops</div>
+          <button class="nav-item nav-item-v3" data-pane-target="city-pack" data-nav-priority="405">
+            <span class="nav-icon" aria-hidden="true">CP</span>
+            <span data-dict-key="ui.label.v3.nav.cityPack">地域案内</span>
+          </button>
+          <button class="nav-item nav-item-v3" data-pane-target="emergency-layer" data-nav-priority="404">
+            <span class="nav-icon" aria-hidden="true">EM</span>
+            <span data-dict-key="ui.label.v3.nav.emergencyLayer">緊急対応</span>
+          </button>
+        </div>
+
+        <div class="nav-group nav-group-v3" data-v3-nav-group="recovery" data-ui-shell-context="ops">
+          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.recovery">Recovery</div>
+          <button class="nav-item nav-item-v3" data-pane-target="errors" data-nav-priority="403">
+            <span class="nav-icon" aria-hidden="true">ER</span>
+            <span data-dict-key="ui.label.v3.nav.errors">異常対応</span>
+          </button>
+        </div>
+
+        <div class="nav-group nav-group-v3" data-v3-nav-group="system-console" data-ui-shell-context="system">
+          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.systemConsole">System Console</div>
+          <button class="nav-item nav-item-v3" data-pane-target="settings" data-nav-priority="320">
+            <span class="nav-icon" aria-hidden="true">S</span>
+            <span data-dict-key="ui.label.v3.nav.settings">運用設定</span>
+          </button>
+          <button class="nav-item nav-item-v3" data-pane-target="ops-system-health" data-nav-priority="319">
+            <span class="nav-icon" aria-hidden="true">SH</span>
+            <span data-dict-key="ui.label.v3.nav.systemHealth">システム健全性</span>
+          </button>
+          <button class="nav-item nav-item-v3" data-pane-target="ops-feature-catalog" data-nav-priority="318">
+            <span class="nav-icon" aria-hidden="true">FC</span>
+            <span data-dict-key="ui.label.v3.nav.featureCatalog">機能一覧</span>
+          </button>
+          <button class="nav-item nav-item-v3" data-pane-target="audit" data-nav-priority="317">
+            <span class="nav-icon" aria-hidden="true">A</span>
+            <span data-dict-key="ui.label.v3.nav.audit">システム記録</span>
+          </button>
+          <button class="nav-item nav-item-v3" data-pane-target="quality-patrol" data-nav-priority="316.5">
+            <span class="nav-icon" aria-hidden="true">QP</span>
+            <span data-dict-key="ui.label.v3.nav.qualityPatrol">品質レビュー</span>
+          </button>
+          <button class="nav-item nav-item-v3" data-pane-target="maintenance" data-role="admin" data-role-allow="admin,developer" data-nav-priority="316">
+            <span class="nav-icon" aria-hidden="true">MT</span>
+            <span data-dict-key="ui.label.v3.nav.maintenance">保守と復旧</span>
+          </button>
+          <button class="nav-item nav-item-v3" data-pane-target="llm" data-role="admin" data-role-allow="admin,developer" data-nav-priority="315">
+            <span class="nav-icon" aria-hidden="true">L</span>
+            <span data-dict-key="ui.label.v3.nav.llm">LLM設定と検証</span>
+          </button>
+          <button class="nav-item nav-item-v3" data-pane-target="vendors" data-nav-priority="314">
+            <span class="nav-icon" aria-hidden="true">V</span>
+            <span data-dict-key="ui.label.v3.nav.vendors">ベンダー連携</span><!-- gitleaks:allow false positive for ui dictionary key -->
+          </button>
+          <div class="nav-layer-label" data-role="developer" data-dict-key="ui.label.nav.layer.developer">開発者向け</div>
+          <button class="nav-item nav-item-v3" data-pane-target="developer-map" data-scroll-target="developer-map-legacy" data-role="developer" data-nav-priority="313">
+            <span class="nav-icon" aria-hidden="true">DM</span>
+            <span data-dict-key="ui.label.v3.nav.developerMap">開発マップ</span>
+          </button>
+          <button class="nav-item nav-item-v3" data-pane-target="developer-manual-redac" data-role="developer" data-nav-priority="312">
+            <span class="nav-icon" aria-hidden="true">DR</span>
+            <span data-dict-key="ui.label.v3.nav.developerManualRedac">取説（Redac）</span>
+          </button>
+          <button class="nav-item nav-item-v3" data-pane-target="developer-manual-user" data-role="developer" data-nav-priority="311">
+            <span class="nav-icon" aria-hidden="true">DU</span>
+            <span data-dict-key="ui.label.v3.nav.developerManualUser">取説（ユーザー）</span>
+          </button>
+        </div>
+
+        <div class="nav-group nav-group-dashboard" data-nav-group="dashboard" data-nav-surface="primary" data-nav-legacy="1">
           <div class="nav-group-label nav-group-label-dashboard" data-dict-key="ui.label.nav.group.decision">今日の判断</div>
           <button class="nav-item is-active" data-pane-target="home" data-nav-priority="100">
             <span class="nav-icon" aria-hidden="true">D</span>
@@ -19,7 +128,7 @@
           </button>
         </div>
 
-        <div class="nav-group nav-group-run" data-nav-group="run" data-nav-surface="primary">
+        <div class="nav-group nav-group-run" data-nav-group="run" data-nav-surface="primary" data-nav-legacy="1">
           <div class="nav-group-label" data-dict-key="ui.label.nav.group.workbench">通知を進める</div>
           <button class="nav-item" data-pane-target="composer" data-nav-priority="240">
             <span class="nav-icon" aria-hidden="true">N</span>
@@ -43,7 +152,7 @@
           </button>
         </div>
 
-        <div class="nav-group nav-group-control" data-nav-group="control" data-nav-surface="primary">
+        <div class="nav-group nav-group-control" data-nav-group="control" data-nav-surface="primary" data-nav-legacy="1">
           <div class="nav-group-label" data-dict-key="ui.label.nav.group.dataEvidenceSystem">状態を確認する</div>
           <div class="nav-layer-label" data-dict-key="ui.label.nav.layer.data">一覧と状態</div>
           <button class="nav-item" data-pane-target="read-model" data-nav-priority="236">
@@ -96,7 +205,7 @@
           </button>
         </div>
 
-        <div class="nav-group nav-group-developer" data-nav-group="developer" data-nav-surface="secondary" data-role="developer">
+        <div class="nav-group nav-group-developer" data-nav-group="developer" data-nav-surface="secondary" data-role="developer" data-nav-legacy="1">
           <div class="nav-group-label" data-dict-key="ui.label.developer.menu">開発者</div>
           <button id="developer-open-map" type="button" class="nav-item">
             <span class="nav-icon" aria-hidden="true">RM</span>
@@ -130,7 +239,35 @@
       </aside>
 
       <main class="app-content" data-ui="content-root" data-surface-tier="content">
-        <header class="app-topbar" data-ui="topbar" data-surface-tier="chrome" data-ui-topbar-mode="passive">
+        <section class="app-topbar-v3" data-v3-chrome="topbar">
+          <div class="topbar-v3-main">
+            <div class="topbar-v3-block topbar-v3-search">
+              <label for="v3-pane-search" class="topbar-v3-label" data-dict-key="ui.label.v3.top.search">画面を探す</label>
+              <form id="v3-pane-search-form" class="topbar-v3-search-form">
+                <input id="v3-pane-search" type="search" class="topbar-v3-search-input" autocomplete="off" data-dict-placeholder="ui.placeholder.v3.top.search" placeholder="画面名や作業で探す" />
+                <button type="submit" class="secondary-btn" data-dict-key="ui.label.v3.top.searchAction">開く</button>
+              </form>
+            </div>
+            <div class="topbar-v3-block topbar-v3-scope">
+              <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.scope">現在の表示</div>
+              <div id="v3-shell-scope" class="topbar-v3-scope-value">Ops UI / operator</div>
+            </div>
+            <div class="topbar-v3-block topbar-v3-alerts">
+              <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.alerts">緊急導線</div>
+              <button id="v3-open-alerts" type="button" class="secondary-btn" data-dict-key="ui.label.v3.top.openAlerts">要対応を見る</button>
+            </div>
+            <div class="topbar-v3-block topbar-v3-role">
+              <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.role">権限</div>
+              <div class="role-switch" role="group" aria-label="Role Switch">
+                <button class="role-btn is-active" data-role-value="operator" data-dict-key="ui.label.role.operatorMode">運用</button>
+                <button class="role-btn" data-role-value="admin" data-dict-key="ui.label.role.adminMode">管理</button>
+                <button class="role-btn" data-role-value="developer" data-ops-role="developer" data-dict-key="ui.label.role.developer">開発</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <header class="app-topbar" data-ui="topbar" data-surface-tier="chrome" data-ui-topbar-mode="passive" data-v3-legacy="1">
           <div class="top-metric top-metric-wide top-metric-passive">
             <div class="top-label" data-dict-key="ui.label.top.summary">画面ガイド</div>
             <div class="top-passive-line" data-dict-key="ui.label.top.passiveGuide">移動は左ナビ、実行は各画面の主ボタンから行います。</div>
@@ -187,6 +324,7 @@
             <div id="page-task-context" class="page-task-context" data-task-context="today-judgment">今日の判断を進める</div>
           </div>
           <div class="page-header-actions">
+            <div id="page-shell-badge" class="page-shell-badge">Ops UI</div>
             <div id="page-last-updated" class="page-last-updated">最終更新: -</div>
             <button id="page-action-primary" type="button" class="secondary-btn hidden" data-control="page-primary-cta" data-primary-action="page-primary"></button>
             <button id="page-action-secondary" type="button" class="secondary-btn hidden" data-control="page-secondary-cta" data-primary-action="page-secondary"></button>
@@ -733,14 +871,14 @@
                       <div id="composer-next-step" class="note composer-next-step">-</div>
                     </div>
                     <div class="composer-primary-actions">
-                      <button id="create-draft" type="button" class="composer-hidden-action" data-dict-key="ui.label.composer.create">下書き作成</button>
-                      <button id="approve" type="button" class="composer-hidden-action" data-workbench-zone="true" data-workbench-action="notifications.approve" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
-                      <button id="preview" type="button" class="composer-hidden-action" data-dict-key="ui.label.composer.preview">プレビュー</button>
-                      <button id="plan" type="button" class="composer-hidden-action" data-workbench-zone="true" data-workbench-action="notifications.send.plan" data-dict-key="ui.label.composer.plan">送信計画</button>
-                      <button id="execute" type="button" class="composer-hidden-action" data-workbench-zone="true" data-workbench-action="notifications.send.execute" data-dict-key="ui.label.composer.execute">送信実行</button>
+                      <button id="create-draft" type="button" class="composer-hidden-action" data-v3-ops-hidden="true" data-dict-key="ui.label.composer.create">下書き作成</button>
+                      <button id="approve" type="button" class="composer-hidden-action" data-v3-ops-hidden="true" data-workbench-zone="true" data-workbench-action="notifications.approve" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
+                      <button id="preview" type="button" class="composer-hidden-action" data-v3-ops-hidden="true" data-dict-key="ui.label.composer.preview">プレビュー</button>
+                      <button id="plan" type="button" class="composer-hidden-action" data-v3-ops-hidden="true" data-workbench-zone="true" data-workbench-action="notifications.send.plan" data-dict-key="ui.label.composer.plan">送信計画</button>
+                      <button id="execute" type="button" class="composer-hidden-action" data-v3-ops-hidden="true" data-workbench-zone="true" data-workbench-action="notifications.send.execute" data-dict-key="ui.label.composer.execute">送信実行</button>
                     </div>
                   </div>
-                  <div class="composer-state-machine" data-ui="composer-workbench-state">
+                  <div class="composer-state-machine" data-ui="composer-workbench-state" data-v3-ops-hidden="true">
                     <div class="composer-workbench-title">Notification Workbench</div>
                     <ol id="composer-state-bar" class="composer-state-bar">
                       <li class="composer-state-step" data-composer-state-step="draft">Draft</li>
@@ -759,7 +897,7 @@
                       <div class="composer-overview-subtitle">Step</div>
                       <div id="composer-flow-steps" class="composer-chip-row"></div>
                     </div>
-                    <div class="composer-overview-card" data-ui="composer-type-schema-overview">
+                    <div class="composer-overview-card" data-ui="composer-type-schema-overview" data-v3-ops-hidden="true">
                       <div class="composer-overview-title">タイプ別入力スキーマ</div>
                       <div id="composer-schema-selected" class="note">-</div>
                       <div class="composer-schema-columns">
@@ -804,8 +942,8 @@
                       </div>
                       <ul id="composer-safety-reasons" class="composer-safety-reasons"></ul>
                       <div id="composer-fix-guidance" class="composer-fix-guidance"></div>
-                      <div class="note">証跡確認は Evidence 画面で行います（監査ログ / 配信結果）。</div>
-                      <div class="composer-evidence-links" data-ui="composer-evidence-nav">
+                      <div class="note" data-v3-ops-hidden="true">証跡確認は Evidence 画面で行います（監査ログ / 配信結果）。</div>
+                      <div class="composer-evidence-links" data-ui="composer-evidence-nav" data-v3-ops-hidden="true">
                         <button id="composer-open-audit" type="button" class="button-subtle">監査ログを開く</button>
                         <button id="composer-open-trace-monitor" type="button" class="button-subtle">traceで配信結果へ</button>
                       </div>
@@ -1164,7 +1302,7 @@
               <button id="monitor-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <div id="monitor-reflection-state" class="panel data-reflection-panel" data-reflection-pane="monitor" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
+          <div id="monitor-reflection-state" class="panel data-reflection-panel" data-reflection-pane="monitor" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" data-v3-ops-hidden="true" role="status" aria-live="polite">
             <div class="panel-title">データ反映状態</div>
             <div class="panel-body">
               <div class="note"><strong>状態:</strong> <span id="monitor-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
@@ -1178,7 +1316,7 @@
               </div>
             </div>
           </div>
-          <div id="monitor-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="monitor" role="status" aria-live="polite">
+          <div id="monitor-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="monitor" data-v3-ops-hidden="true" role="status" aria-live="polite">
             監視情報は全ロールで参照できます。設定ビューは管理ロールのみ表示されます。
           </div>
           <details id="monitor-pane-details" class="decision-details section" data-surface-tier="primary">
@@ -1187,7 +1325,7 @@
               <div class="monitor-view-actions">
                 <button id="monitor-view-monitoring" type="button" class="secondary-btn monitor-view-btn is-active" data-monitor-view-target="monitoring" aria-pressed="true">監視</button>
                 <button id="monitor-view-summary" type="button" class="secondary-btn monitor-view-btn" data-monitor-view-target="summary" aria-pressed="false">通知集計</button>
-                <button id="monitor-view-configuration" type="button" class="secondary-btn monitor-view-btn" data-monitor-view-target="configuration" data-role-allow="admin,developer" aria-pressed="false">設定</button>
+                <button id="monitor-view-configuration" type="button" class="secondary-btn monitor-view-btn" data-monitor-view-target="configuration" data-role-allow="admin,developer" data-v3-ops-hidden="true" aria-pressed="false">設定</button>
               </div>
               <div id="monitor-view-note" class="note">監視を表示中です。設定変更が必要な場合のみ「設定」を開いてください。</div>
               <div id="monitor-view-permission-notice" class="inline-notice is-hidden" data-ui-message-level="inline" aria-hidden="true" role="status" aria-live="polite">
@@ -2197,11 +2335,11 @@
 	                      </div>
 	                    </details>
 	                  </div>
-                  <div id="monitor-insights-system-handoff" class="note monitor-system-diagnostics-handoff">
+                  <div id="monitor-insights-system-handoff" class="note monitor-system-diagnostics-handoff" data-v3-ops-hidden="true">
                     <span id="monitor-insights-handoff-reason">診断情報はSystemレイヤーで確認します。</span>
                     <button id="monitor-open-system-diagnostics" type="button" class="secondary-btn">System状態へ</button>
                   </div>
-                  <div id="monitor-insights-diagnostics-panel" class="panel is-hidden">
+                  <div id="monitor-insights-diagnostics-panel" class="panel is-hidden" data-v3-ops-hidden="true">
                     <div class="panel-title" data-dict-key="ui.label.monitor.insightsDiagnostics">診断情報</div>
                     <div class="panel-body">
                       <div id="monitor-insights-diagnostics" class="note">-</div>
@@ -2293,11 +2431,11 @@
                 <div class="panel-body">
                   <div id="monitor-detail" class="note">行を選択すると詳細を表示します。</div>
                   <div id="monitor-safe-next-step" class="safe-next-step" data-dict-key="ui.desc.monitor.safeNextStep">次の安全な一手: 反応率が低い通知の詳細を確認する</div>
-                  <div class="note">配信状況の確認はこの画面、trace/auditの証跡追跡は監査ログ画面で行います。</div>
-                  <div class="row row-top">
+                  <div class="note" data-v3-ops-hidden="true">配信状況の確認はこの画面、trace/auditの証跡追跡は監査ログ画面で行います。</div>
+                  <div class="row row-top" data-v3-ops-hidden="true">
                     <button id="monitor-open-audit-from-detail" type="button" class="button-subtle">監査ログへ（trace）</button>
                   </div>
-                  <details data-json-collapsible="true">
+                  <details data-json-collapsible="true" data-v3-ops-hidden="true">
                     <summary data-dict-key="ui.label.monitor.raw">RAW JSON</summary>
                     <pre id="monitor-raw" data-visual-noise="evidence-placeholder">-</pre>
                   </details>
@@ -2366,7 +2504,7 @@
           </div>
           <details id="emergency-layer-pane-details" class="decision-details section" data-workbench-zone="true">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
-            <div class="panel">
+            <div class="panel" data-v3-ops-hidden="true">
               <div class="panel-title" data-dict-key="ui.label.emergency.providerControl">Provider Control</div>
               <div class="panel-body">
                 <div class="row row-top">
@@ -2394,7 +2532,7 @@
             <div class="panel">
               <div class="panel-title" data-dict-key="ui.label.emergency.inbox">Emergency Inbox</div>
               <div class="panel-body">
-                <div class="panel">
+                <div class="panel" data-v3-ops-hidden="true">
                   <div class="panel-title">Emergency Rules（事前承認ルール）</div>
                   <div class="panel-body">
                     <div class="row">
@@ -2461,8 +2599,8 @@
                         <tbody id="emergency-rule-rows"></tbody>
                       </table>
                     </div>
-                    <div id="emergency-rule-preview-summary" class="note">Rule preview結果はここに表示されます。</div>
-                    <details data-json-collapsible="true">
+                    <div id="emergency-rule-preview-summary" class="note" data-v3-ops-hidden="true">Rule preview結果はここに表示されます。</div>
+                    <details data-json-collapsible="true" data-v3-ops-hidden="true">
                       <summary>Rule Preview JSON</summary>
                       <pre id="emergency-rule-preview-json">-</pre>
                     </details>
@@ -2505,7 +2643,7 @@
                 </div>
               </div>
             </div>
-            <div class="panel">
+            <div class="panel" data-v3-ops-hidden="true">
               <div class="panel-title" data-dict-key="ui.label.emergency.evidenceViewer">Evidence Viewer</div>
               <div class="panel-body">
                 <div id="emergency-evidence-summary" class="note" data-dict-key="ui.desc.emergency.evidenceEmpty">bulletinを選択すると証跡を表示します。</div>
@@ -2536,7 +2674,7 @@
               <button id="city-pack-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <div id="city-pack-reflection-state" class="panel data-reflection-panel" data-reflection-pane="city-pack" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
+          <div id="city-pack-reflection-state" class="panel data-reflection-panel" data-reflection-pane="city-pack" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" data-v3-ops-hidden="true" role="status" aria-live="polite">
             <div class="panel-title">データ反映状態</div>
             <div class="panel-body">
               <div class="note"><strong>状態:</strong> <span id="city-pack-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
@@ -2607,15 +2745,15 @@
                         <option value="template">Template</option>
                       </select>
                     </div>
-                    <div class="flex-1">
+                    <div class="flex-1" data-v3-advanced-filter="true">
                       <label for="city-pack-unified-filter-relation">関係ID</label>
                       <input id="city-pack-unified-filter-relation" type="text" placeholder="cityPackId / linkRegistryId / requestId" />
                     </div>
-                    <div class="flex-1">
+                    <div class="flex-1" data-v3-advanced-filter="true">
                       <label for="city-pack-unified-filter-date-from">作成日 from</label>
                       <input id="city-pack-unified-filter-date-from" type="date" />
                     </div>
-                    <div class="flex-1">
+                    <div class="flex-1" data-v3-advanced-filter="true">
                       <label for="city-pack-unified-filter-date-to">作成日 to</label>
                       <input id="city-pack-unified-filter-date-to" type="date" />
                     </div>
@@ -3612,7 +3750,7 @@
               <button id="read-model-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <div id="read-model-reflection-state" class="panel data-reflection-panel" data-reflection-pane="read-model" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
+          <div id="read-model-reflection-state" class="panel data-reflection-panel" data-reflection-pane="read-model" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" data-v3-ops-hidden="true" role="status" aria-live="polite">
             <div class="panel-title">データ反映状態</div>
             <div class="panel-body">
               <div class="note"><strong>状態:</strong> <span id="read-model-reflection-state-label" class="badge badge-unset state-unset" data-ui-state="unset">取得待ち</span></div>
@@ -3668,7 +3806,7 @@
                           <option value="帰任前">帰任前</option>
                         </select>
                       </div>
-                      <div class="flex-1">
+                      <div class="flex-1" data-v3-advanced-filter="true">
                         <label for="users-filter-plan">Plan</label>
                         <select id="users-filter-plan">
                           <option value="">all</option>
@@ -3676,7 +3814,7 @@
                           <option value="pro">pro</option>
                         </select>
                       </div>
-                      <div class="flex-1">
+                      <div class="flex-1" data-v3-advanced-filter="true">
                         <label for="users-filter-subscription-status">課金状態</label>
                         <select id="users-filter-subscription-status">
                           <option value="">all</option>
@@ -3688,7 +3826,7 @@
                           <option value="unknown">unknown</option>
                         </select>
                       </div>
-                      <div class="flex-1">
+                      <div class="flex-1" data-v3-advanced-filter="true">
                         <label for="users-filter-billing-integrity">課金整合</label>
                         <select id="users-filter-billing-integrity">
                           <option value="">all</option>
@@ -3701,7 +3839,7 @@
                         <label for="users-filter-limit">件数</label>
                         <input id="users-filter-limit" type="number" min="1" max="500" value="200" class="input-sm" />
                       </div>
-                      <div class="flex-1">
+                      <div class="flex-1" data-v3-advanced-filter="true">
                         <label for="users-filter-analytics-limit">集計上限</label>
                         <input id="users-filter-analytics-limit" type="number" min="1" max="2000" value="1200" class="input-sm" />
                       </div>
@@ -3709,9 +3847,9 @@
                   </div>
                   <div class="row row-top">
                     <button id="users-summary-reload" type="button">更新</button>
-                    <button id="users-summary-analyze" type="button">Analyze</button>
-                    <button id="users-summary-export" type="button">Export CSV</button>
-                    <button id="users-summary-edit-columns" type="button">Edit columns</button>
+                    <button id="users-summary-analyze" type="button" data-v3-ops-hidden="true">Analyze</button>
+                    <button id="users-summary-export" type="button" data-v3-ops-hidden="true">Export CSV</button>
+                    <button id="users-summary-edit-columns" type="button" data-v3-ops-hidden="true">Edit columns</button>
                   </div>
                   <div id="users-summary-quick-filters" class="users-quick-filters">
                     <button type="button" class="users-quick-filter-pill is-active" data-users-quick-filter="all">All</button>
@@ -4952,14 +5090,14 @@
                     <span id="llm-trace-note"></span>
                   </div>
                   <div class="row row-top">
-                    <button id="llm-run-ops-explain" type="button" class="secondary-btn" data-dict-key="ui.label.llm.runOpsExplain">Ops説明を取得</button>
+                    <button id="llm-run-ops-explain" type="button" class="secondary-btn" data-dict-key="ui.label.llm.runOpsExplain">状況を要約</button>
                     <button id="llm-run-next-actions" type="button" class="secondary-btn" data-dict-key="ui.label.llm.runNextActions">次候補を取得</button>
                   </div>
                   <div class="row row-top">
                     <button id="llm-run-faq" type="button" data-llm-primary-for="run" data-primary-action="pane-primary" data-dict-key="ui.label.llm.runFaq">FAQ回答を生成</button>
                   </div>
                   <div class="row row-top">
-                    <button id="llm-open-audit" type="button" class="button-subtle" data-dict-key="ui.label.llm.openAudit">証跡を開く</button>
+                    <button id="llm-open-audit" type="button" class="button-subtle" data-dict-key="ui.label.llm.openAudit">システム記録を見る</button>
                   </div>
                 </div>
               </div>
