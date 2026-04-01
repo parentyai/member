@@ -971,58 +971,76 @@ const PAGE_HEADER_ACTION_MAP = Object.freeze({
 });
 
 const V3_DECISION_CARD_COPY_MAP = Object.freeze({
+  home: Object.freeze({
+    titleKey: 'ui.label.v3.decision.home.title',
+    titleFallback: '最初にやることを決める',
+    primaryKey: 'ui.label.v3.decision.home.primary',
+    primaryFallback: '要対応を確認する',
+    secondaryKey: 'ui.label.v3.decision.home.secondary',
+    secondaryFallback: '配信結果を見る',
+    hideTertiary: true
+  }),
+  alerts: Object.freeze({
+    titleKey: 'ui.label.v3.decision.alerts.title',
+    titleFallback: '最初の案件から着手する',
+    primaryKey: 'ui.label.v3.decision.alerts.primary',
+    primaryFallback: '最初の案件へ進む',
+    secondaryKey: 'ui.label.v3.decision.alerts.secondary',
+    secondaryFallback: '一覧を更新する',
+    hideTertiary: true
+  }),
   composer: Object.freeze({
     titleKey: 'ui.label.v3.decision.composer.title',
-    titleFallback: '送信内容を整える',
+    titleFallback: '送る内容を仕上げる',
     primaryKey: 'ui.label.v3.decision.composer.primary',
-    primaryFallback: '本文を編集する',
+    primaryFallback: '本文を整える',
     secondaryKey: 'ui.label.v3.decision.composer.secondary',
-    secondaryFallback: '送信前確認へ進む',
+    secondaryFallback: '次の操作を開く',
     hideTertiary: true
   }),
   monitor: Object.freeze({
     titleKey: 'ui.label.v3.decision.monitor.title',
-    titleFallback: '配信結果を確認する',
+    titleFallback: '配信結果から次の対応先を決める',
     primaryKey: 'ui.label.v3.decision.monitor.primary',
-    primaryFallback: '送信内容へ戻る',
+    primaryFallback: '履歴を絞り込む',
     secondaryKey: 'ui.label.v3.decision.monitor.secondary',
-    secondaryFallback: '結果を更新する',
+    secondaryFallback: '一覧を更新する',
     hideTertiary: true
   }),
   errors: Object.freeze({
     titleKey: 'ui.label.v3.decision.errors.title',
-    titleFallback: '復旧の次の一手',
+    titleFallback: '異常の種類を見分ける',
     primaryKey: 'ui.label.v3.decision.errors.primary',
-    primaryFallback: '配信結果を見る',
+    primaryFallback: '異常の内容を確認する',
     secondaryKey: 'ui.label.v3.decision.errors.secondary',
-    secondaryFallback: 'システム記録を見る',
+    secondaryFallback: '次の対応先を開く',
     tertiaryKey: 'ui.label.v3.decision.errors.tertiary',
     tertiaryFallback: '保守画面を開く',
-    hideTertiary: false
+    hideTertiary: true
   }),
   'read-model': Object.freeze({
     titleKey: 'ui.label.v3.decision.readModel.title',
-    titleFallback: '会員を探して確認する',
+    titleFallback: '会員の状態から次の確認先を決める',
     primaryKey: 'ui.label.v3.decision.readModel.primary',
-    primaryFallback: '会員を探す',
+    primaryFallback: '会員を絞り込む',
     secondaryKey: 'ui.label.v3.decision.readModel.secondary',
     secondaryFallback: '一覧を更新する',
     hideTertiary: true
   }),
   'city-pack': Object.freeze({
     titleKey: 'ui.label.v3.decision.cityPack.title',
-    titleFallback: '地域案内の候補を確認する',
+    titleFallback: '地域案内の要確認を片づける',
     primaryKey: 'ui.label.v3.decision.cityPack.primary',
-    primaryFallback: '地域案内を開く',
+    primaryFallback: '要確認の候補を見る',
     secondaryKey: 'ui.label.v3.decision.cityPack.secondary',
-    secondaryFallback: '候補を更新する',
+    secondaryFallback: '一覧を更新する',
     hideTertiary: true
   }),
   'emergency-layer': Object.freeze({
     titleKey: 'ui.label.v3.decision.emergencyLayer.title',
-    titleFallback: '緊急対応の受信箱を確認する',
+    titleFallback: '受信箱から緊急対応を判断する',
     primaryKey: 'ui.label.v3.decision.emergencyLayer.primary',
-    primaryFallback: '受信箱を開く',
+    primaryFallback: '受信箱を確認する',
     secondaryKey: 'ui.label.v3.decision.emergencyLayer.secondary',
     secondaryFallback: '受信箱を更新する',
     hideTertiary: true
@@ -2914,6 +2932,10 @@ function syncV3DecisionCard(paneKey) {
   }
 }
 
+function isAdminFoldAllowedDetail(detailEl) {
+  return Boolean(detailEl && detailEl.getAttribute('data-admin-fold-allowed') === 'true');
+}
+
 function isNavItemVisibleForCurrentShell(element) {
   if (!element || element.getAttribute('data-nav-item-visible') === 'false') return false;
   if (element.classList.contains('role-hidden') || element.getAttribute('aria-hidden') === 'true') return false;
@@ -4242,6 +4264,14 @@ function enforceNoCollapseUi() {
       if (!el.hasAttribute('open')) el.open = false;
       return;
     }
+    if (isAdminFoldAllowedDetail(el)) {
+      if (summaryEl) {
+        summaryEl.removeAttribute('aria-disabled');
+        summaryEl.removeAttribute('tabindex');
+      }
+      if (!el.hasAttribute('open')) el.open = false;
+      return;
+    }
     el.open = true;
     if (el.dataset.noCollapseBound === '1') return;
     el.dataset.noCollapseBound = '1';
@@ -4385,6 +4415,9 @@ function setupHomeControls() {
     void loadDashboardKpis({ notify: false });
   });
   document.getElementById('alerts-reload')?.addEventListener('click', () => {
+    void loadAlertsSummary({ notify: true });
+  });
+  document.getElementById('alerts-action-reload')?.addEventListener('click', () => {
     void loadAlertsSummary({ notify: true });
   });
   document.getElementById('ops-feature-catalog-reload')?.addEventListener('click', () => {
@@ -7233,9 +7266,48 @@ function resolveTopbarStatusFromState() {
   const scheduledTodayCount = Number.isFinite(Number(totals.scheduledTodayCount)) ? Number(totals.scheduledTodayCount) : null;
   const openAlerts = Number.isFinite(Number(totals.openAlerts)) ? Number(totals.openAlerts) : null;
   state.topbarStatus = {
+    registeredCountValue: registrationMetric && registrationMetric.available === true
+      ? (
+        Array.isArray(registrationMetric.series) && registrationMetric.series.length
+          ? Number(registrationMetric.series[registrationMetric.series.length - 1])
+          : null
+      )
+      : null,
+    scheduledTodayCount,
+    openAlertsCount: openAlerts,
     registeredCountLabel: registeredCountLabel || '-',
     scheduledTodayCountLabel: scheduledTodayCount === null ? '-' : String(scheduledTodayCount),
     openAlertsLabel: openAlerts === null ? '-' : String(openAlerts)
+  };
+}
+
+function resolveHomeTaskSummary() {
+  const summary = state.topbarStatus && typeof state.topbarStatus === 'object' ? state.topbarStatus : {};
+  const openAlerts = Number.isFinite(Number(summary.openAlertsCount)) ? Number(summary.openAlertsCount) : 0;
+  const scheduledToday = Number.isFinite(Number(summary.scheduledTodayCount)) ? Number(summary.scheduledTodayCount) : 0;
+  if (openAlerts > 0) {
+    return {
+      primaryTask: t('ui.label.v3.decision.home.primary', '要対応を確認する'),
+      primaryNote: `${openAlerts}${t('ui.desc.home.primaryStep.alertsSuffix', '件の要対応があります。最初に一覧を確認します。')}`,
+      secondaryTask: t('ui.label.v3.decision.home.secondary', '配信結果を見る'),
+      secondaryNote: scheduledToday > 0
+        ? `${scheduledToday}${t('ui.desc.home.secondaryStep.monitorWithScheduleSuffix', '件の配信予定もあります。要対応のあとに結果を確認します。')}`
+        : t('ui.desc.home.secondaryStep.monitor', '要対応のあとに配信結果を確認します。')
+    };
+  }
+  if (scheduledToday > 0) {
+    return {
+      primaryTask: t('ui.label.v3.decision.home.secondary', '配信結果を見る'),
+      primaryNote: `${scheduledToday}${t('ui.desc.home.primaryStep.monitorWithScheduleSuffix', '件の配信予定があります。先に結果を確認します。')}`,
+      secondaryTask: t('ui.label.home.secondaryTask.members', '会員の動きを確認する'),
+      secondaryNote: t('ui.desc.home.secondaryStep.members', '必要なときだけ会員一覧に進みます。')
+    };
+  }
+  return {
+    primaryTask: t('ui.label.v3.decision.home.secondary', '配信結果を見る'),
+    primaryNote: t('ui.desc.home.primaryStep.monitorReady', '緊急の要対応はありません。まず配信結果を確認します。'),
+    secondaryTask: t('ui.label.home.secondaryTask.members', '会員の動きを確認する'),
+    secondaryNote: t('ui.desc.home.secondaryStep.members', '必要なときだけ会員一覧に進みます。')
   };
 }
 
@@ -7243,11 +7315,20 @@ function renderHomeDecisionSummary() {
   const openAlertsEl = document.getElementById('dashboard-summary-open-alerts');
   const scheduledTodayEl = document.getElementById('dashboard-summary-scheduled-today');
   const registeredCountEl = document.getElementById('dashboard-summary-registered-count');
-  if (!openAlertsEl && !scheduledTodayEl && !registeredCountEl) return;
+  const primaryTaskEl = document.getElementById('dashboard-summary-primary-task');
+  const primaryNoteEl = document.getElementById('dashboard-summary-primary-note');
+  const secondaryTaskEl = document.getElementById('dashboard-summary-secondary-task');
+  const secondaryNoteEl = document.getElementById('dashboard-summary-secondary-note');
+  if (!openAlertsEl && !scheduledTodayEl && !registeredCountEl && !primaryTaskEl && !primaryNoteEl && !secondaryTaskEl && !secondaryNoteEl) return;
   const summary = state.topbarStatus && typeof state.topbarStatus === 'object' ? state.topbarStatus : {};
+  const taskSummary = resolveHomeTaskSummary();
   if (openAlertsEl) openAlertsEl.textContent = summary.openAlertsLabel || '-';
   if (scheduledTodayEl) scheduledTodayEl.textContent = summary.scheduledTodayCountLabel || '-';
   if (registeredCountEl) registeredCountEl.textContent = summary.registeredCountLabel || '-';
+  if (primaryTaskEl) primaryTaskEl.textContent = taskSummary.primaryTask;
+  if (primaryNoteEl) primaryNoteEl.textContent = taskSummary.primaryNote;
+  if (secondaryTaskEl) secondaryTaskEl.textContent = taskSummary.secondaryTask;
+  if (secondaryNoteEl) secondaryNoteEl.textContent = taskSummary.secondaryNote;
 }
 
 async function loadTopbarStatus() {
@@ -7401,6 +7482,12 @@ async function fetchDashboardKpiByMonths(windowMonths, traceId, options) {
 function renderAlertsSummary(payload) {
   const body = document.getElementById('alerts-rows');
   const note = document.getElementById('alerts-summary-note');
+  const priorityLeadEl = document.getElementById('alerts-priority-lead');
+  const openCountEl = document.getElementById('alerts-priority-open-count');
+  const dangerCountEl = document.getElementById('alerts-priority-danger-count');
+  const warnCountEl = document.getElementById('alerts-priority-warn-count');
+  const nextStepEl = document.getElementById('alerts-priority-next-step');
+  const primaryActionEl = document.getElementById('alerts-action-open');
   if (!body) return;
   body.innerHTML = '';
   const rawRows = payload && Array.isArray(payload.items) ? payload.items : [];
@@ -7445,11 +7532,231 @@ function renderAlertsSummary(payload) {
     });
   }
   const totals = payload && payload.totals ? payload.totals : {};
-  if (note) {
-    const open = Number.isFinite(Number(totals.openAlerts)) ? Number(totals.openAlerts) : 0;
-    const scheduled = Number.isFinite(Number(totals.scheduledTodayCount)) ? Number(totals.scheduledTodayCount) : 0;
-    note.textContent = `${t('ui.label.alerts.summary', '要対応合計')}: ${open} / ${t('ui.label.top.todayScheduled', '本日配信予定件数')}: ${scheduled}`;
+  const openAlerts = Number.isFinite(Number(totals.openAlerts)) ? Number(totals.openAlerts) : 0;
+  const scheduled = Number.isFinite(Number(totals.scheduledTodayCount)) ? Number(totals.scheduledTodayCount) : 0;
+  const dangerCount = rows.filter((item) => String(item && item.severity || '').toUpperCase() === 'DANGER').length;
+  const warnCount = rows.filter((item) => String(item && item.severity || '').toUpperCase() === 'WARN').length;
+  const topItem = rows[0] && typeof rows[0] === 'object' ? rows[0] : null;
+  const topActionPane = topItem && typeof topItem.actionPane === 'string' && topItem.actionPane.trim()
+    ? topItem.actionPane.trim()
+    : 'monitor';
+  const topActionLabel = topItem && topItem.actionLabel
+    ? topItem.actionLabel
+    : t('ui.label.v3.decision.alerts.primary', '最初の案件へ進む');
+  if (priorityLeadEl) {
+    priorityLeadEl.textContent = topItem
+      ? `${normalizeCopyForRole(topItem.typeLabel || '-', state.role)}${t('ui.desc.alerts.priorityLead.topItemSuffix', ' から着手できます。')}`
+      : scheduled > 0
+        ? `${scheduled}${t('ui.desc.alerts.priorityLead.scheduledSuffix', '件の配信予定があります。更新して新しい要対応を確認できます。')}`
+        : t('ui.desc.alerts.priorityLead.empty', '今すぐの要対応はありません。新しい案件が入ったらここから確認できます。');
   }
+  if (openCountEl) openCountEl.textContent = String(openAlerts);
+  if (dangerCountEl) dangerCountEl.textContent = String(dangerCount);
+  if (warnCountEl) warnCountEl.textContent = String(warnCount);
+  if (nextStepEl) {
+    nextStepEl.textContent = topItem
+      ? normalizeCopyForRole(topActionLabel, state.role)
+      : t('ui.label.alerts.nextStepIdle', '新しい要対応を待機');
+  }
+  if (primaryActionEl) {
+    primaryActionEl.textContent = normalizeCopyForRole(topActionLabel, state.role);
+    primaryActionEl.setAttribute('data-open-pane', topActionPane);
+    if (topItem) {
+      primaryActionEl.disabled = false;
+      primaryActionEl.removeAttribute('aria-disabled');
+    } else {
+      primaryActionEl.disabled = true;
+      primaryActionEl.setAttribute('aria-disabled', 'true');
+    }
+  }
+  if (note) {
+    note.textContent = `${t('ui.label.alerts.summary', '要対応合計')}: ${openAlerts} / ${t('ui.label.top.todayScheduled', '本日配信予定件数')}: ${scheduled}`;
+  }
+  renderDecisionCard('alerts', resolveAlertsDecisionVm());
+}
+
+function resolveReadModelTaskSummary() {
+  const items = Array.isArray(state.usersSummaryFilteredItems) && state.usersSummaryFilteredItems.length
+    ? state.usersSummaryFilteredItems
+    : (Array.isArray(state.usersSummaryItems) ? state.usersSummaryItems : []);
+  const analyze = state.usersSummaryAnalyze && typeof state.usersSummaryAnalyze === 'object'
+    ? state.usersSummaryAnalyze
+    : null;
+  const totalCount = items.length;
+  const attentionCount = items.filter((item) => {
+    const billingState = String(item && item.billingIntegrityState || '').toLowerCase();
+    const subscriptionStatus = String(item && item.subscriptionStatus || '').toLowerCase();
+    return billingState === 'conflict'
+      || billingState === 'unknown'
+      || subscriptionStatus === 'past_due'
+      || subscriptionStatus === 'incomplete'
+      || subscriptionStatus === 'unknown';
+  }).length;
+  const proActiveCount = analyze && Number.isFinite(Number(analyze.proActiveCount))
+    ? Number(analyze.proActiveCount)
+    : items.filter((item) => String(item && item.plan || '') === 'pro' && String(item && item.subscriptionStatus || '') === 'active').length;
+  if (attentionCount > 0) {
+    return {
+      totalCount,
+      attentionCount,
+      proActiveCount,
+      primaryTask: t('ui.label.v3.decision.readModel.primary', '会員を絞り込む'),
+      primaryNote: `${attentionCount}件は課金や整合の確認が必要です。ユーザーIDかステータスで絞り込みます。`,
+      secondaryTask: '詳細を確認する',
+      secondaryNote: '1人選ぶと、右側に課金・LLM・Journey の詳細が表示されます。'
+    };
+  }
+  if (totalCount > 0) {
+    return {
+      totalCount,
+      attentionCount,
+      proActiveCount,
+      primaryTask: t('ui.label.v3.decision.readModel.primary', '会員を絞り込む'),
+      primaryNote: `${totalCount}件の中から、確認したい会員だけを絞り込みます。`,
+      secondaryTask: proActiveCount > 0 ? '有料会員を確認する' : '必要な詳細を見る',
+      secondaryNote: proActiveCount > 0
+        ? `${proActiveCount}件の有料会員を含みます。必要なら Plan で絞り込みます。`
+        : '必要なときだけ詳細や補助集計を開きます。'
+    };
+  }
+  return {
+    totalCount,
+    attentionCount,
+    proActiveCount,
+    primaryTask: t('ui.label.v3.decision.readModel.secondary', '一覧を更新する'),
+    primaryNote: '会員データを更新してから、確認したい対象を絞り込みます。',
+    secondaryTask: '詳細を確認する',
+    secondaryNote: '一覧が入ると、1人ずつ詳細を確認できます。'
+  };
+}
+
+function renderReadModelTaskSummary() {
+  const summary = resolveReadModelTaskSummary();
+  setTextContent('read-model-summary-total', summary.totalCount);
+  setTextContent('read-model-summary-attention', summary.attentionCount);
+  setTextContent('read-model-summary-pro-active', summary.proActiveCount);
+  setTextContent('read-model-priority-task', summary.primaryTask);
+  setTextContent('read-model-priority-note', summary.primaryNote);
+  setTextContent('read-model-priority-secondary-task', summary.secondaryTask);
+  setTextContent('read-model-priority-secondary-note', summary.secondaryNote);
+}
+
+function resolveCityPackTaskSummary() {
+  const inbox = Array.isArray(state.cityPackInboxItems) ? state.cityPackInboxItems : [];
+  const filteredItems = Array.isArray(state.cityPackUnifiedFilteredItems) ? state.cityPackUnifiedFilteredItems : [];
+  const totalCount = filteredItems.length;
+  const needsReviewCount = inbox.filter((item) => String(item && item.status || '') === 'needs_review').length;
+  const blockedCount = inbox.filter((item) => {
+    const status = String(item && item.status || '');
+    return status === 'blocked' || status === 'dead';
+  }).length;
+  const activeCount = filteredItems.filter((item) => String(item && item.status || '') === 'active').length;
+  if (blockedCount > 0) {
+    return {
+      totalCount,
+      needsReviewCount,
+      blockedCount,
+      primaryTask: '止まっている候補を確認する',
+      primaryNote: `${blockedCount}件が停止中です。理由を見て、先に止まりを外します。`,
+      secondaryTask: needsReviewCount > 0 ? '要確認の候補を見る' : '公開中の案内を見る',
+      secondaryNote: needsReviewCount > 0
+        ? `${needsReviewCount}件が確認待ちです。停止中を見たあとで確認します。`
+        : `${activeCount}件が公開中です。必要な更新だけ確認します。`
+    };
+  }
+  if (needsReviewCount > 0) {
+    return {
+      totalCount,
+      needsReviewCount,
+      blockedCount,
+      primaryTask: t('ui.label.v3.decision.cityPack.primary', '地域案内を開く'),
+      primaryNote: `${needsReviewCount}件が確認待ちです。要確認から順に見ていきます。`,
+      secondaryTask: activeCount > 0 ? '公開中の案内を見る' : '一覧を更新する',
+      secondaryNote: activeCount > 0
+        ? `${activeCount}件が公開中です。確認後に公開状態を見直します。`
+        : '必要なら一覧を更新して新しい候補を確認します。'
+    };
+  }
+  return {
+    totalCount,
+    needsReviewCount,
+    blockedCount,
+    primaryTask: activeCount > 0 ? '公開中の案内を見る' : t('ui.label.v3.decision.cityPack.secondary', '一覧を更新する'),
+    primaryNote: activeCount > 0
+      ? `${activeCount}件が公開中です。必要な更新候補だけ確認します。`
+      : '新しい候補が入っていないか一覧を更新します。',
+    secondaryTask: '一覧を更新する',
+    secondaryNote: totalCount > 0
+      ? `${totalCount}件を表示中です。必要な候補だけ絞り込みます。`
+      : '新しい候補が入るまでこの一覧を基準に確認します。'
+  };
+}
+
+function renderCityPackTaskSummary() {
+  const summary = resolveCityPackTaskSummary();
+  setTextContent('city-pack-summary-total', summary.totalCount);
+  setTextContent('city-pack-summary-needs-review', summary.needsReviewCount);
+  setTextContent('city-pack-summary-blocked', summary.blockedCount);
+  setTextContent('city-pack-priority-task', summary.primaryTask);
+  setTextContent('city-pack-priority-note', summary.primaryNote);
+  setTextContent('city-pack-priority-secondary-task', summary.secondaryTask);
+  setTextContent('city-pack-priority-secondary-note', summary.secondaryNote);
+}
+
+function resolveEmergencyLayerTaskSummary() {
+  const items = Array.isArray(state.emergencyBulletinItems) ? state.emergencyBulletinItems : [];
+  const totalCount = items.length;
+  const criticalCount = items.filter((item) => String(item && item.severity || '') === 'CRITICAL').length;
+  const draftCount = items.filter((item) => String(item && item.status || '') === 'draft').length;
+  const approvedCount = items.filter((item) => String(item && item.status || '') === 'approved').length;
+  if (criticalCount > 0) {
+    return {
+      totalCount,
+      criticalCount,
+      draftCount,
+      primaryTask: '至急確認の案件を見る',
+      primaryNote: `${criticalCount}件が至急確認です。受信箱の上から判断します。`,
+      secondaryTask: draftCount > 0 ? '判断待ちの案件を見る' : '最近の案件を見直す',
+      secondaryNote: draftCount > 0
+        ? `${draftCount}件が判断待ちです。至急確認のあとで順に見ます。`
+        : `${approvedCount}件は承認済みです。必要な案件だけ見直します。`
+    };
+  }
+  if (draftCount > 0) {
+    return {
+      totalCount,
+      criticalCount,
+      draftCount,
+      primaryTask: t('ui.label.v3.decision.emergencyLayer.primary', '受信箱を開く'),
+      primaryNote: `${draftCount}件が判断待ちです。通知の要否を先に決めます。`,
+      secondaryTask: approvedCount > 0 ? '承認済みの案件を見る' : '一覧を更新する',
+      secondaryNote: approvedCount > 0
+        ? `${approvedCount}件は承認済みです。必要なら送信前に見直します。`
+        : '新しい案件が入っていないか受信箱を更新します。'
+    };
+  }
+  return {
+    totalCount,
+    criticalCount,
+    draftCount,
+    primaryTask: totalCount > 0 ? '最近の案件を見直す' : t('ui.label.v3.decision.emergencyLayer.secondary', '受信箱を更新する'),
+    primaryNote: totalCount > 0
+      ? `${totalCount}件の案件があります。通知判断が必要な案件だけ見直します。`
+      : '新しい案件が入っていないか受信箱を更新します。',
+    secondaryTask: '地域や状態で絞り込む',
+    secondaryNote: '必要なときだけ状態や地域で絞り込んで確認します。'
+  };
+}
+
+function renderEmergencyLayerTaskSummary() {
+  const summary = resolveEmergencyLayerTaskSummary();
+  setTextContent('emergency-summary-total', summary.totalCount);
+  setTextContent('emergency-summary-critical', summary.criticalCount);
+  setTextContent('emergency-summary-draft', summary.draftCount);
+  setTextContent('emergency-priority-task', summary.primaryTask);
+  setTextContent('emergency-priority-note', summary.primaryNote);
+  setTextContent('emergency-priority-secondary-task', summary.secondaryTask);
+  setTextContent('emergency-priority-secondary-note', summary.secondaryNote);
 }
 
 async function loadAlertsSummary(options) {
@@ -7582,101 +7889,80 @@ function computeTopAnomaly(items) {
 }
 
 function resolveComposerDecisionVm() {
+  const taskSummary = resolveComposerTaskSummary();
   const tone = state.composerTone || 'unknown';
   const decisionState = tone === 'danger'
     ? 'STOP'
     : tone === 'warn'
       ? 'ATTENTION'
       : 'READY';
-  const reasons = buildDecisionReasons(decisionState === 'READY' ? 0 : 1, state.lastRisk || state.currentComposerStatus || t('ui.desc.composer.riskDefault', 'Plan未実行'));
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote,
+    reason2: taskSummary.secondaryNote,
     updatedAt: state.composerUpdatedAt || resolvePaneUpdatedAt('composer')
   };
 }
 
 function resolveMonitorDecisionVm() {
   const counts = getHealthCounts(state.monitorItems);
+  const taskSummary = resolveMonitorTaskSummary();
   const decisionState = counts.DANGER > 0 ? 'STOP' : counts.WARN > 0 ? 'ATTENTION' : 'READY';
-  const reasons = buildDecisionReasons(counts.DANGER || 0, state.topCauses || '-');
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote,
+    reason2: taskSummary.secondaryNote,
     updatedAt: resolvePaneUpdatedAt('monitor')
   };
 }
 
 function resolveErrorsDecisionVm() {
-  const summary = state.errorsSummary && typeof state.errorsSummary === 'object' ? state.errorsSummary : null;
-  const warnLinks = Array.isArray(summary && summary.warnLinks) ? summary.warnLinks.length : 0;
-  const retryQueue = Array.isArray(summary && summary.retryQueuePending) ? summary.retryQueuePending.length : 0;
+  const taskSummary = resolveErrorsTaskSummary();
+  const warnLinks = taskSummary.warnLinks;
+  const retryQueue = taskSummary.retryQueue;
   const decisionState = warnLinks > 0 ? 'STOP' : retryQueue > 0 ? 'ATTENTION' : 'READY';
-  const primary = warnLinks > 0
-    ? t('ui.label.errors.warnLinks', '危険リンク一覧')
-    : retryQueue > 0
-      ? t('ui.label.errors.retryQueue', '再送待ち一覧')
-      : t('ui.status.ok', '問題なし');
-  const reasons = buildDecisionReasons(warnLinks + retryQueue, primary);
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote,
+    reason2: taskSummary.secondaryNote,
     updatedAt: resolvePaneUpdatedAt('errors')
   };
 }
 
 function resolveReadModelDecisionVm() {
   const counts = getHealthCounts(state.readModelItems);
-  const decisionState = counts.DANGER > 0 ? 'STOP' : counts.WARN > 0 ? 'ATTENTION' : 'READY';
-  const reasons = buildDecisionReasons(counts.DANGER || 0, counts.WARN > 0 ? statusLabel('WARN') : statusLabel('OK'));
+  const taskSummary = resolveReadModelTaskSummary();
+  const decisionState = counts.DANGER > 0
+    ? 'STOP'
+    : (taskSummary.attentionCount > 0 || counts.WARN > 0)
+      ? 'ATTENTION'
+      : 'READY';
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote,
+    reason2: taskSummary.secondaryNote,
     updatedAt: resolvePaneUpdatedAt('read-model')
   };
 }
 
 function resolveCityPackDecisionVm() {
-  const inbox = Array.isArray(state.cityPackInboxItems) ? state.cityPackInboxItems : [];
-  const needsReview = inbox.filter((item) => String(item && item.status) === 'needs_review').length;
-  const blocked = inbox.filter((item) => {
-    const status = String(item && item.status);
-    return status === 'dead' || status === 'blocked';
-  }).length;
-  const decisionState = blocked > 0 ? 'STOP' : needsReview > 0 ? 'ATTENTION' : 'READY';
-  const primary = blocked > 0
-    ? t('ui.label.cityPack.col.result', 'result')
-    : needsReview > 0
-      ? t('ui.value.cityPack.status.needsReview', '要確認')
-      : t('ui.status.ok', '問題なし');
-  const reasons = buildDecisionReasons(blocked + needsReview, primary);
+  const taskSummary = resolveCityPackTaskSummary();
+  const decisionState = taskSummary.blockedCount > 0 ? 'STOP' : taskSummary.needsReviewCount > 0 ? 'ATTENTION' : 'READY';
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote,
+    reason2: taskSummary.secondaryNote,
     updatedAt: resolvePaneUpdatedAt('city-pack')
   };
 }
 
 function resolveEmergencyLayerDecisionVm() {
-  const items = Array.isArray(state.emergencyBulletinItems) ? state.emergencyBulletinItems : [];
-  const draftCount = items.filter((item) => String(item && item.status) === 'draft').length;
-  const criticalCount = items.filter((item) => String(item && item.severity) === 'CRITICAL').length;
-  const decisionState = criticalCount > 0 ? 'STOP' : draftCount > 0 ? 'ATTENTION' : 'READY';
-  const primary = criticalCount > 0
-    ? 'CRITICAL'
-    : draftCount > 0
-      ? 'draft'
-      : t('ui.status.ok', '問題なし');
-  const reasons = buildDecisionReasons(draftCount, primary);
+  const taskSummary = resolveEmergencyLayerTaskSummary();
+  const decisionState = taskSummary.criticalCount > 0 ? 'STOP' : taskSummary.draftCount > 0 ? 'ATTENTION' : 'READY';
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote,
+    reason2: taskSummary.secondaryNote,
     updatedAt: resolvePaneUpdatedAt('emergency-layer')
   };
 }
@@ -7696,6 +7982,7 @@ function resolveVendorsDecisionVm() {
 }
 
 function resolveHomeDecisionVm() {
+  const taskSummary = resolveHomeTaskSummary();
   const snapshot = state.opsSystemSnapshot && typeof state.opsSystemSnapshot === 'object'
     ? state.opsSystemSnapshot
     : null;
@@ -7715,8 +8002,8 @@ function resolveHomeDecisionVm() {
     const reasons = buildDecisionReasons(pendingCount, primary);
     return {
       state: decisionState,
-      reason1: reasons.reason1,
-      reason2: reasons.reason2,
+      reason1: taskSummary.primaryNote || reasons.reason1,
+      reason2: taskSummary.secondaryNote || reasons.reason2,
       updatedAt: resolvePaneUpdatedAt('home')
     };
   }
@@ -7725,14 +8012,261 @@ function resolveHomeDecisionVm() {
   const reasons = buildDecisionReasons(counts.DANGER || 0, state.topCauses || '-');
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote || reasons.reason1,
+    reason2: taskSummary.secondaryNote || reasons.reason2,
     updatedAt: resolvePaneUpdatedAt('home')
   };
 }
 
+function resolveAlertsDecisionVm() {
+  const payload = state.alertsSummary && typeof state.alertsSummary === 'object' ? state.alertsSummary : {};
+  const rows = Array.isArray(payload.items) ? payload.items : [];
+  const totals = payload.totals && typeof payload.totals === 'object' ? payload.totals : {};
+  const openAlerts = Number.isFinite(Number(totals.openAlerts)) ? Number(totals.openAlerts) : 0;
+  const dangerCount = rows.filter((item) => String(item && item.severity || '').toUpperCase() === 'DANGER').length;
+  const warnCount = rows.filter((item) => String(item && item.severity || '').toUpperCase() === 'WARN').length;
+  const topItem = rows[0] && typeof rows[0] === 'object' ? rows[0] : null;
+  const decisionState = dangerCount > 0
+    ? 'STOP'
+    : openAlerts > 0 || warnCount > 0
+      ? 'ATTENTION'
+      : 'READY';
+  const reason1 = topItem
+    ? `${normalizeCopyForRole(topItem.typeLabel || '-', state.role)}${t('ui.desc.alerts.decision.topItemSuffix', ' から着手してください。')}`
+    : t('ui.desc.alerts.decision.empty', '今すぐの要対応はありません。');
+  const reason2 = openAlerts > 0
+    ? `${t('ui.label.alerts.summary', '要対応合計')}: ${openAlerts} / ${t('ui.label.alerts.priorityDanger', '緊急')}: ${dangerCount} / ${t('ui.label.alerts.priorityWarn', '注意')}: ${warnCount}`
+    : t('ui.desc.alerts.decision.ready', '新しい要対応が入ったら、この画面から次の対応に進めます。');
+  return {
+    state: decisionState,
+    reason1,
+    reason2,
+    updatedAt: resolvePaneUpdatedAt('alerts')
+  };
+}
+
+function resolveComposerTaskSummary() {
+  const payload = buildDraftPayload();
+  const issues = buildComposerLocalSafetyIssues(payload);
+  const gate = state.composerActionGateState && typeof state.composerActionGateState === 'object'
+    ? state.composerActionGateState
+    : computeComposerActionGateState(payload, issues);
+  const mappedStatus = mapComposerStatusLabel(state.currentComposerStatus);
+  const targetText = Number.isFinite(Number(payload && payload.target && payload.target.limit))
+    ? `${Math.floor(Number(payload.target.limit))}件まで`
+    : '-';
+  const stageText = {
+    draft: '下書き準備',
+    approved: '承認済み',
+    planned: '送信前確認済み',
+    executed: '送信済み'
+  }[mappedStatus] || '下書き準備';
+  const safetyText = gate.validationError
+    ? '入力待ち'
+    : gate.hasSafetyIssue
+      ? '要修正'
+      : gate.canExecute
+        ? '送信可'
+        : gate.hasPlanToken
+          ? '確認済み'
+          : gate.hasNotificationId
+            ? '承認済み'
+            : '下書き前';
+
+  if (gate.validationError || !gate.hasNotificationId) {
+    return {
+      stageText,
+      safetyText,
+      targetText,
+      primaryTask: '下書きを作る',
+      primaryNote: gate.validationError || '本文と対象を整えたら、まず下書きを作ります。',
+      secondaryTask: 'プレビューで見え方を確認する',
+      secondaryNote: '保存前でも、LINEでどう見えるかを確認できます。'
+    };
+  }
+  if (gate.hasSafetyIssue) {
+    return {
+      stageText,
+      safetyText,
+      targetText,
+      primaryTask: '安全チェックを直す',
+      primaryNote: Array.isArray(issues) && issues.length ? String(issues[0]) : '送信前に修正が必要な項目があります。',
+      secondaryTask: '次の操作を見直す',
+      secondaryNote: '修正後に、左側の主操作から次の段階へ進めます。'
+    };
+  }
+  if (mappedStatus === 'draft') {
+    return {
+      stageText,
+      safetyText,
+      targetText,
+      primaryTask: '承認に進む',
+      primaryNote: '下書きは保存済みです。内容を確かめて承認に進みます。',
+      secondaryTask: 'プレビューを見直す',
+      secondaryNote: '最終確認として、本文とリンクの見え方を確認します。'
+    };
+  }
+  if (!gate.hasPlanToken) {
+    return {
+      stageText,
+      safetyText,
+      targetText,
+      primaryTask: '送信前確認を開く',
+      primaryNote: '承認済みです。対象人数と抑制対象を確認してから送信します。',
+      secondaryTask: '本文を微調整する',
+      secondaryNote: '違和感があれば、この画面の入力欄で文面を調整できます。'
+    };
+  }
+  if (mappedStatus === 'executed') {
+    return {
+      stageText,
+      safetyText: '送信済み',
+      targetText,
+      primaryTask: '配信結果を確認する',
+      primaryNote: '送信は完了しています。配信結果で反応を確認します。',
+      secondaryTask: '次の通知を準備する',
+      secondaryNote: '必要ならこの内容をもとに次の通知を作り直します。'
+    };
+  }
+  return {
+    stageText,
+    safetyText,
+    targetText,
+    primaryTask: '送信実行を確認する',
+    primaryNote: '送信条件がそろいました。左側の主操作から送信実行へ進めます。',
+    secondaryTask: '対象人数を見直す',
+    secondaryNote: '不安があれば、送信前に対象人数をもう一度確認します。'
+  };
+}
+
+function renderComposerTaskSummary() {
+  const summary = resolveComposerTaskSummary();
+  setTextContent('composer-summary-stage', summary.stageText);
+  setTextContent('composer-summary-safety', summary.safetyText);
+  setTextContent('composer-summary-target', summary.targetText);
+  setTextContent('composer-priority-task', summary.primaryTask);
+  setTextContent('composer-priority-note', summary.primaryNote);
+  setTextContent('composer-priority-secondary-task', summary.secondaryTask);
+  setTextContent('composer-priority-secondary-note', summary.secondaryNote);
+}
+
+function resolveMonitorTaskSummary() {
+  const visibleItems = resolveMonitorVisibleItems(state.monitorItems);
+  const counts = getHealthCounts(visibleItems);
+  const totalCount = visibleItems.length;
+  const stopCount = Number(counts.DANGER || 0);
+  const attentionCount = Number(counts.WARN || 0);
+
+  if (stopCount > 0) {
+    return {
+      totalCount,
+      stopCount,
+      attentionCount,
+      primaryTask: '要停止の配信を見る',
+      primaryNote: `${stopCount}件が要停止です。状態が重い配信から順に確認します。`,
+      secondaryTask: '表示条件を絞り込む',
+      secondaryNote: '表示ビューを「要対応」にすると、異常のある配信だけに絞れます。'
+    };
+  }
+  if (attentionCount > 0) {
+    return {
+      totalCount,
+      stopCount,
+      attentionCount,
+      primaryTask: '注意がある配信を見る',
+      primaryNote: `${attentionCount}件に注意が必要です。タイトルや状態で絞って確認します。`,
+      secondaryTask: '一覧を更新する',
+      secondaryNote: '必要なときだけ更新して、最新の結果を確認します。'
+    };
+  }
+  if (totalCount > 0) {
+    return {
+      totalCount,
+      stopCount,
+      attentionCount,
+      primaryTask: '履歴を絞り込む',
+      primaryNote: `${totalCount}件を表示中です。見たい通知だけに絞り込んで確認します。`,
+      secondaryTask: '一覧を更新する',
+      secondaryNote: '新しい配信結果が必要なときだけ更新します。'
+    };
+  }
+  return {
+    totalCount,
+    stopCount,
+    attentionCount,
+    primaryTask: '一覧を更新する',
+    primaryNote: '配信結果がまだありません。まず一覧を更新して状況を確認します。',
+    secondaryTask: '履歴を絞り込む',
+    secondaryNote: '一覧が入ったら、状態やキーワードで必要な通知だけに絞れます。'
+  };
+}
+
+function renderMonitorTaskSummary() {
+  const summary = resolveMonitorTaskSummary();
+  setTextContent('monitor-summary-total', summary.totalCount);
+  setTextContent('monitor-summary-stop', summary.stopCount);
+  setTextContent('monitor-summary-attention', summary.attentionCount);
+  setTextContent('monitor-priority-task', summary.primaryTask);
+  setTextContent('monitor-priority-note', summary.primaryNote);
+  setTextContent('monitor-priority-secondary-task', summary.secondaryTask);
+  setTextContent('monitor-priority-secondary-note', summary.secondaryNote);
+}
+
+function resolveErrorsTaskSummary() {
+  const summary = state.errorsSummary && typeof state.errorsSummary === 'object' ? state.errorsSummary : null;
+  const warnLinks = Array.isArray(summary && summary.warnLinks) ? summary.warnLinks.length : 0;
+  const retryQueue = Array.isArray(summary && summary.retryQueuePending) ? summary.retryQueuePending.length : 0;
+  const totalCount = warnLinks + retryQueue;
+
+  if (warnLinks > 0) {
+    return {
+      totalCount,
+      warnLinks,
+      retryQueue,
+      primaryTask: '危険リンクを確認する',
+      primaryNote: `${warnLinks}件の危険リンクがあります。まずリンク先の修正要否を確認します。`,
+      secondaryTask: retryQueue > 0 ? '再送待ちを確認する' : '設定と回復を開く',
+      secondaryNote: retryQueue > 0
+        ? `${retryQueue}件の再送待ちがあります。危険リンクの確認後に見ます。`
+        : '危険リンクの補正が必要なときだけ設定と回復を開きます。'
+    };
+  }
+  if (retryQueue > 0) {
+    return {
+      totalCount,
+      warnLinks,
+      retryQueue,
+      primaryTask: '再送待ちを確認する',
+      primaryNote: `${retryQueue}件が再送待ちです。最新エラーと対象を確認します。`,
+      secondaryTask: '配信結果を開く',
+      secondaryNote: '必要なら配信結果画面で対象通知の履歴を見直します。'
+    };
+  }
+  return {
+    totalCount,
+    warnLinks,
+    retryQueue,
+    primaryTask: '一覧を更新する',
+    primaryNote: '今すぐの異常はありません。更新して問題がないことを再確認します。',
+    secondaryTask: '配信結果を開く',
+    secondaryNote: '異常がなくても、必要なら配信結果から最近の実行状況を確認できます。'
+  };
+}
+
+function renderErrorsTaskSummary() {
+  const summary = resolveErrorsTaskSummary();
+  setTextContent('errors-summary-total', summary.totalCount);
+  setTextContent('errors-summary-warn-links', summary.warnLinks);
+  setTextContent('errors-summary-retry-queue', summary.retryQueue);
+  setTextContent('errors-priority-task', summary.primaryTask);
+  setTextContent('errors-priority-note', summary.primaryNote);
+  setTextContent('errors-priority-secondary-task', summary.secondaryTask);
+  setTextContent('errors-priority-secondary-note', summary.secondaryNote);
+}
+
 function renderAllDecisionCards() {
   renderDecisionCard('home', resolveHomeDecisionVm());
+  renderDecisionCard('alerts', resolveAlertsDecisionVm());
   renderDecisionCard('composer', resolveComposerDecisionVm());
   renderDecisionCard('monitor', resolveMonitorDecisionVm());
   renderDecisionCard('errors', resolveErrorsDecisionVm());
@@ -7740,6 +8274,12 @@ function renderAllDecisionCards() {
   renderDecisionCard('emergency-layer', resolveEmergencyLayerDecisionVm());
   renderDecisionCard('city-pack', resolveCityPackDecisionVm());
   renderDecisionCard('vendors', resolveVendorsDecisionVm());
+  renderComposerTaskSummary();
+  renderMonitorTaskSummary();
+  renderErrorsTaskSummary();
+  renderReadModelTaskSummary();
+  renderCityPackTaskSummary();
+  renderEmergencyLayerTaskSummary();
 }
 
 function renderSafeNextStep(el, message) {
@@ -7896,6 +8436,8 @@ function renderMonitorRows(items) {
     tbody.appendChild(tr);
     state.selectedMonitorNotificationId = null;
     renderMonitorDetail(null);
+    renderMonitorTaskSummary();
+    renderDecisionCard('monitor', resolveMonitorDecisionVm());
     return;
   }
   visibleItems.forEach((item, idx) => {
@@ -7945,6 +8487,8 @@ function renderMonitorRows(items) {
   } else {
     renderMonitorDetail(null);
   }
+  renderMonitorTaskSummary();
+  renderDecisionCard('monitor', resolveMonitorDecisionVm());
 }
 
 function renderReadModelRows(items) {
@@ -9289,6 +9833,8 @@ function renderCityPackUnifiedRows() {
     tr.appendChild(td);
     tbody.appendChild(tr);
     renderCityPackV2DetailPanel();
+    renderCityPackTaskSummary();
+    renderDecisionCard('city-pack', resolveCityPackDecisionVm());
     return;
   }
   items.forEach((item) => {
@@ -9331,6 +9877,8 @@ function renderCityPackUnifiedRows() {
     tbody.appendChild(tr);
   });
   renderCityPackV2DetailPanel();
+  renderCityPackTaskSummary();
+  renderDecisionCard('city-pack', resolveCityPackDecisionVm());
 }
 
 function refreshCityPackUnifiedRows() {
@@ -11996,6 +12544,8 @@ function renderErrors(summary) {
   } else {
     renderSafeNextStep(safeStepEl, t('ui.desc.errors.safeStepNone', '次にやる安全な1手: 更新を押して異常がないことを再確認する'));
   }
+  renderErrorsTaskSummary();
+  renderDecisionCard('errors', resolveErrorsDecisionVm());
 }
 
 async function loadMonitorData(options) {
@@ -12531,6 +13081,8 @@ function renderUsersSummaryRows() {
     tr.appendChild(td);
     tbody.appendChild(tr);
     renderUsersSummaryBillingDetail(null);
+    renderReadModelTaskSummary();
+    renderDecisionCard('read-model', resolveReadModelDecisionVm());
     return;
   }
 
@@ -12615,6 +13167,8 @@ function renderUsersSummaryRows() {
     tbody.appendChild(tr);
   });
   applyUsersSummaryColumnVisibility();
+  renderReadModelTaskSummary();
+  renderDecisionCard('read-model', resolveReadModelDecisionVm());
 }
 
 function buildUsersSummaryQuery(limit, analyticsLimit) {
@@ -12661,10 +13215,12 @@ async function loadUsersSummaryAnalyze(options) {
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
     state.usersSummaryAnalyze = data.analyze || null;
     renderUsersSummaryAnalyzeResult();
+    renderAllDecisionCards();
     if (notify) showToast('Analyze を更新しました', 'ok');
   } catch (_err) {
     state.usersSummaryAnalyze = null;
     renderUsersSummaryAnalyzeResult();
+    renderAllDecisionCards();
     if (notify) showToast('Analyze の取得に失敗しました', 'danger');
   }
 }
@@ -17720,6 +18276,8 @@ function updateComposerSummary() {
   applyComposerActionGateState(gateState);
   renderComposerCurrentActionRail(gateState);
   renderComposerCategoryWizard(payload, gateState);
+  renderComposerTaskSummary();
+  renderDecisionCard('composer', resolveComposerDecisionVm());
   syncComposerOptionalSections();
 }
 
@@ -19441,13 +19999,16 @@ function renderEmergencyBulletinRows(items) {
   if (!tbody) return;
   tbody.innerHTML = '';
   const rows = Array.isArray(items) ? items : [];
+  const showSystemColumns = !(isAdminUiV3Enabled() && state.uiShell === UI_SHELL_OPS);
   if (!rows.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 8;
+    td.colSpan = showSystemColumns ? 8 : 6;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
+    renderEmergencyLayerTaskSummary();
+    renderDecisionCard('emergency-layer', resolveEmergencyLayerDecisionVm());
     return;
   }
   rows.forEach((row) => {
@@ -19476,10 +20037,12 @@ function renderEmergencyBulletinRows(items) {
       tr.appendChild(td);
     });
 
-    const evidenceTd = document.createElement('td');
-    const refs = row && row.evidenceRefs && typeof row.evidenceRefs === 'object' ? row.evidenceRefs : {};
-    evidenceTd.textContent = refs.diffId || refs.snapshotId || '-';
-    tr.appendChild(evidenceTd);
+    if (showSystemColumns) {
+      const evidenceTd = document.createElement('td');
+      const refs = row && row.evidenceRefs && typeof row.evidenceRefs === 'object' ? row.evidenceRefs : {};
+      evidenceTd.textContent = refs.diffId || refs.snapshotId || '-';
+      tr.appendChild(evidenceTd);
+    }
 
     const actionsTd = document.createElement('td');
     if (EMERGENCY_MANUAL_APPROVE_FALLBACK) {
@@ -19490,21 +20053,27 @@ function renderEmergencyBulletinRows(items) {
       ));
     }
     actionsTd.appendChild(createUnifiedActionButton(
-      t('ui.label.emergency.reject', 'Reject'),
-      () => { void rejectEmergencyBulletinAction(bulletinId); },
-      { actionKey: 'emergency.bulletin.reject' }
-    ));
-    actionsTd.appendChild(createUnifiedActionButton(
-      t('ui.label.emergency.evidence', 'Evidence'),
-      () => { void loadEmergencyEvidence(bulletinId, { notify: true }); }
-    ));
+        t('ui.label.emergency.reject', 'Reject'),
+        () => { void rejectEmergencyBulletinAction(bulletinId); },
+        { actionKey: 'emergency.bulletin.reject' }
+      ));
+    if (showSystemColumns) {
+      actionsTd.appendChild(createUnifiedActionButton(
+        t('ui.label.emergency.evidence', 'Evidence'),
+        () => { void loadEmergencyEvidence(bulletinId, { notify: true }); }
+      ));
+    }
     tr.appendChild(actionsTd);
 
-    const traceTd = document.createElement('td');
-    traceTd.textContent = row && row.traceId ? String(row.traceId) : '-';
-    tr.appendChild(traceTd);
+    if (showSystemColumns) {
+      const traceTd = document.createElement('td');
+      traceTd.textContent = row && row.traceId ? String(row.traceId) : '-';
+      tr.appendChild(traceTd);
+    }
     tbody.appendChild(tr);
   });
+  renderEmergencyLayerTaskSummary();
+  renderDecisionCard('emergency-layer', resolveEmergencyLayerDecisionVm());
 }
 
 function sanitizeEmergencyEvidence(item) {
@@ -20415,18 +20984,29 @@ function setupDecisionActions() {
   });
   document.getElementById('composer-action-activate')?.addEventListener('click', () => {
     activatePane('composer');
-    document.getElementById('approve')?.focus();
-    showToast('実行操作は Composer Workbench 内の承認ボタンから実施してください', 'warn');
+    const details = document.getElementById('composer-pane-details');
+    if (details) details.open = true;
+    const currentActionId = resolveComposerCurrentPrimaryAction(state.composerActionGateState);
+    const focusTarget = (currentActionId && document.getElementById(currentActionId))
+      || document.getElementById('composer-preview-trigger')
+      || document.getElementById('title');
+    focusTarget?.focus();
+    showToast('左側の主操作から、次の段階へ進めます', 'ok');
   });
   document.getElementById('composer-action-disable')?.addEventListener('click', () => {
     activatePane('errors');
   });
 
   document.getElementById('monitor-action-edit')?.addEventListener('click', () => {
-    activatePane('composer');
+    activatePane('monitor');
+    const details = document.getElementById('monitor-pane-details');
+    if (details) details.open = true;
+    (document.getElementById('monitor-toolbar-status') || document.getElementById('monitor-toolbar-query') || document.getElementById('monitor-reload'))?.focus();
   });
   document.getElementById('monitor-action-activate')?.addEventListener('click', () => {
     activatePane('monitor');
+    const details = document.getElementById('monitor-pane-details');
+    if (details) details.open = true;
     document.getElementById('monitor-reload')?.click();
   });
   document.getElementById('monitor-action-disable')?.addEventListener('click', () => {
@@ -20434,12 +21014,25 @@ function setupDecisionActions() {
   });
 
   document.getElementById('errors-action-edit')?.addEventListener('click', () => {
-    activatePane('monitor');
+    activatePane('errors');
+    const details = document.getElementById('errors-pane-details');
+    if (details) details.open = true;
+    document.getElementById('errors-reload')?.focus();
   });
   document.getElementById('errors-action-activate')?.addEventListener('click', () => {
-    void openAuditFromSource('errors', ensureTraceInput('errors-trace') || ensureTraceInput('traceId'), { historyMode: 'push' }).catch(() => {
-      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
-    });
+    const summary = resolveErrorsTaskSummary();
+    if (summary.warnLinks > 0) {
+      activatePane('maintenance');
+      return;
+    }
+    activatePane('monitor');
+    const details = document.getElementById('monitor-pane-details');
+    if (details) details.open = true;
+    if (summary.retryQueue > 0) {
+      (document.getElementById('monitor-toolbar-status') || document.getElementById('monitor-reload'))?.focus();
+      return;
+    }
+    document.getElementById('monitor-reload')?.click();
   });
   document.getElementById('errors-action-disable')?.addEventListener('click', () => {
     activatePane('maintenance');
@@ -20459,11 +21052,17 @@ function setupDecisionActions() {
 
   document.getElementById('emergency-layer-action-edit')?.addEventListener('click', () => {
     activatePane('emergency-layer');
-    document.getElementById('emergency-rule-reload')?.click();
-    document.getElementById('emergency-bulletin-reload')?.click();
+    const details = document.getElementById('emergency-layer-pane-details');
+    if (details) details.open = true;
+    if (!Array.isArray(state.emergencyBulletinItems) || state.emergencyBulletinItems.length === 0) {
+      document.getElementById('emergency-bulletin-reload')?.click();
+    }
+    document.getElementById('emergency-bulletin-status-filter')?.focus();
   });
   document.getElementById('emergency-layer-action-activate')?.addEventListener('click', () => {
     activatePane('emergency-layer');
+    const details = document.getElementById('emergency-layer-pane-details');
+    if (details) details.open = true;
     document.getElementById('emergency-bulletin-reload')?.click();
   });
   document.getElementById('emergency-layer-action-disable')?.addEventListener('click', () => {
@@ -20473,14 +21072,13 @@ function setupDecisionActions() {
 
   document.getElementById('city-pack-action-edit')?.addEventListener('click', () => {
     activatePane('city-pack');
-    const supportDetails = document.getElementById('city-pack-pane-details');
-    if (supportDetails) supportDetails.open = true;
-    document.getElementById('city-pack-request-reload')?.click();
-    document.getElementById('city-pack-template-library-reload')?.click();
-    document.getElementById('city-pack-education-reload')?.click();
-    if (ADMIN_CITY_PACK_CONTENT_MANAGE_V1) {
-      document.getElementById('city-pack-manage-refresh')?.click();
+    const statusFilter = document.getElementById('city-pack-unified-filter-status');
+    const summary = resolveCityPackTaskSummary();
+    if (statusFilter && !getSelectValue('city-pack-unified-filter-status') && summary.needsReviewCount > 0) {
+      statusFilter.value = 'needs_review';
+      renderCityPackUnifiedRows();
     }
+    statusFilter?.focus();
   });
   document.getElementById('city-pack-action-activate')?.addEventListener('click', () => {
     activatePane('city-pack');

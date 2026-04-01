@@ -26,7 +26,7 @@ test('phase674: launch gate keeps errors pane action-first and collapses summary
   const html = fs.readFileSync('apps/admin/app.html', 'utf8');
   const errorsPane = extractPaneSection(html, 'errors');
   assert.match(errorsPane, /<button id="errors-to-ops"[^>]*data-primary-action="pane-primary"[^>]*>/);
-  assert.match(errorsPane, /<details class="table-section section" data-json-collapsible="true">\s*<summary[^>]*>まとめ<\/summary>\s*<pre id="errors-summary"[^>]*data-visual-noise="evidence-placeholder"/m);
+  assert.match(errorsPane, /<details id="errors-summary-details" class="table-section section" data-json-collapsible="true" data-v3-ops-hidden="true">\s*<summary[^>]*>まとめ<\/summary>\s*<pre id="errors-summary"[^>]*data-visual-noise="evidence-placeholder"/m);
   assert.doesNotMatch(errorsPane, /<details class="table-section section" open>/);
 });
 

@@ -10,6 +10,9 @@ test('phase579: home pane includes topbar summary line, alerts pane, and hidden 
   assert.ok(html.includes('id="topbar-scheduled-count"'));
   assert.ok(html.includes('id="topbar-open-alerts"'));
   assert.ok(html.includes('id="pane-alerts"'));
+  assert.ok(html.includes('id="alerts-decision-card"'));
+  assert.ok(html.includes('id="alerts-action-open"'));
+  assert.ok(html.includes('id="alerts-priority-next-step"'));
   assert.ok(html.includes('id="alerts-rows"'));
   assert.ok(html.includes('id="header-consult-link" type="button" class="secondary-btn hidden"'));
 });

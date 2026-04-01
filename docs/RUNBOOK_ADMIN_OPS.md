@@ -625,12 +625,30 @@ internal outcome quick guide:
 
 ## Composer Flow (通知作成 → 承認 → 送信)
 1) `/admin/app?pane=composer`（正規導線）
-   - draft 作成（title/body/cta/linkRegistryId/target/scenario/step）
+   - 画面上部の `最初に確認すること` で、今の段階と次の操作を確認
+   - 本文と対象を整える
+   - draft 作成
    - preview で本文とリンクを確認
    - approve（active化）
-   - plan → confirm token を取得
+   - plan で送信前確認
    - execute（confirm token 必須）
 2) Monitor で反応/CTR を確認
+
+## Monitor Flow（配信結果の確認）
+1) `/admin/app?pane=monitor`
+   - 画面上部の `最初に確認すること` で `要停止 / 要確認 / 表示中件数` を確認
+   - `表示ビュー / 検索 / 状態` で必要な通知だけに絞る
+   - 一覧から通知を選び、詳細で異常理由と次の一手を確認する
+2) trace や診断条件は ops first-view では出さず、必要時だけ system 側へ寄る
+
+## Errors Flow（異常の切り分け）
+1) `/admin/app?pane=errors`
+   - 画面上部の `最初に確認すること` で `危険リンク / 再送待ち / 今ある問題` を確認
+   - primary は `異常の内容を確認`
+   - secondary は `次の対応先を開く`
+2) 危険リンクがある場合は `設定と回復`
+3) 再送待ちがある場合は `配信結果`
+4) trace や raw summary は ops first-view では使わず、必要時だけ system 側で確認する
 
 ### Composer Layout V2（運用配置）
 - 上段: `ライブプレビュー`（固定サイズ `360x160`）

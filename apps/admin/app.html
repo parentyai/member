@@ -392,6 +392,7 @@
               </div>
               <div class="decision-actions">
                 <button id="home-action-alerts" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="alerts" data-primary-action="pane-primary">要対応を確認</button>
+                <button id="home-action-monitor" type="button" class="decision-action-btn" data-action-kind="secondary" data-open-pane="monitor">配信結果を見る</button>
               </div>
             </div>
             <div id="home-reflection-state" class="panel data-reflection-panel" data-reflection-pane="home" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
@@ -416,13 +417,25 @@
                   <div class="note">本日配信予定: <strong id="dashboard-summary-scheduled-today">-</strong></div>
                   <div class="note">登録者数（直近）: <strong id="dashboard-summary-registered-count">-</strong></div>
                 </div>
+                <div class="dashboard-priority-grid">
+                  <article class="dashboard-priority-card">
+                    <div class="dashboard-priority-label" data-dict-key="ui.label.home.primaryStep">最初にやること</div>
+                    <div id="dashboard-summary-primary-task" class="dashboard-priority-value">-</div>
+                    <div id="dashboard-summary-primary-note" class="dashboard-priority-note">-</div>
+                  </article>
+                  <article class="dashboard-priority-card">
+                    <div class="dashboard-priority-label" data-dict-key="ui.label.home.secondaryStep">次に確認すること</div>
+                    <div id="dashboard-summary-secondary-task" class="dashboard-priority-value">-</div>
+                    <div id="dashboard-summary-secondary-note" class="dashboard-priority-note">-</div>
+                  </article>
+                </div>
               </div>
             </div>
             <div class="panel dashboard-focus-panel" data-surface-tier="primary">
               <div class="panel-title" data-dict-key="ui.label.home.todayFocus">今日の判断</div>
               <div class="panel-body dashboard-focus-body">
                 <p class="dashboard-focus-lead" data-dict-key="ui.desc.home.todayFocus">今すぐ確認すべき6指標を先に見て、必要なら詳細KPIへ進みます。</p>
-                <div class="row dashboard-controls">
+                <div class="row dashboard-controls" data-v3-ops-hidden="true">
                   <label for="dashboard-window-months" data-dict-key="ui.label.home.window">期間</label>
                   <select id="dashboard-window-months" class="select-inline">
                     <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
@@ -471,7 +484,7 @@
                     <div id="dashboard-focus-dependencyBlockRate-note" class="dashboard-focus-note">-</div>
                   </article>
                 </div>
-                <div class="dashboard-next-links">
+                <div class="dashboard-next-links" data-v3-ops-hidden="true">
                   <div class="dashboard-next-links-title" data-dict-key="ui.label.home.nextDestinations">行き先</div>
                   <div class="dashboard-secondary-links" data-dashboard-links="focus">
                     <button id="dashboard-link-monitor" type="button" class="secondary-btn dashboard-link-btn" data-open-pane="monitor" data-dict-key="ui.label.home.task.monitor">配信結果を確認</button>
@@ -482,10 +495,14 @@
               </div>
             </div>
           </div>
-          <div class="panel dashboard-panel dashboard-panel-detail" data-surface-tier="secondary">
-            <div class="panel-title" data-dict-key="ui.label.home.primaryMetrics">判断指標</div>
-            <div class="panel-body">
-              <p class="dashboard-panel-lead" data-dict-key="ui.desc.home.primaryMetrics">利用状況、配信成果、運用リスクの順に確認します。</p>
+          <details id="home-kpi-details" class="dashboard-details-disclosure" data-surface-tier="secondary" data-admin-fold-allowed="true">
+            <summary>
+              <span data-dict-key="ui.label.home.primaryMetrics">判断指標</span>
+              <span class="dashboard-details-summary-note" data-dict-key="ui.desc.home.metricsDisclosure">必要なときだけ詳細を見る</span>
+            </summary>
+            <div class="panel dashboard-panel dashboard-panel-detail" data-surface-tier="secondary">
+              <div class="panel-body">
+                <p class="dashboard-panel-lead" data-dict-key="ui.desc.home.primaryMetrics">利用状況、配信成果、運用リスクの順に確認します。</p>
               <section class="dashboard-kpi-band" data-dashboard-band="usage">
                 <div class="dashboard-kpi-band-header">
                   <div class="dashboard-kpi-band-title" data-dict-key="ui.label.home.band.usage">利用状況</div>
@@ -753,8 +770,9 @@
                 </div>
                 </div>
               </section>
+              </div>
             </div>
-          </div>
+          </details>
         </section>
 
         <section id="pane-ops-feature-catalog" class="app-pane" data-pane="ops-feature-catalog" data-pane-mode="system-diagnostics" data-task-context="feature-catalog-health" data-surface-tier="workspace">
@@ -811,7 +829,40 @@
         </section>
 
         <section id="pane-alerts" class="app-pane" data-pane="alerts" data-pane-mode="evidence-review" data-task-context="alert-triage" data-surface-tier="workspace">
-          <div class="panel">
+          <div class="alerts-first-view-grid">
+            <div class="decision-card" id="alerts-decision-card" data-surface-tier="hero">
+              <div class="decision-card-header">
+                <div class="decision-title">最初の案件から着手する</div>
+                <span id="alerts-decision-state" class="decision-state state-ready">READY</span>
+              </div>
+              <div id="alerts-decision-reason1" class="decision-reason">-</div>
+              <div id="alerts-decision-reason2" class="decision-reason">-</div>
+              <div class="decision-updated">
+                <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
+                <span id="alerts-decision-updated">-</span>
+              </div>
+              <div class="decision-actions">
+                <button id="alerts-action-open" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="monitor" data-primary-action="pane-primary">最初の案件へ進む</button>
+                <button id="alerts-action-reload" type="button" class="decision-action-btn" data-action-kind="secondary">一覧を更新する</button>
+              </div>
+            </div>
+            <div class="panel alerts-priority-panel" data-surface-tier="secondary">
+              <div class="panel-title" data-dict-key="ui.label.alerts.prioritySummary">優先順位サマリ</div>
+              <div class="panel-body alerts-priority-body">
+                <p id="alerts-priority-lead" class="alerts-priority-lead">-</p>
+                <div class="alerts-priority-grid">
+                  <div class="note">未対応合計: <strong id="alerts-priority-open-count">-</strong></div>
+                  <div class="note">緊急: <strong id="alerts-priority-danger-count">-</strong></div>
+                  <div class="note">注意: <strong id="alerts-priority-warn-count">-</strong></div>
+                </div>
+                <div class="alerts-next-step">
+                  <div class="alerts-next-step-label" data-dict-key="ui.label.alerts.nextStep">次に開く画面</div>
+                  <div id="alerts-priority-next-step" class="alerts-next-step-value">-</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="panel alerts-list-panel">
             <div class="panel-title" data-dict-key="ui.label.alerts.title">要対応一覧</div>
             <div class="panel-body">
               <div class="row">
@@ -857,6 +908,38 @@
               <button id="composer-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
+          <div id="composer-task-summary" class="panel ops-task-summary-panel composer-task-summary-panel" data-surface-tier="secondary">
+            <div class="panel-title" data-dict-key="ui.label.composer.prioritySummary">最初に確認すること</div>
+            <div class="panel-body">
+              <p class="ops-task-summary-lead" data-dict-key="ui.desc.composer.prioritySummary">今の段階と安全チェックを見て、次の操作を1つずつ進めます。</p>
+              <div class="ops-task-stats-grid">
+                <article class="ops-task-stat">
+                  <div class="ops-task-stat-label" data-dict-key="ui.label.composer.priority.stage">現在の段階</div>
+                  <div id="composer-summary-stage" class="ops-task-stat-value">-</div>
+                </article>
+                <article class="ops-task-stat">
+                  <div class="ops-task-stat-label" data-dict-key="ui.label.composer.priority.safety">安全チェック</div>
+                  <div id="composer-summary-safety" class="ops-task-stat-value">-</div>
+                </article>
+                <article class="ops-task-stat">
+                  <div class="ops-task-stat-label" data-dict-key="ui.label.composer.priority.target">対象上限</div>
+                  <div id="composer-summary-target" class="ops-task-stat-value">-</div>
+                </article>
+              </div>
+              <div class="ops-task-priority-grid">
+                <article class="ops-task-priority-card">
+                  <div class="ops-task-priority-label" data-dict-key="ui.label.composer.priority.primary">最初にやること</div>
+                  <div id="composer-priority-task" class="ops-task-priority-value">-</div>
+                  <div id="composer-priority-note" class="ops-task-priority-note">-</div>
+                </article>
+                <article class="ops-task-priority-card">
+                  <div class="ops-task-priority-label" data-dict-key="ui.label.composer.priority.secondary">次に確認すること</div>
+                  <div id="composer-priority-secondary-task" class="ops-task-priority-value">-</div>
+                  <div id="composer-priority-secondary-note" class="ops-task-priority-note">-</div>
+                </article>
+              </div>
+            </div>
+          </div>
           <details id="composer-pane-details" class="decision-details section" data-workbench-zone="true" data-surface-tier="primary" open>
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="composer-workspace">
@@ -889,7 +972,7 @@
                     </ol>
                   </div>
                   <div class="composer-top-overview">
-                    <div class="composer-overview-card" data-ui="composer-scenario-step-overview">
+                    <div class="composer-overview-card" data-ui="composer-scenario-step-overview" data-v3-ops-hidden="true">
                       <div class="composer-overview-title">シナリオ / ステップ全体像</div>
                       <div id="composer-flow-current" class="note">-</div>
                       <div class="composer-overview-subtitle">Scenario</div>
@@ -1127,7 +1210,7 @@
                             </select>
                           </div>
                         </div>
-                        <div id="composer-trigger-order-note" class="note">trigger=manual / order=3</div>
+                        <div id="composer-trigger-order-note" class="note" data-v3-ops-hidden="true">trigger=manual / order=3</div>
                         <div class="row composer-hidden-input">
                           <div class="flex-1">
                             <label for="targetRegion" data-dict-key="ui.label.composer.region" data-dict-tip="ui.help.composer.region">地域（任意）</label>
@@ -1302,6 +1385,38 @@
               <button id="monitor-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
+          <div id="monitor-task-summary" class="panel ops-task-summary-panel monitor-task-summary-panel" data-surface-tier="secondary">
+            <div class="panel-title" data-dict-key="ui.label.monitor.prioritySummary">最初に確認すること</div>
+            <div class="panel-body">
+              <p class="ops-task-summary-lead" data-dict-key="ui.desc.monitor.prioritySummary">危険・注意・全体件数を先に見て、異常のある配信から確認します。</p>
+              <div class="ops-task-stats-grid">
+                <article class="ops-task-stat">
+                  <div class="ops-task-stat-label" data-dict-key="ui.label.monitor.priority.total">表示中の配信</div>
+                  <div id="monitor-summary-total" class="ops-task-stat-value">-</div>
+                </article>
+                <article class="ops-task-stat">
+                  <div class="ops-task-stat-label" data-dict-key="ui.label.monitor.priority.stop">要停止</div>
+                  <div id="monitor-summary-stop" class="ops-task-stat-value">-</div>
+                </article>
+                <article class="ops-task-stat">
+                  <div class="ops-task-stat-label" data-dict-key="ui.label.monitor.priority.attention">要確認</div>
+                  <div id="monitor-summary-attention" class="ops-task-stat-value">-</div>
+                </article>
+              </div>
+              <div class="ops-task-priority-grid">
+                <article class="ops-task-priority-card">
+                  <div class="ops-task-priority-label" data-dict-key="ui.label.monitor.priority.primary">最初にやること</div>
+                  <div id="monitor-priority-task" class="ops-task-priority-value">-</div>
+                  <div id="monitor-priority-note" class="ops-task-priority-note">-</div>
+                </article>
+                <article class="ops-task-priority-card">
+                  <div class="ops-task-priority-label" data-dict-key="ui.label.monitor.priority.secondary">次に確認すること</div>
+                  <div id="monitor-priority-secondary-task" class="ops-task-priority-value">-</div>
+                  <div id="monitor-priority-secondary-note" class="ops-task-priority-note">-</div>
+                </article>
+              </div>
+            </div>
+          </div>
           <div id="monitor-reflection-state" class="panel data-reflection-panel" data-reflection-pane="monitor" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" data-v3-ops-hidden="true" role="status" aria-live="polite">
             <div class="panel-title">データ反映状態</div>
             <div class="panel-body">
@@ -1319,7 +1434,7 @@
           <div id="monitor-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="monitor" data-v3-ops-hidden="true" role="status" aria-live="polite">
             監視情報は全ロールで参照できます。設定ビューは管理ロールのみ表示されます。
           </div>
-          <details id="monitor-pane-details" class="decision-details section" data-surface-tier="primary">
+          <details id="monitor-pane-details" class="decision-details section" data-surface-tier="primary" open>
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="monitor-view-switch" data-ui="monitor-view-switch">
               <div class="monitor-view-actions">
@@ -2273,7 +2388,7 @@
                     </label>
                     <button id="monitor-insights-reload" type="button" data-dict-key="ui.label.monitor.insightsReload">分析を更新</button>
                   </div>
-                  <div class="row">
+                  <div class="row" data-v3-ops-hidden="true">
                     <label data-dict-key="ui.label.monitor.snapshotMode" data-dict-tip="ui.help.monitor.snapshotMode">スナップショット
                       <select id="monitor-insights-snapshot-mode" class="select-inline">
                         <option value="prefer" data-dict-key="ui.value.monitor.snapshotMode.prefer">prefer</option>
@@ -2502,7 +2617,39 @@
               <button id="emergency-layer-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <details id="emergency-layer-pane-details" class="decision-details section" data-workbench-zone="true">
+          <div id="emergency-task-summary" class="panel ops-task-summary-panel emergency-task-summary-panel" data-surface-tier="secondary">
+            <div class="panel-title" data-dict-key="ui.label.emergency.prioritySummary">最初に確認すること</div>
+            <div class="panel-body">
+              <p class="ops-task-summary-lead" data-dict-key="ui.desc.emergency.prioritySummary">受信箱の件数と優先度を先に見て、通知判断が必要な案件から確認します。</p>
+              <div class="ops-task-stats-grid">
+                <article class="ops-task-stat">
+                  <div class="ops-task-stat-label" data-dict-key="ui.label.emergency.priority.total">受信箱の件数</div>
+                  <div id="emergency-summary-total" class="ops-task-stat-value">-</div>
+                </article>
+                <article class="ops-task-stat">
+                  <div class="ops-task-stat-label" data-dict-key="ui.label.emergency.priority.critical">至急確認</div>
+                  <div id="emergency-summary-critical" class="ops-task-stat-value">-</div>
+                </article>
+                <article class="ops-task-stat">
+                  <div class="ops-task-stat-label" data-dict-key="ui.label.emergency.priority.draft">判断待ち</div>
+                  <div id="emergency-summary-draft" class="ops-task-stat-value">-</div>
+                </article>
+              </div>
+              <div class="ops-task-priority-grid">
+                <article class="ops-task-priority-card">
+                  <div class="ops-task-priority-label" data-dict-key="ui.label.emergency.priority.primary">最初にやること</div>
+                  <div id="emergency-priority-task" class="ops-task-priority-value">-</div>
+                  <div id="emergency-priority-note" class="ops-task-priority-note">-</div>
+                </article>
+                <article class="ops-task-priority-card">
+                  <div class="ops-task-priority-label" data-dict-key="ui.label.emergency.priority.secondary">次に確認すること</div>
+                  <div id="emergency-priority-secondary-task" class="ops-task-priority-value">-</div>
+                  <div id="emergency-priority-secondary-note" class="ops-task-priority-note">-</div>
+                </article>
+              </div>
+            </div>
+          </div>
+          <details id="emergency-layer-pane-details" class="decision-details section" data-workbench-zone="true" open>
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="panel" data-v3-ops-hidden="true">
               <div class="panel-title" data-dict-key="ui.label.emergency.providerControl">Provider Control</div>
@@ -2633,9 +2780,9 @@
                         <th data-dict-key="ui.label.emergency.col.category">category</th>
                         <th data-dict-key="ui.label.emergency.col.severity">severity</th>
                         <th data-dict-key="ui.label.emergency.col.updatedAt">updatedAt</th>
-                        <th data-dict-key="ui.label.emergency.col.evidence">evidence</th>
+                        <th data-dict-key="ui.label.emergency.col.evidence" data-v3-ops-hidden="true">evidence</th>
                         <th data-dict-key="ui.label.emergency.col.actions">actions</th>
-                        <th data-dict-key="ui.label.emergency.col.traceId">traceId</th>
+                        <th data-dict-key="ui.label.emergency.col.traceId" data-v3-ops-hidden="true">traceId</th>
                       </tr>
                     </thead>
                     <tbody id="emergency-bulletin-rows"></tbody>
@@ -2690,6 +2837,38 @@
           </div>
           <div class="data-workspace-grid city-pack-workspace-grid" data-ui="city-pack-workspace-grid" data-surface-tier="primary">
             <div class="data-workspace-main">
+            <div id="city-pack-task-summary" class="panel ops-task-summary-panel city-pack-task-summary-panel" data-surface-tier="secondary">
+              <div class="panel-title" data-dict-key="ui.label.cityPack.prioritySummary">最初に確認すること</div>
+              <div class="panel-body">
+                <p class="ops-task-summary-lead" data-dict-key="ui.desc.cityPack.prioritySummary">要確認・停止中・公開中の数を先に見て、最初に開く候補を決めます。</p>
+                <div class="ops-task-stats-grid">
+                  <article class="ops-task-stat">
+                    <div class="ops-task-stat-label" data-dict-key="ui.label.cityPack.priority.total">表示中の候補</div>
+                    <div id="city-pack-summary-total" class="ops-task-stat-value">-</div>
+                  </article>
+                  <article class="ops-task-stat">
+                    <div class="ops-task-stat-label" data-dict-key="ui.label.cityPack.priority.needsReview">要確認</div>
+                    <div id="city-pack-summary-needs-review" class="ops-task-stat-value">-</div>
+                  </article>
+                  <article class="ops-task-stat">
+                    <div class="ops-task-stat-label" data-dict-key="ui.label.cityPack.priority.blocked">停止中</div>
+                    <div id="city-pack-summary-blocked" class="ops-task-stat-value">-</div>
+                  </article>
+                </div>
+                <div class="ops-task-priority-grid">
+                  <article class="ops-task-priority-card">
+                    <div class="ops-task-priority-label" data-dict-key="ui.label.cityPack.priority.primary">最初にやること</div>
+                    <div id="city-pack-priority-task" class="ops-task-priority-value">-</div>
+                    <div id="city-pack-priority-note" class="ops-task-priority-note">-</div>
+                  </article>
+                  <article class="ops-task-priority-card">
+                    <div class="ops-task-priority-label" data-dict-key="ui.label.cityPack.priority.secondary">次に確認すること</div>
+                    <div id="city-pack-priority-secondary-task" class="ops-task-priority-value">-</div>
+                    <div id="city-pack-priority-secondary-note" class="ops-task-priority-note">-</div>
+                  </article>
+                </div>
+              </div>
+            </div>
             <div class="panel unified-admin-panel city-pack-unified-panel" data-city-pack-workspace-surface="workbench">
               <div class="panel-title">City Pack一覧</div>
               <div class="panel-body">
@@ -3645,7 +3824,39 @@
               <button id="errors-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.errors.action.system">設定と回復へ</button>
             </div>
           </div>
-          <details id="errors-pane-details" class="decision-details section">
+          <div id="errors-task-summary" class="panel ops-task-summary-panel errors-task-summary-panel" data-surface-tier="secondary">
+            <div class="panel-title" data-dict-key="ui.label.errors.prioritySummary">最初に確認すること</div>
+            <div class="panel-body">
+              <p class="ops-task-summary-lead" data-dict-key="ui.desc.errors.prioritySummary">危険リンクと再送待ちの件数を先に見て、どちらから確認するかを決めます。</p>
+              <div class="ops-task-stats-grid">
+                <article class="ops-task-stat">
+                  <div class="ops-task-stat-label" data-dict-key="ui.label.errors.priority.total">今ある問題</div>
+                  <div id="errors-summary-total" class="ops-task-stat-value">-</div>
+                </article>
+                <article class="ops-task-stat">
+                  <div class="ops-task-stat-label" data-dict-key="ui.label.errors.priority.warnLinks">危険リンク</div>
+                  <div id="errors-summary-warn-links" class="ops-task-stat-value">-</div>
+                </article>
+                <article class="ops-task-stat">
+                  <div class="ops-task-stat-label" data-dict-key="ui.label.errors.priority.retryQueue">再送待ち</div>
+                  <div id="errors-summary-retry-queue" class="ops-task-stat-value">-</div>
+                </article>
+              </div>
+              <div class="ops-task-priority-grid">
+                <article class="ops-task-priority-card">
+                  <div class="ops-task-priority-label" data-dict-key="ui.label.errors.priority.primary">最初にやること</div>
+                  <div id="errors-priority-task" class="ops-task-priority-value">-</div>
+                  <div id="errors-priority-note" class="ops-task-priority-note">-</div>
+                </article>
+                <article class="ops-task-priority-card">
+                  <div class="ops-task-priority-label" data-dict-key="ui.label.errors.priority.secondary">次に確認すること</div>
+                  <div id="errors-priority-secondary-task" class="ops-task-priority-value">-</div>
+                  <div id="errors-priority-secondary-note" class="ops-task-priority-note">-</div>
+                </article>
+              </div>
+            </div>
+          </div>
+          <details id="errors-pane-details" class="decision-details section" open>
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="pane-grid">
             <div class="pane-main">
@@ -3660,7 +3871,7 @@
                   <button id="errors-to-ops" type="button" data-primary-action="pane-primary" data-dict-key="ui.label.errors.toOps">設定と回復へ進む</button>
                 </div>
               </div>
-              <details class="table-section section" data-json-collapsible="true">
+              <details id="errors-summary-details" class="table-section section" data-json-collapsible="true" data-v3-ops-hidden="true">
                 <summary data-dict-key="ui.label.errors.summary">まとめ</summary>
                 <pre id="errors-summary" data-visual-noise="evidence-placeholder">-</pre>
               </details>
@@ -3711,7 +3922,7 @@
                 <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.errors.actions">危険リンクと再送待ちを確認します。</div>
-                  <div class="note">
+                  <div class="note" data-v3-ops-hidden="true">
                     <span data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</span>:
                     <input type="text" id="errors-trace" class="input-inline input-trace" />
                     <button id="errors-regen" type="button" data-dict-key="ui.label.trace.regen">再生成</button>
@@ -3766,6 +3977,38 @@
           </div>
           <div class="data-workspace-grid read-model-workspace-grid" data-ui="read-model-workspace-grid" data-surface-tier="primary">
             <div class="data-workspace-main pane-main">
+              <div id="read-model-task-summary" class="panel ops-task-summary-panel read-model-task-summary-panel" data-surface-tier="secondary">
+                <div class="panel-title" data-dict-key="ui.label.readModel.prioritySummary">最初に確認すること</div>
+                <div class="panel-body">
+                  <p class="ops-task-summary-lead" data-dict-key="ui.desc.readModel.prioritySummary">表示中の会員数と注意点を先に見て、必要な対象だけ詳しく確認します。</p>
+                  <div class="ops-task-stats-grid">
+                    <article class="ops-task-stat">
+                      <div class="ops-task-stat-label" data-dict-key="ui.label.readModel.priority.total">表示中の会員</div>
+                      <div id="read-model-summary-total" class="ops-task-stat-value">-</div>
+                    </article>
+                    <article class="ops-task-stat">
+                      <div class="ops-task-stat-label" data-dict-key="ui.label.readModel.priority.attention">確認が必要</div>
+                      <div id="read-model-summary-attention" class="ops-task-stat-value">-</div>
+                    </article>
+                    <article class="ops-task-stat">
+                      <div class="ops-task-stat-label" data-dict-key="ui.label.readModel.priority.proActive">有料会員</div>
+                      <div id="read-model-summary-pro-active" class="ops-task-stat-value">-</div>
+                    </article>
+                  </div>
+                  <div class="ops-task-priority-grid">
+                    <article class="ops-task-priority-card">
+                      <div class="ops-task-priority-label" data-dict-key="ui.label.readModel.priority.primary">最初にやること</div>
+                      <div id="read-model-priority-task" class="ops-task-priority-value">-</div>
+                      <div id="read-model-priority-note" class="ops-task-priority-note">-</div>
+                    </article>
+                    <article class="ops-task-priority-card">
+                      <div class="ops-task-priority-label" data-dict-key="ui.label.readModel.priority.secondary">次に確認すること</div>
+                      <div id="read-model-priority-secondary-task" class="ops-task-priority-value">-</div>
+                      <div id="read-model-priority-secondary-note" class="ops-task-priority-note">-</div>
+                    </article>
+                  </div>
+                </div>
+              </div>
               <div class="panel">
                 <div class="panel-title">ユーザー一覧</div>
                 <div class="panel-body">
@@ -3923,9 +4166,11 @@
             </div>
             <div class="data-workspace-rail pane-detail" data-detail-rail="detail">
               <div class="panel">
-                <div class="panel-title" data-dict-key="ui.label.readModel.summaryTip">先に見る3項目</div>
+                <div class="panel-title" data-dict-key="ui.label.readModel.summaryTip">この画面でやること</div>
                 <div class="panel-body">
-                  <div class="note" data-dict-key="ui.desc.readModel.tip1">要対応（反応率が低い通知）を最初に確認します。</div>
+                  <div class="note" data-dict-key="ui.desc.readModel.tip1">確認が必要な会員から先に探します。</div>
+                  <div class="note" data-dict-key="ui.desc.readModel.tip2">1人選ぶと右側に詳細が出ます。</div>
+                  <div class="note" data-dict-key="ui.desc.readModel.tip3">集計や証跡は下の補助情報にまとまっています。</div>
                 </div>
               </div>
               <div class="panel">

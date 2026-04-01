@@ -20,6 +20,7 @@ test('phase653: admin app boot exposes no-collapse/top-summary flags and UI enfo
   assert.ok(js.includes('const ADMIN_NO_COLLAPSE_V1 = resolveFrontendFeatureFlag('));
   assert.ok(js.includes('const ADMIN_TOP_SUMMARY_V1 = resolveFrontendFeatureFlag('));
   assert.ok(js.includes('function enforceNoCollapseUi()'));
+  assert.ok(js.includes('function isAdminFoldAllowedDetail(detailEl)'));
   assert.ok(js.includes("summaryEl.setAttribute('aria-disabled', 'true');"));
   assert.ok(js.includes('function applyTopSummaryVisibility()'));
   assert.ok(js.includes("summaryLine.classList.add('is-hidden-by-flag');"));
@@ -27,5 +28,6 @@ test('phase653: admin app boot exposes no-collapse/top-summary flags and UI enfo
   assert.ok(js.includes('enforceNoCollapseUi();'));
 
   assert.ok(css.includes('.admin-no-collapse-v1 details > summary'));
+  assert.ok(css.includes('#home-kpi-details:not([open]) > *:not(summary)'));
   assert.ok(css.includes('.top-summary-line.is-hidden-by-flag'));
 });

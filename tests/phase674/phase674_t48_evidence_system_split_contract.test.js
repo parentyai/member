@@ -25,7 +25,11 @@ test('phase674: errors pane presents handoff-only actions for evidence and recov
   assert.ok(errorsPane.includes('id="errors-to-ops"'));
   assert.ok(js.includes("document.getElementById('errors-to-ops')?.addEventListener('click', () => {"));
   assert.ok(js.includes("activatePane('maintenance');"));
-  assert.ok(js.includes("openAuditFromSource('errors', ensureTraceInput('errors-trace') || ensureTraceInput('traceId'), { historyMode: 'push' })"));
+  assert.ok(js.includes("document.getElementById('errors-action-activate')?.addEventListener('click', () => {"));
+  assert.ok(js.includes("const summary = resolveErrorsTaskSummary();"));
+  assert.ok(js.includes("if (summary.warnLinks > 0) {"));
+  assert.ok(js.includes("activatePane('monitor');"));
+  assert.ok(js.includes("document.getElementById('errors-action-disable')?.addEventListener('click', () => {"));
 });
 
 test('phase674: audit pane stays evidence-only while system pane owns corrective actions', () => {

@@ -25,7 +25,8 @@ test('phase879: runtime and docs fix shell context, copy policy, and ops-first n
   assert.ok(dict.includes('"ui.label.llm.openAudit": "システム記録を見る"'));
   assert.ok(dict.includes('"ui.label.v3.shell.ops": "Ops UI"'));
   assert.ok(dict.includes('"ui.label.v3.nav.group.today": "Today"'));
-  assert.ok(dict.includes('"ui.desc.v3.page.home": "今日の優先タスクを確認し、最初に着手する作業を決めます。"'));
+  assert.ok(dict.includes('"ui.desc.v3.page.home": "今日やる順番を決めて、最初に開く画面へ進みます。"'));
+  assert.ok(dict.includes('"ui.desc.v3.page.alerts": "急ぎの要対応を上から確認し、必要な画面へ進みます。"'));
   assert.ok(dict.includes('"ui.label.v3.task.audit": "System Console / 記録を確認する"'));
 
   assert.ok(ssot.includes('## Admin UI v3 Shell Split（Phase879 add-only）'));

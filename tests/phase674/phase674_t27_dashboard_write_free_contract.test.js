@@ -32,6 +32,8 @@ test('phase674: dashboard keeps write actions out and exposes decision deep link
 
   assert.ok(homePane.includes('id="home-action-alerts"'));
   assert.ok(homePane.includes('data-open-pane="alerts"'));
+  assert.ok(homePane.includes('id="home-action-monitor"'));
+  assert.ok(homePane.includes('data-open-pane="monitor"'));
   assert.ok(homePane.includes('id="dashboard-link-monitor"'));
   assert.ok(homePane.includes('data-open-pane="monitor"'));
   assert.ok(homePane.includes('id="dashboard-link-read-model"'));
@@ -40,15 +42,15 @@ test('phase674: dashboard keeps write actions out and exposes decision deep link
   assert.ok(homePane.includes('data-open-pane="ops-system-health"'));
 
   assert.ok(!homePane.includes('id="home-action-edit"'));
-  assert.ok(!homePane.includes('id="home-action-monitor"'));
   assert.ok(!homePane.includes('id="home-action-read-model"'));
   assert.ok(!homePane.includes('data-open-pane="composer"'));
   assert.ok(!homePane.includes('data-open-pane="audit"'));
   assert.ok(!homePane.includes('id="home-pane-details"'));
   assert.ok(!homePane.includes('data-legacy-dashboard-details="true"'));
   assert.ok(!homePane.includes('id="dashboard-journey-kpi-result"'));
+  assert.ok(homePane.includes('id="home-kpi-details"'));
 
-  const homeActionMap = extractBlock(js, 'const PAGE_HEADER_ACTION_MAP = Object.freeze({', 'const NAV_POLICY = Object.freeze({');
+  const homeActionMap = extractBlock(js, 'const PAGE_HEADER_ACTION_MAP = Object.freeze({', 'const V3_DECISION_CARD_COPY_MAP = Object.freeze({');
   assert.ok(!homeActionMap.includes('home: Object.freeze({'));
   assert.ok(homeActionMap.includes("'city-pack': Object.freeze({"));
   assert.ok(!homeActionMap.includes("paneTarget: 'composer'"));
