@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-04-01T18:11:33-04:00",
-  "gitCommit": "76b9505d093584cb92776ae7f14b445b2e70a8c9",
+  "generatedAt": "2026-04-01T18:43:34-04:00",
+  "gitCommit": "fc2dc02c3f484d7451761cd787f973f31d2840b2",
   "branch": "codex/admin-ui-v3-taskflow",
-  "sourceDigest": "6619d4dd99cfd60c372a36b39e783ecd34f728f97aedc9bf4ce005fe5395b49b",
+  "sourceDigest": "ceb610c5e73c6704c29f8a89540f979a4bd81230eaa4e2e828e6e2f6262524bd",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
