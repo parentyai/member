@@ -26,6 +26,7 @@ test('phase674: dashboard first view caps itself to six focus tiles and keeps de
   assert.ok(homePane.includes('id="dashboard-focus-reaction-value"'));
   assert.ok(homePane.includes('id="dashboard-focus-llmBlockRate-value"'));
   assert.ok(homePane.includes('id="dashboard-focus-dependencyBlockRate-value"'));
+  assert.ok(homePane.includes('id="home-kpi-details"'));
   assert.ok(homePane.includes('class="panel dashboard-panel dashboard-panel-detail"'));
 
   assert.ok(js.includes('const DASHBOARD_FOCUS_METRICS = Object.freeze(['));

@@ -10,6 +10,8 @@ test('phase880: ops shell rewrites decision card copy and meaningful pane CTA be
   const ssot = fs.readFileSync('docs/SSOT_ADMIN_UI_OS.md', 'utf8');
 
   assert.ok(js.includes('const V3_DECISION_CARD_COPY_MAP = Object.freeze({'));
+  assert.ok(js.includes("titleKey: 'ui.label.v3.decision.home.title'"));
+  assert.ok(js.includes("titleKey: 'ui.label.v3.decision.alerts.title'"));
   assert.ok(js.includes("titleKey: 'ui.label.v3.decision.composer.title'"));
   assert.ok(js.includes("titleKey: 'ui.label.v3.decision.monitor.title'"));
   assert.ok(js.includes("titleKey: 'ui.label.v3.decision.readModel.title'"));
@@ -22,6 +24,8 @@ test('phase880: ops shell rewrites decision card copy and meaningful pane CTA be
   assert.ok(js.includes("document.getElementById('city-pack-unified-reload')?.click();"));
   assert.ok(js.includes("document.getElementById('emergency-bulletin-reload')?.click();"));
 
+  assert.ok(dict.includes('"ui.label.v3.decision.home.title": "最初にやることを決める"'));
+  assert.ok(dict.includes('"ui.label.v3.decision.alerts.secondary": "一覧を更新する"'));
   assert.ok(dict.includes('"ui.label.v3.decision.composer.title": "送信内容を整える"'));
   assert.ok(dict.includes('"ui.label.v3.decision.monitor.secondary": "結果を更新する"'));
   assert.ok(dict.includes('"ui.label.v3.decision.readModel.primary": "会員を探す"'));
@@ -29,6 +33,7 @@ test('phase880: ops shell rewrites decision card copy and meaningful pane CTA be
   assert.ok(dict.includes('"ui.label.v3.decision.emergencyLayer.secondary": "受信箱を更新する"'));
 
   assert.ok(ssot.includes('## Ops First-View Noise Budget（Phase880 add-only）'));
+  assert.ok(ssot.includes('## Home / Alerts Task-First Surface（Phase881 add-only）'));
   assert.ok(ssot.includes('`data-v3-ops-hidden="true"`'));
   assert.ok(ssot.includes('`data-v3-advanced-filter="true"`'));
 });

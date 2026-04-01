@@ -15,6 +15,7 @@ function extractPaneSection(html, paneId) {
 test('phase674: v2 foundation adds semantic shell and pane surface markers', () => {
   const html = fs.readFileSync('apps/admin/app.html', 'utf8');
   const homePane = extractPaneSection(html, 'home');
+  const alertsPane = extractPaneSection(html, 'alerts');
   const composerPane = extractPaneSection(html, 'composer');
   const monitorPane = extractPaneSection(html, 'monitor');
   const cityPackPane = extractPaneSection(html, 'city-pack');
@@ -35,6 +36,9 @@ test('phase674: v2 foundation adds semantic shell and pane surface markers', () 
   assert.match(homePane, /id="home-reflection-next"[^>]*data-next-action="home-reflection"/);
   assert.match(homePane, /class="panel dashboard-focus-panel"[^>]*data-surface-tier="primary"/);
   assert.match(homePane, /class="panel dashboard-panel dashboard-panel-detail"[^>]*data-surface-tier="secondary"/);
+  assert.match(alertsPane, /data-pane-mode="evidence-review"/);
+  assert.match(alertsPane, /id="alerts-decision-card"[^>]*data-surface-tier="hero"/);
+  assert.match(alertsPane, /class="panel alerts-priority-panel"[^>]*data-surface-tier="secondary"/);
 
   assert.match(composerPane, /data-pane-mode="notification-workbench"/);
   assert.match(composerPane, /id="composer-inputs"[^>]*data-surface-tier="primary"/);

@@ -392,6 +392,7 @@
               </div>
               <div class="decision-actions">
                 <button id="home-action-alerts" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="alerts" data-primary-action="pane-primary">要対応を確認</button>
+                <button id="home-action-monitor" type="button" class="decision-action-btn" data-action-kind="secondary" data-open-pane="monitor">配信結果を見る</button>
               </div>
             </div>
             <div id="home-reflection-state" class="panel data-reflection-panel" data-reflection-pane="home" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
@@ -416,13 +417,25 @@
                   <div class="note">本日配信予定: <strong id="dashboard-summary-scheduled-today">-</strong></div>
                   <div class="note">登録者数（直近）: <strong id="dashboard-summary-registered-count">-</strong></div>
                 </div>
+                <div class="dashboard-priority-grid">
+                  <article class="dashboard-priority-card">
+                    <div class="dashboard-priority-label" data-dict-key="ui.label.home.primaryStep">最初にやること</div>
+                    <div id="dashboard-summary-primary-task" class="dashboard-priority-value">-</div>
+                    <div id="dashboard-summary-primary-note" class="dashboard-priority-note">-</div>
+                  </article>
+                  <article class="dashboard-priority-card">
+                    <div class="dashboard-priority-label" data-dict-key="ui.label.home.secondaryStep">次に確認すること</div>
+                    <div id="dashboard-summary-secondary-task" class="dashboard-priority-value">-</div>
+                    <div id="dashboard-summary-secondary-note" class="dashboard-priority-note">-</div>
+                  </article>
+                </div>
               </div>
             </div>
             <div class="panel dashboard-focus-panel" data-surface-tier="primary">
               <div class="panel-title" data-dict-key="ui.label.home.todayFocus">今日の判断</div>
               <div class="panel-body dashboard-focus-body">
                 <p class="dashboard-focus-lead" data-dict-key="ui.desc.home.todayFocus">今すぐ確認すべき6指標を先に見て、必要なら詳細KPIへ進みます。</p>
-                <div class="row dashboard-controls">
+                <div class="row dashboard-controls" data-v3-ops-hidden="true">
                   <label for="dashboard-window-months" data-dict-key="ui.label.home.window">期間</label>
                   <select id="dashboard-window-months" class="select-inline">
                     <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
@@ -471,7 +484,7 @@
                     <div id="dashboard-focus-dependencyBlockRate-note" class="dashboard-focus-note">-</div>
                   </article>
                 </div>
-                <div class="dashboard-next-links">
+                <div class="dashboard-next-links" data-v3-ops-hidden="true">
                   <div class="dashboard-next-links-title" data-dict-key="ui.label.home.nextDestinations">行き先</div>
                   <div class="dashboard-secondary-links" data-dashboard-links="focus">
                     <button id="dashboard-link-monitor" type="button" class="secondary-btn dashboard-link-btn" data-open-pane="monitor" data-dict-key="ui.label.home.task.monitor">配信結果を確認</button>
@@ -482,10 +495,14 @@
               </div>
             </div>
           </div>
-          <div class="panel dashboard-panel dashboard-panel-detail" data-surface-tier="secondary">
-            <div class="panel-title" data-dict-key="ui.label.home.primaryMetrics">判断指標</div>
-            <div class="panel-body">
-              <p class="dashboard-panel-lead" data-dict-key="ui.desc.home.primaryMetrics">利用状況、配信成果、運用リスクの順に確認します。</p>
+          <details id="home-kpi-details" class="dashboard-details-disclosure" data-surface-tier="secondary" data-admin-fold-allowed="true">
+            <summary>
+              <span data-dict-key="ui.label.home.primaryMetrics">判断指標</span>
+              <span class="dashboard-details-summary-note" data-dict-key="ui.desc.home.metricsDisclosure">必要なときだけ詳細を見る</span>
+            </summary>
+            <div class="panel dashboard-panel dashboard-panel-detail" data-surface-tier="secondary">
+              <div class="panel-body">
+                <p class="dashboard-panel-lead" data-dict-key="ui.desc.home.primaryMetrics">利用状況、配信成果、運用リスクの順に確認します。</p>
               <section class="dashboard-kpi-band" data-dashboard-band="usage">
                 <div class="dashboard-kpi-band-header">
                   <div class="dashboard-kpi-band-title" data-dict-key="ui.label.home.band.usage">利用状況</div>
@@ -753,8 +770,9 @@
                 </div>
                 </div>
               </section>
+              </div>
             </div>
-          </div>
+          </details>
         </section>
 
         <section id="pane-ops-feature-catalog" class="app-pane" data-pane="ops-feature-catalog" data-pane-mode="system-diagnostics" data-task-context="feature-catalog-health" data-surface-tier="workspace">
@@ -811,7 +829,40 @@
         </section>
 
         <section id="pane-alerts" class="app-pane" data-pane="alerts" data-pane-mode="evidence-review" data-task-context="alert-triage" data-surface-tier="workspace">
-          <div class="panel">
+          <div class="alerts-first-view-grid">
+            <div class="decision-card" id="alerts-decision-card" data-surface-tier="hero">
+              <div class="decision-card-header">
+                <div class="decision-title">最初の案件から着手する</div>
+                <span id="alerts-decision-state" class="decision-state state-ready">READY</span>
+              </div>
+              <div id="alerts-decision-reason1" class="decision-reason">-</div>
+              <div id="alerts-decision-reason2" class="decision-reason">-</div>
+              <div class="decision-updated">
+                <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
+                <span id="alerts-decision-updated">-</span>
+              </div>
+              <div class="decision-actions">
+                <button id="alerts-action-open" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="monitor" data-primary-action="pane-primary">最初の案件へ進む</button>
+                <button id="alerts-action-reload" type="button" class="decision-action-btn" data-action-kind="secondary">一覧を更新する</button>
+              </div>
+            </div>
+            <div class="panel alerts-priority-panel" data-surface-tier="secondary">
+              <div class="panel-title" data-dict-key="ui.label.alerts.prioritySummary">優先順位サマリ</div>
+              <div class="panel-body alerts-priority-body">
+                <p id="alerts-priority-lead" class="alerts-priority-lead">-</p>
+                <div class="alerts-priority-grid">
+                  <div class="note">未対応合計: <strong id="alerts-priority-open-count">-</strong></div>
+                  <div class="note">緊急: <strong id="alerts-priority-danger-count">-</strong></div>
+                  <div class="note">注意: <strong id="alerts-priority-warn-count">-</strong></div>
+                </div>
+                <div class="alerts-next-step">
+                  <div class="alerts-next-step-label" data-dict-key="ui.label.alerts.nextStep">次に開く画面</div>
+                  <div id="alerts-priority-next-step" class="alerts-next-step-value">-</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="panel alerts-list-panel">
             <div class="panel-title" data-dict-key="ui.label.alerts.title">要対応一覧</div>
             <div class="panel-body">
               <div class="row">

@@ -971,6 +971,24 @@ const PAGE_HEADER_ACTION_MAP = Object.freeze({
 });
 
 const V3_DECISION_CARD_COPY_MAP = Object.freeze({
+  home: Object.freeze({
+    titleKey: 'ui.label.v3.decision.home.title',
+    titleFallback: '最初にやることを決める',
+    primaryKey: 'ui.label.v3.decision.home.primary',
+    primaryFallback: '要対応を確認する',
+    secondaryKey: 'ui.label.v3.decision.home.secondary',
+    secondaryFallback: '配信結果を見る',
+    hideTertiary: true
+  }),
+  alerts: Object.freeze({
+    titleKey: 'ui.label.v3.decision.alerts.title',
+    titleFallback: '最初の案件から着手する',
+    primaryKey: 'ui.label.v3.decision.alerts.primary',
+    primaryFallback: '最初の案件へ進む',
+    secondaryKey: 'ui.label.v3.decision.alerts.secondary',
+    secondaryFallback: '一覧を更新する',
+    hideTertiary: true
+  }),
   composer: Object.freeze({
     titleKey: 'ui.label.v3.decision.composer.title',
     titleFallback: '送信内容を整える',
@@ -2914,6 +2932,10 @@ function syncV3DecisionCard(paneKey) {
   }
 }
 
+function isAdminFoldAllowedDetail(detailEl) {
+  return Boolean(detailEl && detailEl.getAttribute('data-admin-fold-allowed') === 'true');
+}
+
 function isNavItemVisibleForCurrentShell(element) {
   if (!element || element.getAttribute('data-nav-item-visible') === 'false') return false;
   if (element.classList.contains('role-hidden') || element.getAttribute('aria-hidden') === 'true') return false;
@@ -4242,6 +4264,14 @@ function enforceNoCollapseUi() {
       if (!el.hasAttribute('open')) el.open = false;
       return;
     }
+    if (isAdminFoldAllowedDetail(el)) {
+      if (summaryEl) {
+        summaryEl.removeAttribute('aria-disabled');
+        summaryEl.removeAttribute('tabindex');
+      }
+      if (!el.hasAttribute('open')) el.open = false;
+      return;
+    }
     el.open = true;
     if (el.dataset.noCollapseBound === '1') return;
     el.dataset.noCollapseBound = '1';
@@ -4385,6 +4415,9 @@ function setupHomeControls() {
     void loadDashboardKpis({ notify: false });
   });
   document.getElementById('alerts-reload')?.addEventListener('click', () => {
+    void loadAlertsSummary({ notify: true });
+  });
+  document.getElementById('alerts-action-reload')?.addEventListener('click', () => {
     void loadAlertsSummary({ notify: true });
   });
   document.getElementById('ops-feature-catalog-reload')?.addEventListener('click', () => {
@@ -7233,9 +7266,48 @@ function resolveTopbarStatusFromState() {
   const scheduledTodayCount = Number.isFinite(Number(totals.scheduledTodayCount)) ? Number(totals.scheduledTodayCount) : null;
   const openAlerts = Number.isFinite(Number(totals.openAlerts)) ? Number(totals.openAlerts) : null;
   state.topbarStatus = {
+    registeredCountValue: registrationMetric && registrationMetric.available === true
+      ? (
+        Array.isArray(registrationMetric.series) && registrationMetric.series.length
+          ? Number(registrationMetric.series[registrationMetric.series.length - 1])
+          : null
+      )
+      : null,
+    scheduledTodayCount,
+    openAlertsCount: openAlerts,
     registeredCountLabel: registeredCountLabel || '-',
     scheduledTodayCountLabel: scheduledTodayCount === null ? '-' : String(scheduledTodayCount),
     openAlertsLabel: openAlerts === null ? '-' : String(openAlerts)
+  };
+}
+
+function resolveHomeTaskSummary() {
+  const summary = state.topbarStatus && typeof state.topbarStatus === 'object' ? state.topbarStatus : {};
+  const openAlerts = Number.isFinite(Number(summary.openAlertsCount)) ? Number(summary.openAlertsCount) : 0;
+  const scheduledToday = Number.isFinite(Number(summary.scheduledTodayCount)) ? Number(summary.scheduledTodayCount) : 0;
+  if (openAlerts > 0) {
+    return {
+      primaryTask: t('ui.label.v3.decision.home.primary', '要対応を確認する'),
+      primaryNote: `${openAlerts}${t('ui.desc.home.primaryStep.alertsSuffix', '件の要対応があります。最初に一覧を確認します。')}`,
+      secondaryTask: t('ui.label.v3.decision.home.secondary', '配信結果を見る'),
+      secondaryNote: scheduledToday > 0
+        ? `${scheduledToday}${t('ui.desc.home.secondaryStep.monitorWithScheduleSuffix', '件の配信予定もあります。要対応のあとに結果を確認します。')}`
+        : t('ui.desc.home.secondaryStep.monitor', '要対応のあとに配信結果を確認します。')
+    };
+  }
+  if (scheduledToday > 0) {
+    return {
+      primaryTask: t('ui.label.v3.decision.home.secondary', '配信結果を見る'),
+      primaryNote: `${scheduledToday}${t('ui.desc.home.primaryStep.monitorWithScheduleSuffix', '件の配信予定があります。先に結果を確認します。')}`,
+      secondaryTask: t('ui.label.home.secondaryTask.members', '会員の動きを確認する'),
+      secondaryNote: t('ui.desc.home.secondaryStep.members', '必要なときだけ会員一覧に進みます。')
+    };
+  }
+  return {
+    primaryTask: t('ui.label.v3.decision.home.secondary', '配信結果を見る'),
+    primaryNote: t('ui.desc.home.primaryStep.monitorReady', '緊急の要対応はありません。まず配信結果を確認します。'),
+    secondaryTask: t('ui.label.home.secondaryTask.members', '会員の動きを確認する'),
+    secondaryNote: t('ui.desc.home.secondaryStep.members', '必要なときだけ会員一覧に進みます。')
   };
 }
 
@@ -7243,11 +7315,20 @@ function renderHomeDecisionSummary() {
   const openAlertsEl = document.getElementById('dashboard-summary-open-alerts');
   const scheduledTodayEl = document.getElementById('dashboard-summary-scheduled-today');
   const registeredCountEl = document.getElementById('dashboard-summary-registered-count');
-  if (!openAlertsEl && !scheduledTodayEl && !registeredCountEl) return;
+  const primaryTaskEl = document.getElementById('dashboard-summary-primary-task');
+  const primaryNoteEl = document.getElementById('dashboard-summary-primary-note');
+  const secondaryTaskEl = document.getElementById('dashboard-summary-secondary-task');
+  const secondaryNoteEl = document.getElementById('dashboard-summary-secondary-note');
+  if (!openAlertsEl && !scheduledTodayEl && !registeredCountEl && !primaryTaskEl && !primaryNoteEl && !secondaryTaskEl && !secondaryNoteEl) return;
   const summary = state.topbarStatus && typeof state.topbarStatus === 'object' ? state.topbarStatus : {};
+  const taskSummary = resolveHomeTaskSummary();
   if (openAlertsEl) openAlertsEl.textContent = summary.openAlertsLabel || '-';
   if (scheduledTodayEl) scheduledTodayEl.textContent = summary.scheduledTodayCountLabel || '-';
   if (registeredCountEl) registeredCountEl.textContent = summary.registeredCountLabel || '-';
+  if (primaryTaskEl) primaryTaskEl.textContent = taskSummary.primaryTask;
+  if (primaryNoteEl) primaryNoteEl.textContent = taskSummary.primaryNote;
+  if (secondaryTaskEl) secondaryTaskEl.textContent = taskSummary.secondaryTask;
+  if (secondaryNoteEl) secondaryNoteEl.textContent = taskSummary.secondaryNote;
 }
 
 async function loadTopbarStatus() {
@@ -7401,6 +7482,12 @@ async function fetchDashboardKpiByMonths(windowMonths, traceId, options) {
 function renderAlertsSummary(payload) {
   const body = document.getElementById('alerts-rows');
   const note = document.getElementById('alerts-summary-note');
+  const priorityLeadEl = document.getElementById('alerts-priority-lead');
+  const openCountEl = document.getElementById('alerts-priority-open-count');
+  const dangerCountEl = document.getElementById('alerts-priority-danger-count');
+  const warnCountEl = document.getElementById('alerts-priority-warn-count');
+  const nextStepEl = document.getElementById('alerts-priority-next-step');
+  const primaryActionEl = document.getElementById('alerts-action-open');
   if (!body) return;
   body.innerHTML = '';
   const rawRows = payload && Array.isArray(payload.items) ? payload.items : [];
@@ -7445,11 +7532,47 @@ function renderAlertsSummary(payload) {
     });
   }
   const totals = payload && payload.totals ? payload.totals : {};
-  if (note) {
-    const open = Number.isFinite(Number(totals.openAlerts)) ? Number(totals.openAlerts) : 0;
-    const scheduled = Number.isFinite(Number(totals.scheduledTodayCount)) ? Number(totals.scheduledTodayCount) : 0;
-    note.textContent = `${t('ui.label.alerts.summary', '要対応合計')}: ${open} / ${t('ui.label.top.todayScheduled', '本日配信予定件数')}: ${scheduled}`;
+  const openAlerts = Number.isFinite(Number(totals.openAlerts)) ? Number(totals.openAlerts) : 0;
+  const scheduled = Number.isFinite(Number(totals.scheduledTodayCount)) ? Number(totals.scheduledTodayCount) : 0;
+  const dangerCount = rows.filter((item) => String(item && item.severity || '').toUpperCase() === 'DANGER').length;
+  const warnCount = rows.filter((item) => String(item && item.severity || '').toUpperCase() === 'WARN').length;
+  const topItem = rows[0] && typeof rows[0] === 'object' ? rows[0] : null;
+  const topActionPane = topItem && typeof topItem.actionPane === 'string' && topItem.actionPane.trim()
+    ? topItem.actionPane.trim()
+    : 'monitor';
+  const topActionLabel = topItem && topItem.actionLabel
+    ? topItem.actionLabel
+    : t('ui.label.v3.decision.alerts.primary', '最初の案件へ進む');
+  if (priorityLeadEl) {
+    priorityLeadEl.textContent = topItem
+      ? `${normalizeCopyForRole(topItem.typeLabel || '-', state.role)}${t('ui.desc.alerts.priorityLead.topItemSuffix', ' から着手できます。')}`
+      : scheduled > 0
+        ? `${scheduled}${t('ui.desc.alerts.priorityLead.scheduledSuffix', '件の配信予定があります。更新して新しい要対応を確認できます。')}`
+        : t('ui.desc.alerts.priorityLead.empty', '今すぐの要対応はありません。新しい案件が入ったらここから確認できます。');
   }
+  if (openCountEl) openCountEl.textContent = String(openAlerts);
+  if (dangerCountEl) dangerCountEl.textContent = String(dangerCount);
+  if (warnCountEl) warnCountEl.textContent = String(warnCount);
+  if (nextStepEl) {
+    nextStepEl.textContent = topItem
+      ? normalizeCopyForRole(topActionLabel, state.role)
+      : t('ui.label.alerts.nextStepIdle', '新しい要対応を待機');
+  }
+  if (primaryActionEl) {
+    primaryActionEl.textContent = normalizeCopyForRole(topActionLabel, state.role);
+    primaryActionEl.setAttribute('data-open-pane', topActionPane);
+    if (topItem) {
+      primaryActionEl.disabled = false;
+      primaryActionEl.removeAttribute('aria-disabled');
+    } else {
+      primaryActionEl.disabled = true;
+      primaryActionEl.setAttribute('aria-disabled', 'true');
+    }
+  }
+  if (note) {
+    note.textContent = `${t('ui.label.alerts.summary', '要対応合計')}: ${openAlerts} / ${t('ui.label.top.todayScheduled', '本日配信予定件数')}: ${scheduled}`;
+  }
+  renderDecisionCard('alerts', resolveAlertsDecisionVm());
 }
 
 async function loadAlertsSummary(options) {
@@ -7696,6 +7819,7 @@ function resolveVendorsDecisionVm() {
 }
 
 function resolveHomeDecisionVm() {
+  const taskSummary = resolveHomeTaskSummary();
   const snapshot = state.opsSystemSnapshot && typeof state.opsSystemSnapshot === 'object'
     ? state.opsSystemSnapshot
     : null;
@@ -7715,8 +7839,8 @@ function resolveHomeDecisionVm() {
     const reasons = buildDecisionReasons(pendingCount, primary);
     return {
       state: decisionState,
-      reason1: reasons.reason1,
-      reason2: reasons.reason2,
+      reason1: taskSummary.primaryNote || reasons.reason1,
+      reason2: taskSummary.secondaryNote || reasons.reason2,
       updatedAt: resolvePaneUpdatedAt('home')
     };
   }
@@ -7725,14 +7849,42 @@ function resolveHomeDecisionVm() {
   const reasons = buildDecisionReasons(counts.DANGER || 0, state.topCauses || '-');
   return {
     state: decisionState,
-    reason1: reasons.reason1,
-    reason2: reasons.reason2,
+    reason1: taskSummary.primaryNote || reasons.reason1,
+    reason2: taskSummary.secondaryNote || reasons.reason2,
     updatedAt: resolvePaneUpdatedAt('home')
+  };
+}
+
+function resolveAlertsDecisionVm() {
+  const payload = state.alertsSummary && typeof state.alertsSummary === 'object' ? state.alertsSummary : {};
+  const rows = Array.isArray(payload.items) ? payload.items : [];
+  const totals = payload.totals && typeof payload.totals === 'object' ? payload.totals : {};
+  const openAlerts = Number.isFinite(Number(totals.openAlerts)) ? Number(totals.openAlerts) : 0;
+  const dangerCount = rows.filter((item) => String(item && item.severity || '').toUpperCase() === 'DANGER').length;
+  const warnCount = rows.filter((item) => String(item && item.severity || '').toUpperCase() === 'WARN').length;
+  const topItem = rows[0] && typeof rows[0] === 'object' ? rows[0] : null;
+  const decisionState = dangerCount > 0
+    ? 'STOP'
+    : openAlerts > 0 || warnCount > 0
+      ? 'ATTENTION'
+      : 'READY';
+  const reason1 = topItem
+    ? `${normalizeCopyForRole(topItem.typeLabel || '-', state.role)}${t('ui.desc.alerts.decision.topItemSuffix', ' から着手してください。')}`
+    : t('ui.desc.alerts.decision.empty', '今すぐの要対応はありません。');
+  const reason2 = openAlerts > 0
+    ? `${t('ui.label.alerts.summary', '要対応合計')}: ${openAlerts} / ${t('ui.label.alerts.priorityDanger', '緊急')}: ${dangerCount} / ${t('ui.label.alerts.priorityWarn', '注意')}: ${warnCount}`
+    : t('ui.desc.alerts.decision.ready', '新しい要対応が入ったら、この画面から次の対応に進めます。');
+  return {
+    state: decisionState,
+    reason1,
+    reason2,
+    updatedAt: resolvePaneUpdatedAt('alerts')
   };
 }
 
 function renderAllDecisionCards() {
   renderDecisionCard('home', resolveHomeDecisionVm());
+  renderDecisionCard('alerts', resolveAlertsDecisionVm());
   renderDecisionCard('composer', resolveComposerDecisionVm());
   renderDecisionCard('monitor', resolveMonitorDecisionVm());
   renderDecisionCard('errors', resolveErrorsDecisionVm());
