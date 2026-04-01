@@ -520,6 +520,46 @@ test('phase719: ambiguous short utterance resumes recent school context via orch
   assert.equal(summary.orchestratorPathUsed, true);
 });
 
+test('phase719: paid school district-known immunization one-step question stays on school procedure instead of generic fallback', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_V1_CHANNEL_EDGE: 'false',
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs();
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const body = createWebhookBody('学校の途中編入で、district は決まっている。予防接種も気になる。今日やることを1つだけ教えて。');
+  const result = await loaded.handleLineWebhook({
+    body,
+    signature: signBody(body),
+    requestId: 'phase719_school_district_known_immunization_one_step_contract',
+    logger: () => {},
+    allowWelcome: false,
+    replyFn: async () => {}
+  });
+
+  assert.equal(result.status, 200);
+  const replyText = latestAssistantReplyText(loaded);
+  const lastWrite = loaded.actionLogWrites[loaded.actionLogWrites.length - 1];
+  assert.match(replyText, /予防接種|immunization/);
+  assert.match(replyText, /district/);
+  assert.equal(replyText.includes('学校手続きですね。'), false);
+  assert.equal(replyText.includes('住む予定の city \\/ district を1つ仮置き'), false);
+  assert.equal(replyText.includes('身分証、住居、金融、通信、医療導線'), false);
+  assert.equal(lastWrite.selectedCandidateKind, 'domain_concierge_candidate');
+  assert.equal(lastWrite.domainIntent, 'school');
+  assert.equal(lastWrite.requestShape, 'answer');
+  assert.equal(lastWrite.followupQuestionIncluded, false);
+  assert.equal(lastWrite.directAnswerApplied, true);
+});
+
 test('phase719: paid domain intents never fall back to free retrieval across blocked paths', { concurrency: false }, async (t) => {
   const scenarios = [
     {

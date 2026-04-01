@@ -239,6 +239,9 @@ function resolveProcedureComplexity(messageText, followupIntent, requestContract
   const outputForm = normalizeText(requestContract && requestContract.outputForm).toLowerCase();
   if (outputForm === 'one_line') return 'compressed';
   if (outputForm === 'two_sentences') return 'short';
+  if (/((今日やること|今日の一手).*((1つ|一つ|1個|一個)).*(教えて|だけ))|((1つ|一つ)だけ.*(今日やること|今日の一手))/i.test(normalizedMessage)) {
+    return 'compressed';
+  }
   if (followupIntent && normalizedMessage.length <= 16) return 'compressed';
   if (/(流れ|手順|順番|全体工程|ざっくり|途中編入|何から|どうやって)/.test(normalizedMessage)) return 'full';
   if (normalizedMessage.length >= 28) return 'short';
@@ -260,9 +263,41 @@ function resolveLocationKnown(locationHint) {
   return Boolean(normalizeText(payload.cityKey) || normalizeText(payload.regionKey) || normalizeText(payload.state));
 }
 
-function resolveOfficialCheckTargets(domainSpec, locationKnown, knowledgeMode) {
+function mentionsSchoolImmunization(messageText) {
+  return /(予防接種|immunization|vaccin)/i.test(normalizeText(messageText));
+}
+
+function resolveSchoolTargetChosen(domainIntent, locationHint, messageText) {
+  if (normalizeProcedureDomain(domainIntent) !== 'school') return false;
+  if (resolveLocationKnown(locationHint)) return true;
+  return /((district|学区|対象校).*(決まっている|決まってる|決めている|決めてる|決定している|決定済み|固まっている|絞れている|分かっている|わかっている))|((district|学区|対象校).*(もう決めた|もうある))/i.test(
+    normalizeText(messageText)
+  );
+}
+
+function resolveOfficialCheckTargets(domainSpec, params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const locationKnown = payload.locationKnown === true;
+  const knowledgeMode = normalizeText(payload.knowledgeMode).toLowerCase();
+  const domainIntent = normalizeProcedureDomain(payload.domainIntent);
+  const schoolTargetChosen = payload.schoolTargetChosen === true;
+  const immunizationConcern = payload.immunizationConcern === true;
   const targets = uniqueRawStrings(domainSpec.officialCheckTargets, 3);
   if (targets.length === 0) return [];
+  if (domainIntent === 'school' && schoolTargetChosen && immunizationConcern) {
+    return uniqueRawStrings([
+      'district immunization requirements page',
+      'district enrollment / registration page',
+      'school registration or appointment page'
+    ], 3);
+  }
+  if (domainIntent === 'school' && schoolTargetChosen) {
+    return uniqueRawStrings([
+      'district enrollment / registration page',
+      'district immunization requirements page',
+      'school registration or appointment page'
+    ], 3);
+  }
   if (locationKnown) return targets;
   if (knowledgeMode === 'rule_check') return targets.slice(0, 2);
   return targets.slice(0, 1);
@@ -273,6 +308,8 @@ function resolveDirectAnswer(params) {
   const domainIntent = normalizeProcedureDomain(payload.domainIntent);
   const followupIntent = normalizeText(payload.followupIntent).toLowerCase();
   const locationKnown = payload.locationKnown === true;
+  const schoolTargetChosen = payload.schoolTargetChosen === true;
+  const immunizationConcern = payload.immunizationConcern === true;
   const messageText = normalizeText(payload.messageText);
 
   if (followupIntent === 'docs_required') {
@@ -295,6 +332,12 @@ function resolveDirectAnswer(params) {
 
   if (followupIntent === 'next_step') {
     if (domainIntent === 'school') {
+      if (schoolTargetChosen && immunizationConcern) {
+        return '予防接種が気になるなら、今日やる一手は決まっている district の immunization requirements page を開いて、必要な接種記録と不足分を確認することです。';
+      }
+      if (schoolTargetChosen) {
+        return 'district が決まっているなら、いまやる一手はその district の enrollment / registration ページで必要書類と受付スケジュールを見ることです。';
+      }
       return locationKnown
         ? 'いまやる一手は、対象校か district を1つ決めて enrollment / registration ページの必要書類と受付スケジュールを見ることです。'
         : 'いまやる一手は、住む予定の city / district を1つ仮置きして教育窓口の enrollment ページを開くことです。';
@@ -305,12 +348,24 @@ function resolveDirectAnswer(params) {
   }
 
   if (domainIntent === 'school' && /(途中編入|編入|転校)/.test(messageText)) {
+    if (schoolTargetChosen && immunizationConcern) {
+      return '途中編入で予防接種も気になるなら、まず決まっている district の immunization requirements page を開いて、必要な接種記録と不足分を確認するのが確実です。';
+    }
+    if (schoolTargetChosen) {
+      return '途中編入は一律の期限で決まるのではなく district と school の enrollment 条件で決まるので、まず決まっている district の受付スケジュールと必要書類を見るのが確実です。';
+    }
     return locationKnown
       ? '途中編入は一律の期限で決まるのではなく district と school の enrollment / registration 条件で決まるので、まず対象 district の受付スケジュールを確認するのが確実です。'
       : '途中編入は一律の期限で決まるのではなく district ごとの enrollment 条件で決まるので、まず住む予定の city / district を1つ仮置きして教育窓口の受付スケジュールを見るのが確実です。';
   }
 
   if (domainIntent === 'school') {
+    if (schoolTargetChosen && immunizationConcern) {
+      return '学校手続きは district が決まっているなら、予防接種要件の確認を先に置くと今日の一手がはっきりします。';
+    }
+    if (schoolTargetChosen) {
+      return '学校手続きは district が決まっているなら、必要書類と受付スケジュールの確認から始めると進めやすいです。';
+    }
     return locationKnown
       ? '学校手続きは、対象校の条件確認 -> 必要書類と予防接種要件の確認 -> 登録日程の確定の順で見ると進めやすいです。'
       : '学校手続きは、住む予定の city / district を仮置きして確認先を決めるところから始めると進めやすいです。';
@@ -325,7 +380,15 @@ function resolveNextBestAction(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const domainIntent = normalizeProcedureDomain(payload.domainIntent);
   const locationKnown = payload.locationKnown === true;
+  const schoolTargetChosen = payload.schoolTargetChosen === true;
+  const immunizationConcern = payload.immunizationConcern === true;
   if (domainIntent === 'school') {
+    if (schoolTargetChosen && immunizationConcern) {
+      return '決まっている district の immunization requirements page を開いて、必要な接種記録と不足分をメモする';
+    }
+    if (schoolTargetChosen) {
+      return '決まっている district の enrollment / registration ページで必要書類と受付スケジュールを確認する';
+    }
     return locationKnown
       ? '対象校か district を1つ決めて、enrollment / registration ページの「必要書類」と「受付スケジュール」を確認する'
       : '住む予定の city / district を1つ仮置きして、その教育窓口の enrollment / registration ページを開く';
@@ -339,6 +402,7 @@ function resolveNextBestAction(params) {
 function resolveDecisionCriticalMissingFacts(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const domainSpec = resolveProcedureKnowledgeSpec(payload.domainIntent);
+  const domainIntent = normalizeProcedureDomain(payload.domainIntent);
   const requestContract = payload.requestContract && typeof payload.requestContract === 'object'
     ? payload.requestContract
     : {};
@@ -346,22 +410,28 @@ function resolveDecisionCriticalMissingFacts(params) {
     ? requestContract.locationHint
     : {};
   const messageText = normalizeText(payload.messageText);
+  const schoolTargetChosen = payload.schoolTargetChosen === true;
+  const immunizationConcern = payload.immunizationConcern === true;
+  const oneStepPrompt = /((今日やること|今日の一手).*((1つ|一つ|1個|一個)).*(教えて|だけ))|((1つ|一つ)だけ.*(今日やること|今日の一手))/i.test(messageText);
   const missing = [];
 
-  if (!resolveLocationKnown(locationHint) && /学校|school|housing|住まい|ssn|銀行|banking/i.test(messageText)) {
+  if (!resolveLocationKnown(locationHint) && schoolTargetChosen !== true && /学校|school|housing|住まい|ssn|銀行|banking/i.test(messageText)) {
     const cityLikeMissing = domainSpec.missingFacts[0];
     if (cityLikeMissing) missing.push(cityLikeMissing);
   }
-  if (normalizeProcedureDomain(payload.domainIntent) === 'school' && !/学年|年齢|grade|kindergarten|elementary|middle|high/i.test(messageText)) {
+  if (domainIntent === 'school' && schoolTargetChosen === true && (immunizationConcern === true || oneStepPrompt === true)) {
+    return [];
+  }
+  if (domainIntent === 'school' && !/学年|年齢|grade|kindergarten|elementary|middle|high/i.test(messageText)) {
     missing.push('子どもの学年または年齢');
   }
-  if (normalizeProcedureDomain(payload.domainIntent) === 'housing' && !/家賃|予算|budget/i.test(messageText)) {
+  if (domainIntent === 'housing' && !/家賃|予算|budget/i.test(messageText)) {
     missing.push('家賃レンジ');
   }
-  if (normalizeProcedureDomain(payload.domainIntent) === 'ssn' && !/visa|在留|就労|work/i.test(messageText)) {
+  if (domainIntent === 'ssn' && !/visa|在留|就労|work/i.test(messageText)) {
     missing.push('在留ステータスまたは就労状況');
   }
-  if (normalizeProcedureDomain(payload.domainIntent) === 'banking' && !/bank|銀行|口座|checking|savings/i.test(messageText)) {
+  if (domainIntent === 'banking' && !/bank|銀行|口座|checking|savings/i.test(messageText)) {
     missing.push('使いたい銀行または口座の用途');
   }
   return uniqueRawStrings(missing, 3);
@@ -412,14 +482,29 @@ function resolveProcedureReplyPacket(params) {
     ? requestContract.locationHint
     : {};
   const locationKnown = resolveLocationKnown(locationHint);
+  const schoolTargetChosen = resolveSchoolTargetChosen(domainIntent, locationHint, payload.messageText);
+  const immunizationConcern = mentionsSchoolImmunization(payload.messageText);
   const knowledgeMode = resolveKnowledgeMode(payload.messageText, payload.followupIntent, domainSpec);
   const procedureComplexity = resolveProcedureComplexity(payload.messageText, payload.followupIntent, requestContract);
-  const officialCheckTargets = resolveOfficialCheckTargets(domainSpec, locationKnown, knowledgeMode);
-  const nextBestAction = resolveNextBestAction({ domainIntent, locationKnown });
+  const officialCheckTargets = resolveOfficialCheckTargets(domainSpec, {
+    locationKnown,
+    knowledgeMode,
+    domainIntent,
+    schoolTargetChosen,
+    immunizationConcern
+  });
+  const nextBestAction = resolveNextBestAction({
+    domainIntent,
+    locationKnown,
+    schoolTargetChosen,
+    immunizationConcern
+  });
   const decisionCriticalMissingFacts = resolveDecisionCriticalMissingFacts({
     domainIntent,
     requestContract,
-    messageText: payload.messageText
+    messageText: payload.messageText,
+    schoolTargetChosen,
+    immunizationConcern
   });
   const supportingSourceRefs = collectEvidenceRefs(payload);
   const rawSourceLayer = buildRawSourceLayer(supportingSourceRefs, domainIntent, locationHint);
@@ -441,6 +526,7 @@ function resolveProcedureReplyPacket(params) {
     procedureComplexity,
     knowledgeMode,
     locationKnown,
+    schoolTargetChosen,
     relevanceAnchor: normalizeText(payload.messageText).slice(0, 120),
     fitRisk: decisionCriticalMissingFacts.length > 1 ? 'medium' : 'low',
     decisionCriticalMissingFacts,
@@ -448,6 +534,8 @@ function resolveProcedureReplyPacket(params) {
       domainIntent,
       followupIntent: payload.followupIntent,
       locationKnown,
+      schoolTargetChosen,
+      immunizationConcern,
       messageText: payload.messageText
     })),
     overallFlow: uniqueStrings(domainSpec.overallFlow, 3),
@@ -473,6 +561,13 @@ function resolveProcedureReplyPacket(params) {
   return packet;
 }
 
+function formatNextBestActionLine(action) {
+  const normalized = normalizeText(action).replace(/[。！？!?]+$/g, '');
+  if (!normalized) return '';
+  const nominalized = /こと$/.test(normalized) ? normalized : `${normalized}こと`;
+  return sanitizeSentence(`いまやる一手は、${nominalized}です`);
+}
+
 function renderProcedureReplyPacket(packet, options) {
   const payload = packet && typeof packet === 'object' ? packet : {};
   const config = options && typeof options === 'object' ? options : {};
@@ -486,14 +581,14 @@ function renderProcedureReplyPacket(packet, options) {
   if (outputForm === 'two_sentences') {
     return [
       sanitizeSentence(payload.directAnswer),
-      sanitizeSentence(`いまやる一手は、${normalizeText(payload.nextBestAction).replace(/[。！？!?]+$/g, '')}です`)
+      formatNextBestActionLine(payload.nextBestAction)
     ].filter(Boolean).slice(0, 2).join('\n');
   }
 
   if (mode === 'followup' || payload.procedureComplexity === 'compressed') {
     lines.push(sanitizeSentence(payload.directAnswer));
     if (payload.nextBestAction) {
-      lines.push(sanitizeSentence(`いまやる一手は、${normalizeText(payload.nextBestAction).replace(/[。！？!?]+$/g, '')}です`));
+      lines.push(formatNextBestActionLine(payload.nextBestAction));
     }
     if (payload.officialCheckTargets && payload.officialCheckTargets.length > 0) {
       lines.push(sanitizeSentence(`確認先は、${payload.officialCheckTargets[0].replace(/[。！？!?]+$/g, '')}です`));
@@ -503,7 +598,7 @@ function renderProcedureReplyPacket(packet, options) {
 
   lines.push(sanitizeSentence(payload.directAnswer));
   lines.push(sanitizeSentence(`全体工程は、${(Array.isArray(payload.overallFlow) ? payload.overallFlow : []).map((line) => normalizeText(line).replace(/[。！？!?]+$/g, '')).filter(Boolean).join(' -> ')}です`));
-  lines.push(sanitizeSentence(`いまやる一手は、${normalizeText(payload.nextBestAction).replace(/[。！？!?]+$/g, '')}です`));
+  lines.push(formatNextBestActionLine(payload.nextBestAction));
   if (Array.isArray(payload.keyPoints) && payload.keyPoints[0]) {
     lines.push(sanitizeSentence(`ポイントは、${normalizeText(payload.keyPoints[0]).replace(/[。！？!?]+$/g, '')}ことです`));
   }

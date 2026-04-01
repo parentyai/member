@@ -18,9 +18,10 @@ test('phase652: computeDashboardKpis includes billing and llm metrics', async ()
   setServerTimestampForTest('SERVER_TIMESTAMP');
 
   try {
-    const now = Date.now();
-    const t1 = new Date(now - 10 * 60 * 1000);
-    const t2 = new Date(now - 20 * 60 * 1000);
+    const now = new Date();
+    const anchor = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 15, 12, 0, 0, 0));
+    const t1 = new Date(anchor.getTime() - 10 * 60 * 1000);
+    const t2 = new Date(anchor.getTime() - 20 * 60 * 1000);
 
     await db.collection('users').doc('U1').set({
       createdAt: t1,

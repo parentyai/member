@@ -2,6 +2,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const {
   buildDesktopProposal,
@@ -195,4 +197,15 @@ test('phase857: transcript helpers preserve visible line ordering', () => {
     { role: 'visible_text', text: 'a' },
     { role: 'visible_text', text: 'b' },
   ]);
+});
+
+test('phase857: desktop bridge source normalizes OCR title noise before matching the allowlist chat', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../../tools/line_desktop_patrol/desktop_ui_bridge.swift'),
+    'utf8'
+  );
+
+  assert.match(source, /decomposedStringWithCanonicalMapping/);
+  assert.match(source, /CharacterSet\.nonBaseCharacters/);
+  assert.match(source, /CharacterSet\.alphanumerics/);
 });
