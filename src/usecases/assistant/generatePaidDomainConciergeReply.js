@@ -5,6 +5,7 @@ const { detectConversationIntentHits } = require('../../domain/llm/router/normal
 const { resolveFollowupIntent } = require('../../domain/llm/orchestrator/followupIntentResolver');
 const {
   resolveProcedureReplyPacket,
+  renderProcedureReplyPacket,
   buildProcedureSemanticFields
 } = require('../../domain/llm/procedureKnowledge/resolveProcedureReplyPacket');
 
@@ -1461,6 +1462,29 @@ function buildDomainAuditMeta(params) {
   };
 }
 
+function shouldPreferProcedurePacketReply(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const requestContract = payload.requestContract && typeof payload.requestContract === 'object'
+    ? payload.requestContract
+    : {};
+  const procedurePacket = payload.procedurePacket && typeof payload.procedurePacket === 'object'
+    ? payload.procedurePacket
+    : {};
+  const requestShape = normalizeText(requestContract.requestShape).toLowerCase();
+  const outputForm = normalizeText(requestContract.outputForm).toLowerCase() || 'default';
+  const answerability = normalizeText(requestContract.answerability).toLowerCase();
+  const messageText = normalizeText(payload.messageText);
+  const domainIntent = resolveDomainIntent(payload.domainIntent, payload.contextResumeDomain);
+  if (domainIntent !== 'school') return false;
+  if (requestShape !== 'answer') return false;
+  if (outputForm !== 'default') return false;
+  if (answerability !== 'answer_now') return false;
+  if (hasDetailObligation(requestContract, 'avoid_question_back') !== true) return false;
+  if (procedurePacket.replyObjective === 'clarify_blocker') return false;
+  return procedurePacket.schoolTargetChosen === true
+    || /(予防接種|immunization|vaccin)/i.test(messageText);
+}
+
 function generatePaidDomainConciergeReply(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const domainIntent = resolveDomainIntent(payload.domainIntent, payload.contextResumeDomain);
@@ -1495,6 +1519,15 @@ function generatePaidDomainConciergeReply(params) {
     decision && Array.isArray(decision.opportunityReasonKeys) ? decision.opportunityReasonKeys : [],
     domainIntent
   );
+  const procedurePacket = resolveProcedureReplyPacket({
+    messageText: payload.messageText,
+    domainIntent,
+    contextResumeDomain: payload.contextResumeDomain,
+    followupIntent,
+    requestContract: payload.requestContract,
+    supportingSourceRefs: []
+  });
+  const semanticFields = buildProcedureSemanticFields(procedurePacket, { maxQuickReplies: 3 });
 
   const concise = buildConciseReply({
     messageText: payload.messageText,
@@ -1510,21 +1543,31 @@ function generatePaidDomainConciergeReply(params) {
     recoverySignal: payload.recoverySignal === true,
     requestContract: payload.requestContract
   });
-  const procedurePacket = resolveProcedureReplyPacket({
-    messageText: payload.messageText,
+  const preferProcedureReply = shouldPreferProcedurePacketReply({
     domainIntent,
     contextResumeDomain: payload.contextResumeDomain,
-    followupIntent,
+    messageText: payload.messageText,
     requestContract: payload.requestContract,
-    supportingSourceRefs: []
+    procedurePacket
   });
-  const semanticFields = buildProcedureSemanticFields(procedurePacket, { maxQuickReplies: 3 });
   const atoms = concise.atoms && typeof concise.atoms === 'object' ? concise.atoms : {};
   const mergedAtoms = Object.assign({}, atoms, {
     nextActions: Array.isArray(atoms.nextActions) && atoms.nextActions.length > 0
       ? atoms.nextActions
       : semanticFields.nextSteps
   });
+  const procedureReplyText = renderProcedureReplyPacket(procedurePacket, {
+    outputForm: normalizeText(payload.requestContract && payload.requestContract.outputForm).toLowerCase() || 'default'
+  });
+  const replyText = preferProcedureReply ? trimForLineMessage(procedureReplyText) : concise.replyText;
+  const finalAtoms = preferProcedureReply
+    ? Object.assign({}, mergedAtoms, {
+      situationLine: procedurePacket.directAnswer || mergedAtoms.situationLine || spec.situationLine,
+      nextActions: semanticFields.nextSteps.slice(0, 1),
+      pitfall: semanticFields.warnings[0] || mergedAtoms.pitfall || '',
+      followupQuestion: ''
+    })
+    : mergedAtoms;
 
   return {
     ok: true,
@@ -1537,9 +1580,9 @@ function generatePaidDomainConciergeReply(params) {
     interventionBudget: 1,
     followupIntent,
     conciseModeApplied: true,
-    preserveReplyText: concise.preserveReplyText === true,
-    replyText: concise.replyText,
-    atoms: mergedAtoms,
+    preserveReplyText: preferProcedureReply ? true : concise.preserveReplyText === true,
+    replyText,
+    atoms: finalAtoms,
     procedurePacket,
     nextSteps: semanticFields.nextSteps,
     warnings: semanticFields.warnings,

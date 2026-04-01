@@ -583,6 +583,31 @@ test('phase734: source-aware transforms keep priority and deadline facts instead
   assert.match(citySchool.replyText, /窓口|必要書類|受付期限/);
   assert.equal(citySchool.replyText.includes('住むエリアと学区の関係'), false);
 
+  const districtChosenImmunization = generatePaidDomainConciergeReply({
+    domainIntent: 'school',
+    messageText: '学校の途中編入で、district は決まっている。予防接種も気になる。今日やることを1つだけ教えて。',
+    requestContract: {
+      requestShape: 'answer',
+      depthIntent: 'answer',
+      outputForm: 'default',
+      primaryDomainIntent: 'school',
+      detailObligations: ['avoid_question_back'],
+      answerability: 'answer_now',
+      locationHint: {
+        kind: 'none',
+        cityKey: null,
+        regionKey: null,
+        state: null
+      }
+    }
+  });
+  assert.equal(districtChosenImmunization.procedurePacket.schoolTargetChosen, true);
+  assert.equal(districtChosenImmunization.procedurePacket.replyObjective, 'answer_now');
+  assert.match(districtChosenImmunization.replyText, /予防接種|immunization/);
+  assert.match(districtChosenImmunization.replyText, /district/);
+  assert.equal(districtChosenImmunization.replyText.includes('学校手続きですね。'), false);
+  assert.equal(districtChosenImmunization.replyText.includes('住む予定の city / district を1つ仮置き'), false);
+
   const nonDogmaticNext = generatePaidDomainConciergeReply({
     domainIntent: 'general',
     messageText: 'ここまでを踏まえて、次の一手だけをやわらかく提案して。',

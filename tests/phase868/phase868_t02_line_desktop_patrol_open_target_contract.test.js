@@ -126,3 +126,25 @@ print(json.dumps(result))
   assert.equal(result.candidate_text, 'メンバー');
   assert.equal(result.result.returncode, 1);
 });
+
+test('phase868: sidebar OCR matching tolerates noisy title OCR when reopening the allowlist chat', () => {
+  const code = `
+import json
+from member_line_patrol.macos_adapter import MacOSLineDesktopAdapter
+
+adapter = MacOSLineDesktopAdapter()
+result = adapter._sidebar_match_indices(
+    {
+        "items": [
+            {"role": "ocr_sidebar", "text": "メンパー』色 7:58 PM"},
+            {"role": "ocr_sidebar", "text": "別チャット"},
+        ],
+    },
+    "メンバー",
+)
+print(json.dumps(result))
+`;
+
+  const result = JSON.parse(runPythonCode(code));
+  assert.deepEqual(result, [0]);
+});

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-31T19:39:38-04:00",
-  "gitCommit": "994770a284ee4c22825b2f3a00e037b828f8e68b",
-  "branch": "codex/line-reply-fit-fixture-T020",
-  "sourceDigest": "1fb6d4df1a88f97060afd1538f56ee1ad4cacbd2a9909b36569dd10f3917d377",
+  "generatedAt": "2026-03-31T20:26:02-04:00",
+  "gitCommit": "210d8110a9c0c5bf55cfa763a296655a93b68e1c",
+  "branch": "codex/line-desktop-title-fit-T021",
+  "sourceDigest": "55784328c90c660d642a7e7d6b43ffdb3dc58ae963b7eed2759e2cb0e4acd0c3",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

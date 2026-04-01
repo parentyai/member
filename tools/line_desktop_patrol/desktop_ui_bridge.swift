@@ -226,12 +226,15 @@ func screenshot(path: String?) throws {
 }
 
 func normalizedTitleToken(_ value: String) -> String {
-    value
+    let folded = value
         .folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
         .replacingOccurrences(of: "\r", with: "")
         .replacingOccurrences(of: "\n", with: "")
-        .replacingOccurrences(of: " ", with: "")
         .trimmingCharacters(in: .whitespacesAndNewlines)
+    let scalars = folded.decomposedStringWithCanonicalMapping.unicodeScalars.filter { scalar in
+        !CharacterSet.nonBaseCharacters.contains(scalar) && CharacterSet.alphanumerics.contains(scalar)
+    }
+    return String(String.UnicodeScalarView(scalars))
 }
 
 func boundsFromWindowInfo(_ info: [String: Any]) -> CGRect? {

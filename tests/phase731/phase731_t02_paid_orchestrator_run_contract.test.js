@@ -256,6 +256,55 @@ test('phase731: school next-step question rejects generic saved FAQ reuse and fa
   assert.match(result.replyText, /(district|教育窓口|enrollment|対象校)/);
 });
 
+test('phase731: school district-known immunization question keeps one-step reply on immunization requirements instead of generic school fallback', async () => {
+  const result = await runPaidConversationOrchestrator({
+    lineUserId: 'U_PHASE731_SCHOOL_IMMUNIZATION',
+    messageText: '学校の途中編入で、district は決まっている。予防接種も気になる。今日やることを1つだけ教えて。',
+    paidIntent: 'situation_analysis',
+    planInfo: { plan: 'pro', status: 'active' },
+    llmFlags: {
+      llmConciergeEnabled: true,
+      llmWebSearchEnabled: true,
+      llmStyleEngineEnabled: true,
+      llmBanditEnabled: false,
+      qualityEnabled: true,
+      snapshotStrictMode: false
+    },
+    deps: {
+      generatePaidCasualReply: () => ({ replyText: 'こんにちは。' }),
+      generateGroundedReply: async () => ({
+        ok: false,
+        blockedReason: 'school_grounding_missing',
+        assistantQuality: {
+          intentResolved: 'situation_analysis',
+          kbTopScore: 0,
+          evidenceCoverage: 0,
+          blockedStage: 'retrieval',
+          fallbackReason: 'school_grounding_missing'
+        }
+      }),
+      generateDomainConciergeCandidate: async (params) => generatePaidDomainConciergeReply(params),
+      ...buildSavedFaqDeps({
+        id: 'phase731_saved_faq_general_only_immunization',
+        title: '着任後1か月の生活立ち上げ優先順位',
+        body: '最初の1か月は身分証、住居、金融、通信、医療導線の5領域を優先する。未完了タスクは期限と依存関係を明示し、週次でリスクを再評価する。',
+        allowedIntents: ['GENERAL', 'FAQ']
+      })
+    }
+  });
+
+  assert.equal(result.packet.normalizedConversationIntent, 'school');
+  assert.equal(result.telemetry.selectedCandidateKind, 'domain_concierge_candidate');
+  assert.equal(result.telemetry.knowledgeCandidateUsed, false);
+  assert.equal(result.telemetry.savedFaqRejectedReason, 'saved_faq_intent_mismatch');
+  assert.equal(result.telemetry.knowledgeCandidateRejectedReason, 'faq_intent_mismatch');
+  assert.equal(result.replyText.includes('身分証、住居、金融、通信、医療導線'), false);
+  assert.equal(result.replyText.includes('学校手続きですね。'), false);
+  assert.equal(result.replyText.includes('住む予定の city / district を1つ仮置き'), false);
+  assert.match(result.replyText, /予防接種|immunization/);
+  assert.match(result.replyText, /district/);
+});
+
 test('phase731: action gateway enforce mode clarifies assist strategy without confirmation token', async () => {
   const result = await runPaidConversationOrchestrator({
     lineUserId: 'U_PHASE731_ACTION',

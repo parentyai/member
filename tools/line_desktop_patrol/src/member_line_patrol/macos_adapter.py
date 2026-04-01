@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+import unicodedata
 from typing import Any
 
 LINE_APP_NAME = "LINE"
@@ -46,14 +47,29 @@ def _contains_normalized(haystack: Any, needle: Any) -> bool:
     needle_text = _normalize_text(needle).casefold()
     if not haystack_text or not needle_text:
         return False
-    return needle_text in haystack_text
+    if needle_text in haystack_text:
+        return True
+    haystack_fuzzy = _normalize_fuzzy_match_key(haystack)
+    needle_fuzzy = _normalize_fuzzy_match_key(needle)
+    if not haystack_fuzzy or not needle_fuzzy:
+        return False
+    return needle_fuzzy in haystack_fuzzy
 
 
-def _normalize_ocr_echo_compare(value: Any) -> str:
+def _normalize_fuzzy_match_key(value: Any) -> str:
     text = _normalize_text(value)
     if not text:
         return ""
-    return "".join(character.casefold() for character in text if character.isalnum())
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(
+        character.casefold()
+        for character in decomposed
+        if not unicodedata.combining(character) and character.isalnum()
+    )
+
+
+def _normalize_ocr_echo_compare(value: Any) -> str:
+    return _normalize_fuzzy_match_key(value)
 
 
 def _ocr_echo_matches(candidate: Any, expected: Any) -> bool:
@@ -104,7 +120,13 @@ def _exact_normalized_match(candidate: Any, expected: Any) -> bool:
     expected_key = _normalize_match_key(expected)
     if not candidate_key or not expected_key:
         return False
-    return candidate_key == expected_key
+    if candidate_key == expected_key:
+        return True
+    candidate_fuzzy = _normalize_fuzzy_match_key(candidate)
+    expected_fuzzy = _normalize_fuzzy_match_key(expected)
+    if not candidate_fuzzy or not expected_fuzzy:
+        return False
+    return candidate_fuzzy == expected_fuzzy
 
 
 class MacOSLineDesktopAdapter:
@@ -955,7 +977,7 @@ do {
         for index, item in enumerate(raw_items):
             if not isinstance(item, dict):
                 continue
-            if _exact_normalized_match(item.get("text"), candidate_text):
+            if _contains_normalized(item.get("text"), candidate_text):
                 matches.append(index)
         return matches
 
