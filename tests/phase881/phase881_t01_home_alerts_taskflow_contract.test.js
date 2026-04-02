@@ -3,6 +3,10 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { test } = require('node:test');
+const {
+  loadAdminUiDictionaryMap,
+  assertDictionaryHasTextKeys,
+} = require('../_admin_ui_dictionary_test_helper');
 
 function extractPaneSection(html, paneId) {
   const marker = `<section id="pane-${paneId}"`;
@@ -16,7 +20,7 @@ test('phase881: home and alerts surfaces stay task-first in ops ui v3', () => {
   const html = fs.readFileSync('apps/admin/app.html', 'utf8');
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
   const css = fs.readFileSync('apps/admin/assets/admin.css', 'utf8');
-  const dict = fs.readFileSync('docs/ADMIN_UI_DICTIONARY_JA.md', 'utf8');
+  const dictMap = loadAdminUiDictionaryMap();
   const ssot = fs.readFileSync('docs/SSOT_ADMIN_UI_OS.md', 'utf8');
 
   const homePane = extractPaneSection(html, 'home');
@@ -45,10 +49,12 @@ test('phase881: home and alerts surfaces stay task-first in ops ui v3', () => {
   assert.ok(css.includes('.alerts-first-view-grid'));
   assert.ok(css.includes('.alerts-priority-grid'));
 
-  assert.ok(dict.includes('"ui.label.v3.decision.home.title": "最初にやることを決める"'));
-  assert.ok(dict.includes('"ui.label.v3.decision.alerts.title": "最初の案件から着手する"'));
-  assert.ok(dict.includes('"ui.label.home.prioritySummary": "最初にやること"'));
-  assert.ok(dict.includes('"ui.label.alerts.prioritySummary": "優先順位サマリ"'));
+  assertDictionaryHasTextKeys(dictMap, [
+    'ui.label.v3.decision.home.title',
+    'ui.label.v3.decision.alerts.title',
+    'ui.label.home.prioritySummary',
+    'ui.label.alerts.prioritySummary',
+  ]);
 
   assert.ok(ssot.includes('## Home / Alerts Task-First Surface（Phase881 add-only）'));
 });

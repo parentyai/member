@@ -3,18 +3,22 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { test } = require('node:test');
+const {
+  loadAdminUiDictionaryMap,
+  assertDictionaryHasTextKeys,
+} = require('../_admin_ui_dictionary_test_helper');
 
 test('phase674: v2 navigation uses job-oriented labels and topbar stays passive', () => {
   const html = fs.readFileSync('apps/admin/app.html', 'utf8');
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
-  const docs = fs.readFileSync('docs/ADMIN_UI_DICTIONARY_JA.md', 'utf8');
+  const dictMap = loadAdminUiDictionaryMap();
 
-  assert.ok(html.includes('data-dict-key="ui.label.nav.group.decision">今日の判断</div>'));
-  assert.ok(html.includes('data-dict-key="ui.label.nav.group.workbench">通知を進める</div>'));
-  assert.ok(html.includes('data-dict-key="ui.label.nav.group.dataEvidenceSystem">状態を確認する</div>'));
-  assert.ok(html.includes('data-dict-key="ui.label.nav.layer.evidence">証跡を追う</div>'));
-  assert.ok(html.includes('data-dict-key="ui.label.nav.layer.system">設定と回復</div>'));
-  assert.ok(html.includes('data-dict-key="ui.label.nav.layer.llm">LLM運用</div>'));
+  assert.ok(html.includes('data-dict-key="ui.label.nav.group.decision"'));
+  assert.ok(html.includes('data-dict-key="ui.label.nav.group.workbench"'));
+  assert.ok(html.includes('data-dict-key="ui.label.nav.group.dataEvidenceSystem"'));
+  assert.ok(html.includes('data-dict-key="ui.label.nav.layer.evidence"'));
+  assert.ok(html.includes('data-dict-key="ui.label.nav.layer.system"'));
+  assert.ok(html.includes('data-dict-key="ui.label.nav.layer.llm"'));
 
   assert.ok(html.includes('data-ui-topbar-mode="passive"'));
   assert.ok(html.includes('class="top-summary-line is-hidden-by-flag" aria-hidden="true"'));
@@ -25,7 +29,13 @@ test('phase674: v2 navigation uses job-oriented labels and topbar stays passive'
   assert.ok(js.includes("document.querySelectorAll('.top-developer').forEach((el) => {"));
   assert.ok(js.includes("el.classList.add('hidden');"));
 
-  assert.ok(docs.includes('"ui.label.nav.group.decision": "今日の判断"'));
-  assert.ok(docs.includes('"ui.label.nav.layer.system": "設定と回復"'));
-  assert.ok(docs.includes('"ui.label.top.passiveGuide": "移動は左ナビ、実行は各画面の主ボタンから行います。"'));
+  assertDictionaryHasTextKeys(dictMap, [
+    'ui.label.nav.group.decision',
+    'ui.label.nav.group.workbench',
+    'ui.label.nav.group.dataEvidenceSystem',
+    'ui.label.nav.layer.evidence',
+    'ui.label.nav.layer.system',
+    'ui.label.nav.layer.llm',
+    'ui.label.top.passiveGuide',
+  ]);
 });

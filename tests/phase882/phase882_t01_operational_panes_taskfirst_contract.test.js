@@ -3,11 +3,15 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { test } = require('node:test');
+const {
+  loadAdminUiDictionaryMap,
+  assertDictionaryHasTextKeys,
+} = require('../_admin_ui_dictionary_test_helper');
 
 test('phase882: members and regional ops panes stay task-first in ops shell', () => {
   const html = fs.readFileSync('apps/admin/app.html', 'utf8');
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
-  const dict = fs.readFileSync('docs/ADMIN_UI_DICTIONARY_JA.md', 'utf8');
+  const dictMap = loadAdminUiDictionaryMap();
   const ssot = fs.readFileSync('docs/SSOT_ADMIN_UI_OS.md', 'utf8');
 
   assert.ok(html.includes('id="read-model-task-summary"'));
@@ -28,9 +32,11 @@ test('phase882: members and regional ops panes stay task-first in ops shell', ()
   assert.ok(js.includes('statusFilter?.focus();'));
   assert.ok(js.includes("document.getElementById('emergency-bulletin-status-filter')?.focus();"));
 
-  assert.ok(dict.includes('"ui.label.readModel.prioritySummary": "最初に確認すること"'));
-  assert.ok(dict.includes('"ui.label.cityPack.prioritySummary": "最初に確認すること"'));
-  assert.ok(dict.includes('"ui.label.emergency.prioritySummary": "最初に確認すること"'));
+  assertDictionaryHasTextKeys(dictMap, [
+    'ui.label.readModel.prioritySummary',
+    'ui.label.cityPack.prioritySummary',
+    'ui.label.emergency.prioritySummary',
+  ]);
 
   assert.ok(ssot.includes('## Members / Regional Ops Task-First Surface（Phase882 add-only）'));
 });

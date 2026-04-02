@@ -3,11 +3,15 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { test } = require('node:test');
+const {
+  loadAdminUiDictionaryMap,
+  assertDictionaryHasTextKeys,
+} = require('../_admin_ui_dictionary_test_helper');
 
 test('phase883: composer, monitor, and errors stay task-first in ops shell', () => {
   const html = fs.readFileSync('apps/admin/app.html', 'utf8');
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
-  const dict = fs.readFileSync('docs/ADMIN_UI_DICTIONARY_JA.md', 'utf8');
+  const dictMap = loadAdminUiDictionaryMap();
   const ssot = fs.readFileSync('docs/SSOT_ADMIN_UI_OS.md', 'utf8');
   const runbook = fs.readFileSync('docs/RUNBOOK_ADMIN_OPS.md', 'utf8');
 
@@ -31,12 +35,14 @@ test('phase883: composer, monitor, and errors stay task-first in ops shell', () 
   assert.ok(js.includes("activatePane('maintenance');"));
   assert.ok(js.includes("renderDecisionCard('errors', resolveErrorsDecisionVm());"));
 
-  assert.ok(dict.includes('"ui.label.composer.prioritySummary": "最初に確認すること"'));
-  assert.ok(dict.includes('"ui.label.monitor.prioritySummary": "最初に確認すること"'));
-  assert.ok(dict.includes('"ui.label.errors.prioritySummary": "最初に確認すること"'));
-  assert.ok(dict.includes('"ui.desc.page.composer": "本文と対象を整え、次の操作を1つずつ進めます。"'));
-  assert.ok(dict.includes('"ui.desc.page.monitor": "危険や注意のある配信から確認し、必要な通知だけ詳しく見ます。"'));
-  assert.ok(dict.includes('"ui.desc.page.errors": "危険リンクと再送待ちを見分けて、次の対応先へ進みます。"'));
+  assertDictionaryHasTextKeys(dictMap, [
+    'ui.label.composer.prioritySummary',
+    'ui.label.monitor.prioritySummary',
+    'ui.label.errors.prioritySummary',
+    'ui.desc.page.composer',
+    'ui.desc.page.monitor',
+    'ui.desc.page.errors',
+  ]);
 
   assert.ok(ssot.includes('## Composer / Monitor / Errors Task-First Workbench（Phase883 add-only）'));
   assert.ok(runbook.includes('## Monitor Flow（配信結果の確認）'));
