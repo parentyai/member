@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>通知運用ダッシュボード（Linear UI）</title>
+    <title>運用ダッシュボード</title>
     <link rel="stylesheet" href="/admin/assets/admin.css" />
   </head>
   <body class="app-body">
@@ -12,67 +12,36 @@
         <div class="nav-title" data-dict-key="ui.label.nav.title" data-nav-legacy="1">運用ナビ</div>
 
         <div class="nav-shell-switch" data-v3-chrome="nav-shell-switch">
-          <div class="nav-shell-title" data-dict-key="ui.label.v3.nav.workspace">Workspace</div>
-          <div class="nav-shell-actions" role="group" aria-label="Workspace switch">
-            <button id="v3-shell-switch-ops" type="button" class="shell-switch-btn is-active" data-ui-shell-target="ops" data-dict-key="ui.label.v3.shell.ops">Ops UI</button>
-            <button id="v3-shell-switch-system" type="button" class="shell-switch-btn" data-ui-shell-target="system" data-dict-key="ui.label.v3.shell.system">System Console</button>
-          </div>
+          <div class="nav-shell-title" data-dict-key="ui.label.v3.nav.workspace">運用ワークスペース</div>
+          <div class="nav-shell-subtitle">5つの画面だけで日常運用を完了します。</div>
         </div>
 
-        <div class="nav-group nav-group-v3" data-v3-nav-group="today" data-ui-shell-context="ops">
-          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.today">Today</div>
+        <div class="nav-group nav-group-v3" data-v3-nav-group="operator-primary" data-ui-shell-context="ops">
+          <div class="nav-group-label">運用メニュー</div>
           <button class="nav-item nav-item-v3" data-pane-target="home" data-nav-priority="410">
-            <span class="nav-icon" aria-hidden="true">T</span>
-            <span data-dict-key="ui.label.v3.nav.home">今日の優先</span>
+            <span class="nav-icon" aria-hidden="true">DB</span>
+            <span>ダッシュボード</span>
           </button>
           <button class="nav-item nav-item-v3" data-pane-target="alerts" data-nav-priority="409">
             <span class="nav-icon" aria-hidden="true">!</span>
-            <span data-dict-key="ui.label.v3.nav.alerts">要対応</span>
+            <span>通知配信状況</span>
           </button>
-        </div>
-
-        <div class="nav-group nav-group-v3" data-v3-nav-group="messages" data-ui-shell-context="ops">
-          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.messages">Messages</div>
-          <button class="nav-item nav-item-v3" data-pane-target="composer" data-nav-priority="408">
-            <span class="nav-icon" aria-hidden="true">C</span>
-            <span data-dict-key="ui.label.v3.nav.composer">送信内容を作る</span>
-          </button>
-          <button class="nav-item nav-item-v3" data-pane-target="monitor" data-nav-priority="407">
-            <span class="nav-icon" aria-hidden="true">M</span>
-            <span data-dict-key="ui.label.v3.nav.monitor">配信結果を見る</span>
-          </button>
-        </div>
-
-        <div class="nav-group nav-group-v3" data-v3-nav-group="members" data-ui-shell-context="ops">
-          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.members">Members</div>
           <button class="nav-item nav-item-v3" data-pane-target="read-model" data-nav-priority="406">
             <span class="nav-icon" aria-hidden="true">MB</span>
-            <span data-dict-key="ui.label.v3.nav.readModel">会員を確認</span>
+            <span>会員情報</span>
           </button>
-        </div>
-
-        <div class="nav-group nav-group-v3" data-v3-nav-group="regional-ops" data-ui-shell-context="ops">
-          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.regionalOps">Regional Ops</div>
           <button class="nav-item nav-item-v3" data-pane-target="city-pack" data-nav-priority="405">
             <span class="nav-icon" aria-hidden="true">CP</span>
-            <span data-dict-key="ui.label.v3.nav.cityPack">地域案内</span>
+            <span>City Pack・緊急レイヤー</span>
           </button>
-          <button class="nav-item nav-item-v3" data-pane-target="emergency-layer" data-nav-priority="404">
-            <span class="nav-icon" aria-hidden="true">EM</span>
-            <span data-dict-key="ui.label.v3.nav.emergencyLayer">緊急対応</span>
-          </button>
-        </div>
-
-        <div class="nav-group nav-group-v3" data-v3-nav-group="recovery" data-ui-shell-context="ops">
-          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.recovery">Recovery</div>
-          <button class="nav-item nav-item-v3" data-pane-target="errors" data-nav-priority="403">
-            <span class="nav-icon" aria-hidden="true">ER</span>
-            <span data-dict-key="ui.label.v3.nav.errors">異常対応</span>
+          <button class="nav-item nav-item-v3" data-pane-target="llm" data-nav-priority="404">
+            <span class="nav-icon" aria-hidden="true">FQ</span>
+            <span>FAQ</span>
           </button>
         </div>
 
         <div class="nav-group nav-group-v3" data-v3-nav-group="system-console" data-ui-shell-context="system">
-          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.systemConsole">System Console</div>
+          <div class="nav-group-label" data-dict-key="ui.label.v3.nav.group.systemConsole">システム管理</div>
           <button class="nav-item nav-item-v3" data-pane-target="settings" data-nav-priority="320">
             <span class="nav-icon" aria-hidden="true">S</span>
             <span data-dict-key="ui.label.v3.nav.settings">運用設定</span>
@@ -250,7 +219,7 @@
             </div>
             <div class="topbar-v3-block topbar-v3-scope">
               <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.scope">現在の表示</div>
-              <div id="v3-shell-scope" class="topbar-v3-scope-value">Ops UI / operator</div>
+              <div id="v3-shell-scope" class="topbar-v3-scope-value">運用画面 / 運用</div>
             </div>
             <div class="topbar-v3-block topbar-v3-alerts">
               <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.alerts">緊急導線</div>
@@ -258,15 +227,20 @@
             </div>
           </div>
           <div class="topbar-v3-secondary">
-            <div class="topbar-v3-block topbar-v3-role">
-              <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.role">利用モード</div>
-              <div class="role-switch" role="group" aria-label="Role Switch">
-                <button class="role-btn is-active" data-role-value="operator" data-dict-key="ui.label.role.operatorMode">運用</button>
-                <button class="role-btn" data-role-value="admin" data-dict-key="ui.label.role.adminMode">管理</button>
-                <button class="role-btn" data-role-value="developer" data-ops-role="developer" data-dict-key="ui.label.role.developer">開発</button>
+            <div class="topbar-v3-profile">
+              <div class="topbar-v3-block topbar-v3-role">
+                <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.role">利用モード</div>
+                <div class="role-switch" role="group" aria-label="Role Switch">
+                  <button class="role-btn is-active" data-role-value="operator" data-dict-key="ui.label.role.operatorMode">運用</button>
+                  <button class="role-btn" data-role-value="admin" data-dict-key="ui.label.role.adminMode">管理</button>
+                  <button class="role-btn" data-role-value="developer" data-ops-role="developer" data-dict-key="ui.label.role.developer">開発</button>
+                </div>
+              </div>
+              <div class="topbar-v3-profile-actions">
+                <button id="v3-shell-switch-system" type="button" class="secondary-btn" data-ui-shell-target="system">システム管理</button>
+                <button id="v3-shell-switch-ops" type="button" class="secondary-btn" data-ui-shell-target="ops">運用画面に戻る</button>
               </div>
             </div>
-            <div class="topbar-v3-secondary-note" data-dict-key="ui.desc.v3.top.role">切り替えると使える画面と表示内容が変わります。</div>
           </div>
         </section>
 
@@ -322,12 +296,12 @@
 
         <section class="page-header" data-ui="page-header" data-surface-tier="context" data-pane-mode="decision-console" data-task-context="today-judgment">
           <div>
-            <h1 id="page-title" data-dict-key="ui.label.app.title">通知運用ダッシュボード（Linear UI）</h1>
+            <h1 id="page-title" data-dict-key="ui.label.app.title">運用ダッシュボード</h1>
             <p id="page-subtitle" class="page-subtitle" data-dict-key="ui.desc.page.home">通知配信の判断指標を期間別に確認します。</p>
             <div id="page-task-context" class="page-task-context" data-task-context="today-judgment">今日の判断を進める</div>
           </div>
           <div class="page-header-actions">
-            <div id="page-shell-badge" class="page-shell-badge">Ops UI</div>
+            <div id="page-shell-badge" class="page-shell-badge">運用画面</div>
             <div id="page-last-updated" class="page-last-updated">最終更新: -</div>
             <button id="page-action-primary" type="button" class="secondary-btn hidden" data-control="page-primary-cta" data-primary-action="page-primary"></button>
             <button id="page-action-secondary" type="button" class="secondary-btn hidden" data-control="page-secondary-cta" data-primary-action="page-secondary"></button>
@@ -385,7 +359,7 @@
             <div class="decision-card" id="home-decision-card" data-surface-tier="hero">
               <div class="decision-card-header">
                 <div class="decision-title" data-dict-key="ui.label.nav.dashboard">ダッシュボード</div>
-                <span id="home-decision-state" class="decision-state state-ready">READY</span>
+                <span id="home-decision-state" class="decision-state state-ready">準備完了</span>
               </div>
               <div id="home-decision-reason1" class="decision-reason">-</div>
               <div id="home-decision-reason2" class="decision-reason">-</div>
@@ -437,7 +411,7 @@
             <div class="panel dashboard-focus-panel" data-surface-tier="primary">
               <div class="panel-title" data-dict-key="ui.label.home.todayFocus">今日の判断</div>
               <div class="panel-body dashboard-focus-body">
-                <p class="dashboard-focus-lead" data-dict-key="ui.desc.home.todayFocus">今すぐ確認すべき6指標を先に見て、必要なら詳細KPIへ進みます。</p>
+                <p class="dashboard-focus-lead" data-dict-key="ui.desc.home.todayFocus">今すぐ確認すべき5指標を先に見て、必要なら詳細KPIへ進みます。</p>
                 <div class="row dashboard-controls" data-v3-ops-hidden="true">
                   <label for="dashboard-window-months" data-dict-key="ui.label.home.window">期間</label>
                   <select id="dashboard-window-months" class="select-inline">
@@ -452,7 +426,7 @@
                 <div class="dashboard-focus-grid">
                   <article class="dashboard-focus-card" data-dashboard-focus-card="registrations" data-dashboard-band="usage" data-ui-state="unset">
                     <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.usage">利用状況</div>
-                    <div class="dashboard-focus-title" data-dict-key="ui.metric.dashboard.lineRegistered">登録者数推移</div>
+                    <div class="dashboard-focus-title" data-dict-key="ui.metric.dashboard.lineRegistered">登録者数</div>
                     <div id="dashboard-focus-registrations-value" class="dashboard-focus-value">-</div>
                     <div id="dashboard-focus-registrations-note" class="dashboard-focus-note">-</div>
                   </article>
@@ -462,29 +436,23 @@
                     <div id="dashboard-focus-proActive-value" class="dashboard-focus-value">-</div>
                     <div id="dashboard-focus-proActive-note" class="dashboard-focus-note">-</div>
                   </article>
-                  <article class="dashboard-focus-card" data-dashboard-focus-card="notifications" data-dashboard-band="delivery" data-ui-state="unset">
-                    <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.delivery">配信成果</div>
-                    <div class="dashboard-focus-title" data-dict-key="ui.metric.dashboard.notificationCount">通知件数</div>
-                    <div id="dashboard-focus-notifications-value" class="dashboard-focus-value">-</div>
-                    <div id="dashboard-focus-notifications-note" class="dashboard-focus-note">-</div>
-                  </article>
                   <article class="dashboard-focus-card" data-dashboard-focus-card="reaction" data-dashboard-band="delivery" data-ui-state="unset">
                     <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.delivery">配信成果</div>
                     <div class="dashboard-focus-title" data-dict-key="ui.metric.dashboard.reactionRate">反応率</div>
                     <div id="dashboard-focus-reaction-value" class="dashboard-focus-value">-</div>
                     <div id="dashboard-focus-reaction-note" class="dashboard-focus-note">-</div>
                   </article>
-                  <article class="dashboard-focus-card" data-dashboard-focus-card="llmBlockRate" data-dashboard-band="risk" data-ui-state="unset">
-                    <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.risk">運用リスク</div>
-                    <div class="dashboard-focus-title">LLMブロック率</div>
-                    <div id="dashboard-focus-llmBlockRate-value" class="dashboard-focus-value">-</div>
-                    <div id="dashboard-focus-llmBlockRate-note" class="dashboard-focus-note">-</div>
+                  <article class="dashboard-focus-card" data-dashboard-focus-card="engagement" data-dashboard-band="delivery" data-ui-state="unset">
+                    <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.delivery">配信成果</div>
+                    <div class="dashboard-focus-title">エンゲージメント</div>
+                    <div id="dashboard-focus-engagement-value" class="dashboard-focus-value">-</div>
+                    <div id="dashboard-focus-engagement-note" class="dashboard-focus-note">-</div>
                   </article>
-                  <article class="dashboard-focus-card" data-dashboard-focus-card="dependencyBlockRate" data-dashboard-band="risk" data-ui-state="unset">
-                    <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.risk">運用リスク</div>
-                    <div class="dashboard-focus-title">依存ブロック率</div>
-                    <div id="dashboard-focus-dependencyBlockRate-value" class="dashboard-focus-value">-</div>
-                    <div id="dashboard-focus-dependencyBlockRate-note" class="dashboard-focus-note">-</div>
+                  <article class="dashboard-focus-card" data-dashboard-focus-card="faq" data-dashboard-band="delivery" data-ui-state="unset">
+                    <div class="dashboard-focus-band" data-dict-key="ui.label.home.band.delivery">配信成果</div>
+                    <div class="dashboard-focus-title">FAQ稼働状況</div>
+                    <div id="dashboard-focus-faq-value" class="dashboard-focus-value">-</div>
+                    <div id="dashboard-focus-faq-note" class="dashboard-focus-note">-</div>
                   </article>
                 </div>
                 <div class="dashboard-next-links" data-v3-ops-hidden="true">
@@ -898,7 +866,7 @@
             <div class="decision-card" id="alerts-decision-card" data-surface-tier="hero">
               <div class="decision-card-header">
                 <div class="decision-title">最初の案件から着手する</div>
-                <span id="alerts-decision-state" class="decision-state state-ready">READY</span>
+                <span id="alerts-decision-state" class="decision-state state-ready">準備完了</span>
               </div>
               <div id="alerts-decision-reason1" class="decision-reason">-</div>
               <div id="alerts-decision-reason2" class="decision-reason">-</div>
@@ -939,14 +907,15 @@
                   <thead>
                     <tr>
                       <th data-dict-key="ui.label.alerts.col.type">種別</th>
-                      <th data-dict-key="ui.label.alerts.col.count">件数</th>
-                      <th data-dict-key="ui.label.alerts.col.impact">影響</th>
-                      <th data-dict-key="ui.label.alerts.col.action">対応</th>
+                      <th>緊急度</th>
+                      <th>対象</th>
+                      <th>予定</th>
+                      <th data-dict-key="ui.label.alerts.col.action">次の操作</th>
                     </tr>
                   </thead>
                   <tbody id="alerts-rows">
                     <tr>
-                      <td colspan="4" data-dict-key="ui.label.common.empty">データなし</td>
+                      <td colspan="5" data-dict-key="ui.label.common.empty">データなし</td>
                     </tr>
                   </tbody>
                 </table>
@@ -959,7 +928,7 @@
           <div class="decision-card" id="composer-decision-card" data-surface-tier="hero">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.composer.summary">通知サマリー</div>
-              <span id="composer-decision-state" class="decision-state state-ready">READY</span>
+              <span id="composer-decision-state" class="decision-state state-ready">準備完了</span>
             </div>
             <div id="composer-decision-reason1" class="decision-reason">-</div>
             <div id="composer-decision-reason2" class="decision-reason">-</div>
@@ -1436,7 +1405,7 @@
           <div class="decision-card" id="monitor-decision-card" data-surface-tier="hero">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.nav.monitor">配信結果</div>
-              <span id="monitor-decision-state" class="decision-state state-ready">READY</span>
+              <span id="monitor-decision-state" class="decision-state state-ready">準備完了</span>
             </div>
             <div id="monitor-decision-reason1" class="decision-reason">-</div>
             <div id="monitor-decision-reason2" class="decision-reason">-</div>
@@ -2668,7 +2637,7 @@
           <div class="decision-card" id="emergency-layer-decision-card">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.page.emergencyLayer">緊急対応</div>
-              <span id="emergency-layer-decision-state" class="decision-state state-ready">READY</span>
+              <span id="emergency-layer-decision-state" class="decision-state state-ready">準備完了</span>
             </div>
             <div id="emergency-layer-decision-reason1" class="decision-reason">-</div>
             <div id="emergency-layer-decision-reason2" class="decision-reason">-</div>
@@ -2872,7 +2841,7 @@
           <div class="decision-card" id="city-pack-decision-card" data-surface-tier="hero">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.nav.cityPack">City Pack監査</div>
-              <span id="city-pack-decision-state" class="decision-state state-ready">READY</span>
+              <span id="city-pack-decision-state" class="decision-state state-ready">準備完了</span>
             </div>
             <div id="city-pack-decision-reason1" class="decision-reason">-</div>
             <div id="city-pack-decision-reason2" class="decision-reason">-</div>
@@ -2884,6 +2853,36 @@
               <button id="city-pack-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit" data-primary-action="pane-primary">作成・編集</button>
               <button id="city-pack-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
               <button id="city-pack-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+            </div>
+          </div>
+          <div id="city-pack-operator-surface" class="panel city-pack-operator-surface" data-surface-tier="primary">
+            <div class="panel-title">City Pack・緊急レイヤー</div>
+            <div class="panel-body">
+              <div class="city-pack-operator-mode-switch" role="group" aria-label="City Pack operator mode">
+                <button id="city-pack-operator-mode-guide" type="button" class="secondary-btn is-active" data-city-pack-operator-mode="guide">地域案内</button>
+                <button id="city-pack-operator-mode-emergency" type="button" class="secondary-btn" data-city-pack-operator-mode="emergency">緊急対応</button>
+              </div>
+              <p id="city-pack-operator-mode-note" class="city-pack-operator-mode-note">現在登録されている内容を見ながら、公開・停止・削除や承認・送信の前に全体プレビューを確認できます。</p>
+              <div class="table-scroll">
+                <table class="table-compact city-pack-operator-table">
+                  <thead>
+                    <tr>
+                      <th>状態</th>
+                      <th>対象</th>
+                      <th>内容</th>
+                      <th>更新</th>
+                      <th>次の操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="city-pack-operator-rows"></tbody>
+                </table>
+              </div>
+              <div id="city-pack-operator-selection" class="city-pack-operator-selection">
+                <div class="city-pack-operator-selection-title">選択した内容</div>
+                <div id="city-pack-operator-selection-summary" class="note">行を選ぶと、現在登録されている内容と実行後の状態を確認できます。</div>
+                <div id="city-pack-operator-selection-preview" class="city-pack-operator-preview-grid"></div>
+                <div id="city-pack-operator-action-buttons" class="row row-top"></div>
+              </div>
             </div>
           </div>
           <div id="city-pack-reflection-state" class="panel data-reflection-panel" data-reflection-pane="city-pack" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" data-v3-ops-hidden="true" role="status" aria-live="polite">
@@ -3875,7 +3874,7 @@
           <div class="decision-card" id="errors-decision-card">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.nav.errors">異常対応</div>
-              <span id="errors-decision-state" class="decision-state state-ready">READY</span>
+              <span id="errors-decision-state" class="decision-state state-ready">準備完了</span>
             </div>
             <div id="errors-decision-reason1" class="decision-reason">-</div>
             <div id="errors-decision-reason2" class="decision-reason">-</div>
@@ -4012,7 +4011,7 @@
           <div class="decision-card" id="read-model-decision-card">
             <div class="decision-card-header">
               <div class="decision-title" data-dict-key="ui.label.nav.readModel">通知集計</div>
-              <span id="read-model-decision-state" class="decision-state state-ready">READY</span>
+              <span id="read-model-decision-state" class="decision-state state-ready">準備完了</span>
             </div>
             <div id="read-model-decision-reason1" class="decision-reason">-</div>
             <div id="read-model-decision-reason2" class="decision-reason">-</div>
@@ -4178,10 +4177,11 @@
                       <label><input type="checkbox" data-users-column-toggle="category" checked /> カテゴリ</label>
                       <label><input type="checkbox" data-users-column-toggle="status" checked /> ステータス</label>
                       <label><input type="checkbox" data-users-column-toggle="plan" checked /> 料金プラン</label>
-                      <label><input type="checkbox" data-users-column-toggle="subscriptionStatus" checked /> 課金状態</label>
+                      <label><input type="checkbox" data-users-column-toggle="subscriptionStatus" checked /> 契約状態</label>
                       <label><input type="checkbox" data-users-column-toggle="billingIntegrity" checked /> 整合</label>
                       <label><input type="checkbox" data-users-column-toggle="currentPeriodEnd" checked /> 期限</label>
                       <label><input type="checkbox" data-users-column-toggle="llmUsage" checked /> 問い合わせ回数</label>
+                      <label><input type="checkbox" data-users-column-toggle="nextCheck" checked /> 次の確認</label>
                       <label><input type="checkbox" data-users-column-toggle="todoProgressRate" checked /> Todo進行率</label>
                       <label><input type="checkbox" data-users-column-toggle="localGuidanceCoverage" checked /> 地域案内充足率</label>
                       <label><input type="checkbox" data-users-column-toggle="llmUsageToday" checked /> 今日の問い合わせ</label>
@@ -4210,10 +4210,11 @@
                         <th data-users-col="category"><button type="button" class="table-sort-btn" data-users-sort-key="category">カテゴリ</button></th>
                         <th data-users-col="status"><button type="button" class="table-sort-btn" data-users-sort-key="status">ステータス</button></th>
                         <th data-users-col="plan"><button type="button" class="table-sort-btn" data-users-sort-key="plan">料金プラン</button></th>
-                        <th data-users-col="subscriptionStatus"><button type="button" class="table-sort-btn" data-users-sort-key="subscriptionStatus">課金状態</button></th>
+                        <th data-users-col="subscriptionStatus"><button type="button" class="table-sort-btn" data-users-sort-key="subscriptionStatus">契約状態</button></th>
                         <th data-users-col="billingIntegrity"><button type="button" class="table-sort-btn" data-users-sort-key="billingIntegrity">整合</button></th>
                         <th data-users-col="currentPeriodEnd"><button type="button" class="table-sort-btn" data-users-sort-key="currentPeriodEnd">期限</button></th>
                         <th data-users-col="llmUsage"><button type="button" class="table-sort-btn" data-users-sort-key="llmUsage">問い合わせ回数</button></th>
+                        <th data-users-col="nextCheck"><button type="button" class="table-sort-btn" data-users-sort-key="nextCheck">次の確認</button></th>
                         <th data-users-col="todoProgressRate"><button type="button" class="table-sort-btn" data-users-sort-key="todoProgressRate">Todo進行率</button></th>
                         <th data-users-col="localGuidanceCoverage"><button type="button" class="table-sort-btn" data-users-sort-key="localGuidanceCoverage">地域案内充足率</button></th>
                         <th data-users-col="llmUsageToday"><button type="button" class="table-sort-btn" data-users-sort-key="llmUsageToday">今日の問い合わせ</button></th>
@@ -4982,7 +4983,92 @@
           </div>
         </section>
 
-        <section id="pane-llm" class="app-pane" data-pane="llm" data-role="admin" data-role-allow="admin,developer" data-pane-mode="llm-workspace" data-task-context="llm-operations" data-surface-tier="workspace">
+        <section id="pane-llm" class="app-pane" data-pane="llm" data-role-allow="operator,admin,developer" data-pane-mode="llm-workspace" data-task-context="llm-operations" data-surface-tier="workspace">
+          <div id="faq-operator-surface" class="faq-operator-surface" data-surface-tier="primary">
+            <div class="decision-card" id="faq-operator-decision-card" data-surface-tier="hero">
+              <div class="decision-card-header">
+                <div class="decision-title">FAQ</div>
+                <span id="faq-operator-decision-state" class="decision-state state-ready">準備完了</span>
+              </div>
+              <div id="faq-operator-decision-reason1" class="decision-reason">公開中と停止中のFAQを見ながら、登録・停止・削除の前に内容全体を確認します。</div>
+              <div id="faq-operator-decision-reason2" class="decision-reason">最後は必ず登録・停止・削除の完了で終わります。</div>
+            </div>
+            <div class="panel faq-operator-summary-panel">
+              <div class="panel-title">FAQ稼働状況</div>
+              <div class="panel-body">
+                <div class="ops-task-stats-grid">
+                  <article class="ops-task-stat">
+                    <div class="ops-task-stat-label">公開中FAQ数</div>
+                    <div id="faq-summary-active" class="ops-task-stat-value">-</div>
+                  </article>
+                  <article class="ops-task-stat">
+                    <div class="ops-task-stat-label">停止中FAQ数</div>
+                    <div id="faq-summary-disabled" class="ops-task-stat-value">-</div>
+                  </article>
+                  <article class="ops-task-stat">
+                    <div class="ops-task-stat-label">最終更新</div>
+                    <div id="faq-summary-updated" class="ops-task-stat-value">-</div>
+                  </article>
+                </div>
+                <div class="row row-top">
+                  <button id="faq-reload" type="button">更新</button>
+                  <button id="faq-create-new" type="button">新しい質問を登録する</button>
+                </div>
+              </div>
+            </div>
+            <div class="faq-operator-grid">
+              <div class="panel faq-operator-list-panel">
+                <div class="panel-title">FAQ一覧</div>
+                <div class="panel-body">
+                  <div class="table-scroll">
+                    <table class="table-compact faq-operator-table">
+                      <thead>
+                        <tr>
+                          <th>質問</th>
+                          <th>公開状態</th>
+                          <th>最終更新</th>
+                          <th>次の操作</th>
+                        </tr>
+                      </thead>
+                      <tbody id="faq-operator-rows"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="panel faq-operator-editor-panel">
+                <div class="panel-title">内容確認と編集</div>
+                <div class="panel-body">
+                  <div id="faq-selected-id" class="note">選択中: 新規作成</div>
+                  <div class="input-grid">
+                    <div class="flex-1">
+                      <label for="faq-question-title">質問</label>
+                      <input id="faq-question-title" type="text" placeholder="何が登録されるかを分かる言葉で入力" />
+                    </div>
+                    <div class="flex-1">
+                      <label for="faq-question-status">公開状態</label>
+                      <select id="faq-question-status">
+                        <option value="active">公開中</option>
+                        <option value="draft">準備中</option>
+                        <option value="disabled">停止中</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="flex-1">
+                      <label for="faq-question-body">回答内容</label>
+                      <textarea id="faq-question-body" rows="10"></textarea>
+                    </div>
+                  </div>
+                  <div id="faq-selection-summary" class="note">現在登録されている内容と実行後の状態は、操作前のプレビューで確認できます。</div>
+                  <div class="row row-top">
+                    <button id="faq-save-article" type="button">登録内容を保存する</button>
+                    <button id="faq-stop-article" type="button" class="secondary-btn">公開を停止する</button>
+                    <button id="faq-delete-article" type="button" class="secondary-btn">削除する（履歴を残す）</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="pane-grid llm-workspace-grid" data-llm-workspace-view="run">
             <div class="pane-main">
               <div class="decision-card llm-workspace-card is-ready" id="llm-workspace-card" data-surface-tier="hero">
@@ -5704,6 +5790,42 @@
     </div>
 
     <div id="toast" class="toast" data-ui-message-level="toast" data-ui-state="unset" role="status" aria-live="polite"></div>
+    <div id="operator-preview-modal" class="operator-preview-modal is-hidden" data-preview-visible="false" aria-hidden="true">
+      <div class="operator-preview-backdrop" data-preview-close="true"></div>
+      <div class="operator-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="operator-preview-title">
+        <div class="operator-preview-header">
+          <div>
+            <div class="operator-preview-eyebrow">実行前の確認</div>
+            <div id="operator-preview-title" class="operator-preview-title">-</div>
+          </div>
+          <button id="operator-preview-close" type="button" class="secondary-btn">閉じる</button>
+        </div>
+        <div class="operator-preview-body">
+          <div class="operator-preview-grid">
+            <section class="operator-preview-card">
+              <h3>現在登録されている内容</h3>
+              <div id="operator-preview-current" class="operator-preview-list"></div>
+            </section>
+            <section class="operator-preview-card">
+              <h3>実行後の状態</h3>
+              <div id="operator-preview-next" class="operator-preview-list"></div>
+            </section>
+          </div>
+          <section class="operator-preview-card">
+            <h3>変更される項目</h3>
+            <div id="operator-preview-changes" class="operator-preview-list"></div>
+          </section>
+          <section class="operator-preview-card">
+            <h3>影響と完了後</h3>
+            <div id="operator-preview-meta" class="operator-preview-list"></div>
+          </section>
+        </div>
+        <div class="operator-preview-actions">
+          <button id="operator-preview-cancel" type="button" class="secondary-btn">戻る</button>
+          <button id="operator-preview-confirm" type="button">実行する</button>
+        </div>
+      </div>
+    </div>
 
     <script src="/admin/assets/admin_ui_core.js"></script>
     <script src="/admin/assets/admin_app.js"></script>

@@ -12,20 +12,25 @@ function extractPaneSection(html, paneId) {
   return next === -1 ? html.slice(start) : html.slice(start, next);
 }
 
-test('phase674: dashboard first view caps itself to six focus tiles and keeps detailed KPI below', () => {
+test('phase674: dashboard first view caps itself to five operator metrics and keeps detailed KPI below', () => {
   const html = fs.readFileSync('apps/admin/app.html', 'utf8');
   const css = fs.readFileSync('apps/admin/assets/admin.css', 'utf8');
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
   const homePane = extractPaneSection(html, 'home');
 
   const focusCards = homePane.match(/data-dashboard-focus-card="/g) || [];
-  assert.equal(focusCards.length, 6);
+  assert.equal(focusCards.length, 5);
   assert.ok(homePane.includes('id="dashboard-focus-registrations-value"'));
   assert.ok(homePane.includes('id="dashboard-focus-proActive-value"'));
-  assert.ok(homePane.includes('id="dashboard-focus-notifications-value"'));
   assert.ok(homePane.includes('id="dashboard-focus-reaction-value"'));
-  assert.ok(homePane.includes('id="dashboard-focus-llmBlockRate-value"'));
-  assert.ok(homePane.includes('id="dashboard-focus-dependencyBlockRate-value"'));
+  assert.ok(homePane.includes('id="dashboard-focus-engagement-value"'));
+  assert.ok(homePane.includes('id="dashboard-focus-faq-value"'));
+  assert.ok(homePane.includes('登録者数'));
+  assert.ok(homePane.includes('有料ユーザー数'));
+  assert.ok(homePane.includes('反応率'));
+  assert.ok(homePane.includes('エンゲージメント'));
+  assert.ok(homePane.includes('FAQ稼働状況'));
+  assert.ok(!homePane.includes('通知件数推移'));
   assert.ok(homePane.includes('id="home-kpi-details"'));
   assert.ok(homePane.includes('class="panel dashboard-panel dashboard-panel-detail"'));
 

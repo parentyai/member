@@ -12,6 +12,19 @@ const CREATE_ROUTE_KEY = 'admin.kb_articles_create';
 const UPDATE_ROUTE_KEY = 'admin.kb_articles_update';
 const DELETE_ROUTE_KEY = 'admin.kb_articles_delete';
 
+function parseListQuery(req) {
+  const url = new URL(req.url, 'http://localhost');
+  const limitValue = Number(url.searchParams.get('limit'));
+  const limit = Number.isFinite(limitValue) ? Math.max(1, Math.min(Math.floor(limitValue), 200)) : LIST_LIMIT;
+  const statusRaw = String(url.searchParams.get('status') || '').trim().toLowerCase();
+  const includeDisabled = url.searchParams.get('includeDisabled') === '1' || statusRaw === 'all';
+  return {
+    limit,
+    status: statusRaw,
+    includeDisabled
+  };
+}
+
 function normalizeOutcomeOptions(routeKey, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const guard = Object.assign({}, opts.guard || {});
@@ -62,14 +75,20 @@ async function handleList(req, res, deps) {
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const listArticles = typeof resolvedDeps.listArticles === 'function'
+    ? resolvedDeps.listArticles
+    : faqArticlesRepo.listArticles;
   const searchActiveArticles = typeof resolvedDeps.searchActiveArticles === 'function'
     ? resolvedDeps.searchActiveArticles
     : faqArticlesRepo.searchActiveArticles;
   const appendAudit = typeof resolvedDeps.appendAuditLog === 'function'
     ? resolvedDeps.appendAuditLog
     : appendAuditLog;
+  const query = parseListQuery(req);
   try {
-    const articles = await searchActiveArticles({ query: '', limit: LIST_LIMIT });
+    const articles = query.includeDisabled
+      ? await listArticles({ limit: query.limit, status: query.status && query.status !== 'all' ? query.status : null })
+      : await searchActiveArticles({ query: '', limit: query.limit });
     void appendAudit({
       actor,
       action: 'kb_articles.list',
@@ -77,7 +96,7 @@ async function handleList(req, res, deps) {
       entityId: 'all',
       traceId,
       requestId,
-      payloadSummary: { count: articles.length }
+      payloadSummary: { count: articles.length, includeDisabled: query.includeDisabled, status: query.status || 'active' }
     }).catch(() => {});
     json200(res, LIST_ROUTE_KEY, articles);
   } catch (_err) {

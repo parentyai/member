@@ -222,6 +222,7 @@ const state = {
   emergencyBulletinItems: [],
   emergencySelectedBulletinId: null,
   emergencyEvidenceItem: null,
+  cityPackOperatorMode: CITY_PACK_OPERATOR_MODE.guide,
   cityPackTemplateLibraryItems: [],
   cityPackInboxItems: [],
   cityPackEducationLinkItems: [],
@@ -234,6 +235,7 @@ const state = {
   cityPackUnifiedItems: [],
   cityPackUnifiedFilteredItems: [],
   selectedCityPackUnifiedItemKey: null,
+  selectedCityPackOperatorKey: null,
   cityPackUnifiedSortKey: 'updatedAt',
   cityPackUnifiedSortDir: 'desc',
   cityPackWorkspaceView: 'workbench',
@@ -253,6 +255,9 @@ const state = {
   cityPackTemplateImportPlanHash: null,
   cityPackTemplateImportConfirmToken: null,
   llmRolloutStage: null,
+  faqItems: [],
+  faqFilteredItems: [],
+  selectedFaqArticleId: null,
   currentComposerStatus: '未取得',
   composerTone: 'unknown',
   composerUpdatedAt: null,
@@ -336,6 +341,7 @@ const state = {
   qualityPatrolApprovalPlannedStage: null,
   paneUpdatedAt: {},
   activePane: 'home',
+  operatorPreviewAction: null,
   auditEntrySourcePane: null,
   auditEntryTraceId: null,
   buildMeta: null,
@@ -727,6 +733,7 @@ const USERS_SUMMARY_SORT_TYPES = Object.freeze({
   updatedAt: 'date',
   currentPeriodEnd: 'date',
   nextTodoDueAt: 'date',
+  nextCheck: 'date',
   lineUserId: 'string',
   memberNumber: 'string',
   category: 'string',
@@ -804,18 +811,30 @@ const USERS_QUICK_FILTER_LABELS = Object.freeze({
   canceled: '停止',
   unknown: '不明'
 });
+const OPERATOR_PRIMARY_NAV = Object.freeze(['home', 'alerts', 'read-model', 'city-pack', 'llm']);
+const CITY_PACK_OPERATOR_MODE = Object.freeze({
+  guide: 'guide',
+  emergency: 'emergency'
+});
+const OPERATOR_BANNED_FIRST_VIEW_TERMS = Object.freeze([
+  'trace',
+  'evidence',
+  'policy',
+  'diagnostics',
+  'json',
+  'selection detail',
+  'blocked',
+  'all'
+]);
 const USERS_SUMMARY_OPS_COLUMN_KEYS = Object.freeze([
   'lineUserId',
-  'category',
-  'status',
   'plan',
   'subscriptionStatus',
-  'currentPeriodEnd',
-  'deliveryCount',
-  'clickCount',
-  'reactionRate'
+  'reactionRate',
+  'llmUsage',
+  'nextCheck'
 ]);
-const OPS_DENSE_DETAIL_PANES = new Set(['composer', 'monitor', 'errors', 'emergency-layer']);
+const OPS_DENSE_DETAIL_PANES = new Set(['composer', 'monitor', 'errors', 'emergency-layer', 'llm']);
 const SYSTEM_CONSOLE_SECTION_ORDER = Object.freeze(['overview', 'warnings', 'actions', 'details', 'raw']);
 const USERS_SUMMARY_COLUMN_KEYS = Object.freeze([
   'createdAt',
@@ -829,6 +848,7 @@ const USERS_SUMMARY_COLUMN_KEYS = Object.freeze([
   'billingIntegrity',
   'currentPeriodEnd',
   'llmUsage',
+  'nextCheck',
   'todoProgressRate',
   'localGuidanceCoverage',
   'llmUsageToday',
@@ -890,7 +910,8 @@ const OPS_UI_V3_PANES = Object.freeze([
   'errors',
   'read-model',
   'city-pack',
-  'emergency-layer'
+  'emergency-layer',
+  'llm'
 ]);
 
 const SYSTEM_CONSOLE_V1_PANES = Object.freeze([
@@ -908,13 +929,13 @@ const SYSTEM_CONSOLE_V1_PANES = Object.freeze([
 ]);
 
 const V3_PANE_HEADER_MAP = Object.freeze({
-  home: Object.freeze({ titleKey: 'ui.label.v3.page.home', titleFallback: '今日の優先', subtitleKey: 'ui.desc.v3.page.home', subtitleFallback: '今日の優先タスクを確認し、最初に着手する作業を決めます。' }),
-  alerts: Object.freeze({ titleKey: 'ui.label.v3.page.alerts', titleFallback: '要対応', subtitleKey: 'ui.desc.v3.page.alerts', subtitleFallback: '要対応を優先順に確認し、この画面から対応開始できます。' }),
+  home: Object.freeze({ titleKey: 'ui.label.v3.page.home', titleFallback: 'ダッシュボード', subtitleKey: 'ui.desc.v3.page.home', subtitleFallback: '登録者数、有料ユーザー数、反応率、エンゲージメント、FAQ稼働状況を確認し、次の作業へ進みます。' }),
+  alerts: Object.freeze({ titleKey: 'ui.label.v3.page.alerts', titleFallback: '通知配信状況', subtitleKey: 'ui.desc.v3.page.alerts', subtitleFallback: '通知の準備、送信、結果確認のどこから着手するかを決めます。' }),
   composer: Object.freeze({ titleKey: 'ui.label.v3.page.composer', titleFallback: '送信内容を作る', subtitleKey: 'ui.desc.v3.page.composer', subtitleFallback: '送信内容を作成し、実行前の最終確認まで進めます。' }),
   monitor: Object.freeze({ titleKey: 'ui.label.v3.page.monitor', titleFallback: '配信結果を見る', subtitleKey: 'ui.desc.v3.page.monitor', subtitleFallback: '配信結果を確認し、対応が必要な対象を特定します。' }),
   errors: Object.freeze({ titleKey: 'ui.label.v3.page.errors', titleFallback: '異常対応', subtitleKey: 'ui.desc.v3.page.errors', subtitleFallback: '復旧が必要な異常を確認し、次の対応を決めます。' }),
-  'read-model': Object.freeze({ titleKey: 'ui.label.v3.page.readModel', titleFallback: '会員を確認', subtitleKey: 'ui.desc.v3.page.readModel', subtitleFallback: '会員の状態を比較し、必要な対象の確認に進みます。' }),
-  'city-pack': Object.freeze({ titleKey: 'ui.label.v3.page.cityPack', titleFallback: '地域案内', subtitleKey: 'ui.desc.v3.page.cityPack', subtitleFallback: '地域案内の内容を確認・更新し、公開状態を管理します。' }),
+  'read-model': Object.freeze({ titleKey: 'ui.label.v3.page.readModel', titleFallback: '会員情報', subtitleKey: 'ui.desc.v3.page.readModel', subtitleFallback: '確認する会員を見つけて、契約状態や直近反応を把握します。' }),
+  'city-pack': Object.freeze({ titleKey: 'ui.label.v3.page.cityPack', titleFallback: 'City Pack・緊急レイヤー', subtitleKey: 'ui.desc.v3.page.cityPack', subtitleFallback: '地域案内と緊急対応を切り替えながら、公開・停止・削除や承認・送信を進めます。' }),
   'emergency-layer': Object.freeze({ titleKey: 'ui.label.v3.page.emergencyLayer', titleFallback: '緊急対応', subtitleKey: 'ui.desc.v3.page.emergencyLayer', subtitleFallback: '緊急情報を確認し、通知が必要かを判断します。' }),
   settings: Object.freeze({ titleKey: 'ui.label.v3.page.settings', titleFallback: '運用設定', subtitleKey: 'ui.desc.v3.page.settings', subtitleFallback: '設定値の確認と変更判断を行います。' }),
   'ops-system-health': Object.freeze({ titleKey: 'ui.label.v3.page.systemHealth', titleFallback: 'システム健全性', subtitleKey: 'ui.desc.v3.page.systemHealth', subtitleFallback: 'システム状態を確認し、問題の切り分けに使います。' }),
@@ -922,7 +943,7 @@ const V3_PANE_HEADER_MAP = Object.freeze({
   audit: Object.freeze({ titleKey: 'ui.label.v3.page.audit', titleFallback: 'システム記録', subtitleKey: 'ui.desc.v3.page.audit', subtitleFallback: 'trace と操作記録を確認し、必要な証跡を追います。' }),
   'quality-patrol': Object.freeze({ titleKey: 'ui.label.v3.page.qualityPatrol', titleFallback: '品質レビュー', subtitleKey: 'ui.desc.v3.page.qualityPatrol', subtitleFallback: '品質観測の結果と改善候補を確認します。' }),
   maintenance: Object.freeze({ titleKey: 'ui.label.v3.page.maintenance', titleFallback: '保守と復旧', subtitleKey: 'ui.desc.v3.page.maintenance', subtitleFallback: '回復操作と保守手順を確認します。' }),
-  llm: Object.freeze({ titleKey: 'ui.label.v3.page.llm', titleFallback: 'LLM設定と検証', subtitleKey: 'ui.desc.v3.page.llm', subtitleFallback: 'LLM の設定、実行、品質確認を行います。' }),
+  llm: Object.freeze({ titleKey: 'ui.label.v3.page.llm', titleFallback: 'FAQ', subtitleKey: 'ui.desc.v3.page.llm', subtitleFallback: 'FAQの公開状態を確認し、新規登録・停止・削除の前に内容全体を見直します。' }),
   vendors: Object.freeze({ titleKey: 'ui.label.v3.page.vendors', titleFallback: 'ベンダー連携', subtitleKey: 'ui.desc.v3.page.vendors', subtitleFallback: 'ベンダーの状態と連携情報を確認します。' }),
   'developer-map': Object.freeze({ titleKey: 'ui.label.v3.page.developerMap', titleFallback: '開発マップ', subtitleKey: 'ui.desc.v3.page.developerMap', subtitleFallback: '構造と依存関係を開発者向けに確認します。' }),
   'developer-manual-redac': Object.freeze({ titleKey: 'ui.label.v3.page.developerManualRedac', titleFallback: '取説（Redac）', subtitleKey: 'ui.desc.v3.page.developerManualRedac', subtitleFallback: 'Redac 向けの運用手順を確認します。' }),
@@ -930,13 +951,13 @@ const V3_PANE_HEADER_MAP = Object.freeze({
 });
 
 const V3_TASK_CONTEXT_MAP = Object.freeze({
-  home: Object.freeze({ key: 'ui.label.v3.task.home', fallback: 'Today / 今日の優先タスク' }),
-  alerts: Object.freeze({ key: 'ui.label.v3.task.alerts', fallback: 'Today / 要対応を確認する' }),
+  home: Object.freeze({ key: 'ui.label.v3.task.home', fallback: 'ダッシュボード / 利用状況を確認する' }),
+  alerts: Object.freeze({ key: 'ui.label.v3.task.alerts', fallback: '通知配信状況 / 次の着手先を決める' }),
   composer: Object.freeze({ key: 'ui.label.v3.task.composer', fallback: 'Messages / 送信内容を作る' }),
   monitor: Object.freeze({ key: 'ui.label.v3.task.monitor', fallback: 'Messages / 配信結果を見る' }),
   errors: Object.freeze({ key: 'ui.label.v3.task.errors', fallback: 'Recovery / 異常対応を進める' }),
-  'read-model': Object.freeze({ key: 'ui.label.v3.task.readModel', fallback: 'Members / 会員を確認する' }),
-  'city-pack': Object.freeze({ key: 'ui.label.v3.task.cityPack', fallback: 'Regional Ops / 地域案内を管理する' }),
+  'read-model': Object.freeze({ key: 'ui.label.v3.task.readModel', fallback: '会員情報 / 誰を確認するか決める' }),
+  'city-pack': Object.freeze({ key: 'ui.label.v3.task.cityPack', fallback: 'City Pack・緊急レイヤー / 公開や承認の前に内容を確認する' }),
   'emergency-layer': Object.freeze({ key: 'ui.label.v3.task.emergencyLayer', fallback: 'Regional Ops / 緊急対応を進める' }),
   settings: Object.freeze({ key: 'ui.label.v3.task.settings', fallback: 'System Console / 運用設定を確認する' }),
   'ops-system-health': Object.freeze({ key: 'ui.label.v3.task.systemHealth', fallback: 'System Console / システム状態を確認する' }),
@@ -944,7 +965,7 @@ const V3_TASK_CONTEXT_MAP = Object.freeze({
   audit: Object.freeze({ key: 'ui.label.v3.task.audit', fallback: 'System Console / 記録を確認する' }),
   'quality-patrol': Object.freeze({ key: 'ui.label.v3.task.qualityPatrol', fallback: 'System Console / 品質を確認する' }),
   maintenance: Object.freeze({ key: 'ui.label.v3.task.maintenance', fallback: 'System Console / 保守と復旧を進める' }),
-  llm: Object.freeze({ key: 'ui.label.v3.task.llm', fallback: 'System Console / LLM設定と検証を進める' }),
+  llm: Object.freeze({ key: 'ui.label.v3.task.llm', fallback: 'FAQ / 登録・停止・削除の前に内容を確認する' }),
   vendors: Object.freeze({ key: 'ui.label.v3.task.vendors', fallback: 'System Console / ベンダー連携を確認する' }),
   'developer-map': Object.freeze({ key: 'ui.label.v3.task.developerMap', fallback: 'System Console / 開発マップを確認する' }),
   'developer-manual-redac': Object.freeze({ key: 'ui.label.v3.task.developerManualRedac', fallback: 'System Console / Redac 向け手順を確認する' }),
@@ -952,13 +973,13 @@ const V3_TASK_CONTEXT_MAP = Object.freeze({
 });
 
 const V3_PANE_SEARCH_INDEX = Object.freeze({
-  home: Object.freeze(['today', '今日', '優先', 'dashboard', 'ダッシュボード']),
-  alerts: Object.freeze(['alert', '要対応', '対応', 'today']),
+  home: Object.freeze(['dashboard', 'ダッシュボード', '利用状況', '登録者数', 'faq']),
+  alerts: Object.freeze(['alerts', '通知', '配信', '要対応', '結果確認']),
   composer: Object.freeze(['compose', 'composer', '送信', '作成', 'message']),
   monitor: Object.freeze(['monitor', '配信結果', '結果', 'delivery']),
   errors: Object.freeze(['error', 'errors', '異常', '復旧', 'recovery']),
-  'read-model': Object.freeze(['member', 'members', '会員', 'read model']),
-  'city-pack': Object.freeze(['city', 'pack', '地域案内', 'regional']),
+  'read-model': Object.freeze(['member', 'members', '会員', '会員情報']),
+  'city-pack': Object.freeze(['city', 'pack', '地域案内', '緊急', 'emergency']),
   'emergency-layer': Object.freeze(['emergency', '緊急', 'alert', 'regional']),
   settings: Object.freeze(['setting', 'settings', '設定', 'system']),
   'ops-system-health': Object.freeze(['health', 'system health', '健全性', 'system']),
@@ -966,7 +987,7 @@ const V3_PANE_SEARCH_INDEX = Object.freeze({
   audit: Object.freeze(['audit', 'record', '記録', 'trace', 'system']),
   'quality-patrol': Object.freeze(['quality', '品質', 'patrol', 'system']),
   maintenance: Object.freeze(['maintenance', '保守', '復旧', 'system']),
-  llm: Object.freeze(['llm', 'ai', '検証', 'system']),
+  llm: Object.freeze(['faq', 'よくある質問', '質問', '回答']),
   vendors: Object.freeze(['vendor', 'vendors', 'ベンダー', 'system']),
   'developer-map': Object.freeze(['developer map', '開発マップ', 'system']),
   'developer-manual-redac': Object.freeze(['redac', '取説', 'manual', 'system']),
@@ -986,20 +1007,20 @@ const PAGE_HEADER_ACTION_MAP = Object.freeze({
 const V3_DECISION_CARD_COPY_MAP = Object.freeze({
   home: Object.freeze({
     titleKey: 'ui.label.v3.decision.home.title',
-    titleFallback: '最初にやることを決める',
+    titleFallback: '利用状況を確認して次に進む',
     primaryKey: 'ui.label.v3.decision.home.primary',
-    primaryFallback: '要対応を確認する',
+    primaryFallback: '通知配信状況を見る',
     secondaryKey: 'ui.label.v3.decision.home.secondary',
-    secondaryFallback: '配信結果を見る',
+    secondaryFallback: 'City Pack・緊急レイヤーを見る',
     hideTertiary: true
   }),
   alerts: Object.freeze({
     titleKey: 'ui.label.v3.decision.alerts.title',
-    titleFallback: '最初の案件から着手する',
+    titleFallback: '何から着手するか決める',
     primaryKey: 'ui.label.v3.decision.alerts.primary',
-    primaryFallback: '最初の案件へ進む',
+    primaryFallback: '新しい通知を作る',
     secondaryKey: 'ui.label.v3.decision.alerts.secondary',
-    secondaryFallback: '一覧を更新する',
+    secondaryFallback: '配信結果を見る',
     hideTertiary: true
   }),
   composer: Object.freeze({
@@ -1033,20 +1054,20 @@ const V3_DECISION_CARD_COPY_MAP = Object.freeze({
   }),
   'read-model': Object.freeze({
     titleKey: 'ui.label.v3.decision.readModel.title',
-    titleFallback: '会員の状態から次の確認先を決める',
+    titleFallback: '確認する会員を選ぶ',
     primaryKey: 'ui.label.v3.decision.readModel.primary',
-    primaryFallback: '会員を絞り込む',
+    primaryFallback: '会員詳細を開く',
     secondaryKey: 'ui.label.v3.decision.readModel.secondary',
     secondaryFallback: '一覧を更新する',
     hideTertiary: true
   }),
   'city-pack': Object.freeze({
     titleKey: 'ui.label.v3.decision.cityPack.title',
-    titleFallback: '地域案内の要確認を片づける',
+    titleFallback: '地域案内と緊急対応を確認する',
     primaryKey: 'ui.label.v3.decision.cityPack.primary',
-    primaryFallback: '要確認の候補を見る',
+    primaryFallback: '地域案内を見る',
     secondaryKey: 'ui.label.v3.decision.cityPack.secondary',
-    secondaryFallback: '一覧を更新する',
+    secondaryFallback: '緊急対応を見る',
     hideTertiary: true
   }),
   'emergency-layer': Object.freeze({
@@ -1057,6 +1078,46 @@ const V3_DECISION_CARD_COPY_MAP = Object.freeze({
     secondaryKey: 'ui.label.v3.decision.emergencyLayer.secondary',
     secondaryFallback: '受信箱を更新する',
     hideTertiary: true
+  }),
+  llm: Object.freeze({
+    titleKey: 'ui.label.v3.decision.faq.title',
+    titleFallback: 'FAQの内容を確認して登録する',
+    primaryKey: 'ui.label.v3.decision.faq.primary',
+    primaryFallback: '新しい質問を登録する',
+    secondaryKey: 'ui.label.v3.decision.faq.secondary',
+    secondaryFallback: '一覧を更新する',
+    hideTertiary: true
+  })
+});
+
+const OPERATOR_DESTINATION_MAP = Object.freeze({
+  home: Object.freeze({ pane: 'home', nextActionLabel: 'ダッシュボードを開く' }),
+  alerts: Object.freeze({ pane: 'alerts', nextActionLabel: '通知配信状況を見る' }),
+  composer: Object.freeze({ pane: 'composer', nextActionLabel: '新しい通知を作る' }),
+  monitor: Object.freeze({ pane: 'monitor', nextActionLabel: '配信結果を見る' }),
+  errors: Object.freeze({ pane: 'errors', nextActionLabel: '異常対応を見る' }),
+  'read-model': Object.freeze({ pane: 'read-model', nextActionLabel: '会員情報を見る' }),
+  'city-pack:guide': Object.freeze({
+    pane: 'city-pack',
+    cityPackOperatorMode: CITY_PACK_OPERATOR_MODE.guide,
+    nextActionLabel: '地域案内を開く'
+  }),
+  'city-pack:emergency': Object.freeze({
+    pane: 'city-pack',
+    cityPackOperatorMode: CITY_PACK_OPERATOR_MODE.emergency,
+    nextActionLabel: '緊急対応を開く'
+  }),
+  llm: Object.freeze({ pane: 'llm', nextActionLabel: 'FAQを開く' }),
+  settings: Object.freeze({ pane: 'settings', nextActionLabel: 'システム管理を開く' }),
+  maintenance: Object.freeze({ pane: 'maintenance', nextActionLabel: '保守画面を開く' })
+});
+
+const OPERATOR_PREVIEW_ACTION_MODEL = Object.freeze({
+  sections: Object.freeze({
+    current: '現在登録されている内容',
+    next: '実行後の状態',
+    changes: '変更される項目',
+    meta: '影響と完了後'
   })
 });
 
@@ -1123,10 +1184,9 @@ const DASHBOARD_BAND_METRIC_KEYS = Object.freeze({
 const DASHBOARD_FOCUS_METRICS = Object.freeze([
   'registrations',
   'proActive',
-  'notifications',
   'reaction',
-  'llmBlockRate',
-  'dependencyBlockRate'
+  'engagement',
+  'faq'
 ]);
 const OPS_SECTION_ORDER = Object.freeze([
   'notifications',
@@ -2068,6 +2128,7 @@ async function runInitialDataLoads(options) {
   loadCityPackMetrics({ notify: false });
   loadCityPackAuditRuns({ notify: false });
   loadCityPackComposition({ notify: false });
+  loadFaqOperatorData({ notify: false });
   loadDashboardKpis({ notify: false });
   loadAlertsSummary({ notify: false });
   loadRepoMap({ notify: false });
@@ -2886,6 +2947,10 @@ function isSystemConsolePane(paneKey) {
   return SYSTEM_CONSOLE_V1_PANES.includes(String(paneKey || '').trim());
 }
 
+function isOperatorPrimaryPane(paneKey) {
+  return OPERATOR_PRIMARY_NAV.includes(String(paneKey || '').trim());
+}
+
 function isOpsShellActive() {
   return Boolean(isAdminUiV3Enabled() && state.uiShell === UI_SHELL_OPS);
 }
@@ -2893,6 +2958,7 @@ function isOpsShellActive() {
 function resolveUiShellForPane(paneKey, fallbackShell) {
   const preferred = fallbackShell === UI_SHELL_SYSTEM ? UI_SHELL_SYSTEM : UI_SHELL_OPS;
   const pane = String(paneKey || '').trim();
+  if (pane === 'llm' && normalizeRoleValue(state.role) === 'operator') return UI_SHELL_OPS;
   if (isSystemConsolePane(pane)) return UI_SHELL_SYSTEM;
   if (isOpsUiV3Pane(pane)) return UI_SHELL_OPS;
   return preferred;
@@ -2905,14 +2971,15 @@ function getRoleDisplayLabel(roleValue) {
 }
 
 function getShellDisplayLabel(shellValue) {
-  if (shellValue === UI_SHELL_SYSTEM) return t('ui.label.v3.shell.system', 'System Console');
-  return t('ui.label.v3.shell.ops', 'Ops UI');
+  if (shellValue === UI_SHELL_SYSTEM) return 'システム管理';
+  return '運用画面';
 }
 
 function updateAdminV3ShellChrome() {
   if (!appShell) return;
   const enabled = isAdminUiV3Enabled();
   appShell.classList.toggle('admin-v3-shell-active', enabled);
+  appShell.classList.toggle('operator-minimal-shell-v1', enabled);
   if (!enabled) {
     appShell.removeAttribute('data-ui-shell');
     return;
@@ -2920,6 +2987,7 @@ function updateAdminV3ShellChrome() {
   const nextShell = resolveUiShellForPane(state.activePane, state.uiShell);
   state.uiShell = nextShell;
   appShell.setAttribute('data-ui-shell', nextShell);
+  appShell.setAttribute('data-view-pane', String(state.activePane || 'home'));
   const scopeEl = document.getElementById('v3-shell-scope');
   if (scopeEl) scopeEl.textContent = `${getShellDisplayLabel(nextShell)} / ${getRoleDisplayLabel(state.role)}`;
   const badgeEl = document.getElementById('page-shell-badge');
@@ -2927,6 +2995,104 @@ function updateAdminV3ShellChrome() {
   document.querySelectorAll('[data-ui-shell-target]').forEach((buttonEl) => {
     buttonEl.classList.toggle('is-active', buttonEl.getAttribute('data-ui-shell-target') === nextShell);
   });
+  const opsButton = document.getElementById('v3-shell-switch-ops');
+  const systemButton = document.getElementById('v3-shell-switch-system');
+  if (opsButton) opsButton.hidden = nextShell === UI_SHELL_OPS;
+  if (systemButton) systemButton.hidden = nextShell === UI_SHELL_SYSTEM;
+}
+
+function setCityPackOperatorMode(mode, options) {
+  const nextMode = mode === CITY_PACK_OPERATOR_MODE.emergency ? CITY_PACK_OPERATOR_MODE.emergency : CITY_PACK_OPERATOR_MODE.guide;
+  state.cityPackOperatorMode = nextMode;
+  document.querySelectorAll('[data-city-pack-operator-mode]').forEach((buttonEl) => {
+    const isActive = buttonEl.getAttribute('data-city-pack-operator-mode') === nextMode;
+    buttonEl.classList.toggle('is-active', isActive);
+    buttonEl.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+  const noteEl = document.getElementById('city-pack-operator-mode-note');
+  if (noteEl) {
+    noteEl.textContent = nextMode === CITY_PACK_OPERATOR_MODE.emergency
+      ? '緊急対応の受信箱を確認し、承認・送信・却下の前に現在内容と実行後の状態を確認できます。'
+      : '地域案内の登録内容を確認し、公開・停止・削除の前に全体プレビューを確認できます。';
+  }
+  renderCityPackOperatorSurface();
+  const opts = options && typeof options === 'object' ? options : {};
+  if (opts.activatePane === true) activatePane('city-pack', { historyMode: opts.historyMode || 'push' });
+}
+
+function resolveOperatorDestinationPane(paneKey, options) {
+  const pane = String(paneKey || '').trim();
+  const opts = options && typeof options === 'object' ? options : {};
+  if (pane === 'maintenance' || pane === 'settings' || pane === 'monitor' || pane === 'composer' || pane === 'errors' || pane === 'read-model' || pane === 'home' || pane === 'alerts') {
+    return { pane };
+  }
+  if (pane === 'emergency-layer') {
+    return { pane: 'city-pack', cityPackOperatorMode: CITY_PACK_OPERATOR_MODE.emergency };
+  }
+  if (pane === 'city-pack') {
+    return {
+      pane: 'city-pack',
+      cityPackOperatorMode: opts.cityPackOperatorMode === CITY_PACK_OPERATOR_MODE.emergency
+        ? CITY_PACK_OPERATOR_MODE.emergency
+        : CITY_PACK_OPERATOR_MODE.guide
+    };
+  }
+  if (pane === 'llm') {
+    return { pane: 'llm' };
+  }
+  return { pane };
+}
+
+function openOperatorDestinationPane(paneKey, options) {
+  const destination = resolveOperatorDestinationPane(paneKey, options);
+  if (destination.cityPackOperatorMode) {
+    setCityPackOperatorMode(destination.cityPackOperatorMode);
+  }
+  activatePane(destination.pane, { historyMode: (options && options.historyMode) || 'push' });
+}
+
+function resolveOperatorDestinationMeta(key, options) {
+  const normalized = String(key || '').trim();
+  const meta = OPERATOR_DESTINATION_MAP[normalized] || null;
+  if (meta) return meta;
+  const destination = resolveOperatorDestinationPane(normalized, options);
+  if (destination.cityPackOperatorMode === CITY_PACK_OPERATOR_MODE.emergency) return OPERATOR_DESTINATION_MAP['city-pack:emergency'];
+  if (destination.pane === 'city-pack') return OPERATOR_DESTINATION_MAP['city-pack:guide'];
+  return OPERATOR_DESTINATION_MAP[destination.pane] || { pane: destination.pane, nextActionLabel: '画面を開く' };
+}
+
+function resolveOperatorAlertSeverityLabel(item) {
+  const severity = String(item && item.severity || '').trim().toUpperCase();
+  if (severity === 'DANGER' || (item && item.type === 'kill_switch_on')) return '緊急';
+  if (severity === 'WARN') return '注意';
+  return '確認';
+}
+
+function resolveOperatorAlertTargetLabel(item) {
+  const type = String(item && item.type || '').trim();
+  if (type === 'kill_switch_on') return '通知配信';
+  if (type === 'link_warn') return '通知リンク';
+  if (type === 'target_zero') return '配信対象';
+  if (type === 'unapproved_notifications') return '通知下書き';
+  if (type === 'retry_queue_pending') return '再送待ち';
+  return normalizeCopyForRole(item && item.impact ? item.impact : '-', state.role);
+}
+
+function resolveOperatorAlertScheduleLabel(item) {
+  const type = String(item && item.type || '').trim();
+  if (type === 'kill_switch_on' || type === 'link_warn') return '今すぐ';
+  if (type === 'retry_queue_pending') return '本日中';
+  if (type === 'unapproved_notifications') return '送信前';
+  if (type === 'target_zero') return '次回配信前';
+  return '確認時';
+}
+
+function resolveOperatorAlertDestination(item) {
+  const type = String(item && item.type || '').trim();
+  if (type === 'kill_switch_on') return resolveOperatorDestinationMeta('settings');
+  if (type === 'link_warn') return resolveOperatorDestinationMeta('errors');
+  if (type === 'retry_queue_pending') return resolveOperatorDestinationMeta('monitor');
+  return resolveOperatorDestinationMeta(item && item.actionPane ? item.actionPane : 'alerts');
 }
 
 function applySystemConsoleHierarchy() {
@@ -3928,6 +4094,325 @@ async function primeLlmWorkspaceView(view) {
   }
 }
 
+function normalizeFaqOperatorItem(item) {
+  const row = item && typeof item === 'object' ? item : {};
+  return {
+    id: typeof row.id === 'string' ? row.id : '',
+    title: typeof row.title === 'string' ? row.title : '',
+    body: typeof row.body === 'string' ? row.body : '',
+    status: typeof row.status === 'string' ? row.status : 'draft',
+    locale: typeof row.locale === 'string' ? row.locale : 'ja',
+    riskLevel: typeof row.riskLevel === 'string' ? row.riskLevel : 'low',
+    version: typeof row.version === 'string' ? row.version : '1.0.0',
+    versionSemver: typeof row.versionSemver === 'string' ? row.versionSemver : '1.0.0',
+    validUntil: typeof row.validUntil === 'string' ? row.validUntil : null,
+    allowedIntents: Array.isArray(row.allowedIntents) ? row.allowedIntents.slice() : ['FAQ'],
+    updatedAt: row.updatedAt || row.createdAt || null
+  };
+}
+
+function resolveFaqStatusLabel(status) {
+  const normalized = String(status || '').trim().toLowerCase();
+  if (normalized === 'active') return '公開中';
+  if (normalized === 'disabled') return '停止中';
+  return '準備中';
+}
+
+function resolveFaqNextActionLabel(item) {
+  const status = String(item && item.status || '').trim().toLowerCase();
+  if (status === 'disabled') return '公開を再開する';
+  if (status === 'draft') return '内容を確認する';
+  return '公開内容を見直す';
+}
+
+function createDefaultFaqDraft() {
+  const validUntil = new Date(Date.now() + (1000 * 60 * 60 * 24 * 365)).toISOString();
+  return {
+    id: '',
+    title: '',
+    body: '',
+    status: 'active',
+    locale: 'ja',
+    riskLevel: 'low',
+    version: '1.0.0',
+    versionSemver: '1.0.0',
+    validUntil,
+    allowedIntents: ['FAQ']
+  };
+}
+
+function getSelectedFaqOperatorArticle() {
+  const id = typeof state.selectedFaqArticleId === 'string' ? state.selectedFaqArticleId : '';
+  return (Array.isArray(state.faqItems) ? state.faqItems : []).find((item) => item && item.id === id) || null;
+}
+
+function populateFaqOperatorEditor(item) {
+  const article = item && typeof item === 'object' ? item : createDefaultFaqDraft();
+  setTextContent('faq-selected-id', article.id ? `選択中: ${article.id}` : '選択中: 新規作成');
+  setInputValue('faq-question-title', article.title || '');
+  setInputValue('faq-question-body', article.body || '');
+  setSelectValue('faq-question-status', article.status || 'active');
+  const summaryEl = document.getElementById('faq-selection-summary');
+  if (summaryEl) {
+    summaryEl.textContent = article.id
+      ? `現在は「${resolveFaqStatusLabel(article.status)}」です。登録内容を見直してから保存・停止・削除を選べます。`
+      : '新しいFAQを登録します。登録前に、いま未登録の内容と登録後の状態をプレビューで確認できます。';
+  }
+}
+
+function renderFaqOperatorRows() {
+  const tbody = document.getElementById('faq-operator-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const items = Array.isArray(state.faqFilteredItems) ? state.faqFilteredItems : [];
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 4;
+    td.textContent = 'データなし';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  items.forEach((item) => {
+    const tr = document.createElement('tr');
+    tr.classList.add('clickable-row');
+    if (item.id && state.selectedFaqArticleId === item.id) tr.classList.add('row-active');
+    [
+      item.title || '-',
+      resolveFaqStatusLabel(item.status),
+      formatTimestampForList(item.updatedAt),
+      resolveFaqNextActionLabel(item)
+    ].forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = toUnifiedDisplay(value, '-');
+      tr.appendChild(td);
+    });
+    tr.addEventListener('click', () => {
+      state.selectedFaqArticleId = item.id || null;
+      populateFaqOperatorEditor(item);
+      renderFaqOperatorRows();
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderFaqOperatorSurface() {
+  const items = Array.isArray(state.faqItems) ? state.faqItems : [];
+  const activeCount = items.filter((item) => String(item && item.status || '').toLowerCase() === 'active').length;
+  const disabledCount = items.filter((item) => String(item && item.status || '').toLowerCase() === 'disabled').length;
+  const latestUpdated = items
+    .map((item) => (item && item.updatedAt ? Date.parse(item.updatedAt) : null))
+    .filter((value) => Number.isFinite(value))
+    .sort((a, b) => b - a)[0];
+  setTextContent('faq-summary-active', String(activeCount));
+  setTextContent('faq-summary-disabled', String(disabledCount));
+  setTextContent('faq-summary-updated', Number.isFinite(latestUpdated) ? formatTimestampForList(new Date(latestUpdated).toISOString()) : '-');
+  renderFaqOperatorRows();
+  const selected = getSelectedFaqOperatorArticle();
+  populateFaqOperatorEditor(selected);
+}
+
+async function loadFaqOperatorData(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const traceId = ensureTraceInput('llm-trace') || newTraceId();
+  const data = await adminFetchJson({
+    url: '/api/admin/kb/articles?includeDisabled=1&limit=100&status=all',
+    traceId
+  });
+  const rows = data && data.ok && Array.isArray(data.data) ? data.data : [];
+  if (data && data.ok) {
+    state.faqItems = rows.map((item) => normalizeFaqOperatorItem(item));
+    state.faqFilteredItems = state.faqItems.slice();
+    if (state.selectedFaqArticleId && !state.faqItems.some((item) => item.id === state.selectedFaqArticleId)) {
+      state.selectedFaqArticleId = null;
+    }
+    if (!state.selectedFaqArticleId && state.faqItems[0] && state.faqItems[0].id) {
+      state.selectedFaqArticleId = state.faqItems[0].id;
+    }
+    renderFaqOperatorSurface();
+    if (opts.notify) showToast('FAQ一覧を更新しました', 'ok');
+    return;
+  }
+  state.faqItems = [];
+  state.faqFilteredItems = [];
+  state.selectedFaqArticleId = null;
+  renderFaqOperatorSurface();
+  if (opts.notify) showToast('FAQ一覧の取得に失敗しました', 'danger');
+}
+
+function clearFaqOperatorDraft() {
+  state.selectedFaqArticleId = null;
+  populateFaqOperatorEditor(createDefaultFaqDraft());
+  renderFaqOperatorRows();
+  document.getElementById('faq-question-title')?.focus();
+}
+
+function readFaqOperatorEditorPayload() {
+  const selected = getSelectedFaqOperatorArticle();
+  const title = getInputValue('faq-question-title');
+  const body = getInputValue('faq-question-body');
+  const status = getSelectValue('faq-question-status') || 'active';
+  return Object.assign({}, selected || createDefaultFaqDraft(), {
+    title,
+    body,
+    status: status || 'active',
+    locale: 'ja',
+    riskLevel: 'low',
+    version: selected && selected.version ? selected.version : '1.0.0',
+    versionSemver: selected && selected.versionSemver ? selected.versionSemver : '1.0.0',
+    validUntil: selected && selected.validUntil ? selected.validUntil : new Date(Date.now() + (1000 * 60 * 60 * 24 * 365)).toISOString(),
+    allowedIntents: selected && Array.isArray(selected.allowedIntents) && selected.allowedIntents.length ? selected.allowedIntents.slice() : ['FAQ']
+  });
+}
+
+function buildFaqPreview(actionKey, article) {
+  const item = article && typeof article === 'object' ? article : createDefaultFaqDraft();
+  const targetStatus = actionKey === 'delete'
+    ? 'disabled'
+    : actionKey === 'stop'
+      ? 'disabled'
+      : (item.status || 'active');
+  const title = actionKey === 'delete'
+    ? 'FAQを削除する前に確認'
+    : actionKey === 'stop'
+      ? 'FAQの公開を停止する前に確認'
+      : item.id
+        ? 'FAQの登録内容を保存する前に確認'
+        : '新しいFAQを登録する前に確認';
+  const confirmLabel = actionKey === 'delete'
+    ? '削除する（履歴を残す）'
+    : actionKey === 'stop'
+      ? '公開を停止する'
+      : item.id
+        ? '登録内容を保存する'
+        : '登録する';
+  const current = item.id
+    ? [
+        { label: '質問', value: item.title || '-' },
+        { label: '公開状態', value: resolveFaqStatusLabel(item.status) },
+        { label: '回答内容', value: item.body || '-' }
+      ]
+    : [{ label: '現在', value: 'まだ登録されていません' }];
+  const next = [
+    { label: '質問', value: item.title || '-' },
+    { label: '公開状態', value: resolveFaqStatusLabel(targetStatus) },
+    { label: '回答内容', value: item.body || '-' }
+  ];
+  const changes = actionKey === 'delete'
+    ? [
+        { label: '削除される内容', value: item.title || '-' },
+        { label: '履歴', value: '履歴は残ります' }
+      ]
+    : actionKey === 'stop'
+      ? [{ label: '変更', value: '公開状態を停止中に変更します' }]
+      : item.id
+        ? [{ label: '更新', value: '質問と回答内容を保存します' }]
+        : [{ label: '登録', value: '新しいFAQを1件追加します' }];
+  const meta = createOperatorPreviewMetaRows([
+    { label: '影響件数', value: '1件' },
+    { label: '完了後に移動する画面', value: 'FAQ' }
+  ]);
+  return { title, confirmLabel, current, next, changes, meta };
+}
+
+async function saveFaqOperatorArticle() {
+  const payload = readFaqOperatorEditorPayload();
+  if (!payload.title || !payload.body) {
+    showToast('質問と回答内容を入力してください', 'warn');
+    return;
+  }
+  const selected = getSelectedFaqOperatorArticle();
+  openOperatorPreviewModal(Object.assign(
+    {},
+    buildFaqPreview('save', payload),
+    {
+      onConfirm: async () => {
+        const traceId = ensureTraceInput('llm-trace') || newTraceId();
+        const result = selected && selected.id
+          ? await adminFetchJson({
+              url: `/api/admin/kb/articles/${encodeURIComponent(selected.id)}`,
+              method: 'PATCH',
+              traceId,
+              payload: {
+                title: payload.title,
+                body: payload.body,
+                status: payload.status
+              }
+            })
+          : await adminFetchJson({
+              url: '/api/admin/kb/articles',
+              method: 'POST',
+              traceId,
+              payload
+            });
+        if (result && result.ok) {
+          showToast(selected && selected.id ? 'FAQを保存しました' : 'FAQを登録しました', 'ok');
+          await loadFaqOperatorData({ notify: false });
+          if (result.data && result.data.id) state.selectedFaqArticleId = result.data.id;
+          renderFaqOperatorSurface();
+          return;
+        }
+        showToast(selected && selected.id ? 'FAQの保存に失敗しました' : 'FAQの登録に失敗しました', 'danger');
+        throw new Error('faq_save_failed');
+      }
+    }
+  ));
+}
+
+async function stopFaqOperatorArticle() {
+  const selected = getSelectedFaqOperatorArticle();
+  if (!selected || !selected.id) {
+    showToast('停止するFAQを選択してください', 'warn');
+    return;
+  }
+  const payload = Object.assign({}, selected, { status: 'disabled' });
+  openOperatorPreviewModal(Object.assign({}, buildFaqPreview('stop', payload), {
+    onConfirm: async () => {
+      const traceId = ensureTraceInput('llm-trace') || newTraceId();
+      const result = await adminFetchJson({
+        url: `/api/admin/kb/articles/${encodeURIComponent(selected.id)}`,
+        method: 'PATCH',
+        traceId,
+        payload: { status: 'disabled' }
+      });
+      if (result && result.ok) {
+        showToast('FAQの公開を停止しました', 'ok');
+        await loadFaqOperatorData({ notify: false });
+        return;
+      }
+      showToast('FAQの停止に失敗しました', 'danger');
+      throw new Error('faq_stop_failed');
+    }
+  }));
+}
+
+async function deleteFaqOperatorArticle() {
+  const selected = getSelectedFaqOperatorArticle();
+  if (!selected || !selected.id) {
+    showToast('削除するFAQを選択してください', 'warn');
+    return;
+  }
+  openOperatorPreviewModal(Object.assign({}, buildFaqPreview('delete', selected), {
+    onConfirm: async () => {
+      const traceId = ensureTraceInput('llm-trace') || newTraceId();
+      const result = await adminFetchJson({
+        url: `/api/admin/kb/articles/${encodeURIComponent(selected.id)}`,
+        method: 'DELETE',
+        traceId
+      });
+      if (result && result.ok) {
+        showToast('FAQを削除しました（履歴は残ります）', 'ok');
+        state.selectedFaqArticleId = null;
+        await loadFaqOperatorData({ notify: false });
+        return;
+      }
+      showToast('FAQの削除に失敗しました', 'danger');
+      throw new Error('faq_delete_failed');
+    }
+  }));
+}
+
 function applyLlmWorkspaceView(view, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const pane = document.getElementById('pane-llm');
@@ -3935,7 +4420,18 @@ function applyLlmWorkspaceView(view, options) {
   const nextView = normalizeLlmWorkspaceView(view);
   state.llmWorkspaceView = nextView;
   pane.setAttribute('data-llm-workspace-view', nextView);
+  const faqSurface = document.getElementById('faq-operator-surface');
   const workspaceGrid = pane.querySelector('.llm-workspace-grid');
+  const operatorFaqMode = normalizeRoleValue(state.role) === 'operator' && isOpsShellActive();
+  if (faqSurface) {
+    faqSurface.classList.toggle('is-hidden', !operatorFaqMode);
+    faqSurface.setAttribute('aria-hidden', operatorFaqMode ? 'false' : 'true');
+  }
+  if (workspaceGrid) workspaceGrid.classList.toggle('is-hidden', operatorFaqMode);
+  if (operatorFaqMode) {
+    if (opts.persist === true) state.llmWorkspaceView = nextView;
+    return;
+  }
   if (workspaceGrid) workspaceGrid.setAttribute('data-llm-workspace-view', nextView);
   pane.querySelectorAll('[data-llm-view-target]').forEach((buttonEl) => {
     const target = normalizeLlmWorkspaceView(buttonEl.getAttribute('data-llm-view-target'));
@@ -4443,11 +4939,15 @@ function setupHomeControls() {
     btn.addEventListener('click', () => {
       const target = btn.getAttribute('data-open-pane');
       if (!target) return;
+      if (isOpsShellActive() && normalizeRoleValue(state.role) === 'operator') {
+        openOperatorDestinationPane(target, { historyMode: 'push' });
+        return;
+      }
       activatePane(target);
     });
   });
   document.getElementById('topbar-open-alerts')?.addEventListener('click', () => {
-    activatePane('alerts', { allowHiddenRollout: true, historyMode: 'push' });
+    openOperatorDestinationPane('alerts', { historyMode: 'push' });
     void loadAlertsSummary({ notify: false });
   });
   document.getElementById('home-run-test')?.addEventListener('click', () => {
@@ -4486,6 +4986,10 @@ function setupHeaderActions() {
     buttonEl.addEventListener('click', () => {
       const targetPane = buttonEl.getAttribute('data-open-pane');
       if (!targetPane) return;
+      if (isOpsShellActive() && normalizeRoleValue(state.role) === 'operator') {
+        openOperatorDestinationPane(targetPane, { historyMode: 'push' });
+        return;
+      }
       activatePane(targetPane, { historyMode: 'push' });
     });
   });
@@ -4503,6 +5007,128 @@ function setupHeaderActions() {
 function clearElementChildren(el) {
   if (!el) return;
   while (el.firstChild) el.removeChild(el.firstChild);
+}
+
+function normalizeOperatorPreviewEntries(entries, fallbackValue) {
+  const list = Array.isArray(entries) ? entries : [];
+  const normalized = list
+    .map((entry) => {
+      if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        const label = typeof entry.label === 'string' ? entry.label.trim() : '';
+        const value = typeof entry.value === 'string' ? entry.value.trim() : String(entry.value ?? '').trim();
+        if (!label && !value) return null;
+        if (!label) return { text: value || fallbackValue || '-' };
+        return { label, value: value || fallbackValue || '-' };
+      }
+      const text = typeof entry === 'string' ? entry.trim() : String(entry ?? '').trim();
+      if (!text) return null;
+      return { text };
+    })
+    .filter(Boolean);
+  if (normalized.length) return normalized;
+  return [{ text: fallbackValue || '-' }];
+}
+
+function renderOperatorPreviewEntries(elementId, entries, fallbackValue) {
+  const root = document.getElementById(elementId);
+  if (!root) return;
+  clearElementChildren(root);
+  normalizeOperatorPreviewEntries(entries, fallbackValue).forEach((entry) => {
+    const row = document.createElement('div');
+    row.className = 'operator-preview-entry';
+    if (entry.label) {
+      const labelEl = document.createElement('div');
+      labelEl.className = 'operator-preview-entry-label';
+      labelEl.textContent = entry.label;
+      row.appendChild(labelEl);
+    }
+    const valueEl = document.createElement('div');
+    valueEl.className = 'operator-preview-entry-value';
+    valueEl.textContent = entry.value || entry.text || fallbackValue || '-';
+    row.appendChild(valueEl);
+    root.appendChild(row);
+  });
+}
+
+function closeOperatorPreviewModal(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const modal = document.getElementById('operator-preview-modal');
+  if (modal) {
+    modal.classList.add('is-hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    modal.setAttribute('data-preview-visible', 'false');
+  }
+  const confirmBtn = document.getElementById('operator-preview-confirm');
+  if (confirmBtn) {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = t('ui.label.operator.preview.confirmDefault', '実行する');
+  }
+  if (opts.keepAction !== true) {
+    state.operatorPreviewAction = null;
+  }
+}
+
+function openOperatorPreviewModal(input) {
+  const modal = document.getElementById('operator-preview-modal');
+  if (!modal) return;
+  const preview = input && typeof input === 'object' ? input : {};
+  const title = typeof preview.title === 'string' && preview.title.trim() ? preview.title.trim() : '実行前の確認';
+  const confirmLabel = typeof preview.confirmLabel === 'string' && preview.confirmLabel.trim()
+    ? preview.confirmLabel.trim()
+    : '実行する';
+  const onConfirm = typeof preview.onConfirm === 'function' ? preview.onConfirm : null;
+  state.operatorPreviewAction = onConfirm ? { onConfirm } : null;
+  const titleEl = document.getElementById('operator-preview-title');
+  if (titleEl) titleEl.textContent = title;
+  renderOperatorPreviewEntries('operator-preview-current', preview.current, '-');
+  renderOperatorPreviewEntries('operator-preview-next', preview.next, '-');
+  renderOperatorPreviewEntries('operator-preview-changes', preview.changes, '-');
+  renderOperatorPreviewEntries('operator-preview-meta', preview.meta, '-');
+  const confirmBtn = document.getElementById('operator-preview-confirm');
+  if (confirmBtn) {
+    confirmBtn.disabled = !onConfirm;
+    confirmBtn.textContent = confirmLabel;
+  }
+  modal.classList.remove('is-hidden');
+  modal.setAttribute('aria-hidden', 'false');
+  modal.setAttribute('data-preview-visible', 'true');
+}
+
+function createOperatorPreviewMetaRows(extraRows) {
+  const rows = Array.isArray(extraRows) ? extraRows.slice() : [];
+  if (!rows.some((entry) => entry && entry.label === '取り消し可否')) {
+    rows.push({ label: '取り消し可否', value: '実行前まで戻れます' });
+  }
+  return rows;
+}
+
+function setupOperatorPreviewControls() {
+  document.querySelectorAll('[data-preview-close="true"]').forEach((element) => {
+    element.addEventListener('click', () => closeOperatorPreviewModal());
+  });
+  document.getElementById('operator-preview-close')?.addEventListener('click', () => {
+    closeOperatorPreviewModal();
+  });
+  document.getElementById('operator-preview-cancel')?.addEventListener('click', () => {
+    closeOperatorPreviewModal();
+  });
+  document.getElementById('operator-preview-confirm')?.addEventListener('click', async () => {
+    const action = state.operatorPreviewAction && typeof state.operatorPreviewAction.onConfirm === 'function'
+      ? state.operatorPreviewAction.onConfirm
+      : null;
+    if (!action) {
+      closeOperatorPreviewModal();
+      return;
+    }
+    const confirmBtn = document.getElementById('operator-preview-confirm');
+    if (confirmBtn) confirmBtn.disabled = true;
+    try {
+      await action();
+      closeOperatorPreviewModal();
+    } catch (_err) {
+      if (confirmBtn) confirmBtn.disabled = false;
+    }
+  });
 }
 
 function renderStringList(elementId, values, fallbackValue) {
@@ -6755,6 +7381,12 @@ function activatePane(target, options) {
   }
   if (nextPane === 'llm') {
     applyLlmWorkspaceView(resolveLlmWorkspaceViewFromLocation(), { persist: true, syncHistory: false });
+    if (normalizeRoleValue(state.role) === 'operator') {
+      void loadFaqOperatorData({ notify: false });
+    }
+  }
+  if (nextPane === 'city-pack') {
+    renderCityPackOperatorSurface();
   }
   if (opts.scrollTarget) {
     scrollToPaneAnchor(opts.scrollTarget);
@@ -7548,36 +8180,53 @@ function renderAlertsSummary(payload) {
   if (!rows.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 4;
+    td.colSpan = 5;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     body.appendChild(tr);
   } else {
     rows.forEach((item) => {
+      const destination = resolveOperatorAlertDestination(item);
       const tr = document.createElement('tr');
       if (item && item.severity) tr.setAttribute('data-alert-severity', String(item.severity));
+      tr.classList.add('clickable-row');
       const typeTd = document.createElement('td');
-      typeTd.textContent = item && item.typeLabel ? item.typeLabel : '-';
+      typeTd.textContent = normalizeCopyForRole(item && item.typeLabel ? item.typeLabel : '-', state.role);
       tr.appendChild(typeTd);
-      const countTd = document.createElement('td');
-      countTd.className = 'cell-num';
-      countTd.textContent = Number.isFinite(Number(item && item.count)) ? String(item.count) : '-';
-      tr.appendChild(countTd);
-      const impactTd = document.createElement('td');
-      impactTd.textContent = item && item.impact ? item.impact : '-';
-      tr.appendChild(impactTd);
+      const severityTd = document.createElement('td');
+      severityTd.textContent = resolveOperatorAlertSeverityLabel(item);
+      tr.appendChild(severityTd);
+      const targetTd = document.createElement('td');
+      targetTd.textContent = resolveOperatorAlertTargetLabel(item);
+      tr.appendChild(targetTd);
+      const scheduleTd = document.createElement('td');
+      scheduleTd.textContent = resolveOperatorAlertScheduleLabel(item);
+      tr.appendChild(scheduleTd);
       const actionTd = document.createElement('td');
-      if (item && item.actionPane) {
+      if (destination && destination.pane) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'secondary-btn';
-        button.textContent = item.actionLabel || t('ui.label.alerts.action.open', '開く');
-        button.addEventListener('click', () => activatePane(String(item.actionPane)));
+        button.textContent = destination.nextActionLabel || t('ui.label.alerts.action.open', '開く');
+        button.addEventListener('click', (event) => {
+          event.stopPropagation();
+          openOperatorDestinationPane(destination.pane, {
+            historyMode: 'push',
+            cityPackOperatorMode: destination.cityPackOperatorMode
+          });
+        });
         actionTd.appendChild(button);
       } else {
         actionTd.textContent = '-';
       }
       tr.appendChild(actionTd);
+      tr.addEventListener('click', () => {
+        if (!destination || !destination.pane) return;
+        openOperatorDestinationPane(destination.pane, {
+          historyMode: 'push',
+          cityPackOperatorMode: destination.cityPackOperatorMode
+        });
+      });
       body.appendChild(tr);
     });
   }
@@ -7587,11 +8236,9 @@ function renderAlertsSummary(payload) {
   const dangerCount = rows.filter((item) => String(item && item.severity || '').toUpperCase() === 'DANGER').length;
   const warnCount = rows.filter((item) => String(item && item.severity || '').toUpperCase() === 'WARN').length;
   const topItem = rows[0] && typeof rows[0] === 'object' ? rows[0] : null;
-  const topActionPane = topItem && typeof topItem.actionPane === 'string' && topItem.actionPane.trim()
-    ? topItem.actionPane.trim()
-    : 'monitor';
-  const topActionLabel = topItem && topItem.actionLabel
-    ? topItem.actionLabel
+  const topDestination = topItem ? resolveOperatorAlertDestination(topItem) : resolveOperatorDestinationMeta('composer');
+  const topActionLabel = topDestination && topDestination.nextActionLabel
+    ? topDestination.nextActionLabel
     : t('ui.label.v3.decision.alerts.primary', '最初の案件へ進む');
   if (priorityLeadEl) {
     priorityLeadEl.textContent = topItem
@@ -7609,15 +8256,23 @@ function renderAlertsSummary(payload) {
       : t('ui.label.alerts.nextStepIdle', '新しい要対応を待機');
   }
   if (primaryActionEl) {
-    primaryActionEl.textContent = normalizeCopyForRole(topActionLabel, state.role);
-    primaryActionEl.setAttribute('data-open-pane', topActionPane);
+    const nextButton = primaryActionEl.cloneNode(true);
+    nextButton.textContent = normalizeCopyForRole(topActionLabel, state.role);
     if (topItem) {
-      primaryActionEl.disabled = false;
-      primaryActionEl.removeAttribute('aria-disabled');
+      nextButton.disabled = false;
+      nextButton.removeAttribute('aria-disabled');
+      nextButton.addEventListener('click', () => {
+        if (!topDestination || !topDestination.pane) return;
+        openOperatorDestinationPane(topDestination.pane, {
+          historyMode: 'push',
+          cityPackOperatorMode: topDestination.cityPackOperatorMode
+        });
+      });
     } else {
-      primaryActionEl.disabled = true;
-      primaryActionEl.setAttribute('aria-disabled', 'true');
+      nextButton.disabled = true;
+      nextButton.setAttribute('aria-disabled', 'true');
     }
+    primaryActionEl.replaceWith(nextButton);
   }
   if (note) {
     note.textContent = `${t('ui.label.alerts.summary', '要対応合計')}: ${openAlerts} / ${t('ui.label.top.todayScheduled', '本日配信予定件数')}: ${scheduled}`;
@@ -7751,6 +8406,291 @@ function renderCityPackTaskSummary() {
   setTextContent('city-pack-priority-note', summary.primaryNote);
   setTextContent('city-pack-priority-secondary-task', summary.secondaryTask);
   setTextContent('city-pack-priority-secondary-note', summary.secondaryNote);
+}
+
+function resolveCityPackOperatorGuideRows() {
+  const packs = Array.isArray(state.cityPackManageItems) ? state.cityPackManageItems.slice() : [];
+  return packs
+    .sort((a, b) => toMillis(b && (b.updatedAt || b.createdAt)) - toMillis(a && (a.updatedAt || a.createdAt)))
+    .map((pack) => {
+      const status = String(pack && pack.status || '').toLowerCase();
+      const regionKey = resolveCityPackManageRegionKeyFromPack(pack) || '地域未設定';
+      return {
+        key: `guide:${pack.id}`,
+        mode: CITY_PACK_OPERATOR_MODE.guide,
+        id: pack.id || '',
+        status,
+        statusLabel: status === 'active' ? '公開中' : status === 'retired' ? '停止中' : '準備中',
+        targetLabel: regionKey,
+        contentLabel: pack && pack.name ? String(pack.name) : '名前未設定',
+        updatedLabel: formatTimestampForList(pack && (pack.updatedAt || pack.createdAt)),
+        nextActionLabel: status === 'active' ? '停止する' : '公開する',
+        raw: pack
+      };
+    });
+}
+
+function resolveCityPackOperatorEmergencyRows() {
+  const rows = Array.isArray(state.emergencyBulletinItems) ? state.emergencyBulletinItems.slice() : [];
+  return rows
+    .sort((a, b) => toMillis(b && (b.updatedAt || b.createdAt)) - toMillis(a && (a.updatedAt || a.createdAt)))
+    .map((row) => {
+      const status = String(row && row.status || '').toLowerCase();
+      const title = (row && (row.summary || row.title || row.category || row.providerKey)) ? String(row.summary || row.title || row.category || row.providerKey) : '緊急案件';
+      return {
+        key: `emergency:${row.id}`,
+        mode: CITY_PACK_OPERATOR_MODE.emergency,
+        id: row && row.id ? String(row.id) : '',
+        status,
+        statusLabel: status === 'approved' ? '承認済み' : status === 'rejected' ? '却下済み' : '判断待ち',
+        targetLabel: row && row.regionKey ? String(row.regionKey) : '地域未設定',
+        contentLabel: title,
+        updatedLabel: formatTimestampForList(row && (row.updatedAt || row.createdAt)),
+        nextActionLabel: status === 'approved' ? '配信結果を見る' : '承認して送信する',
+        raw: row
+      };
+    });
+}
+
+function resolveCityPackOperatorRows() {
+  return state.cityPackOperatorMode === CITY_PACK_OPERATOR_MODE.emergency
+    ? resolveCityPackOperatorEmergencyRows()
+    : resolveCityPackOperatorGuideRows();
+}
+
+function getSelectedCityPackOperatorRow(rows) {
+  const items = Array.isArray(rows) ? rows : resolveCityPackOperatorRows();
+  return items.find((item) => item && item.key === state.selectedCityPackOperatorKey) || null;
+}
+
+function renderCityPackOperatorSelectionPreview(row) {
+  const root = document.getElementById('city-pack-operator-selection-preview');
+  if (!root) return;
+  clearElementChildren(root);
+  if (!row) {
+    const empty = document.createElement('div');
+    empty.className = 'note';
+    empty.textContent = '行を選ぶと、現在登録されている内容と実行後の状態を確認できます。';
+    root.appendChild(empty);
+    return;
+  }
+  const source = row.raw && typeof row.raw === 'object' ? row.raw : {};
+  const entries = row.mode === CITY_PACK_OPERATOR_MODE.emergency
+    ? [
+        { label: '対象', value: row.targetLabel },
+        { label: '状態', value: row.statusLabel },
+        { label: '内容', value: row.contentLabel },
+        { label: '更新', value: row.updatedLabel }
+      ]
+    : [
+        { label: '対象', value: row.targetLabel },
+        { label: '状態', value: row.statusLabel },
+        { label: '内容', value: row.contentLabel },
+        { label: '言語', value: source.language || 'ja' },
+        { label: 'sourceRefs', value: Array.isArray(source.sourceRefs) ? `${source.sourceRefs.length}件` : '0件' },
+        { label: 'slots', value: source.slotContents && typeof source.slotContents === 'object' ? `${Object.keys(source.slotContents).length}件` : '0件' }
+      ];
+  entries.forEach((entry) => {
+    const card = document.createElement('article');
+    card.className = 'city-pack-operator-preview-card';
+    const labelEl = document.createElement('div');
+    labelEl.className = 'city-pack-operator-preview-label';
+    labelEl.textContent = entry.label;
+    const valueEl = document.createElement('div');
+    valueEl.className = 'city-pack-operator-preview-value';
+    valueEl.textContent = entry.value || '-';
+    card.appendChild(labelEl);
+    card.appendChild(valueEl);
+    root.appendChild(card);
+  });
+}
+
+function buildCityPackOperatorPreview(actionKey, row) {
+  const item = row && typeof row === 'object' ? row : null;
+  const source = item && item.raw && typeof item.raw === 'object' ? item.raw : {};
+  const isEmergency = item && item.mode === CITY_PACK_OPERATOR_MODE.emergency;
+  const nextStatus = isEmergency
+    ? (actionKey === 'approve' ? '承認済み（送信済み）' : actionKey === 'reject' ? '却下済み' : item.statusLabel)
+    : (actionKey === 'publish' ? '公開中' : '停止中');
+  const titleMap = {
+    publish: '地域案内を公開する前に確認',
+    stop: '地域案内を停止する前に確認',
+    delete: '地域案内を削除する前に確認（履歴は残ります）',
+    approve: '緊急対応を承認して送信する前に確認',
+    reject: '緊急対応を却下する前に確認'
+  };
+  const confirmMap = {
+    publish: '公開する',
+    stop: '停止する',
+    delete: '削除する（履歴を残す）',
+    approve: '承認して送信する',
+    reject: '却下する'
+  };
+  return {
+    title: titleMap[actionKey] || '実行前の確認',
+    confirmLabel: confirmMap[actionKey] || '実行する',
+    current: [
+      { label: '対象', value: item ? item.targetLabel : '-' },
+      { label: '状態', value: item ? item.statusLabel : '-' },
+      { label: '内容', value: item ? item.contentLabel : '-' }
+    ],
+    next: [
+      { label: '対象', value: item ? item.targetLabel : '-' },
+      { label: '状態', value: nextStatus },
+      { label: '内容', value: item ? item.contentLabel : '-' }
+    ],
+    changes: isEmergency
+      ? [
+          { label: '変更', value: actionKey === 'approve' ? '承認後に送信まで完了します' : '受信箱から除外されます' }
+        ]
+      : [
+          { label: '変更', value: actionKey === 'publish' ? '公開状態に変更します' : '公開状態から外します' },
+          { label: '履歴', value: actionKey === 'delete' ? '履歴は残ります' : '履歴は残ります' }
+        ],
+    meta: createOperatorPreviewMetaRows([
+      { label: '影響件数', value: '1件' },
+      { label: '完了後に移動する画面', value: isEmergency && actionKey === 'approve' ? 'City Pack・緊急レイヤー / 緊急対応' : 'City Pack・緊急レイヤー' },
+      { label: '対象ID', value: item ? item.id : '-' },
+      { label: 'sourceRefs', value: Array.isArray(source.sourceRefs) ? `${source.sourceRefs.length}件` : undefined }
+    ].filter((entry) => entry && entry.value !== undefined))
+  };
+}
+
+async function runCityPackOperatorGuideAction(actionKey, row) {
+  const item = row && row.raw && typeof row.raw === 'object' ? row.raw : null;
+  if (!item || !item.id) return;
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const endpoint = actionKey === 'publish'
+    ? `/api/admin/city-packs/${encodeURIComponent(item.id)}/activate`
+    : `/api/admin/city-packs/${encodeURIComponent(item.id)}/retire`;
+  const result = await postJson(endpoint, {}, traceId);
+  if (result && result.ok) {
+    showToast(
+      actionKey === 'publish'
+        ? '地域案内を公開しました'
+        : actionKey === 'delete'
+          ? '地域案内を削除しました（履歴は残ります）'
+          : '地域案内を停止しました',
+      'ok'
+    );
+    await loadCityPackManagePacks({ notify: false });
+    renderCityPackOperatorSurface();
+    return;
+  }
+  showToast(
+    actionKey === 'publish'
+      ? '地域案内の公開に失敗しました'
+      : actionKey === 'delete'
+        ? '地域案内の削除に失敗しました'
+        : '地域案内の停止に失敗しました',
+    'danger'
+  );
+  throw new Error('city_pack_operator_guide_failed');
+}
+
+async function runCityPackOperatorEmergencyAction(actionKey, row) {
+  const item = row && row.raw && typeof row.raw === 'object' ? row.raw : null;
+  if (!item || !item.id) return;
+  if (actionKey === 'monitor') {
+    openOperatorDestinationPane('monitor', { historyMode: 'push' });
+    return;
+  }
+  if (actionKey === 'approve') {
+    await approveEmergencyBulletinAction(item.id, { ctaText: '' });
+    renderCityPackOperatorSurface();
+    return;
+  }
+  await rejectEmergencyBulletinAction(item.id);
+  renderCityPackOperatorSurface();
+}
+
+function renderCityPackOperatorSurface() {
+  const tbody = document.getElementById('city-pack-operator-rows');
+  const summaryEl = document.getElementById('city-pack-operator-selection-summary');
+  const actionsEl = document.getElementById('city-pack-operator-action-buttons');
+  if (!tbody || !summaryEl || !actionsEl) return;
+  tbody.innerHTML = '';
+  clearElementChildren(actionsEl);
+  const rows = resolveCityPackOperatorRows();
+  if (state.selectedCityPackOperatorKey && !rows.some((item) => item.key === state.selectedCityPackOperatorKey)) {
+    state.selectedCityPackOperatorKey = null;
+  }
+  if (!state.selectedCityPackOperatorKey && rows[0] && rows[0].key) {
+    state.selectedCityPackOperatorKey = rows[0].key;
+  }
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.textContent = 'データなし';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    summaryEl.textContent = state.cityPackOperatorMode === CITY_PACK_OPERATOR_MODE.emergency
+      ? '緊急対応の受信箱は空です。'
+      : '公開前の地域案内はありません。';
+    renderCityPackOperatorSelectionPreview(null);
+    return;
+  }
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    tr.classList.add('clickable-row');
+    if (state.selectedCityPackOperatorKey === row.key) tr.classList.add('row-active');
+    [row.statusLabel, row.targetLabel, row.contentLabel, row.updatedLabel, row.nextActionLabel].forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = toUnifiedDisplay(value, '-');
+      tr.appendChild(td);
+    });
+    tr.addEventListener('click', () => {
+      state.selectedCityPackOperatorKey = row.key;
+      renderCityPackOperatorSurface();
+    });
+    tbody.appendChild(tr);
+  });
+
+  const selected = getSelectedCityPackOperatorRow(rows);
+  if (!selected) {
+    summaryEl.textContent = '行を選ぶと、現在登録されている内容と実行後の状態を確認できます。';
+    renderCityPackOperatorSelectionPreview(null);
+    return;
+  }
+  summaryEl.textContent = `${selected.targetLabel} / ${selected.contentLabel} / 現在は「${selected.statusLabel}」です。実行前に全体プレビューを確認できます。`;
+  renderCityPackOperatorSelectionPreview(selected);
+
+  const descriptors = selected.mode === CITY_PACK_OPERATOR_MODE.emergency
+    ? (
+        selected.status === 'approved'
+          ? [{ label: '配信結果を見る', actionKey: 'monitor' }]
+          : [
+              { label: '承認して送信する', actionKey: 'approve' },
+              { label: '却下する', actionKey: 'reject', secondary: true }
+            ]
+      )
+    : [
+        { label: selected.status === 'active' ? '停止する' : '公開する', actionKey: selected.status === 'active' ? 'stop' : 'publish' },
+        { label: '削除する（履歴を残す）', actionKey: 'delete', secondary: true }
+      ];
+  descriptors.forEach((descriptor) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    if (descriptor.secondary) button.className = 'secondary-btn';
+    button.textContent = descriptor.label;
+    button.addEventListener('click', () => {
+      if (selected.mode === CITY_PACK_OPERATOR_MODE.emergency && descriptor.actionKey === 'monitor') {
+        openOperatorDestinationPane('monitor', { historyMode: 'push' });
+        return;
+      }
+      openOperatorPreviewModal(Object.assign({}, buildCityPackOperatorPreview(descriptor.actionKey, selected), {
+        onConfirm: async () => {
+          if (selected.mode === CITY_PACK_OPERATOR_MODE.emergency) {
+            await runCityPackOperatorEmergencyAction(descriptor.actionKey, selected);
+            return;
+          }
+          await runCityPackOperatorGuideAction(descriptor.actionKey, selected);
+        }
+      }));
+    });
+    actionsEl.appendChild(button);
+  });
 }
 
 function resolveEmergencyLayerTaskSummary() {
@@ -11805,11 +12745,13 @@ async function loadCityPackManagePacks(options) {
       preferredCityKey: opts.preferredCityKey || null,
       preferredPackId: opts.preferredPackId || (data.cityPackId || null)
     });
+    renderCityPackOperatorSurface();
     if (opts.notify) showToast(t('ui.toast.cityPack.contentManageLoaded', 'City Pack内容一覧を更新しました'), 'ok');
     return;
   }
   state.cityPackManageItems = [];
   syncCityPackManagePanel({});
+  renderCityPackOperatorSurface();
   if (opts.notify) showToast(t('ui.toast.cityPack.contentManageLoadFail', 'City Pack内容一覧の取得に失敗しました'), 'danger');
 }
 
@@ -13041,9 +13983,12 @@ function syncUsersSummaryQuickFilterUi() {
 
 function syncUsersSummaryColumnEditorUi() {
   const visible = new Set(resolveUsersSummaryVisibleColumns());
+  const allowed = new Set(isOpsShellActive() ? USERS_SUMMARY_OPS_COLUMN_KEYS : USERS_SUMMARY_COLUMN_KEYS);
   document.querySelectorAll('[data-users-column-toggle]').forEach((input) => {
     const key = input.getAttribute('data-users-column-toggle');
     if (!key) return;
+    const label = input.closest('label');
+    if (label) label.classList.toggle('is-hidden', !allowed.has(key));
     input.checked = visible.has(key);
   });
 }
@@ -13094,6 +14039,14 @@ function createUsersSummaryBadge(text, className) {
 function formatBlockedRateValue(value) {
   if (!Number.isFinite(Number(value))) return '-';
   return `${Math.round(Number(value) * 1000) / 10}%`;
+}
+
+function resolveUserNextCheck(item) {
+  const nextTodoAt = item && item.nextTodoDueAt ? formatTimestampForList(item.nextTodoDueAt) : '';
+  if (nextTodoAt && nextTodoAt !== '-') return nextTodoAt;
+  const currentPeriodEnd = item && item.currentPeriodEnd ? formatTimestampForList(item.currentPeriodEnd) : '';
+  if (currentPeriodEnd && currentPeriodEnd !== '-') return currentPeriodEnd;
+  return '-';
 }
 
 function createUsersSummaryLeadCell(item) {
@@ -13215,6 +14168,7 @@ function renderUsersSummaryRows() {
       else if (columnKey === 'status') value = item.statusLabel || '-';
       else if (columnKey === 'currentPeriodEnd') value = formatTimestampForList(item.currentPeriodEnd);
       else if (columnKey === 'llmUsage') value = Number.isFinite(Number(item.llmUsage)) ? String(item.llmUsage) : '-';
+      else if (columnKey === 'nextCheck') value = resolveUserNextCheck(item);
       else if (columnKey === 'todoProgressRate') value = formatRatioPercent(item.todoProgressRate);
       else if (columnKey === 'localGuidanceCoverage') value = formatRatioPercent(item.localGuidanceCoverage);
       else if (columnKey === 'llmUsageToday') value = Number.isFinite(Number(item.llmUsageToday)) ? String(item.llmUsageToday) : '-';
@@ -19224,6 +20178,38 @@ function setupComposerActions() {
   state.composerLinkSearch = '';
   state.composerLinkPreviews = {};
   applyComposerTypeOptionVisibility();
+  const isOperatorComposerFlow = () => normalizeRoleValue(state.role) === 'operator' && isOpsShellActive();
+  const buildComposerActionPreview = (actionKey, payload) => {
+    const draft = payload && typeof payload === 'object' ? payload : {};
+    const nextState = actionKey === 'approve' ? '承認済み' : '送信完了';
+    const plannedCount = String(document.getElementById('planTargetCount')?.textContent || '').trim() || '-';
+    const title = actionKey === 'approve'
+      ? '通知を承認する前に確認'
+      : '通知を送信する前に確認';
+    const confirmLabel = actionKey === 'approve' ? '承認する' : '送信する';
+    const current = [
+      { label: '通知タイトル', value: draft.title || '-' },
+      { label: '種別', value: draft.notificationType || selectedComposerType() || '-' },
+      { label: '対象', value: draft.targetRegion || '全体' },
+      { label: '本文', value: draft.body || '-' }
+    ];
+    const next = [
+      { label: '通知タイトル', value: draft.title || '-' },
+      { label: '状態', value: nextState },
+      { label: '対象', value: draft.targetRegion || '全体' },
+      { label: '本文', value: draft.body || '-' }
+    ];
+    const changes = actionKey === 'approve'
+      ? [{ label: '変更', value: '送信できる状態に切り替わります' }]
+      : [{ label: '変更', value: '計画済みの対象へ送信します' }];
+    const meta = createOperatorPreviewMetaRows([
+      { label: '影響件数', value: actionKey === 'execute' ? `${plannedCount}件` : '1件' },
+      { label: '完了後に移動する画面', value: actionKey === 'execute' ? '結果確認' : '送信内容を作る' },
+      { label: '通知ID', value: state.composerCurrentNotificationId || '-' },
+      { label: 'planHash', value: actionKey === 'execute' ? (state.composerCurrentPlanHash || '-') : undefined }
+    ].filter((entry) => entry && entry.value !== undefined));
+    return { title, confirmLabel, current, next, changes, meta };
+  };
   document.getElementById('composer-open-audit')?.addEventListener('click', async () => {
     const traceId = ensureTraceInput('traceId') || newTraceId();
     await openAuditFromSource('composer', traceId, { historyMode: 'push' }).catch(() => {
@@ -19304,24 +20290,34 @@ function setupComposerActions() {
       setComposerStatus('warn', 'WARN');
       return;
     }
+    const runApprove = async () => {
+      const traceId = ensureTraceInput('traceId');
+      const resultEl = document.getElementById('draft-result');
+      const result = await postJson('/api/admin/os/notifications/approve', { notificationId: state.composerCurrentNotificationId }, traceId);
+      if (resultEl) resultEl.textContent = JSON.stringify(result, null, 2);
+      if (result && result.ok) {
+        showToast(t('ui.toast.composer.approveOk', 'approve OK'), 'ok');
+        setComposerStatus('ok', 'ACTIVE');
+        await loadComposerSavedNotifications({ notify: false });
+        renderComposerSavedRows();
+        return;
+      }
+      showToast(t('ui.toast.composer.approveFail', 'approve 失敗'), 'danger');
+      setComposerStatus('danger', 'ERROR');
+      throw new Error('composer_approve_failed');
+    };
+    if (isOperatorComposerFlow()) {
+      openOperatorPreviewModal(Object.assign({}, buildComposerActionPreview('approve', draftPayload), {
+        onConfirm: runApprove
+      }));
+      return;
+    }
     const confirmed = window.confirm(t('ui.confirm.composer.approve', '承認（有効化）を実行しますか？'));
     if (!confirmed) {
       showToast(t('ui.toast.composer.canceled', '操作を中止しました'), 'warn');
       return;
     }
-    const traceId = ensureTraceInput('traceId');
-    const resultEl = document.getElementById('draft-result');
-    const result = await postJson('/api/admin/os/notifications/approve', { notificationId: state.composerCurrentNotificationId }, traceId);
-    if (resultEl) resultEl.textContent = JSON.stringify(result, null, 2);
-    if (result && result.ok) {
-      showToast(t('ui.toast.composer.approveOk', 'approve OK'), 'ok');
-      setComposerStatus('ok', 'ACTIVE');
-      await loadComposerSavedNotifications({ notify: false });
-      renderComposerSavedRows();
-    } else {
-      showToast(t('ui.toast.composer.approveFail', 'approve 失敗'), 'danger');
-      setComposerStatus('danger', 'ERROR');
-    }
+    await runApprove();
     }
   });
 
@@ -19387,32 +20383,42 @@ function setupComposerActions() {
       setComposerStatus('warn', 'WARN');
       return;
     }
+    const runExecute = async () => {
+      const traceId = ensureTraceInput('traceId');
+      const result = await postJson('/api/admin/os/notifications/send/execute', {
+        notificationId: state.composerCurrentNotificationId,
+        planHash: state.composerCurrentPlanHash,
+        confirmToken: state.composerCurrentConfirmToken
+      }, traceId);
+      if (resultEl) resultEl.textContent = JSON.stringify(result, null, 2);
+      const metaEl = document.getElementById('execute-cap-meta');
+      if (metaEl) {
+        const reason = result && result.reason ? result.reason : (result && result.ok ? 'ok' : '-');
+        metaEl.textContent = `${t('ui.label.composer.countMode', '計数方式')}: ${result.capCountMode || '-'} / ${t('ui.label.composer.countSource', '計数元')}: ${result.capCountSource || '-'} / ${t('ui.label.composer.countStrategy', '計数戦略')}: ${result.capCountStrategy || '-'} / ${t('ui.label.composer.lastReason', '最終理由')}: ${reason}`;
+      }
+      if (result && result.ok) {
+        showToast(t('ui.toast.composer.executeOk', 'execute OK'), 'ok');
+        setComposerStatus('ok', 'SENT');
+        await loadComposerSavedNotifications({ notify: false });
+        renderComposerSavedRows();
+        return;
+      }
+      showToast(t('ui.toast.composer.executeFail', 'execute 失敗'), 'danger');
+      setComposerStatus('danger', 'ERROR');
+      throw new Error('composer_execute_failed');
+    };
+    if (isOperatorComposerFlow()) {
+      openOperatorPreviewModal(Object.assign({}, buildComposerActionPreview('execute', draftPayload), {
+        onConfirm: runExecute
+      }));
+      return;
+    }
     const confirmed = window.confirm(t('ui.confirm.composer.execute', '送信実行を実行しますか？'));
     if (!confirmed) {
       showToast(t('ui.toast.composer.canceled', '操作を中止しました'), 'warn');
       return;
     }
-    const traceId = ensureTraceInput('traceId');
-    const result = await postJson('/api/admin/os/notifications/send/execute', {
-      notificationId: state.composerCurrentNotificationId,
-      planHash: state.composerCurrentPlanHash,
-      confirmToken: state.composerCurrentConfirmToken
-    }, traceId);
-    if (resultEl) resultEl.textContent = JSON.stringify(result, null, 2);
-    const metaEl = document.getElementById('execute-cap-meta');
-    if (metaEl) {
-      const reason = result && result.reason ? result.reason : (result && result.ok ? 'ok' : '-');
-      metaEl.textContent = `${t('ui.label.composer.countMode', '計数方式')}: ${result.capCountMode || '-'} / ${t('ui.label.composer.countSource', '計数元')}: ${result.capCountSource || '-'} / ${t('ui.label.composer.countStrategy', '計数戦略')}: ${result.capCountStrategy || '-'} / ${t('ui.label.composer.lastReason', '最終理由')}: ${reason}`;
-    }
-    if (result && result.ok) {
-      showToast(t('ui.toast.composer.executeOk', 'execute OK'), 'ok');
-      setComposerStatus('ok', 'SENT');
-      await loadComposerSavedNotifications({ notify: false });
-      renderComposerSavedRows();
-    } else {
-      showToast(t('ui.toast.composer.executeFail', 'execute 失敗'), 'danger');
-      setComposerStatus('danger', 'ERROR');
-    }
+    await runExecute();
     }
   });
 
@@ -20333,6 +21339,7 @@ async function loadEmergencyBulletins(options) {
       if (!exists) state.emergencySelectedBulletinId = null;
     }
     renderEmergencyBulletinRows(state.emergencyBulletinItems);
+    renderCityPackOperatorSurface();
     setPaneUpdatedAt('emergency-layer');
     renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.emergency.bulletinsLoaded', 'Emergency bulletin一覧を取得しました'), 'ok');
@@ -20348,6 +21355,7 @@ async function loadEmergencyBulletins(options) {
   }
   state.emergencyBulletinItems = [];
   renderEmergencyBulletinRows([]);
+  renderCityPackOperatorSurface();
   renderEmergencyEvidence(null);
   if (notify) showToast(t('ui.toast.emergency.bulletinsLoadFail', 'Emergency bulletin一覧の取得に失敗しました'), 'danger');
 }
@@ -20375,36 +21383,109 @@ async function loadEmergencyEvidence(bulletinId, options) {
   if (notify) showToast(t('ui.toast.emergency.evidenceLoadFail', '証跡の取得に失敗しました'), 'danger');
 }
 
-async function approveEmergencyBulletinAction(bulletinId) {
+async function approveEmergencyBulletinAction(bulletinId, options) {
   const id = typeof bulletinId === 'string' ? bulletinId.trim() : '';
   if (!id) return;
-  const confirmed = window.confirm(t('ui.confirm.emergency.approve', 'Emergency bulletinを承認して送信しますか？'));
-  if (!confirmed) return;
-  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
-  const ctaText = window.prompt(t('ui.prompt.emergency.ctaText', 'CTA文言（空欄で既定）'), '') || '';
-  const data = await postJson(`/api/admin/emergency/bulletins/${encodeURIComponent(id)}/approve`, { ctaText }, traceId);
-  if (data && data.ok) {
-    showToast(t('ui.toast.emergency.approveOk', 'Emergency bulletinを送信しました'), 'ok');
-    await loadEmergencyBulletins({ notify: false });
-    await loadEmergencyProviders({ notify: false });
+  const opts = options && typeof options === 'object' ? options : {};
+  const operatorFlow = normalizeRoleValue(state.role) === 'operator' && isOpsShellActive();
+  const performApprove = async (ctaText) => {
+    const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+    const data = await postJson(`/api/admin/emergency/bulletins/${encodeURIComponent(id)}/approve`, { ctaText }, traceId);
+    if (data && data.ok) {
+      showToast(t('ui.toast.emergency.approveOk', 'Emergency bulletinを送信しました'), 'ok');
+      await loadEmergencyBulletins({ notify: false });
+      await loadEmergencyProviders({ notify: false });
+      return;
+    }
+    showToast(t('ui.toast.emergency.approveFail', 'Emergency bulletinの送信に失敗しました'), 'danger');
+    throw new Error('emergency_approve_failed');
+  };
+  if (operatorFlow) {
+    const selected = (Array.isArray(state.emergencyBulletinItems) ? state.emergencyBulletinItems : [])
+      .find((item) => item && item.id === id) || null;
+    const title = selected && (selected.summary || selected.title || selected.category || selected.providerKey)
+      ? String(selected.summary || selected.title || selected.category || selected.providerKey)
+      : '緊急案件';
+    openOperatorPreviewModal({
+      title: '緊急対応を承認して送信する前に確認',
+      confirmLabel: opts.confirmLabel || '承認して送信する',
+      current: [
+        { label: '対象', value: selected && selected.regionKey ? String(selected.regionKey) : '-' },
+        { label: '状態', value: selected && selected.status ? String(selected.status) : 'draft' },
+        { label: '内容', value: title }
+      ],
+      next: [
+        { label: '対象', value: selected && selected.regionKey ? String(selected.regionKey) : '-' },
+        { label: '状態', value: '承認済み（送信済み）' },
+        { label: '内容', value: title }
+      ],
+      changes: [
+        { label: '変更', value: '承認後に送信まで完了します' }
+      ],
+      meta: createOperatorPreviewMetaRows([
+        { label: '影響件数', value: '1件' },
+        { label: '完了後に移動する画面', value: 'City Pack・緊急レイヤー / 緊急対応' }
+      ]),
+      onConfirm: async () => {
+        await performApprove(typeof opts.ctaText === 'string' ? opts.ctaText : '');
+      }
+    });
     return;
   }
-  showToast(t('ui.toast.emergency.approveFail', 'Emergency bulletinの送信に失敗しました'), 'danger');
+  const confirmed = window.confirm(t('ui.confirm.emergency.approve', 'Emergency bulletinを承認して送信しますか？'));
+  if (!confirmed) return;
+  const ctaText = typeof opts.ctaText === 'string'
+    ? opts.ctaText
+    : (window.prompt(t('ui.prompt.emergency.ctaText', 'CTA文言（空欄で既定）'), '') || '');
+  await performApprove(ctaText);
 }
 
 async function rejectEmergencyBulletinAction(bulletinId) {
   const id = typeof bulletinId === 'string' ? bulletinId.trim() : '';
   if (!id) return;
-  const confirmed = window.confirm(t('ui.confirm.emergency.reject', 'Emergency bulletinを却下しますか？'));
-  if (!confirmed) return;
-  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
-  const data = await postJson(`/api/admin/emergency/bulletins/${encodeURIComponent(id)}/reject`, {}, traceId);
-  if (data && data.ok) {
-    showToast(t('ui.toast.emergency.rejectOk', 'Emergency bulletinを却下しました'), 'ok');
-    await loadEmergencyBulletins({ notify: false });
+  const operatorFlow = normalizeRoleValue(state.role) === 'operator' && isOpsShellActive();
+  const performReject = async () => {
+    const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+    const data = await postJson(`/api/admin/emergency/bulletins/${encodeURIComponent(id)}/reject`, {}, traceId);
+    if (data && data.ok) {
+      showToast(t('ui.toast.emergency.rejectOk', 'Emergency bulletinを却下しました'), 'ok');
+      await loadEmergencyBulletins({ notify: false });
+      return;
+    }
+    showToast(t('ui.toast.emergency.rejectFail', 'Emergency bulletinの却下に失敗しました'), 'danger');
+    throw new Error('emergency_reject_failed');
+  };
+  if (operatorFlow) {
+    const selected = (Array.isArray(state.emergencyBulletinItems) ? state.emergencyBulletinItems : [])
+      .find((item) => item && item.id === id) || null;
+    const title = selected && (selected.summary || selected.title || selected.category || selected.providerKey)
+      ? String(selected.summary || selected.title || selected.category || selected.providerKey)
+      : '緊急案件';
+    openOperatorPreviewModal({
+      title: '緊急対応を却下する前に確認',
+      confirmLabel: '却下する',
+      current: [
+        { label: '対象', value: selected && selected.regionKey ? String(selected.regionKey) : '-' },
+        { label: '状態', value: selected && selected.status ? String(selected.status) : 'draft' },
+        { label: '内容', value: title }
+      ],
+      next: [
+        { label: '対象', value: selected && selected.regionKey ? String(selected.regionKey) : '-' },
+        { label: '状態', value: '却下済み' },
+        { label: '内容', value: title }
+      ],
+      changes: [{ label: '変更', value: '判断待ちの受信箱から外れます' }],
+      meta: createOperatorPreviewMetaRows([
+        { label: '影響件数', value: '1件' },
+        { label: '完了後に移動する画面', value: 'City Pack・緊急レイヤー / 緊急対応' }
+      ]),
+      onConfirm: performReject
+    });
     return;
   }
-  showToast(t('ui.toast.emergency.rejectFail', 'Emergency bulletinの却下に失敗しました'), 'danger');
+  const confirmed = window.confirm(t('ui.confirm.emergency.reject', 'Emergency bulletinを却下しますか？'));
+  if (!confirmed) return;
+  await performReject();
 }
 
 async function updateEmergencyProvider(providerKey, status) {
@@ -20516,6 +21597,12 @@ function setupCityPackControls() {
   });
   document.getElementById('city-pack-workspace-back-workbench')?.addEventListener('click', () => {
     applyCityPackWorkspaceView(CITY_PACK_WORKSPACE_VIEW_WORKBENCH, { persist: true });
+  });
+  document.getElementById('city-pack-operator-mode-guide')?.addEventListener('click', () => {
+    setCityPackOperatorMode(CITY_PACK_OPERATOR_MODE.guide, { persist: true });
+  });
+  document.getElementById('city-pack-operator-mode-emergency')?.addEventListener('click', () => {
+    setCityPackOperatorMode(CITY_PACK_OPERATOR_MODE.emergency, { persist: true });
   });
   applyCityPackWorkspaceView(state.cityPackWorkspaceView, { persist: true });
   document.getElementById('city-pack-v2-view-needs-review')?.addEventListener('click', () => {
@@ -22359,6 +23446,21 @@ async function setLlmPolicy() {
 }
 
 function setupLlmControls() {
+  document.getElementById('faq-reload')?.addEventListener('click', () => {
+    void loadFaqOperatorData({ notify: true });
+  });
+  document.getElementById('faq-create-new')?.addEventListener('click', () => {
+    clearFaqOperatorDraft();
+  });
+  document.getElementById('faq-save-article')?.addEventListener('click', () => {
+    void saveFaqOperatorArticle();
+  });
+  document.getElementById('faq-stop-article')?.addEventListener('click', () => {
+    void stopFaqOperatorArticle();
+  });
+  document.getElementById('faq-delete-article')?.addEventListener('click', () => {
+    void deleteFaqOperatorArticle();
+  });
   document.querySelectorAll('[data-llm-view-target]').forEach((buttonEl) => {
     buttonEl.addEventListener('click', () => {
       const target = normalizeLlmWorkspaceView(buttonEl.getAttribute('data-llm-view-target'));
@@ -22424,6 +23526,7 @@ function setupLlmControls() {
   setupDeveloperMenu();
   setupLocalPreflightControls();
   setupPaneReflectionControls();
+  setupOperatorPreviewControls();
   setupHomeControls();
   setupComposerActions();
   setupMonitorControls();
