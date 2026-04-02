@@ -1084,7 +1084,7 @@ const V3_DECISION_CARD_COPY_MAP = Object.freeze({
     titleFallback: 'FAQの内容を確認して登録する',
     primaryKey: 'ui.label.v3.decision.faq.primary',
     primaryFallback: '新しい質問を登録する',
-    secondaryKey: 'ui.label.v3.decision.faq.secondary',
+    secondaryKey: 'ui.label.v3.decision.faq.secondary', // gitleaks:allow false positive for ui dictionary key
     secondaryFallback: '一覧を更新する',
     hideTertiary: true
   })
