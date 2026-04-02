@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-04-01T18:43:34-04:00",
-  "gitCommit": "fc2dc02c3f484d7451761cd787f973f31d2840b2",
-  "branch": "codex/admin-ui-v3-taskflow",
-  "sourceDigest": "ceb610c5e73c6704c29f8a89540f979a4bd81230eaa4e2e828e6e2f6262524bd",
+  "generatedAt": "2026-04-01T18:51:12-04:00",
+  "gitCommit": "b3e30953486ca63d1446d1f4943fab650df242bf",
+  "branch": "codex/operator-walkthrough-polish",
+  "sourceDigest": "9303c339bcb2826e63a9f92fbb6e1c1a59c0ec780bf9e5d37afa4d7807eec4e9",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

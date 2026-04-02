@@ -796,14 +796,27 @@ const USER_CATEGORY_LABELS = Object.freeze({
   D: 'D（帯同学齢以上）'
 });
 const USERS_QUICK_FILTER_LABELS = Object.freeze({
-  all: 'All',
-  pro_active: 'Pro(active)',
-  free: 'Free',
-  trialing: 'Trialing',
-  past_due: 'Past_due',
-  canceled: 'Canceled',
-  unknown: 'Unknown'
+  all: 'すべて',
+  pro_active: '有料会員',
+  free: '無料会員',
+  trialing: 'お試し中',
+  past_due: '支払い確認',
+  canceled: '停止',
+  unknown: '不明'
 });
+const USERS_SUMMARY_OPS_COLUMN_KEYS = Object.freeze([
+  'lineUserId',
+  'category',
+  'status',
+  'plan',
+  'subscriptionStatus',
+  'currentPeriodEnd',
+  'deliveryCount',
+  'clickCount',
+  'reactionRate'
+]);
+const OPS_DENSE_DETAIL_PANES = new Set(['composer', 'monitor', 'errors', 'emergency-layer']);
+const SYSTEM_CONSOLE_SECTION_ORDER = Object.freeze(['overview', 'warnings', 'actions', 'details', 'raw']);
 const USERS_SUMMARY_COLUMN_KEYS = Object.freeze([
   'createdAt',
   'updatedAt',
@@ -2226,12 +2239,14 @@ function renderOpsHomeDashboard() {
 
 function renderOpsFeatureCatalogRows() {
   const summaryEl = document.getElementById('ops-feature-catalog-summary');
+  const warningEl = document.getElementById('ops-feature-catalog-warning-summary');
   const tbody = document.getElementById('ops-feature-catalog-rows');
   if (!summaryEl || !tbody) return;
   tbody.innerHTML = '';
 
   if (!isOpsRealtimeSnapshotEnabled()) {
-    summaryEl.textContent = 'ops feature catalog status は停止中です。';
+    summaryEl.textContent = '機能一覧の realtime snapshot は停止中です。';
+    if (warningEl) warningEl.textContent = 'realtime snapshot が停止しているため、注意点は表示できません。';
     return;
   }
 
@@ -2253,6 +2268,7 @@ function renderOpsFeatureCatalogRows() {
 
   if (!rows.length) {
     summaryEl.textContent = loadError ? loadMessage : 'Feature Catalog snapshot未取得';
+    if (warningEl) warningEl.textContent = loadError ? loadMessage : '注意点はまだありません。';
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     td.colSpan = 6;
@@ -2266,7 +2282,8 @@ function renderOpsFeatureCatalogRows() {
   const updatedAt = catalog && (catalog.lastUpdatedAt || catalog.updatedAt || catalog.asOf)
     ? (catalog.lastUpdatedAt || catalog.updatedAt || catalog.asOf)
     : null;
-  summaryEl.textContent = `rows=${rows.length} / source=${rowSource} / warnings=${warningText} / ok=${Number(counts.ok || 0)} / warn=${Number(counts.warn || 0)} / alert=${Number(counts.alert || 0)} / unknown=${Number(counts.unknown || 0)} / updated=${formatDateLabel(updatedAt)}`;
+  summaryEl.textContent = `機能 ${rows.length}件 / 正常 ${Number(counts.ok || 0)}件 / 注意 ${Number(counts.warn || 0)}件 / 停止 ${Number(counts.alert || 0)}件 / 不明 ${Number(counts.unknown || 0)}件 / 更新 ${formatDateLabel(updatedAt)} / 取得元 ${rowSource}`;
+  if (warningEl) warningEl.textContent = warnings.length ? warningText : '大きな注意点はありません。';
 
   rows.forEach((item) => {
     const row = item && typeof item === 'object' ? item : {};
@@ -2321,12 +2338,14 @@ function renderOpsFeatureCatalogRows() {
 
 function renderOpsSystemHealthRows() {
   const summaryEl = document.getElementById('ops-system-health-summary');
+  const warningEl = document.getElementById('ops-system-health-warning-summary');
   const tbody = document.getElementById('ops-system-health-rows');
   if (!summaryEl || !tbody) return;
   tbody.innerHTML = '';
 
   if (!isOpsRealtimeSnapshotEnabled()) {
-    summaryEl.textContent = 'ops system snapshot は停止中です。';
+    summaryEl.textContent = 'system snapshot は停止中です。';
+    if (warningEl) warningEl.textContent = 'snapshot が停止しているため、注意点は表示できません。';
     return;
   }
 
@@ -2335,6 +2354,7 @@ function renderOpsSystemHealthRows() {
     : null;
   if (!snapshot) {
     summaryEl.textContent = 'System Health snapshot未取得';
+    if (warningEl) warningEl.textContent = '注意点はまだありません。';
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     td.colSpan = 5;
@@ -2346,7 +2366,13 @@ function renderOpsSystemHealthRows() {
 
   const rows = resolveOpsSectionRows(snapshot);
   const updatedAt = snapshot.lastUpdatedAt || snapshot.updatedAt || snapshot.asOf || null;
-  summaryEl.textContent = `status=${normalizeOpsStatus(snapshot.status)} / sections=${rows.length} / updated=${formatDateLabel(updatedAt)}`;
+  summaryEl.textContent = `全体状態 ${normalizeOpsStatus(snapshot.status)} / section ${rows.length}件 / 更新 ${formatDateLabel(updatedAt)}`;
+  const warnedSections = rows.filter((item) => item.status !== 'ok');
+  if (warningEl) {
+    warningEl.textContent = warnedSections.length
+      ? warnedSections.map((item) => `${item.sectionLabel}: ${item.reasonCodes.length ? item.reasonCodes.join(', ') : normalizeOpsStatus(item.status)}`).join(' / ')
+      : '大きな注意点はありません。';
+  }
 
   rows.forEach((item) => {
     const tr = document.createElement('tr');
@@ -2860,6 +2886,10 @@ function isSystemConsolePane(paneKey) {
   return SYSTEM_CONSOLE_V1_PANES.includes(String(paneKey || '').trim());
 }
 
+function isOpsShellActive() {
+  return Boolean(isAdminUiV3Enabled() && state.uiShell === UI_SHELL_OPS);
+}
+
 function resolveUiShellForPane(paneKey, fallbackShell) {
   const preferred = fallbackShell === UI_SHELL_SYSTEM ? UI_SHELL_SYSTEM : UI_SHELL_OPS;
   const pane = String(paneKey || '').trim();
@@ -2896,6 +2926,20 @@ function updateAdminV3ShellChrome() {
   if (badgeEl) badgeEl.textContent = getShellDisplayLabel(nextShell);
   document.querySelectorAll('[data-ui-shell-target]').forEach((buttonEl) => {
     buttonEl.classList.toggle('is-active', buttonEl.getAttribute('data-ui-shell-target') === nextShell);
+  });
+}
+
+function applySystemConsoleHierarchy() {
+  if (!isAdminUiV3Enabled()) return;
+  document.querySelectorAll('[data-console-pane="true"]').forEach((paneEl) => {
+    const seen = [];
+    paneEl.querySelectorAll('[data-console-section]').forEach((sectionEl) => {
+      const key = String(sectionEl.getAttribute('data-console-section') || '').trim();
+      if (!key) return;
+      if (!seen.includes(key)) seen.push(key);
+      sectionEl.classList.toggle('is-console-section-out-of-order', SYSTEM_CONSOLE_SECTION_ORDER[seen.length - 1] !== key);
+    });
+    paneEl.setAttribute('data-console-order', seen.join(' '));
   });
 }
 
@@ -3344,6 +3388,12 @@ function setupPaneReflectionControls() {
   renderAllPaneReflectionStates();
 }
 
+function shouldAutoOpenDecisionDetails(paneKey, vm) {
+  if (!vm || (vm.state !== 'ATTENTION' && vm.state !== 'STOP')) return false;
+  if (isOpsShellActive() && OPS_DENSE_DETAIL_PANES.has(String(paneKey || '').trim())) return false;
+  return true;
+}
+
 function renderDecisionCard(paneKey, vm) {
   if (!paneKey || !vm) return;
   const cardEl = document.getElementById(`${paneKey}-decision-card`);
@@ -3365,7 +3415,7 @@ function renderDecisionCard(paneKey, vm) {
   if (reason1El) reason1El.textContent = (vm.reason1 || '-').replace(/\s*\n\s*/g, ' ');
   if (reason2El) reason2El.textContent = (vm.reason2 || '-').replace(/\s*\n\s*/g, ' ');
   if (updatedEl) updatedEl.textContent = vm.updatedAt || resolvePaneUpdatedAt(paneKey);
-  if (detailsEl && (vm.state === 'ATTENTION' || vm.state === 'STOP') && !detailsEl.open) {
+  if (detailsEl && shouldAutoOpenDecisionDetails(paneKey, vm) && !detailsEl.open) {
     detailsEl.open = true;
     const paneEl = document.querySelector(`.app-pane[data-pane="${paneKey}"]`);
     if (paneEl && paneEl.classList.contains('is-active')) {
@@ -12965,11 +13015,12 @@ async function loadUsersSummaryBillingDetail(lineUserId, options) {
 }
 
 function resolveUsersSummaryVisibleColumns() {
+  const allowedKeys = isOpsShellActive() ? USERS_SUMMARY_OPS_COLUMN_KEYS : USERS_SUMMARY_COLUMN_KEYS;
   const current = Array.isArray(state.usersSummaryVisibleColumns)
-    ? state.usersSummaryVisibleColumns.filter((item) => USERS_SUMMARY_COLUMN_KEYS.includes(item))
+    ? state.usersSummaryVisibleColumns.filter((item) => allowedKeys.includes(item))
     : [];
   if (current.length) return current;
-  return USERS_SUMMARY_COLUMN_KEYS.slice();
+  return allowedKeys.slice();
 }
 
 function isUsersColumnVisible(columnKey) {
@@ -13016,7 +13067,7 @@ function renderUsersSummaryAnalyzeResult() {
     ? state.usersSummaryAnalyze
     : null;
   if (!payload) {
-    el.textContent = 'Analyze: 操作待ち';
+    el.textContent = '傾向表示はまだありません。';
     return;
   }
   const ratio = Number.isFinite(Number(payload.proActiveRatio)) ? `${Math.round(Number(payload.proActiveRatio) * 1000) / 10}%` : '-';
@@ -13030,7 +13081,7 @@ function renderUsersSummaryAnalyzeResult() {
   const avgLocalGuidanceCoverage = Number.isFinite(Number(payload.avgLocalGuidanceCoverage))
     ? `${Math.round(Number(payload.avgLocalGuidanceCoverage) * 1000) / 10}%`
     : '-';
-  el.textContent = `Analyze: total=${payload.total || 0}, pro=${payload.proActiveCount || 0} (${ratio}), unknown=${payload.unknownCount || 0} (${unknownRatio}), taskCompletion=${avgTaskCompletion}, dependencyBlock=${avgDependencyBlock}, localGuidance=${avgLocalGuidanceCoverage}`;
+  el.textContent = `傾向: 表示中=${payload.total || 0}件 / 有料会員=${payload.proActiveCount || 0}件 (${ratio}) / 不明=${payload.unknownCount || 0}件 (${unknownRatio}) / Todo進行率=${avgTaskCompletion} / 依存ブロック=${avgDependencyBlock} / 地域案内充足率=${avgLocalGuidanceCoverage}`;
 }
 
 function createUsersSummaryBadge(text, className) {
@@ -13043,6 +13094,22 @@ function createUsersSummaryBadge(text, className) {
 function formatBlockedRateValue(value) {
   if (!Number.isFinite(Number(value))) return '-';
   return `${Math.round(Number(value) * 1000) / 10}%`;
+}
+
+function createUsersSummaryLeadCell(item) {
+  const wrap = document.createElement('div');
+  wrap.className = 'users-lead-cell';
+  const primary = document.createElement('div');
+  primary.className = 'users-lead-main';
+  primary.textContent = item && item.memberNumber ? `会員番号 ${item.memberNumber}` : (item && item.lineUserId ? String(item.lineUserId) : '-');
+  wrap.appendChild(primary);
+  const secondary = document.createElement('div');
+  secondary.className = 'users-lead-sub';
+  secondary.textContent = item && item.lineUserId
+    ? `${String(item.lineUserId)} / ${(item && item.categoryLabel) ? String(item.categoryLabel) : '-'}`
+    : '-';
+  wrap.appendChild(secondary);
+  return wrap;
 }
 
 function renderUsersSummaryRows() {
@@ -13130,6 +13197,11 @@ function renderUsersSummaryRows() {
           ? 'users-badge-conflict'
           : (integrity === 'unknown' ? 'users-badge-unknown' : 'users-badge-ok');
         td.appendChild(createUsersSummaryBadge(integrity, badgeClass));
+        tr.appendChild(td);
+        return;
+      }
+      if (columnKey === 'lineUserId') {
+        td.appendChild(createUsersSummaryLeadCell(item));
         tr.appendChild(td);
         return;
       }
@@ -22338,6 +22410,7 @@ function setupLlmControls() {
 (async () => {
   await loadDict();
   applyDict();
+  applySystemConsoleHierarchy();
   applyUiContractSelectors();
   applyBuildMetaBadge();
   applyTopSummaryVisibility();

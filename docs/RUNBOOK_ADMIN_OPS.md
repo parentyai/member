@@ -7,6 +7,23 @@
 - kill switch は「送信副作用の最終停止装置」
 - traceId は監査の主キー（Trace Search で追えること）
 
+## Operator Walkthrough（Phase888）
+- canonical walkthrough は次の 5 本を固定する。
+  - 要対応確認: `home -> alerts`
+  - 送信準備: `home/alerts -> composer -> monitor`
+  - 障害対応: `home/alerts -> errors -> monitor/maintenance`
+  - 会員確認: `home/alerts -> read-model`
+  - 地域/緊急運用: `home/alerts -> city-pack / emergency-layer`
+- operator 面の確認順は `1. 状況を見る -> 2. 次の一手を押す -> 3. 必要な時だけ詳細を見る` を基準にする。
+- System Console へ移る条件は `生データ / trace / 診断 / 設定` が必要になった時だけとする。
+
+## Browser Validation Fallback（Phase888）
+Playwright が環境制約で使えない場合は次の順で確認する。
+1. `npm run admin:open -- --fresh-server --no-open`
+2. `/admin/login` へ token login
+3. `/admin/app?pane=home`, `alerts`, `composer`, `monitor`, `errors`, `read-model`, `city-pack`, `emergency-layer` を開き、decision card / task summary / primary CTA を DOM anchor で確認
+4. `settings`, `ops-system-health`, `ops-feature-catalog`, `audit`, `quality-patrol`, `maintenance`, `llm`, `vendors` で `Overview / Warnings / Actions / Details / Raw` の section order を確認
+
 ## LINE Desktop Patrol（local MCP）
 - `tools/line_desktop_patrol/` は local-only MCP sidecar で、Codex から guarded `send_text` と `desktop_run_conversation_loop` を呼べる。
 - 実行前確認は `desktop_readiness` を使い、Accessibility / LINE起動 / target title match を先に見る。

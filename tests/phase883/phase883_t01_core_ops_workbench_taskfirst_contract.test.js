@@ -18,8 +18,9 @@ test('phase883: composer, monitor, and errors stay task-first in ops shell', () 
   assert.ok(html.includes('id="composer-task-summary"'));
   assert.ok(html.includes('id="monitor-task-summary"'));
   assert.ok(html.includes('id="errors-task-summary"'));
-  assert.ok(html.includes('id="monitor-pane-details" class="decision-details section" data-surface-tier="primary" open'));
-  assert.ok(html.includes('id="errors-pane-details" class="decision-details section" open'));
+  assert.ok(html.includes('id="composer-pane-details" class="decision-details section" data-workbench-zone="true" data-workbench-collapsible="true" data-surface-tier="primary"'));
+  assert.ok(html.includes('id="monitor-pane-details" class="decision-details section" data-workbench-collapsible="true" data-surface-tier="primary"'));
+  assert.ok(html.includes('id="errors-pane-details" class="decision-details section" data-workbench-collapsible="true"'));
   assert.ok(html.includes('id="errors-summary-details" class="table-section section" data-json-collapsible="true" data-v3-ops-hidden="true"'));
   assert.ok(html.includes('id="composer-trigger-order-note" class="note" data-v3-ops-hidden="true"'));
   assert.ok(html.includes('data-ui="composer-scenario-step-overview" data-v3-ops-hidden="true"'));

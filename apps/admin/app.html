@@ -256,14 +256,17 @@
               <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.alerts">緊急導線</div>
               <button id="v3-open-alerts" type="button" class="secondary-btn" data-dict-key="ui.label.v3.top.openAlerts">要対応を見る</button>
             </div>
+          </div>
+          <div class="topbar-v3-secondary">
             <div class="topbar-v3-block topbar-v3-role">
-              <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.role">権限</div>
+              <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.role">利用モード</div>
               <div class="role-switch" role="group" aria-label="Role Switch">
                 <button class="role-btn is-active" data-role-value="operator" data-dict-key="ui.label.role.operatorMode">運用</button>
                 <button class="role-btn" data-role-value="admin" data-dict-key="ui.label.role.adminMode">管理</button>
                 <button class="role-btn" data-role-value="developer" data-ops-role="developer" data-dict-key="ui.label.role.developer">開発</button>
               </div>
             </div>
+            <div class="topbar-v3-secondary-note" data-dict-key="ui.desc.v3.top.role">切り替えると使える画面と表示内容が変わります。</div>
           </div>
         </section>
 
@@ -775,54 +778,116 @@
           </details>
         </section>
 
-        <section id="pane-ops-feature-catalog" class="app-pane" data-pane="ops-feature-catalog" data-pane-mode="system-diagnostics" data-task-context="feature-catalog-health" data-surface-tier="workspace">
-          <div class="panel">
-            <div class="panel-title">Feature Catalog Status</div>
-            <div class="panel-body">
-              <div class="row row-top">
-                <button id="ops-feature-catalog-reload" type="button">一覧更新</button>
+        <section id="pane-ops-feature-catalog" class="app-pane" data-pane="ops-feature-catalog" data-pane-mode="system-diagnostics" data-task-context="feature-catalog-health" data-surface-tier="workspace" data-console-pane="true">
+          <div class="pane-grid console-pane-grid">
+            <div class="pane-main">
+              <div class="panel console-section-panel" data-console-section="overview">
+                <div class="panel-title">Overview</div>
+                <div class="panel-body">
+                  <div class="console-section-intro">公開中の機能が今どの状態かを先に確認します。</div>
+                  <div id="ops-feature-catalog-summary" class="note">-</div>
+                </div>
               </div>
-              <div id="ops-feature-catalog-summary" class="note">-</div>
-              <div class="table-wrap">
-                <table class="table table-compact">
-                  <thead>
-                    <tr>
-                      <th>機能</th>
-                      <th>Status</th>
-                      <th>lastUpdatedAt</th>
-                      <th>stalenessSeconds</th>
-                      <th>reasonCodes</th>
-                      <th>detail</th>
-                    </tr>
-                  </thead>
-                  <tbody id="ops-feature-catalog-rows"></tbody>
-                </table>
+              <div class="panel console-section-panel" data-console-section="warnings">
+                <div class="panel-title">Warnings</div>
+                <div class="panel-body">
+                  <div class="console-section-intro">止まっている機能や注意が必要な状態をここで確認します。</div>
+                  <div id="ops-feature-catalog-warning-summary" class="note">一覧更新後に注意点を表示します。</div>
+                </div>
+              </div>
+              <div class="panel console-section-panel" data-console-section="actions">
+                <div class="panel-title">Actions</div>
+                <div class="panel-body">
+                  <div class="console-section-intro">機能一覧を更新し、必要なら対象の詳細画面へ進みます。</div>
+                  <div class="row row-top">
+                    <button id="ops-feature-catalog-reload" type="button">一覧を更新する</button>
+                  </div>
+                </div>
+              </div>
+              <div class="panel console-section-panel" data-console-section="details">
+                <div class="panel-title">Details</div>
+                <div class="panel-body">
+                  <div class="table-wrap">
+                    <table class="table table-compact">
+                      <thead>
+                        <tr>
+                          <th>機能</th>
+                          <th>Status</th>
+                          <th>lastUpdatedAt</th>
+                          <th>stalenessSeconds</th>
+                          <th>reasonCodes</th>
+                          <th>detail</th>
+                        </tr>
+                      </thead>
+                      <tbody id="ops-feature-catalog-rows"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="pane-detail" data-detail-rail="detail">
+              <div class="panel console-section-panel" data-console-section="raw">
+                <div class="panel-title">Raw</div>
+                <div class="panel-body">
+                  <div class="note">この画面では生データは持たず、詳細画面への導線だけを表示します。</div>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section id="pane-ops-system-health" class="app-pane" data-pane="ops-system-health" data-pane-mode="system-diagnostics" data-task-context="system-health" data-surface-tier="workspace">
-          <div class="panel">
-            <div class="panel-title">Ops System Health</div>
-            <div class="panel-body">
-              <div class="row row-top">
-                <button id="ops-system-health-reload" type="button">状態更新</button>
+        <section id="pane-ops-system-health" class="app-pane" data-pane="ops-system-health" data-pane-mode="system-diagnostics" data-task-context="system-health" data-surface-tier="workspace" data-console-pane="true">
+          <div class="pane-grid console-pane-grid">
+            <div class="pane-main">
+              <div class="panel console-section-panel" data-console-section="overview">
+                <div class="panel-title">Overview</div>
+                <div class="panel-body">
+                  <div class="console-section-intro">システム全体の状態と更新時刻を先に確認します。</div>
+                  <div id="ops-system-health-summary" class="note">-</div>
+                </div>
               </div>
-              <div id="ops-system-health-summary" class="note">-</div>
-              <div class="table-wrap">
-                <table class="table table-compact">
-                  <thead>
-                    <tr>
-                      <th>Section</th>
-                      <th>Status</th>
-                      <th>lastUpdatedAt</th>
-                      <th>reasonCodes</th>
-                      <th>detail</th>
-                    </tr>
-                  </thead>
-                  <tbody id="ops-system-health-rows"></tbody>
-                </table>
+              <div class="panel console-section-panel" data-console-section="warnings">
+                <div class="panel-title">Warnings</div>
+                <div class="panel-body">
+                  <div class="console-section-intro">注意が必要な section があればここに表示します。</div>
+                  <div id="ops-system-health-warning-summary" class="note">状態更新後に注意点を表示します。</div>
+                </div>
+              </div>
+              <div class="panel console-section-panel" data-console-section="actions">
+                <div class="panel-title">Actions</div>
+                <div class="panel-body">
+                  <div class="console-section-intro">状態を更新し、必要なら対象 section の詳細画面へ進みます。</div>
+                  <div class="row row-top">
+                    <button id="ops-system-health-reload" type="button">状態を更新する</button>
+                  </div>
+                </div>
+              </div>
+              <div class="panel console-section-panel" data-console-section="details">
+                <div class="panel-title">Details</div>
+                <div class="panel-body">
+                  <div class="table-wrap">
+                    <table class="table table-compact">
+                      <thead>
+                        <tr>
+                          <th>Section</th>
+                          <th>Status</th>
+                          <th>lastUpdatedAt</th>
+                          <th>reasonCodes</th>
+                          <th>detail</th>
+                        </tr>
+                      </thead>
+                      <tbody id="ops-system-health-rows"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="pane-detail" data-detail-rail="detail">
+              <div class="panel console-section-panel" data-console-section="raw">
+                <div class="panel-title">Raw</div>
+                <div class="panel-body">
+                  <div class="note">この画面では生データは表示せず、section ごとの詳細導線に集約します。</div>
+                </div>
               </div>
             </div>
           </div>
@@ -940,7 +1005,7 @@
               </div>
             </div>
           </div>
-          <details id="composer-pane-details" class="decision-details section" data-workbench-zone="true" data-surface-tier="primary" open>
+          <details id="composer-pane-details" class="decision-details section" data-workbench-zone="true" data-workbench-collapsible="true" data-surface-tier="primary">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="composer-workspace">
               <div class="panel composer-header">
@@ -1434,7 +1499,7 @@
           <div id="monitor-role-visibility-reason" class="inline-notice role-visibility-reason" data-ui="role-visibility-reason" data-target-pane="monitor" data-v3-ops-hidden="true" role="status" aria-live="polite">
             監視情報は全ロールで参照できます。設定ビューは管理ロールのみ表示されます。
           </div>
-          <details id="monitor-pane-details" class="decision-details section" data-surface-tier="primary" open>
+          <details id="monitor-pane-details" class="decision-details section" data-workbench-collapsible="true" data-surface-tier="primary">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="monitor-view-switch" data-ui="monitor-view-switch">
               <div class="monitor-view-actions">
@@ -2602,7 +2667,7 @@
         <section id="pane-emergency-layer" class="app-pane" data-pane="emergency-layer" data-pane-mode="notification-workbench" data-task-context="emergency-operations" data-surface-tier="workspace">
           <div class="decision-card" id="emergency-layer-decision-card">
             <div class="decision-card-header">
-              <div class="decision-title" data-dict-key="ui.label.page.emergencyLayer">Emergency Layer</div>
+              <div class="decision-title" data-dict-key="ui.label.page.emergencyLayer">緊急対応</div>
               <span id="emergency-layer-decision-state" class="decision-state state-ready">READY</span>
             </div>
             <div id="emergency-layer-decision-reason1" class="decision-reason">-</div>
@@ -2649,7 +2714,7 @@
               </div>
             </div>
           </div>
-          <details id="emergency-layer-pane-details" class="decision-details section" data-workbench-zone="true" open>
+          <details id="emergency-layer-pane-details" class="decision-details section" data-workbench-zone="true" data-workbench-collapsible="true">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="panel" data-v3-ops-hidden="true">
               <div class="panel-title" data-dict-key="ui.label.emergency.providerControl">Provider Control</div>
@@ -2677,7 +2742,7 @@
               </div>
             </div>
             <div class="panel">
-              <div class="panel-title" data-dict-key="ui.label.emergency.inbox">Emergency Inbox</div>
+              <div class="panel-title" data-dict-key="ui.label.emergency.inbox">緊急受信箱</div>
               <div class="panel-body">
                 <div class="panel" data-v3-ops-hidden="true">
                   <div class="panel-title">Emergency Rules（事前承認ルール）</div>
@@ -2757,10 +2822,10 @@
                   <label data-dict-key="ui.label.emergency.filterStatus">状態
                     <select id="emergency-bulletin-status-filter" class="select-inline">
                       <option value="" data-dict-key="ui.value.emergency.status.all">すべて</option>
-                      <option value="draft">draft</option>
-                      <option value="approved">approved</option>
-                      <option value="sent">sent</option>
-                      <option value="rejected">rejected</option>
+                      <option value="draft">判断待ち</option>
+                      <option value="approved">承認済み</option>
+                      <option value="sent">送信済み</option>
+                      <option value="rejected">却下</option>
                     </select>
                   </label>
                   <label data-dict-key="ui.label.emergency.filterRegion">regionKey
@@ -2775,14 +2840,14 @@
                   <table class="table-compact">
                     <thead>
                       <tr>
-                        <th data-dict-key="ui.label.emergency.col.status">status</th>
-                        <th data-dict-key="ui.label.emergency.col.regionKey">regionKey</th>
-                        <th data-dict-key="ui.label.emergency.col.category">category</th>
-                        <th data-dict-key="ui.label.emergency.col.severity">severity</th>
-                        <th data-dict-key="ui.label.emergency.col.updatedAt">updatedAt</th>
-                        <th data-dict-key="ui.label.emergency.col.evidence" data-v3-ops-hidden="true">evidence</th>
-                        <th data-dict-key="ui.label.emergency.col.actions">actions</th>
-                        <th data-dict-key="ui.label.emergency.col.traceId" data-v3-ops-hidden="true">traceId</th>
+                        <th data-dict-key="ui.label.emergency.col.status">状態</th>
+                        <th data-dict-key="ui.label.emergency.col.regionKey">地域</th>
+                        <th data-dict-key="ui.label.emergency.col.category">種別</th>
+                        <th data-dict-key="ui.label.emergency.col.severity">緊急度</th>
+                        <th data-dict-key="ui.label.emergency.col.updatedAt">更新時刻</th>
+                        <th data-dict-key="ui.label.emergency.col.evidence" data-v3-ops-hidden="true">証跡</th>
+                        <th data-dict-key="ui.label.emergency.col.actions">操作</th>
+                        <th data-dict-key="ui.label.emergency.col.traceId" data-v3-ops-hidden="true">追跡ID</th>
                       </tr>
                     </thead>
                     <tbody id="emergency-bulletin-rows"></tbody>
@@ -3856,7 +3921,7 @@
               </div>
             </div>
           </div>
-          <details id="errors-pane-details" class="decision-details section" open>
+          <details id="errors-pane-details" class="decision-details section" data-workbench-collapsible="true">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="pane-grid">
             <div class="pane-main">
@@ -4010,7 +4075,7 @@
                 </div>
               </div>
               <div class="panel">
-                <div class="panel-title">ユーザー一覧</div>
+                <div class="panel-title">会員一覧</div>
                 <div class="panel-body">
                   <div class="input-grid">
                     <div class="row">
@@ -4050,32 +4115,32 @@
                         </select>
                       </div>
                       <div class="flex-1" data-v3-advanced-filter="true">
-                        <label for="users-filter-plan">Plan</label>
+                        <label for="users-filter-plan">料金プラン</label>
                         <select id="users-filter-plan">
-                          <option value="">all</option>
-                          <option value="free">free</option>
-                          <option value="pro">pro</option>
+                          <option value="">すべて</option>
+                          <option value="free">無料</option>
+                          <option value="pro">有料</option>
                         </select>
                       </div>
                       <div class="flex-1" data-v3-advanced-filter="true">
                         <label for="users-filter-subscription-status">課金状態</label>
                         <select id="users-filter-subscription-status">
-                          <option value="">all</option>
-                          <option value="active">active</option>
-                          <option value="trialing">trialing</option>
-                          <option value="past_due">past_due</option>
-                          <option value="canceled">canceled</option>
-                          <option value="incomplete">incomplete</option>
-                          <option value="unknown">unknown</option>
+                          <option value="">すべて</option>
+                          <option value="active">利用中</option>
+                          <option value="trialing">お試し中</option>
+                          <option value="past_due">支払い確認</option>
+                          <option value="canceled">停止</option>
+                          <option value="incomplete">未完了</option>
+                          <option value="unknown">不明</option>
                         </select>
                       </div>
                       <div class="flex-1" data-v3-advanced-filter="true">
                         <label for="users-filter-billing-integrity">課金整合</label>
                         <select id="users-filter-billing-integrity">
-                          <option value="">all</option>
-                          <option value="ok">ok</option>
-                          <option value="unknown">unknown</option>
-                          <option value="conflict">conflict</option>
+                          <option value="">すべて</option>
+                          <option value="ok">正常</option>
+                          <option value="unknown">不明</option>
+                          <option value="conflict">不一致</option>
                         </select>
                       </div>
                       <div class="flex-1">
@@ -4090,43 +4155,43 @@
                   </div>
                   <div class="row row-top">
                     <button id="users-summary-reload" type="button">更新</button>
-                    <button id="users-summary-analyze" type="button" data-v3-ops-hidden="true">Analyze</button>
-                    <button id="users-summary-export" type="button" data-v3-ops-hidden="true">Export CSV</button>
-                    <button id="users-summary-edit-columns" type="button" data-v3-ops-hidden="true">Edit columns</button>
+                    <button id="users-summary-analyze" type="button" data-v3-ops-hidden="true">傾向を見る</button>
+                    <button id="users-summary-export" type="button" data-v3-ops-hidden="true">CSVを出力</button>
+                    <button id="users-summary-edit-columns" type="button" data-v3-ops-hidden="true">表示列を編集</button>
                   </div>
                   <div id="users-summary-quick-filters" class="users-quick-filters">
-                    <button type="button" class="users-quick-filter-pill is-active" data-users-quick-filter="all">All</button>
-                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="pro_active">Pro(active)</button>
-                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="free">Free</button>
-                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="trialing">Trialing</button>
-                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="past_due">Past_due</button>
-                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="canceled">Canceled</button>
-                    <button type="button" class="users-quick-filter-pill users-quick-filter-pill-unknown" data-users-quick-filter="unknown">Unknown</button>
+                    <button type="button" class="users-quick-filter-pill is-active" data-users-quick-filter="all">すべて</button>
+                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="pro_active">有料会員</button>
+                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="free">無料会員</button>
+                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="trialing">お試し中</button>
+                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="past_due">支払い確認</button>
+                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="canceled">停止</button>
+                    <button type="button" class="users-quick-filter-pill users-quick-filter-pill-unknown" data-users-quick-filter="unknown">不明</button>
                   </div>
                   <div id="users-summary-columns-panel" class="users-columns-panel is-hidden">
                     <div class="users-columns-panel-title">表示列</div>
                     <div class="users-columns-grid">
                       <label><input type="checkbox" data-users-column-toggle="createdAt" checked /> 登録日</label>
                       <label><input type="checkbox" data-users-column-toggle="updatedAt" checked /> 更新日</label>
-                      <label><input type="checkbox" data-users-column-toggle="lineUserId" checked /> ユーザーID</label>
+                      <label><input type="checkbox" data-users-column-toggle="lineUserId" checked /> 確認する会員</label>
                       <label><input type="checkbox" data-users-column-toggle="memberNumber" checked /> 会員番号</label>
                       <label><input type="checkbox" data-users-column-toggle="category" checked /> カテゴリ</label>
                       <label><input type="checkbox" data-users-column-toggle="status" checked /> ステータス</label>
-                      <label><input type="checkbox" data-users-column-toggle="plan" checked /> Plan</label>
+                      <label><input type="checkbox" data-users-column-toggle="plan" checked /> 料金プラン</label>
                       <label><input type="checkbox" data-users-column-toggle="subscriptionStatus" checked /> 課金状態</label>
                       <label><input type="checkbox" data-users-column-toggle="billingIntegrity" checked /> 整合</label>
                       <label><input type="checkbox" data-users-column-toggle="currentPeriodEnd" checked /> 期限</label>
-                      <label><input type="checkbox" data-users-column-toggle="llmUsage" checked /> llmUsage</label>
-                      <label><input type="checkbox" data-users-column-toggle="todoProgressRate" checked /> todoProgressRate</label>
-                      <label><input type="checkbox" data-users-column-toggle="localGuidanceCoverage" checked /> localGuidanceCoverage</label>
-                      <label><input type="checkbox" data-users-column-toggle="llmUsageToday" checked /> usageToday</label>
-                      <label><input type="checkbox" data-users-column-toggle="tokensToday" checked /> tokensToday</label>
-                      <label><input type="checkbox" data-users-column-toggle="blockedRate" checked /> blockedRate</label>
+                      <label><input type="checkbox" data-users-column-toggle="llmUsage" checked /> 問い合わせ回数</label>
+                      <label><input type="checkbox" data-users-column-toggle="todoProgressRate" checked /> Todo進行率</label>
+                      <label><input type="checkbox" data-users-column-toggle="localGuidanceCoverage" checked /> 地域案内充足率</label>
+                      <label><input type="checkbox" data-users-column-toggle="llmUsageToday" checked /> 今日の問い合わせ</label>
+                      <label><input type="checkbox" data-users-column-toggle="tokensToday" checked /> 今日の処理量</label>
+                      <label><input type="checkbox" data-users-column-toggle="blockedRate" checked /> 要確認率</label>
                       <label><input type="checkbox" data-users-column-toggle="deliveryCount" checked /> 配信数</label>
                       <label><input type="checkbox" data-users-column-toggle="clickCount" checked /> クリック数</label>
                       <label><input type="checkbox" data-users-column-toggle="reactionRate" checked /> 反応率</label>
                     </div>
-                    <div id="users-summary-analyze-result" class="note">Analyze: 操作待ち</div>
+                    <div id="users-summary-analyze-result" class="note">傾向表示はまだありません。</div>
                   </div>
                   <div class="filter-bar trend-ui-only">
                     <div class="filter-chips" id="users-summary-filter-chips"></div>
@@ -4140,20 +4205,20 @@
                       <tr>
                         <th data-users-col="createdAt"><button type="button" class="table-sort-btn" data-users-sort-key="createdAt">登録日</button></th>
                         <th data-users-col="updatedAt"><button type="button" class="table-sort-btn" data-users-sort-key="updatedAt">更新日</button></th>
-                        <th data-users-col="lineUserId"><button type="button" class="table-sort-btn" data-users-sort-key="lineUserId">ユーザーID</button></th>
+                        <th data-users-col="lineUserId"><button type="button" class="table-sort-btn" data-users-sort-key="lineUserId">確認する会員</button></th>
                         <th data-users-col="memberNumber"><button type="button" class="table-sort-btn" data-users-sort-key="memberNumber">会員番号</button></th>
                         <th data-users-col="category"><button type="button" class="table-sort-btn" data-users-sort-key="category">カテゴリ</button></th>
                         <th data-users-col="status"><button type="button" class="table-sort-btn" data-users-sort-key="status">ステータス</button></th>
-                        <th data-users-col="plan"><button type="button" class="table-sort-btn" data-users-sort-key="plan">Plan</button></th>
+                        <th data-users-col="plan"><button type="button" class="table-sort-btn" data-users-sort-key="plan">料金プラン</button></th>
                         <th data-users-col="subscriptionStatus"><button type="button" class="table-sort-btn" data-users-sort-key="subscriptionStatus">課金状態</button></th>
                         <th data-users-col="billingIntegrity"><button type="button" class="table-sort-btn" data-users-sort-key="billingIntegrity">整合</button></th>
                         <th data-users-col="currentPeriodEnd"><button type="button" class="table-sort-btn" data-users-sort-key="currentPeriodEnd">期限</button></th>
-                        <th data-users-col="llmUsage"><button type="button" class="table-sort-btn" data-users-sort-key="llmUsage">llmUsage</button></th>
-                        <th data-users-col="todoProgressRate"><button type="button" class="table-sort-btn" data-users-sort-key="todoProgressRate">todoProgressRate</button></th>
-                        <th data-users-col="localGuidanceCoverage"><button type="button" class="table-sort-btn" data-users-sort-key="localGuidanceCoverage">localGuidanceCoverage</button></th>
-                        <th data-users-col="llmUsageToday"><button type="button" class="table-sort-btn" data-users-sort-key="llmUsageToday">usageToday</button></th>
-                        <th data-users-col="tokensToday"><button type="button" class="table-sort-btn" data-users-sort-key="tokensToday">tokensToday</button></th>
-                        <th data-users-col="blockedRate"><button type="button" class="table-sort-btn" data-users-sort-key="blockedRate">blockedRate</button></th>
+                        <th data-users-col="llmUsage"><button type="button" class="table-sort-btn" data-users-sort-key="llmUsage">問い合わせ回数</button></th>
+                        <th data-users-col="todoProgressRate"><button type="button" class="table-sort-btn" data-users-sort-key="todoProgressRate">Todo進行率</button></th>
+                        <th data-users-col="localGuidanceCoverage"><button type="button" class="table-sort-btn" data-users-sort-key="localGuidanceCoverage">地域案内充足率</button></th>
+                        <th data-users-col="llmUsageToday"><button type="button" class="table-sort-btn" data-users-sort-key="llmUsageToday">今日の問い合わせ</button></th>
+                        <th data-users-col="tokensToday"><button type="button" class="table-sort-btn" data-users-sort-key="tokensToday">今日の処理量</button></th>
+                        <th data-users-col="blockedRate"><button type="button" class="table-sort-btn" data-users-sort-key="blockedRate">要確認率</button></th>
                         <th data-users-col="deliveryCount"><button type="button" class="table-sort-btn" data-users-sort-key="deliveryCount" data-dict-tip="ui.help.table.deliveryCount">配信数</button></th>
                         <th data-users-col="clickCount"><button type="button" class="table-sort-btn" data-users-sort-key="clickCount" data-dict-tip="ui.help.table.clickCount">クリック数</button></th>
                         <th data-users-col="reactionRate"><button type="button" class="table-sort-btn" data-users-sort-key="reactionRate" data-dict-tip="ui.help.readModel.ctr">反応率</button></th>
@@ -4174,12 +4239,12 @@
                 </div>
               </div>
               <div class="panel">
-                <div class="panel-title">ユーザー詳細（課金/LLM）</div>
+                <div class="panel-title">選択中の会員詳細</div>
                 <div class="panel-body">
-                  <div class="note">lineUserId: <span id="users-detail-line-user-id">-</span></div>
-                  <div class="note">Plan: <span id="users-detail-plan">-</span></div>
+                  <div class="note">会員ID: <span id="users-detail-line-user-id">-</span></div>
+                  <div class="note">料金プラン: <span id="users-detail-plan">-</span></div>
                   <div class="note">課金状態: <span id="users-detail-subscription-status">-</span></div>
-                  <div class="note">currentPeriodEnd: <span id="users-detail-current-period-end">-</span></div>
+                  <div class="note">契約期限: <span id="users-detail-current-period-end">-</span></div>
                   <div class="note">最終Stripeイベント: <span id="users-detail-last-stripe-event">-</span></div>
                   <div class="note">Stripe種別/状態: <span id="users-detail-last-stripe-event-type">-</span></div>
                   <div class="note">LLM使用回数: <span id="users-detail-llm-usage-count">-</span></div>
