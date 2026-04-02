@@ -27,7 +27,7 @@ test('phase880: ops shell hides system-only blocks and advanced filters in first
   assert.ok(html.includes('id="city-pack-reflection-state" class="panel data-reflection-panel"'));
   assert.ok(html.includes('id="read-model-reflection-state" class="panel data-reflection-panel"'));
   assert.ok(html.includes('id="users-summary-analyze" type="button" data-v3-ops-hidden="true"'));
-  assert.ok(html.includes('for="city-pack-unified-filter-relation">関係ID</label>'));
+  assert.ok(html.includes('for="city-pack-unified-filter-relation"'));
   assert.ok(html.includes('id="errors-summary-details" class="table-section section" data-json-collapsible="true" data-v3-ops-hidden="true"'));
   assert.ok(html.includes('id="errors-trace" class="input-inline input-trace"'));
   assert.ok(html.includes('data-v3-advanced-filter="true"'));

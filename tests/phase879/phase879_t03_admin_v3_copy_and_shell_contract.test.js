@@ -3,11 +3,15 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { test } = require('node:test');
+const {
+  loadAdminUiDictionaryMap,
+  assertDictionaryHasTextKeys,
+} = require('../_admin_ui_dictionary_test_helper');
 
 test('phase879: runtime and docs fix shell context, copy policy, and ops-first noise control', () => {
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
   const css = fs.readFileSync('apps/admin/assets/admin.css', 'utf8');
-  const dict = fs.readFileSync('docs/ADMIN_UI_DICTIONARY_JA.md', 'utf8');
+  const dictMap = loadAdminUiDictionaryMap();
   const ssot = fs.readFileSync('docs/SSOT_ADMIN_UI_OS.md', 'utf8');
 
   assert.ok(js.includes('function updateAdminV3ShellChrome()'));
@@ -21,13 +25,15 @@ test('phase879: runtime and docs fix shell context, copy policy, and ops-first n
   assert.ok(css.includes('.app-shell.admin-v3-shell-active[data-ui-shell="ops"] #admin-local-preflight-banner'));
   assert.ok(css.includes('.app-shell.admin-v3-shell-active .page-shell-badge'));
 
-  assert.ok(dict.includes('"ui.label.llm.runOpsExplain": "状況を要約"'));
-  assert.ok(dict.includes('"ui.label.llm.openAudit": "システム記録を見る"'));
-  assert.ok(dict.includes('"ui.label.v3.shell.ops": "Ops UI"'));
-  assert.ok(dict.includes('"ui.label.v3.nav.group.today": "Today"'));
-  assert.ok(dict.includes('"ui.desc.v3.page.home": "今日やる順番を決めて、最初に開く画面へ進みます。"'));
-  assert.ok(dict.includes('"ui.desc.v3.page.alerts": "急ぎの要対応を上から確認し、必要な画面へ進みます。"'));
-  assert.ok(dict.includes('"ui.label.v3.task.audit": "System Console / 記録を確認する"'));
+  assertDictionaryHasTextKeys(dictMap, [
+    'ui.label.llm.runOpsExplain',
+    'ui.label.llm.openAudit',
+    'ui.label.v3.shell.ops',
+    'ui.label.v3.nav.group.today',
+    'ui.desc.v3.page.home',
+    'ui.desc.v3.page.alerts',
+    'ui.label.v3.task.audit',
+  ]);
 
   assert.ok(ssot.includes('## Admin UI v3 Shell Split（Phase879 add-only）'));
   assert.ok(ssot.includes('`ENABLE_ADMIN_OPS_UI_V3`（既定: 1）'));

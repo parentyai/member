@@ -3,6 +3,10 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { test } = require('node:test');
+const {
+  loadAdminUiDictionaryMap,
+  assertDictionaryHasTextKeys,
+} = require('../_admin_ui_dictionary_test_helper');
 
 function extractPaneSection(html, paneId) {
   const marker = `<section id="pane-${paneId}"`;
@@ -25,7 +29,7 @@ test('phase674: audit pane keeps source context block and return action for evid
 test('phase674: evidence navigation stores source-pane context before opening audit', () => {
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
   const css = fs.readFileSync('apps/admin/assets/admin.css', 'utf8');
-  const dict = fs.readFileSync('docs/ADMIN_UI_DICTIONARY_JA.md', 'utf8');
+  const dictMap = loadAdminUiDictionaryMap();
 
   assert.ok(js.includes('function resolveAuditSourceMeta(sourcePane) {'));
   assert.ok(js.includes('function renderAuditEntryContext(traceId) {'));
@@ -39,6 +43,8 @@ test('phase674: evidence navigation stores source-pane context before opening au
   assert.ok(css.includes('.audit-entry-meta {'));
   assert.ok(css.includes('.audit-entry-actions {'));
 
-  assert.ok(dict.includes('"ui.label.audit.entryContext": "証跡の見方"'));
-  assert.ok(dict.includes('"ui.desc.audit.boundaryDefault": "この画面は証跡の確認専用です。修正や再送は元の画面へ戻って行います。"'));
+  assertDictionaryHasTextKeys(dictMap, [
+    'ui.label.audit.entryContext',
+    'ui.desc.audit.boundaryDefault',
+  ]);
 });

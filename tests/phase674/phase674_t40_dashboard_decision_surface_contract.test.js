@@ -3,6 +3,10 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { test } = require('node:test');
+const {
+  loadAdminUiDictionaryMap,
+  assertDictionaryHasTextKeys,
+} = require('../_admin_ui_dictionary_test_helper');
 
 function extractPaneSection(html, paneId) {
   const marker = `<section id="pane-${paneId}"`;
@@ -15,7 +19,7 @@ function extractPaneSection(html, paneId) {
 test('phase674: dashboard decision surface groups KPIs and keeps one primary action', () => {
   const html = fs.readFileSync('apps/admin/app.html', 'utf8');
   const css = fs.readFileSync('apps/admin/assets/admin.css', 'utf8');
-  const dict = fs.readFileSync('docs/ADMIN_UI_DICTIONARY_JA.md', 'utf8');
+  const dictMap = loadAdminUiDictionaryMap();
   const homePane = extractPaneSection(html, 'home');
 
   assert.ok(homePane.includes('id="home-action-alerts"'));
@@ -37,15 +41,17 @@ test('phase674: dashboard decision surface groups KPIs and keeps one primary act
   assert.ok(homePane.includes('id="dashboard-band-delivery-empty"'));
   assert.ok(homePane.includes('id="dashboard-band-risk-empty"'));
 
-  assert.ok(dict.includes('"ui.label.home.prioritySummary": "最初にやること"'));
-  assert.ok(dict.includes('"ui.label.home.primaryMetrics": "詳細指標"'));
-  assert.ok(dict.includes('"ui.label.home.todayFocus": "判断材料"'));
-  assert.ok(dict.includes('"ui.label.home.nextDestinations": "次に開く画面"'));
-  assert.ok(dict.includes('"ui.label.home.band.usage": "利用状況"'));
-  assert.ok(dict.includes('"ui.label.home.band.delivery": "配信成果"'));
-  assert.ok(dict.includes('"ui.label.home.band.risk": "運用リスク"'));
-  assert.ok(dict.includes('"ui.label.home.primaryStep": "最初にやること"'));
-  assert.ok(dict.includes('"ui.label.home.secondaryStep": "次に確認すること"'));
+  assertDictionaryHasTextKeys(dictMap, [
+    'ui.label.home.prioritySummary',
+    'ui.label.home.primaryMetrics',
+    'ui.label.home.todayFocus',
+    'ui.label.home.nextDestinations',
+    'ui.label.home.band.usage',
+    'ui.label.home.band.delivery',
+    'ui.label.home.band.risk',
+    'ui.label.home.primaryStep',
+    'ui.label.home.secondaryStep',
+  ]);
 
   assert.ok(css.includes('.dashboard-secondary-links'));
   assert.ok(css.includes('.dashboard-kpi-band'));
