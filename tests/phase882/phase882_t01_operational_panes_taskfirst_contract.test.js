@@ -17,7 +17,7 @@ test('phase882: members and regional ops panes stay task-first in ops shell', ()
   assert.ok(html.includes('id="read-model-task-summary"'));
   assert.ok(html.includes('id="city-pack-task-summary"'));
   assert.ok(html.includes('id="emergency-task-summary"'));
-  assert.ok(html.includes('id="emergency-layer-pane-details" class="decision-details section" data-workbench-zone="true" open'));
+  assert.ok(html.includes('id="emergency-layer-pane-details" class="decision-details section" data-workbench-zone="true" data-workbench-collapsible="true"'));
   assert.ok(html.includes('data-dict-key="ui.label.emergency.col.evidence" data-v3-ops-hidden="true"'));
   assert.ok(html.includes('data-dict-key="ui.label.emergency.col.traceId" data-v3-ops-hidden="true"'));
 

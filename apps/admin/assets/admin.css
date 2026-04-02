@@ -211,7 +211,7 @@ body {
 
 .topbar-v3-main {
   display: grid;
-  grid-template-columns: minmax(280px, 1.4fr) minmax(180px, 0.8fr) minmax(160px, 0.7fr) auto;
+  grid-template-columns: minmax(280px, 1.45fr) minmax(180px, 0.85fr) minmax(170px, 0.75fr);
   gap: var(--space-3);
 }
 
@@ -223,6 +223,24 @@ body {
   border-radius: var(--radius-md);
   background: var(--surface);
   box-shadow: var(--shadow-card);
+}
+
+.topbar-v3-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.topbar-v3-secondary .topbar-v3-role {
+  width: auto;
+}
+
+.topbar-v3-secondary-note {
+  color: var(--text-muted);
+  font-size: var(--font-12);
+  line-height: 1.5;
 }
 
 .topbar-v3-search-form {
@@ -248,6 +266,39 @@ body {
 
 .topbar-v3-role .role-switch {
   width: max-content;
+}
+
+.console-pane-grid {
+  align-items: start;
+}
+
+.console-section-panel {
+  border-color: color-mix(in srgb, var(--border) 80%, #c4ccd8 20%);
+}
+
+.console-section-panel[data-console-section="overview"] .panel-title,
+.console-section-panel[data-console-section="warnings"] .panel-title,
+.console-section-panel[data-console-section="actions"] .panel-title,
+.console-section-panel[data-console-section="details"] .panel-title,
+.console-section-panel[data-console-section="raw"] .panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.console-section-intro {
+  margin-bottom: var(--space-2);
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+[data-console-pane="true"] .pane-detail {
+  display: grid;
+  gap: var(--space-3);
+}
+
+[data-console-pane="true"] .is-console-section-out-of-order {
+  border-color: var(--status-danger);
 }
 
 .app-topbar {
@@ -2495,6 +2546,22 @@ details:not([open]) > *:not(summary) {
   display: none;
 }
 
+.users-lead-cell {
+  display: grid;
+  gap: 2px;
+}
+
+.users-lead-main {
+  font-weight: 700;
+  color: var(--text-base);
+}
+
+.users-lead-sub {
+  color: var(--text-muted);
+  font-size: var(--font-12);
+  line-height: 1.4;
+}
+
 .users-quick-filters {
   display: flex;
   flex-wrap: wrap;
@@ -4024,6 +4091,11 @@ details:not([open]) > *:not(summary) {
 @media (max-width: 760px) {
   .topbar-v3-main {
     grid-template-columns: 1fr;
+  }
+
+  .topbar-v3-secondary {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .nav-shell-actions,

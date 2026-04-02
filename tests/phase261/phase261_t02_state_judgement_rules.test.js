@@ -21,6 +21,7 @@ test('phase261: decision state rules are fixed to READY/ATTENTION/STOP', () => {
 
 test('phase261: details auto-open for ATTENTION/STOP', () => {
   const js = readFileSync('apps/admin/assets/admin_app.js', 'utf8');
-  assert.ok(js.includes("vm.state === 'ATTENTION' || vm.state === 'STOP'"));
+  assert.ok(js.includes('function shouldAutoOpenDecisionDetails(paneKey, vm) {'));
+  assert.ok(js.includes("if (!vm || (vm.state !== 'ATTENTION' && vm.state !== 'STOP')) return false;"));
   assert.ok(js.includes('detailsEl.open = true;'));
 });
