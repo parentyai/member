@@ -19,28 +19,35 @@ test('phase879: app shell adds ops ui v3 and system console chrome without chang
   assert.ok(html.includes('id="v3-open-alerts"'));
   assert.ok(html.includes('id="page-shell-badge"'));
 
-  assert.ok(html.includes('data-v3-nav-group="today" data-ui-shell-context="ops"'));
-  assert.ok(html.includes('data-v3-nav-group="messages" data-ui-shell-context="ops"'));
-  assert.ok(html.includes('data-v3-nav-group="members" data-ui-shell-context="ops"'));
-  assert.ok(html.includes('data-v3-nav-group="regional-ops" data-ui-shell-context="ops"'));
-  assert.ok(html.includes('data-v3-nav-group="recovery" data-ui-shell-context="ops"'));
+  assert.ok(html.includes('data-v3-nav-group="operator-primary" data-ui-shell-context="ops"'));
   assert.ok(html.includes('data-v3-nav-group="system-console" data-ui-shell-context="system"'));
 
-  assert.ok(html.includes('data-dict-key="ui.label.v3.nav.group.today"'));
+  const operatorNav = html.slice(
+    html.indexOf('data-v3-nav-group="operator-primary"'),
+    html.indexOf('data-v3-nav-group="system-console"')
+  );
+  const navOrder = Array.from(operatorNav.matchAll(/data-pane-target="([^"]+)"/g), (match) => match[1]);
+  assert.deepEqual(navOrder.slice(0, 5), ['home', 'alerts', 'read-model', 'city-pack', 'llm']);
+  ['composer', 'monitor', 'errors', 'emergency-layer', 'settings', 'audit'].forEach((paneKey) => {
+    assert.ok(!operatorNav.includes(`data-pane-target="${paneKey}"`), `operator primary nav should not expose ${paneKey}`);
+  });
+
+  assert.ok(html.includes('data-dict-key="ui.label.v3.nav.workspace"'));
   assert.ok(html.includes('data-dict-key="ui.label.v3.nav.group.systemConsole"'));
-  assert.ok(html.includes('data-dict-key="ui.label.v3.nav.composer"'));
   assert.ok(html.includes('data-dict-key="ui.label.v3.nav.audit"'));
 
   assertDictionaryHasTextKeys(dictMap, [
+    'ui.label.v3.nav.workspace',
     'ui.label.v3.shell.ops',
     'ui.label.v3.shell.system',
-    'ui.label.v3.nav.group.today',
     'ui.label.v3.nav.group.systemConsole',
-    'ui.label.v3.nav.composer',
+    'ui.label.v3.nav.home',
+    'ui.label.v3.nav.alerts',
+    'ui.label.v3.nav.readModel',
+    'ui.label.v3.nav.cityPack',
+    'ui.label.v3.nav.llm',
     'ui.label.v3.nav.audit',
   ]);
 
-  assert.ok(!html.includes('data-nav-group="today"'));
-  assert.ok(!html.includes('data-nav-group="messages"'));
   assert.ok(!html.includes('data-nav-group="system-console"'));
 });

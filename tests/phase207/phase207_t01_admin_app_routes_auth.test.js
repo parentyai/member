@@ -90,7 +90,7 @@ test('phase207: /admin/app returns shell and /admin/ui-dict returns dictionary w
 
   const body = JSON.parse(dictAuthed.body);
   assert.strictEqual(typeof body, 'object');
-  assert.strictEqual(body['ui.label.app.title'], '通知運用ダッシュボード（Linear UI）');
+  assert.strictEqual(body['ui.label.app.title'], '運用ダッシュボード');
   assert.strictEqual(body['ui.label.nav.compose'], '通知配信');
   assert.strictEqual(body['ui.label.panel.actions'], '操作パネル');
 });

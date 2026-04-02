@@ -17,19 +17,22 @@ test('phase888: operator walkthrough polish keeps ops first-view task-first', ()
   const runbook = fs.readFileSync('docs/RUNBOOK_ADMIN_OPS.md', 'utf8');
 
   assert.ok(html.includes('class="topbar-v3-secondary"'));
-  assert.ok(html.includes('data-dict-key="ui.desc.v3.top.role"'));
+  assert.ok(html.includes('data-dict-key="ui.label.v3.top.role"'));
   assert.ok(html.includes('id="composer-pane-details" class="decision-details section" data-workbench-zone="true" data-workbench-collapsible="true" data-surface-tier="primary"'));
   assert.ok(html.includes('id="monitor-pane-details" class="decision-details section" data-workbench-collapsible="true" data-surface-tier="primary"'));
   assert.ok(html.includes('id="errors-pane-details" class="decision-details section" data-workbench-collapsible="true"'));
   assert.ok(html.includes('id="emergency-layer-pane-details" class="decision-details section" data-workbench-zone="true" data-workbench-collapsible="true"'));
+  assert.ok(html.includes('id="faq-operator-surface"'));
   assert.ok(html.includes('data-users-quick-filter="all">すべて</button>'));
   assert.ok(html.includes('data-users-sort-key="lineUserId">確認する会員</button>'));
   assert.ok(html.includes('id="users-summary-analyze-result" class="note">傾向表示はまだありません。</div>'));
 
   assert.ok(js.includes('const USERS_SUMMARY_OPS_COLUMN_KEYS = Object.freeze(['));
-  assert.ok(js.includes("const OPS_DENSE_DETAIL_PANES = new Set(['composer', 'monitor', 'errors', 'emergency-layer']);"));
+  assert.ok(js.includes("const OPS_DENSE_DETAIL_PANES = new Set(['composer', 'monitor', 'errors', 'emergency-layer', 'llm']);"));
   assert.ok(js.includes('function shouldAutoOpenDecisionDetails(paneKey, vm) {'));
   assert.ok(js.includes('function createUsersSummaryLeadCell(item) {'));
+  assert.ok(js.includes('const operatorFaqMode = normalizeRoleValue(state.role) === \'operator\' && isOpsShellActive();'));
+  assert.ok(js.includes("if (workspaceGrid) workspaceGrid.classList.toggle('is-hidden', operatorFaqMode);"));
   assert.ok(js.includes("all: 'すべて'"));
 
   assert.ok(css.includes('.topbar-v3-secondary {'));

@@ -24,6 +24,52 @@ Playwright が環境制約で使えない場合は次の順で確認する。
 3. `/admin/app?pane=home`, `alerts`, `composer`, `monitor`, `errors`, `read-model`, `city-pack`, `emergency-layer` を開き、decision card / task summary / primary CTA を DOM anchor で確認
 4. `settings`, `ops-system-health`, `ops-feature-catalog`, `audit`, `quality-patrol`, `maintenance`, `llm`, `vendors` で `Overview / Warnings / Actions / Details / Raw` の section order を確認
 
+## Operator Minimal Walkthrough（Phase890）
+- operator primary nav は `ダッシュボード / 通知配信状況 / 会員情報 / City Pack・緊急レイヤー / FAQ` の 5 本だけを見る。
+- canonical flow は次で固定する。
+  - `ダッシュボード -> 通知配信状況`
+  - `通知配信状況 -> composer -> monitor`
+  - `通知配信状況 -> read-model`
+  - `通知配信状況 -> city-pack（地域案内 / 緊急対応）`
+  - `ダッシュボード -> FAQ`
+- operator は primary nav から `emergency-layer` を直接開かない。緊急対応は `city-pack` の `緊急対応` mode から進める。
+- `システム管理` は profile/menu からだけ入る。operator 面から raw / trace / evidence を直接開かない。
+
+## Terminal Action Preview Checklist（Phase890）
+- preview には次の 6 項目を必ず表示する。
+  - `現在登録されている内容`
+  - `実行後の状態`
+  - `変更される項目`
+  - `影響件数`
+  - `完了後に移動する画面`
+  - `取り消し可否`
+
+## 登録・削除・公開・送信・承認・却下の終点契約
+- terminal action は必ず 1 つの終点だけで終える。
+  - `画面遷移`
+  - `保存完了`
+  - `送信完了`
+  - `公開完了`
+  - `停止完了`
+  - `削除完了`
+  - `承認完了`
+  - `却下完了`
+- physical delete がない場合は `削除する（履歴を残す）` と表示し、preview でも履歴が残ることを明記する。
+
+## FAQ運用フロー（operator）
+1. `FAQ` を開く
+2. `新しい質問を登録する` か既存行を選ぶ
+3. preview で `現在 / 実行後 / 変更 / 影響件数 / 終点 / 取り消し可否` を確認する
+4. `保存 / 停止 / 削除する（履歴を残す）` のいずれかを実行する
+5. 完了後は FAQ 一覧へ戻る
+
+## City Pack・緊急対応フロー（operator）
+1. `City Pack・緊急レイヤー` を開く
+2. `地域案内` または `緊急対応` mode を選ぶ
+3. 対象行を選び、preview で現在内容と実行後状態を確認する
+4. `公開する / 停止する / 削除する（履歴を残す） / 承認する / 送信する / 却下する` を実行する
+5. 完了後は同じ画面へ戻り、一覧の最新状態を確認する
+
 ## LINE Desktop Patrol（local MCP）
 - `tools/line_desktop_patrol/` は local-only MCP sidecar で、Codex から guarded `send_text` と `desktop_run_conversation_loop` を呼べる。
 - 実行前確認は `desktop_readiness` を使い、Accessibility / LINE起動 / target title match を先に見る。
