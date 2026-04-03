@@ -4301,6 +4301,14 @@ details:not([open]) > *:not(summary) {
   display: flex !important;
 }
 
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-alerts #alerts-decision-card {
+  display: grid !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-alerts #alerts-decision-card .decision-actions {
+  display: flex !important;
+}
+
 /* PR7 visual system cleanup: keep evidence/raw payloads collapsed by default without changing core contracts. */
 details[data-json-collapsible="true"] > summary {
   color: var(--text-muted);
@@ -4893,11 +4901,61 @@ pre[data-visual-noise="evidence-placeholder"] {
   gap: 10px;
 }
 
-.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .nav-group-v3[data-v3-nav-group="operator-primary"] .nav-group-label {
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .nav-group-v3:not([data-v3-nav-group="operator-primary"]) {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .nav-group[data-nav-legacy="1"] {
+  display: none !important;
+}
+
+/* Keep operator surface strictly minimal: only five nav flows + compact topbar + pane-specific work cards. */
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] [data-nav-legacy="1"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .app-topbar[data-v3-legacy="1"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #page-task-context,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #header-readonly-note,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .nav-shell-subtitle,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .nav-shell-title,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #managed-action-evidence,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #page-shell-badge,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #page-last-updated,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #header-consult-link,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #home-kpi-details {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .nav-group-v3[data-v3-nav-group="operator-primary"] .nav-item-v3 .nav-icon {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .page-header {
+  margin-bottom: var(--space-3);
+  padding-block: var(--space-2);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .page-header-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .page-header-actions .hidden {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .page-subtitle {
+  margin-top: 6px;
+  max-width: 56rem;
   color: var(--text-muted);
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .nav-group-v3[data-v3-nav-group="operator-primary"] .nav-group-label {
+  display: none !important;
 }
 
 .app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .nav-group-v3[data-v3-nav-group="operator-primary"] .nav-item-v3 {
@@ -4924,26 +4982,113 @@ pre[data-visual-noise="evidence-placeholder"] {
 }
 
 .app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .topbar-v3-block {
-  border-radius: 18px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
 }
 
 .app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .topbar-v3-secondary {
   margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .topbar-v3-main .topbar-v3-label {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] .topbar-v3-search-form .secondary-btn {
+  min-width: 68px;
+}
+
+.topbar-v3-menu {
+  position: relative;
+}
+
+.topbar-v3-menu-summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 24, 40, 0.08);
+  background: rgba(255, 255, 255, 0.94);
+  font-weight: 600;
+}
+
+.topbar-v3-menu-summary::-webkit-details-marker {
+  display: none;
+}
+
+.topbar-v3-menu-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 8;
+  width: min(380px, calc(100vw - 40px));
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(16, 24, 40, 0.08);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+}
+
+.topbar-v3-menu:not([open]) .topbar-v3-menu-panel {
+  display: none;
+}
+
+.topbar-v3-menu-panel .topbar-v3-profile {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.topbar-v3-menu-panel .topbar-v3-role {
+  display: grid;
+  gap: var(--space-2);
 }
 
 .app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-city-pack > .decision-card,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-home > .decision-card,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-alerts > .decision-card,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model > .decision-card,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-composer > .decision-card,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-monitor > .decision-card,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-errors > .decision-card,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #faq-operator-decision-card,
 .app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #city-pack-reflection-state,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #home-reflection-state,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #read-model-reflection-state,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #monitor-reflection-state,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #monitor-role-visibility-reason,
 .app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-city-pack .data-workspace-grid,
 .app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #city-pack-pane-details,
 .app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-llm .llm-workspace-grid {
   display: none !important;
 }
 
-.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-city-pack,
-.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-llm {
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-city-pack.is-active,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-llm.is-active {
   display: grid;
   gap: var(--space-3);
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-home .dashboard-summary-panel {
+  order: 2;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-home .dashboard-focus-panel {
+  order: 1;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-home .dashboard-focus-lead,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-home .dashboard-next-links,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-home .dashboard-summary-grid,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-home #home-decision-reason2,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-home .decision-updated {
+  display: none !important;
 }
 
 .app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-home .dashboard-kpi-band[data-dashboard-band="risk"],
@@ -5031,6 +5176,189 @@ pre[data-visual-noise="evidence-placeholder"] {
 .city-pack-operator-selection .row.row-top {
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .input-grid,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-panel-copy,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model #users-summary-columns-panel,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model #users-summary-quick-filters,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .filter-bar,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model #read-model-pane-details {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .input-grid {
+  display: grid !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .data-workspace-rail {
+  display: flex;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .input-grid > .row:first-child .flex-1:not(:first-child),
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .input-grid > .row:nth-child(2) {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model label[for="users-filter-created-from"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model #users-filter-created-from,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model label[for="users-filter-created-to"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model #users-filter-created-to,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model label[for="users-filter-category"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model #users-filter-category,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model label[for="users-filter-status"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model #users-filter-status,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model label[for="users-filter-analytics-limit"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model #users-filter-analytics-limit,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model [data-v3-advanced-filter="true"] {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .row.row-top {
+  margin-bottom: var(--space-2);
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .row.row-top > :not(#users-summary-reload) {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table .table-sort-btn.is-operator-static {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table .operator-col-label {
+  display: inline-block;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="createdAt"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="createdAt"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="updatedAt"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="updatedAt"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="memberNumber"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="memberNumber"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="category"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="category"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="status"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="status"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="billingIntegrity"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="billingIntegrity"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="currentPeriodEnd"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="currentPeriodEnd"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="todoProgressRate"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="todoProgressRate"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="localGuidanceCoverage"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="localGuidanceCoverage"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="llmUsageToday"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="llmUsageToday"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="tokensToday"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="tokensToday"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="blockedRate"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="blockedRate"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="deliveryCount"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="deliveryCount"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table th[data-users-col="clickCount"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-summary-table td[data-users-col="clickCount"] {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .read-model-workspace-grid.is-detail-empty {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .read-model-workspace-grid.is-detail-empty [data-detail-rail="detail"] {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-city-pack .city-pack-unified-table .table-sort-btn.is-operator-static {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-city-pack .city-pack-unified-table .operator-col-label {
+  display: inline-block;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-alerts .alerts-summary-note,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-composer .ops-task-summary-lead,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-monitor .ops-task-summary-lead,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-errors .ops-task-summary-lead,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .ops-task-summary-lead,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-city-pack .ops-task-summary-lead,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-llm #faq-reload,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-llm #faq-selection-summary,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-detail-technical,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-detail-technical-list,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-detail-secondary,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model .users-detail-secondary-list,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model [data-detail-rail="detail"] > .panel:first-child {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-read-model [data-detail-rail="detail"] .panel-body {
+  display: grid;
+  gap: 8px;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-alerts .alerts-list-panel .panel-title,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-city-pack .panel-title,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-llm .panel-title {
+  letter-spacing: 0.01em;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #page-action-secondary,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #home-kpi-details,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-llm #faq-create-new,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-llm #faq-operator-decision-reason2,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-llm #faq-stop-article[hidden],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-llm #faq-delete-article[hidden] {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"][data-view-pane="read-model"] #page-action-primary,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"][data-view-pane="city-pack"] #page-action-primary,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"][data-view-pane="llm"] #page-action-primary {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-composer #composer-saved-panel,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-composer .composer-primary-actions .composer-hidden-action,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-composer .composer-evidence-links,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-composer .composer-hidden-input,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-composer [data-v3-ops-hidden="true"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-monitor [data-v3-ops-hidden="true"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-errors [data-v3-ops-hidden="true"] {
+  display: none !important;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-composer #composer-pane-details,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-monitor #monitor-pane-details,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-errors #errors-pane-details {
+  margin-top: var(--space-3);
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-composer #composer-pane-details[open] > summary,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-monitor #monitor-pane-details[open] > summary,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #pane-errors #errors-pane-details[open] > summary {
+  margin-bottom: var(--space-2);
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #admin-guard-banner,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #home-blocked-pane-notice,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #admin-local-preflight-banner {
+  margin-bottom: var(--space-2);
+  padding: 12px 14px;
+}
+
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #admin-local-preflight-banner .admin-local-preflight-actions > :not(#local-preflight-open-audit),
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #admin-local-preflight-banner #local-preflight-detail-panel,
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #admin-local-preflight-banner [data-local-preflight-field="impact"],
+.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #admin-local-preflight-banner [data-local-preflight-field="action"] {
+  display: none !important;
 }
 
 .faq-operator-grid {

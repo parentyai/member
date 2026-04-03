@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-04-01T20:27:36-04:00",
-  "gitCommit": "972ded9bf69dcfe8c64bf940b9fb13c50d38c326",
-  "branch": "codex/operator-minimal-reset",
-  "sourceDigest": "b92b133c8d1ce29376b4abcfa8c18ca26aa53a98535d2d3303f7ff544ef0e021",
+  "generatedAt": "2026-04-01T22:27:35-04:00",
+  "gitCommit": "5c96ae9b93052c0b3ab7865fa2b517cc767fe183",
+  "branch": "codex/operator-hard-reset",
+  "sourceDigest": "537cb92a9044e44a84c9d273232a475a423ee9867be892ec7bbb3b7ff30c23c7",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

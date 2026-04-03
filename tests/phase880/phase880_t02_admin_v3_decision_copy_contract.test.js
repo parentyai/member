@@ -8,7 +8,7 @@ const {
   assertDictionaryHasTextKeys,
 } = require('../_admin_ui_dictionary_test_helper');
 
-test('phase880: ops shell rewrites decision card copy and meaningful pane CTA behavior', () => {
+test('phase880: ops shell keeps decision copy map and operator destination contracts aligned', () => {
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
   const dictMap = loadAdminUiDictionaryMap();
   const ssot = fs.readFileSync('docs/SSOT_ADMIN_UI_OS.md', 'utf8');
@@ -21,12 +21,16 @@ test('phase880: ops shell rewrites decision card copy and meaningful pane CTA be
   assert.ok(js.includes("titleKey: 'ui.label.v3.decision.readModel.title'"));
   assert.ok(js.includes("titleKey: 'ui.label.v3.decision.cityPack.title'"));
   assert.ok(js.includes("titleKey: 'ui.label.v3.decision.emergencyLayer.title'"));
+  assert.ok(js.includes("titleKey: 'ui.label.v3.decision.faq.title'"));
   assert.ok(js.includes('function syncV3DecisionCard(paneKey) {'));
   assert.ok(js.includes('syncV3DecisionCard(paneKey);'));
-  assert.ok(js.includes("document.getElementById('users-filter-line-user-id')?.focus();"));
-  assert.ok(js.includes("document.getElementById('users-summary-reload')?.click();"));
-  assert.ok(js.includes("document.getElementById('city-pack-unified-reload')?.click();"));
-  assert.ok(js.includes("document.getElementById('emergency-bulletin-reload')?.click();"));
+  assert.ok(js.includes('const OPERATOR_DESTINATION_MAP = Object.freeze({'));
+  assert.ok(js.includes('const OPERATOR_PREVIEW_ACTION_MODEL = Object.freeze({'));
+  assert.ok(js.includes('const SYSTEM_CONSOLE_SECTION_ORDER = Object.freeze(['));
+  assert.ok(js.includes("nextActionLabel: '地域案内を開く'"));
+  assert.ok(js.includes("nextActionLabel: '緊急対応を開く'"));
+  assert.ok(js.includes("nextActionLabel: 'FAQを開く'"));
+  assert.ok(js.includes("openOperatorDestinationPane('city-pack', {"));
   assert.ok(js.includes('titleFallback:'));
   assert.ok(js.includes('hideTertiary: true'));
 
@@ -47,10 +51,14 @@ test('phase880: ops shell rewrites decision card copy and meaningful pane CTA be
     'ui.label.v3.decision.emergencyLayer.title',
     'ui.label.v3.decision.emergencyLayer.primary',
     'ui.label.v3.decision.emergencyLayer.secondary',
+    'ui.label.v3.decision.faq.title',
+    'ui.label.v3.decision.faq.primary',
+    'ui.label.v3.decision.faq.secondary',
   ]);
 
   assert.ok(ssot.includes('## Ops First-View Noise Budget（Phase880 add-only）'));
   assert.ok(ssot.includes('## Home / Alerts Task-First Surface（Phase881 add-only）'));
+  assert.ok(ssot.includes('## Operator Minimal UI Reset（Phase890 add-only）'));
   assert.ok(ssot.includes('`data-v3-ops-hidden="true"`'));
   assert.ok(ssot.includes('`data-v3-advanced-filter="true"`'));
 });

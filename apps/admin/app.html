@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>運用ダッシュボード</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23111627'/%3E%3Cpath d='M18 46V18h9l10 15 10-15h9v28h-9V31L39 43h-4L27 31v15z' fill='%23f8fafc'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="/admin/assets/admin.css" />
   </head>
   <body class="app-body">
@@ -211,36 +212,40 @@
         <section class="app-topbar-v3" data-v3-chrome="topbar">
           <div class="topbar-v3-main">
             <div class="topbar-v3-block topbar-v3-search">
-              <label for="v3-pane-search" class="topbar-v3-label" data-dict-key="ui.label.v3.top.search">画面を探す</label>
+              <label for="v3-pane-search" class="topbar-v3-label" data-dict-key="ui.label.v3.top.search">検索</label>
               <form id="v3-pane-search-form" class="topbar-v3-search-form">
                 <input id="v3-pane-search" type="search" class="topbar-v3-search-input" autocomplete="off" data-dict-placeholder="ui.placeholder.v3.top.search" placeholder="画面名や作業で探す" />
-                <button type="submit" class="secondary-btn" data-dict-key="ui.label.v3.top.searchAction">開く</button>
               </form>
             </div>
             <div class="topbar-v3-block topbar-v3-scope">
-              <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.scope">現在の表示</div>
+              <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.scope">スコープ</div>
               <div id="v3-shell-scope" class="topbar-v3-scope-value">運用画面 / 運用</div>
             </div>
             <div class="topbar-v3-block topbar-v3-alerts">
-              <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.alerts">緊急導線</div>
+              <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.alerts">要対応</div>
               <button id="v3-open-alerts" type="button" class="secondary-btn" data-dict-key="ui.label.v3.top.openAlerts">要対応を見る</button>
             </div>
           </div>
           <div class="topbar-v3-secondary">
-            <div class="topbar-v3-profile">
-              <div class="topbar-v3-block topbar-v3-role">
-                <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.role">利用モード</div>
-                <div class="role-switch" role="group" aria-label="Role Switch">
-                  <button class="role-btn is-active" data-role-value="operator" data-dict-key="ui.label.role.operatorMode">運用</button>
-                  <button class="role-btn" data-role-value="admin" data-dict-key="ui.label.role.adminMode">管理</button>
-                  <button class="role-btn" data-role-value="developer" data-ops-role="developer" data-dict-key="ui.label.role.developer">開発</button>
+            <details class="topbar-v3-menu" data-topbar-menu="profile">
+              <summary class="topbar-v3-menu-summary">メニュー</summary>
+              <div class="topbar-v3-menu-panel">
+                <div class="topbar-v3-profile">
+                  <div class="topbar-v3-block topbar-v3-role">
+                    <div class="topbar-v3-label" data-dict-key="ui.label.v3.top.role">利用モード</div>
+                    <div class="role-switch" role="group" aria-label="Role Switch">
+                      <button class="role-btn is-active" data-role-value="operator" data-dict-key="ui.label.role.operatorMode">運用</button>
+                      <button class="role-btn" data-role-value="admin" data-dict-key="ui.label.role.adminMode">管理</button>
+                      <button class="role-btn" data-role-value="developer" data-ops-role="developer" data-dict-key="ui.label.role.developer">開発</button>
+                    </div>
+                  </div>
+                  <div class="topbar-v3-profile-actions">
+                    <button id="v3-shell-switch-system" type="button" class="secondary-btn" data-ui-shell-target="system">システム管理</button>
+                    <button id="v3-shell-switch-ops" type="button" class="secondary-btn" data-ui-shell-target="ops">運用画面に戻る</button>
+                  </div>
                 </div>
               </div>
-              <div class="topbar-v3-profile-actions">
-                <button id="v3-shell-switch-system" type="button" class="secondary-btn" data-ui-shell-target="system">システム管理</button>
-                <button id="v3-shell-switch-ops" type="button" class="secondary-btn" data-ui-shell-target="ops">運用画面に戻る</button>
-              </div>
-            </div>
+            </details>
           </div>
         </section>
 
@@ -368,8 +373,8 @@
                 <span id="home-decision-updated">-</span>
               </div>
               <div class="decision-actions">
-                <button id="home-action-alerts" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="alerts" data-primary-action="pane-primary">要対応を確認</button>
-                <button id="home-action-monitor" type="button" class="decision-action-btn" data-action-kind="secondary" data-open-pane="monitor">配信結果を見る</button>
+                <button id="home-action-alerts" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="alerts" data-primary-action="pane-primary">通知配信状況を見る</button>
+                <button id="home-action-monitor" type="button" class="decision-action-btn" data-action-kind="secondary" data-open-pane="city-pack">City Pack・緊急レイヤーを見る</button>
               </div>
             </div>
             <div id="home-reflection-state" class="panel data-reflection-panel" data-reflection-pane="home" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" role="status" aria-live="polite">
@@ -387,7 +392,7 @@
               </div>
             </div>
             <div class="panel dashboard-summary-panel" data-surface-tier="secondary">
-              <div class="panel-title" data-dict-key="ui.label.home.prioritySummary">要対応サマリ</div>
+              <div class="panel-title" data-dict-key="ui.label.home.prioritySummary">今日の要対応</div>
               <div class="panel-body dashboard-summary-body">
                 <div class="dashboard-summary-grid">
                   <div class="note">未対応アラート: <strong id="dashboard-summary-open-alerts">-</strong></div>
@@ -411,7 +416,7 @@
             <div class="panel dashboard-focus-panel" data-surface-tier="primary">
               <div class="panel-title" data-dict-key="ui.label.home.todayFocus">今日の判断</div>
               <div class="panel-body dashboard-focus-body">
-                <p class="dashboard-focus-lead" data-dict-key="ui.desc.home.todayFocus">今すぐ確認すべき5指標を先に見て、必要なら詳細KPIへ進みます。</p>
+                <p class="dashboard-focus-lead" data-dict-key="ui.desc.home.todayFocus">まず5指標を見て、必要なときだけ詳細を開きます。</p>
                 <div class="row dashboard-controls" data-v3-ops-hidden="true">
                   <label for="dashboard-window-months" data-dict-key="ui.label.home.window">期間</label>
                   <select id="dashboard-window-months" class="select-inline">
@@ -875,21 +880,21 @@
                 <span id="alerts-decision-updated">-</span>
               </div>
               <div class="decision-actions">
-                <button id="alerts-action-open" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="monitor" data-primary-action="pane-primary">最初の案件へ進む</button>
-                <button id="alerts-action-reload" type="button" class="decision-action-btn" data-action-kind="secondary">一覧を更新する</button>
+                <button id="alerts-action-open" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="composer" data-primary-action="pane-primary">新しい通知を作る</button>
+                <button id="alerts-action-monitor" type="button" class="decision-action-btn" data-action-kind="secondary" data-open-pane="monitor">配信結果を見る</button>
               </div>
             </div>
             <div class="panel alerts-priority-panel" data-surface-tier="secondary">
-              <div class="panel-title" data-dict-key="ui.label.alerts.prioritySummary">優先順位サマリ</div>
+              <div class="panel-title" data-dict-key="ui.label.alerts.prioritySummary">いま見ること</div>
               <div class="panel-body alerts-priority-body">
                 <p id="alerts-priority-lead" class="alerts-priority-lead">-</p>
                 <div class="alerts-priority-grid">
-                  <div class="note">未対応合計: <strong id="alerts-priority-open-count">-</strong></div>
+                  <div class="note">未対応: <strong id="alerts-priority-open-count">-</strong></div>
                   <div class="note">緊急: <strong id="alerts-priority-danger-count">-</strong></div>
                   <div class="note">注意: <strong id="alerts-priority-warn-count">-</strong></div>
                 </div>
                 <div class="alerts-next-step">
-                  <div class="alerts-next-step-label" data-dict-key="ui.label.alerts.nextStep">次に開く画面</div>
+                  <div class="alerts-next-step-label" data-dict-key="ui.label.alerts.nextStep">次の操作</div>
                   <div id="alerts-priority-next-step" class="alerts-next-step-value">-</div>
                 </div>
               </div>
@@ -2862,7 +2867,7 @@
                 <button id="city-pack-operator-mode-guide" type="button" class="secondary-btn is-active" data-city-pack-operator-mode="guide">地域案内</button>
                 <button id="city-pack-operator-mode-emergency" type="button" class="secondary-btn" data-city-pack-operator-mode="emergency">緊急対応</button>
               </div>
-              <p id="city-pack-operator-mode-note" class="city-pack-operator-mode-note">現在登録されている内容を見ながら、公開・停止・削除や承認・送信の前に全体プレビューを確認できます。</p>
+              <p id="city-pack-operator-mode-note" class="city-pack-operator-mode-note">実行前に、現在の内容と実行後の状態を確認できます。</p>
               <div class="table-scroll">
                 <table class="table-compact city-pack-operator-table">
                   <thead>
@@ -4019,10 +4024,10 @@
               <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
               <span id="read-model-decision-updated">-</span>
             </div>
-            <div class="decision-actions">
-              <button id="read-model-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
-              <button id="read-model-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
-              <button id="read-model-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+              <div class="decision-actions">
+              <button id="read-model-action-edit" type="button" class="decision-action-btn" data-action-kind="primary">会員詳細を開く</button>
+              <button id="read-model-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary">一覧を更新する</button>
+              <button id="read-model-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary">通知配信状況へ戻る</button>
             </div>
           </div>
           <div id="read-model-reflection-state" class="panel data-reflection-panel" data-reflection-pane="read-model" data-ui="data-reflection-state" data-ui-state="unset" data-surface-tier="secondary" data-v3-ops-hidden="true" role="status" aria-live="polite">
@@ -4161,11 +4166,8 @@
                   <div id="users-summary-quick-filters" class="users-quick-filters">
                     <button type="button" class="users-quick-filter-pill is-active" data-users-quick-filter="all">すべて</button>
                     <button type="button" class="users-quick-filter-pill" data-users-quick-filter="pro_active">有料会員</button>
-                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="free">無料会員</button>
-                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="trialing">お試し中</button>
                     <button type="button" class="users-quick-filter-pill" data-users-quick-filter="past_due">支払い確認</button>
                     <button type="button" class="users-quick-filter-pill" data-users-quick-filter="canceled">停止</button>
-                    <button type="button" class="users-quick-filter-pill users-quick-filter-pill-unknown" data-users-quick-filter="unknown">不明</button>
                   </div>
                   <div id="users-summary-columns-panel" class="users-columns-panel is-hidden">
                     <div class="users-columns-panel-title">表示列</div>
@@ -4222,7 +4224,7 @@
                         <th data-users-col="blockedRate"><button type="button" class="table-sort-btn" data-users-sort-key="blockedRate">要確認率</button></th>
                         <th data-users-col="deliveryCount"><button type="button" class="table-sort-btn" data-users-sort-key="deliveryCount" data-dict-tip="ui.help.table.deliveryCount">配信数</button></th>
                         <th data-users-col="clickCount"><button type="button" class="table-sort-btn" data-users-sort-key="clickCount" data-dict-tip="ui.help.table.clickCount">クリック数</button></th>
-                        <th data-users-col="reactionRate"><button type="button" class="table-sort-btn" data-users-sort-key="reactionRate" data-dict-tip="ui.help.readModel.ctr">反応率</button></th>
+                        <th data-users-col="reactionRate"><button type="button" class="table-sort-btn" data-users-sort-key="reactionRate" data-dict-tip="ui.help.readModel.ctr">直近反応</button></th>
                       </tr>
                     </thead>
                     <tbody id="users-summary-rows"></tbody>
@@ -4242,28 +4244,29 @@
               <div class="panel">
                 <div class="panel-title">選択中の会員詳細</div>
                 <div class="panel-body">
-                  <div class="note">会員ID: <span id="users-detail-line-user-id">-</span></div>
-                  <div class="note">料金プラン: <span id="users-detail-plan">-</span></div>
-                  <div class="note">課金状態: <span id="users-detail-subscription-status">-</span></div>
-                  <div class="note">契約期限: <span id="users-detail-current-period-end">-</span></div>
-                  <div class="note">最終Stripeイベント: <span id="users-detail-last-stripe-event">-</span></div>
-                  <div class="note">Stripe種別/状態: <span id="users-detail-last-stripe-event-type">-</span></div>
-                  <div class="note">LLM使用回数: <span id="users-detail-llm-usage-count">-</span></div>
-                  <div class="note">LLMトークン使用量: <span id="users-detail-llm-token-used">-</span></div>
-                  <div class="note">LLMブロック回数: <span id="users-detail-llm-blocked-count">-</span></div>
-                  <div class="note">最終利用: <span id="users-detail-last-used-at">-</span></div>
-                  <div class="note">ブロック履歴</div>
-                  <ul id="users-detail-blocked-history" class="repo-map-list mono-list"><li>-</li></ul>
-                  <div class="note">Journey 属性: <span id="users-detail-journey-household-type">-</span></div>
-                  <div class="note">Journey 段階: <span id="users-detail-journey-stage">-</span></div>
-                  <div class="note">渡航日: <span id="users-detail-journey-departure-date">-</span></div>
-                  <div class="note">着任日: <span id="users-detail-journey-assignment-date">-</span></div>
-                  <div class="note">Todo未完了: <span id="users-detail-journey-open-count">-</span></div>
-                  <div class="note">Todo期限超過: <span id="users-detail-journey-overdue-count">-</span></div>
-                  <div class="note">次Todo期限: <span id="users-detail-journey-next-due-at">-</span></div>
-                  <div class="note">次リマインド: <span id="users-detail-journey-last-reminder-at">-</span></div>
-                  <div class="note">Journey TODO（先頭5件）</div>
-                  <ul id="users-detail-journey-next-todos" class="repo-map-list mono-list"><li>-</li></ul>
+                  <div class="note users-detail-primary">会員ID: <span id="users-detail-line-user-id">-</span></div>
+                  <div class="note users-detail-primary">料金プラン: <span id="users-detail-plan">-</span></div>
+                  <div class="note users-detail-primary">課金状態: <span id="users-detail-subscription-status">-</span></div>
+                  <div class="note users-detail-primary">契約期限: <span id="users-detail-current-period-end">-</span></div>
+                  <div class="note users-detail-primary">最終利用: <span id="users-detail-last-used-at">-</span></div>
+                  <div class="note users-detail-primary">次の確認: <span id="users-detail-next-check">-</span></div>
+                  <div class="note users-detail-primary">未完了タスク: <span id="users-detail-journey-open-count">-</span></div>
+                  <div class="note users-detail-primary">期限超過: <span id="users-detail-journey-overdue-count">-</span></div>
+                  <div class="note users-detail-primary">次タスク期限: <span id="users-detail-journey-next-due-at">-</span></div>
+                  <div class="note users-detail-technical">最終Stripeイベント: <span id="users-detail-last-stripe-event">-</span></div>
+                  <div class="note users-detail-technical">Stripe種別/状態: <span id="users-detail-last-stripe-event-type">-</span></div>
+                  <div class="note users-detail-technical">問い合わせ回数: <span id="users-detail-llm-usage-count">-</span></div>
+                  <div class="note users-detail-technical">処理量: <span id="users-detail-llm-token-used">-</span></div>
+                  <div class="note users-detail-technical">要確認回数: <span id="users-detail-llm-blocked-count">-</span></div>
+                  <div class="note users-detail-technical">要確認履歴</div>
+                  <ul id="users-detail-blocked-history" class="repo-map-list mono-list users-detail-technical-list"><li>-</li></ul>
+                  <div class="note users-detail-secondary">世帯区分: <span id="users-detail-journey-household-type">-</span></div>
+                  <div class="note users-detail-secondary">進行段階: <span id="users-detail-journey-stage">-</span></div>
+                  <div class="note users-detail-secondary">渡航日: <span id="users-detail-journey-departure-date">-</span></div>
+                  <div class="note users-detail-secondary">着任日: <span id="users-detail-journey-assignment-date">-</span></div>
+                  <div class="note users-detail-secondary">次リマインド: <span id="users-detail-journey-last-reminder-at">-</span></div>
+                  <div class="note users-detail-secondary">次にやるタスク</div>
+                  <ul id="users-detail-journey-next-todos" class="repo-map-list mono-list users-detail-secondary-list"><li>-</li></ul>
                 </div>
               </div>
             </div>
@@ -4985,10 +4988,10 @@
 
         <section id="pane-llm" class="app-pane" data-pane="llm" data-role-allow="operator,admin,developer" data-pane-mode="llm-workspace" data-task-context="llm-operations" data-surface-tier="workspace">
           <div id="faq-operator-surface" class="faq-operator-surface" data-surface-tier="primary">
-            <div class="decision-card" id="faq-operator-decision-card" data-surface-tier="hero">
-              <div class="decision-card-header">
-                <div class="decision-title">FAQ</div>
-                <span id="faq-operator-decision-state" class="decision-state state-ready">準備完了</span>
+              <div class="decision-card" id="faq-operator-decision-card" data-surface-tier="hero">
+                <div class="decision-card-header">
+                  <div class="decision-title">FAQ</div>
+                  <span id="faq-operator-decision-state" class="decision-state state-ready">準備完了</span>
               </div>
               <div id="faq-operator-decision-reason1" class="decision-reason">公開中と停止中のFAQを見ながら、登録・停止・削除の前に内容全体を確認します。</div>
               <div id="faq-operator-decision-reason2" class="decision-reason">最後は必ず登録・停止・削除の完了で終わります。</div>
@@ -5010,8 +5013,7 @@
                     <div id="faq-summary-updated" class="ops-task-stat-value">-</div>
                   </article>
                 </div>
-                <div class="row row-top">
-                  <button id="faq-reload" type="button">更新</button>
+                  <div class="row row-top">
                   <button id="faq-create-new" type="button">新しい質問を登録する</button>
                 </div>
               </div>
@@ -5059,11 +5061,11 @@
                       <textarea id="faq-question-body" rows="10"></textarea>
                     </div>
                   </div>
-                  <div id="faq-selection-summary" class="note">現在登録されている内容と実行後の状態は、操作前のプレビューで確認できます。</div>
+                  <div id="faq-selection-summary" class="note">登録前に、現在の内容と実行後の状態を確認できます。</div>
                   <div class="row row-top">
-                    <button id="faq-save-article" type="button">登録内容を保存する</button>
-                    <button id="faq-stop-article" type="button" class="secondary-btn">公開を停止する</button>
-                    <button id="faq-delete-article" type="button" class="secondary-btn">削除する（履歴を残す）</button>
+                    <button id="faq-save-article" type="button">新しい質問を登録する</button>
+                    <button id="faq-stop-article" type="button" class="secondary-btn" hidden disabled aria-hidden="true">公開を停止する</button>
+                    <button id="faq-delete-article" type="button" class="secondary-btn" hidden disabled aria-hidden="true">削除する（履歴を残す）</button>
                   </div>
                 </div>
               </div>

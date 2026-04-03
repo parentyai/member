@@ -164,6 +164,10 @@ const ADMIN_UI_V3_ENABLED = ADMIN_UI_FOUNDATION_V1
   && (ADMIN_OPS_UI_V3 || ADMIN_SYSTEM_CONSOLE_V1);
 const UI_SHELL_OPS = 'ops';
 const UI_SHELL_SYSTEM = 'system';
+const CITY_PACK_OPERATOR_MODE = Object.freeze({
+  guide: 'guide',
+  emergency: 'emergency'
+});
 
 function isOpsRealtimeSnapshotEnabled() {
   return OPS_REALTIME_DASHBOARD_V1 && OPS_SYSTEM_SNAPSHOT_V1;
@@ -289,25 +293,12 @@ const state = {
   usersSummaryQuickFilter: 'all',
   usersSummaryAnalyze: null,
   usersSummaryVisibleColumns: [
-    'createdAt',
-    'updatedAt',
     'lineUserId',
-    'memberNumber',
-    'category',
-    'status',
     'plan',
     'subscriptionStatus',
-    'billingIntegrity',
-    'currentPeriodEnd',
+    'reactionRate',
     'llmUsage',
-    'todoProgressRate',
-    'localGuidanceCoverage',
-    'llmUsageToday',
-    'tokensToday',
-    'blockedRate',
-    'deliveryCount',
-    'clickCount',
-    'reactionRate'
+    'nextCheck'
   ],
   vendorUnifiedFilteredItems: [],
   vendorSortKey: 'updatedAt',
@@ -812,11 +803,11 @@ const USERS_QUICK_FILTER_LABELS = Object.freeze({
   unknown: '不明'
 });
 const OPERATOR_PRIMARY_NAV = Object.freeze(['home', 'alerts', 'read-model', 'city-pack', 'llm']);
-const CITY_PACK_OPERATOR_MODE = Object.freeze({
-  guide: 'guide',
-  emergency: 'emergency'
-});
 const OPERATOR_BANNED_FIRST_VIEW_TERMS = Object.freeze([
+  'ops',
+  'llm',
+  'quality',
+  'config',
   'trace',
   'evidence',
   'policy',
@@ -995,11 +986,40 @@ const V3_PANE_SEARCH_INDEX = Object.freeze({
 });
 
 const PAGE_HEADER_ACTION_MAP = Object.freeze({
+  'read-model': Object.freeze({
+    primary: Object.freeze({
+      labelKey: 'ui.label.v3.decision.readModel.primary',
+      fallback: '会員詳細を開く',
+      paneTarget: 'read-model'
+    }),
+    secondary: Object.freeze({
+      labelKey: 'ui.label.v3.nav.alerts',
+      fallback: '通知配信状況',
+      paneTarget: 'alerts'
+    })
+  }),
   'city-pack': Object.freeze({
     primary: Object.freeze({
-      labelKey: 'ui.label.nav.cityPackManage',
-      fallback: 'City Pack管理',
+      labelKey: 'ui.label.v3.decision.cityPack.primary',
+      fallback: '地域案内を見る',
       paneTarget: 'city-pack'
+    }),
+    secondary: Object.freeze({
+      labelKey: 'ui.label.v3.nav.alerts',
+      fallback: '通知配信状況',
+      paneTarget: 'alerts'
+    })
+  }),
+  llm: Object.freeze({
+    primary: Object.freeze({
+      labelKey: 'ui.label.v3.decision.faq.primary', // gitleaks:allow false positive for ui dictionary key
+      fallback: '新しい質問を登録する',
+      paneTarget: 'llm'
+    }),
+    secondary: Object.freeze({
+      labelKey: 'ui.label.v3.nav.alerts',
+      fallback: '通知配信状況',
+      paneTarget: 'alerts'
     })
   })
 });
@@ -2815,13 +2835,18 @@ function applyUsersSummaryListState(snapshot) {
   state.usersSummaryQuickFilter = snapshot.quickFilter && USERS_QUICK_FILTER_LABELS[snapshot.quickFilter]
     ? snapshot.quickFilter
     : 'all';
+  if (isOpsShellActive()) {
+    state.usersSummaryVisibleColumns = USERS_SUMMARY_OPS_COLUMN_KEYS.slice();
+  }
   if (snapshot.visibleColumns) {
     const parsed = String(snapshot.visibleColumns)
       .split(',')
       .map((item) => item.trim())
       .filter((item) => USERS_SUMMARY_COLUMN_KEYS.includes(item));
     if (parsed.length) {
-      state.usersSummaryVisibleColumns = Array.from(new Set(parsed));
+      state.usersSummaryVisibleColumns = isOpsShellActive()
+        ? USERS_SUMMARY_OPS_COLUMN_KEYS.slice()
+        : Array.from(new Set(parsed));
     }
   }
   if (snapshot.limit) setInputValue('users-filter-limit', snapshot.limit);
@@ -2999,6 +3024,41 @@ function updateAdminV3ShellChrome() {
   const systemButton = document.getElementById('v3-shell-switch-system');
   if (opsButton) opsButton.hidden = nextShell === UI_SHELL_OPS;
   if (systemButton) systemButton.hidden = nextShell === UI_SHELL_SYSTEM;
+  applyOperatorStaticTableHeaders();
+}
+
+function applyOperatorStaticTableHeaders() {
+  if (!appShell) return;
+  const operatorMinimal = appShell.classList.contains('operator-minimal-shell-v1')
+    && appShell.getAttribute('data-ui-shell') === UI_SHELL_OPS;
+  const selectorGroups = [
+    ['.users-summary-table th[data-users-col]', '[data-users-sort-key]'],
+    ['.city-pack-unified-table th', '[data-city-pack-sort-key]']
+  ];
+  selectorGroups.forEach(([headerSelector, buttonSelector]) => {
+    document.querySelectorAll(headerSelector).forEach((th) => {
+      const button = th.querySelector(buttonSelector);
+      let label = th.getAttribute('data-ops-label') || '';
+      if (button) {
+        label = (button.textContent || '').trim();
+        th.setAttribute('data-ops-label', label);
+        button.classList.toggle('is-operator-static', operatorMinimal);
+      }
+      const staticLabel = th.querySelector('.operator-col-label');
+      if (operatorMinimal && label) {
+        if (staticLabel) {
+          staticLabel.textContent = label;
+        } else {
+          const labelEl = document.createElement('span');
+          labelEl.className = 'operator-col-label';
+          labelEl.textContent = label;
+          th.appendChild(labelEl);
+        }
+        return;
+      }
+      if (staticLabel) staticLabel.remove();
+    });
+  });
 }
 
 function setCityPackOperatorMode(mode, options) {
@@ -4158,6 +4218,21 @@ function populateFaqOperatorEditor(item) {
       ? `現在は「${resolveFaqStatusLabel(article.status)}」です。登録内容を見直してから保存・停止・削除を選べます。`
       : '新しいFAQを登録します。登録前に、いま未登録の内容と登録後の状態をプレビューで確認できます。';
   }
+  syncFaqOperatorActionVisibility(article);
+}
+
+function syncFaqOperatorActionVisibility(article) {
+  const isExisting = Boolean(article && article.id);
+  const saveBtn = document.getElementById('faq-save-article');
+  const stopBtn = document.getElementById('faq-stop-article');
+  const deleteBtn = document.getElementById('faq-delete-article');
+  if (saveBtn) saveBtn.textContent = isExisting ? '登録内容を保存する' : '新しい質問を登録する';
+  [stopBtn, deleteBtn].forEach((btn) => {
+    if (!btn) return;
+    btn.hidden = !isExisting;
+    btn.disabled = !isExisting;
+    btn.setAttribute('aria-hidden', isExisting ? 'false' : 'true');
+  });
 }
 
 function renderFaqOperatorRows() {
@@ -4226,9 +4301,6 @@ async function loadFaqOperatorData(options) {
     state.faqFilteredItems = state.faqItems.slice();
     if (state.selectedFaqArticleId && !state.faqItems.some((item) => item.id === state.selectedFaqArticleId)) {
       state.selectedFaqArticleId = null;
-    }
-    if (!state.selectedFaqArticleId && state.faqItems[0] && state.faqItems[0].id) {
-      state.selectedFaqArticleId = state.faqItems[0].id;
     }
     renderFaqOperatorSurface();
     if (opts.notify) showToast('FAQ一覧を更新しました', 'ok');
@@ -4311,7 +4383,9 @@ function buildFaqPreview(actionKey, article) {
         : [{ label: '登録', value: '新しいFAQを1件追加します' }];
   const meta = createOperatorPreviewMetaRows([
     { label: '影響件数', value: '1件' },
-    { label: '完了後に移動する画面', value: 'FAQ' }
+    { label: '影響対象', value: item.title || 'FAQ一覧' },
+    { label: '完了後に移動する画面', value: 'FAQ' },
+    { label: '取り消し可否', value: '実行前まで戻れます' }
   ]);
   return { title, confirmLabel, current, next, changes, meta };
 }
@@ -4562,13 +4636,15 @@ function setUiShellContext(shellValue, options) {
 
 function setupAdminV3ShellControls() {
   if (!isAdminUiV3Enabled()) return;
+  setupTopbarV3Menus();
   document.getElementById('v3-shell-switch-ops')?.addEventListener('click', () => {
     setUiShellContext(UI_SHELL_OPS, { activateDefaultPane: true, historyMode: 'push' });
   });
   document.getElementById('v3-shell-switch-system')?.addEventListener('click', () => {
     setUiShellContext(UI_SHELL_SYSTEM, { activateDefaultPane: true, historyMode: 'push' });
   });
-  document.getElementById('v3-open-alerts')?.addEventListener('click', () => {
+  document.getElementById('v3-open-alerts')?.addEventListener('click', (event) => {
+    event.preventDefault();
     activatePane('alerts', { historyMode: 'push' });
   });
   document.getElementById('v3-pane-search-form')?.addEventListener('submit', (event) => {
@@ -4582,6 +4658,47 @@ function setupAdminV3ShellControls() {
     activatePane(paneKey, { historyMode: 'push' });
   });
   updateAdminV3ShellChrome();
+  applyOperatorStaticTableHeaders();
+}
+
+function closeTopbarV3Menus(options) {
+  if (!isAdminUiV3Enabled()) return;
+  const opts = options && typeof options === 'object' ? options : {};
+  const keepMenu = typeof opts.keepMenu === 'string' ? opts.keepMenu.trim() : '';
+  document.querySelectorAll('[data-topbar-menu]').forEach((detailsEl) => {
+    if (!(detailsEl instanceof HTMLDetailsElement)) return;
+    const menuId = typeof detailsEl.dataset.topbarMenu === 'string' ? detailsEl.dataset.topbarMenu.trim() : '';
+    if (keepMenu && menuId === keepMenu) return;
+    detailsEl.open = false;
+  });
+}
+
+function setupTopbarV3Menus() {
+  if (!isAdminUiV3Enabled() || !appShell) return;
+  if (appShell.dataset.topbarMenusBound === 'true') {
+    closeTopbarV3Menus();
+    return;
+  }
+  appShell.dataset.topbarMenusBound = 'true';
+  document.querySelectorAll('[data-topbar-menu]').forEach((detailsEl) => {
+    if (!(detailsEl instanceof HTMLDetailsElement)) return;
+    detailsEl.addEventListener('toggle', () => {
+      if (!detailsEl.open) return;
+      closeTopbarV3Menus({ keepMenu: detailsEl.dataset.topbarMenu || '' });
+    });
+  });
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    document.querySelectorAll('[data-topbar-menu][open]').forEach((detailsEl) => {
+      if (!(detailsEl instanceof HTMLDetailsElement)) return;
+      if (target instanceof Node && detailsEl.contains(target)) return;
+      detailsEl.open = false;
+    });
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeTopbarV3Menus();
+  });
+  closeTopbarV3Menus();
 }
 
 function setupRoleSwitch() {
@@ -4762,6 +4879,10 @@ function expandPaneDetails(paneKey) {
   const paneEl = document.querySelector(`.app-pane[data-pane="${paneKey}"]`);
   if (!paneEl) return;
   paneEl.querySelectorAll('details').forEach((el) => {
+    if (el.hasAttribute('data-topbar-menu')) {
+      el.open = false;
+      return;
+    }
     bindJsonCollapsibleDetail(el);
     if (isJsonCollapsibleDetail(el)) {
       el.open = false;
@@ -4778,6 +4899,10 @@ function expandPaneDetails(paneKey) {
 
 function expandAllDetails() {
   document.querySelectorAll('details').forEach((el) => {
+    if (el.hasAttribute('data-topbar-menu')) {
+      el.open = false;
+      return;
+    }
     if (isWorkbenchCollapsibleDetail(el)) {
       if (!el.hasAttribute('open')) el.open = false;
       return;
@@ -4791,6 +4916,10 @@ function enforceNoCollapseUi() {
   if (typeof document === 'undefined' || !document.documentElement) return;
   document.documentElement.classList.add('admin-no-collapse-v1');
   document.querySelectorAll('details').forEach((el) => {
+    if (el.hasAttribute('data-topbar-menu')) {
+      el.open = false;
+      return;
+    }
     const summaryEl = el.querySelector('summary');
     if (isJsonCollapsibleDetail(el)) {
       bindJsonCollapsibleDetail(el);
@@ -7267,12 +7396,19 @@ function renderUiFixtureSuccess(paneKey) {
 
 function activatePane(target, options) {
   const opts = options && typeof options === 'object' ? options : {};
+  closeTopbarV3Menus();
   const paneTargetResult = normalizePaneTarget(target);
   const normalizedTarget = paneTargetResult.pane;
+  const emergencyAliasActive = isAdminUiV3Enabled()
+    && normalizeRoleValue(state.role) === 'operator'
+    && normalizedTarget === 'emergency-layer';
   const navCore = resolveCoreSlice('navCore');
-  let nextPane = resolveAllowedPaneForRole(state.role, normalizedTarget, 'home');
-  let paneBlocked = normalizedTarget !== nextPane || Boolean(paneTargetResult.invalidReason);
+  let nextPane = resolveAllowedPaneForRole(state.role, emergencyAliasActive ? 'city-pack' : normalizedTarget, 'home');
+  let paneBlocked = (emergencyAliasActive ? 'city-pack' : normalizedTarget) !== nextPane || Boolean(paneTargetResult.invalidReason);
   let guardReason = opts.guardReason || paneTargetResult.invalidReason || 'PANE_FORBIDDEN';
+  if (emergencyAliasActive && nextPane === 'city-pack') {
+    state.cityPackOperatorMode = CITY_PACK_OPERATOR_MODE.emergency;
+  }
   if (!ADMIN_NAV_ALL_ACCESSIBLE_V1 && !paneBlocked && normalizedTarget !== 'home' && opts.allowHiddenRollout !== true) {
     const paneEntries = collectNavItemsForCore().filter((entry) => entry.pane === normalizedTarget);
     if (paneEntries.length) {
@@ -7338,6 +7474,11 @@ function activatePane(target, options) {
   state.activePane = nextPane;
   syncSystemDiagnosticsVisibility();
   if (appShell) appShell.setAttribute('data-view-pane', nextPane);
+  if (nextPane === 'read-model' && isOpsShellActive()) {
+    state.usersSummarySelectedLineUserId = null;
+    state.usersSummaryBillingDetail = null;
+    syncUsersSummaryDetailRailVisibility(false);
+  }
   if (!state.paneUpdatedAt[nextPane]) {
     setPaneUpdatedAt(nextPane);
   }
@@ -7967,29 +8108,31 @@ function resolveHomeTaskSummary() {
   const summary = state.topbarStatus && typeof state.topbarStatus === 'object' ? state.topbarStatus : {};
   const openAlerts = Number.isFinite(Number(summary.openAlertsCount)) ? Number(summary.openAlertsCount) : 0;
   const scheduledToday = Number.isFinite(Number(summary.scheduledTodayCount)) ? Number(summary.scheduledTodayCount) : 0;
+  const primaryTask = t('ui.label.v3.decision.home.primary', '通知配信状況を見る');
+  const secondaryTask = t('ui.label.v3.decision.home.secondary', 'City Pack・緊急レイヤーを見る');
   if (openAlerts > 0) {
     return {
-      primaryTask: t('ui.label.v3.decision.home.primary', '要対応を確認する'),
-      primaryNote: `${openAlerts}${t('ui.desc.home.primaryStep.alertsSuffix', '件の要対応があります。最初に一覧を確認します。')}`,
-      secondaryTask: t('ui.label.v3.decision.home.secondary', '配信結果を見る'),
+      primaryTask,
+      primaryNote: `${openAlerts}件の要対応があります。まず通知配信状況を開いて着手順を確認します。`,
+      secondaryTask,
       secondaryNote: scheduledToday > 0
-        ? `${scheduledToday}${t('ui.desc.home.secondaryStep.monitorWithScheduleSuffix', '件の配信予定もあります。要対応のあとに結果を確認します。')}`
-        : t('ui.desc.home.secondaryStep.monitor', '要対応のあとに配信結果を確認します。')
+        ? `${scheduledToday}件の配信予定があります。通知配信状況のあとに地域案内と緊急対応を見直します。`
+        : '地域案内と緊急対応は必要なときだけ開きます。'
     };
   }
   if (scheduledToday > 0) {
     return {
-      primaryTask: t('ui.label.v3.decision.home.secondary', '配信結果を見る'),
-      primaryNote: `${scheduledToday}${t('ui.desc.home.primaryStep.monitorWithScheduleSuffix', '件の配信予定があります。先に結果を確認します。')}`,
-      secondaryTask: t('ui.label.home.secondaryTask.members', '会員の動きを確認する'),
-      secondaryNote: t('ui.desc.home.secondaryStep.members', '必要なときだけ会員一覧に進みます。')
+      primaryTask,
+      primaryNote: `${scheduledToday}件の配信予定があります。まず通知配信状況を開いて、作成中か結果確認かを決めます。`,
+      secondaryTask,
+      secondaryNote: '地域案内や緊急対応の変更があるときだけ次に開きます。'
     };
   }
   return {
-    primaryTask: t('ui.label.v3.decision.home.secondary', '配信結果を見る'),
-    primaryNote: t('ui.desc.home.primaryStep.monitorReady', '緊急の要対応はありません。まず配信結果を確認します。'),
-    secondaryTask: t('ui.label.home.secondaryTask.members', '会員の動きを確認する'),
-    secondaryNote: t('ui.desc.home.secondaryStep.members', '必要なときだけ会員一覧に進みます。')
+    primaryTask,
+    primaryNote: 'まず通知配信状況を開いて、作成中と配信結果のどちらから確認するか決めます。',
+    secondaryTask,
+    secondaryNote: '地域案内や緊急対応の更新があるときだけ次に進みます。'
   };
 }
 
@@ -8236,16 +8379,16 @@ function renderAlertsSummary(payload) {
   const dangerCount = rows.filter((item) => String(item && item.severity || '').toUpperCase() === 'DANGER').length;
   const warnCount = rows.filter((item) => String(item && item.severity || '').toUpperCase() === 'WARN').length;
   const topItem = rows[0] && typeof rows[0] === 'object' ? rows[0] : null;
-  const topDestination = topItem ? resolveOperatorAlertDestination(topItem) : resolveOperatorDestinationMeta('composer');
+  const topDestination = topItem ? resolveOperatorAlertDestination(topItem) : null;
   const topActionLabel = topDestination && topDestination.nextActionLabel
     ? topDestination.nextActionLabel
-    : t('ui.label.v3.decision.alerts.primary', '最初の案件へ進む');
+    : t('ui.label.v3.decision.alerts.primary', '新しい通知を作る');
   if (priorityLeadEl) {
     priorityLeadEl.textContent = topItem
-      ? `${normalizeCopyForRole(topItem.typeLabel || '-', state.role)}${t('ui.desc.alerts.priorityLead.topItemSuffix', ' から着手できます。')}`
+      ? `${normalizeCopyForRole(topItem.typeLabel || '-', state.role)}から着手できます。`
       : scheduled > 0
-        ? `${scheduled}${t('ui.desc.alerts.priorityLead.scheduledSuffix', '件の配信予定があります。更新して新しい要対応を確認できます。')}`
-        : t('ui.desc.alerts.priorityLead.empty', '今すぐの要対応はありません。新しい案件が入ったらここから確認できます。');
+        ? `${scheduled}件の配信予定があります。通知の作成か結果確認から始められます。`
+        : '今すぐの要対応はありません。新しい通知の作成か結果確認から始められます。';
   }
   if (openCountEl) openCountEl.textContent = String(openAlerts);
   if (dangerCountEl) dangerCountEl.textContent = String(dangerCount);
@@ -8253,29 +8396,17 @@ function renderAlertsSummary(payload) {
   if (nextStepEl) {
     nextStepEl.textContent = topItem
       ? normalizeCopyForRole(topActionLabel, state.role)
-      : t('ui.label.alerts.nextStepIdle', '新しい要対応を待機');
+      : t('ui.label.v3.decision.alerts.primary', '新しい通知を作る');
   }
   if (primaryActionEl) {
-    const nextButton = primaryActionEl.cloneNode(true);
-    nextButton.textContent = normalizeCopyForRole(topActionLabel, state.role);
-    if (topItem) {
-      nextButton.disabled = false;
-      nextButton.removeAttribute('aria-disabled');
-      nextButton.addEventListener('click', () => {
-        if (!topDestination || !topDestination.pane) return;
-        openOperatorDestinationPane(topDestination.pane, {
-          historyMode: 'push',
-          cityPackOperatorMode: topDestination.cityPackOperatorMode
-        });
-      });
-    } else {
-      nextButton.disabled = true;
-      nextButton.setAttribute('aria-disabled', 'true');
-    }
-    primaryActionEl.replaceWith(nextButton);
+    primaryActionEl.disabled = false;
+    primaryActionEl.removeAttribute('aria-disabled');
+    primaryActionEl.textContent = t('ui.label.v3.decision.alerts.primary', '新しい通知を作る');
   }
   if (note) {
-    note.textContent = `${t('ui.label.alerts.summary', '要対応合計')}: ${openAlerts} / ${t('ui.label.top.todayScheduled', '本日配信予定件数')}: ${scheduled}`;
+    note.textContent = topItem
+      ? `最初の案件は「${normalizeCopyForRole(topItem.typeLabel || '-', state.role)}」です。次の操作は「${normalizeCopyForRole(topActionLabel, state.role)}」です。`
+      : `${t('ui.label.alerts.summary', '要対応合計')}: ${openAlerts} / ${t('ui.label.top.todayScheduled', '本日配信予定件数')}: ${scheduled}`;
   }
   renderDecisionCard('alerts', resolveAlertsDecisionVm());
 }
@@ -8305,10 +8436,10 @@ function resolveReadModelTaskSummary() {
       totalCount,
       attentionCount,
       proActiveCount,
-      primaryTask: t('ui.label.v3.decision.readModel.primary', '会員を絞り込む'),
-      primaryNote: `${attentionCount}件は課金や整合の確認が必要です。ユーザーIDかステータスで絞り込みます。`,
-      secondaryTask: '詳細を確認する',
-      secondaryNote: '1人選ぶと、右側に課金・LLM・Journey の詳細が表示されます。'
+      primaryTask: t('ui.label.v3.decision.readModel.primary', '会員詳細を開く'),
+      primaryNote: `${attentionCount}件は契約状態の確認が必要です。確認したい会員を選んで詳細を開きます。`,
+      secondaryTask: '一覧を更新する',
+      secondaryNote: '新しい会員や状態変化があるときだけ一覧を更新します。'
     };
   }
   if (totalCount > 0) {
@@ -8316,12 +8447,12 @@ function resolveReadModelTaskSummary() {
       totalCount,
       attentionCount,
       proActiveCount,
-      primaryTask: t('ui.label.v3.decision.readModel.primary', '会員を絞り込む'),
-      primaryNote: `${totalCount}件の中から、確認したい会員だけを絞り込みます。`,
-      secondaryTask: proActiveCount > 0 ? '有料会員を確認する' : '必要な詳細を見る',
+      primaryTask: t('ui.label.v3.decision.readModel.primary', '会員詳細を開く'),
+      primaryNote: `${totalCount}件の中から、確認したい会員を選んで詳細を開きます。`,
+      secondaryTask: proActiveCount > 0 ? '有料会員を確認する' : '一覧を更新する',
       secondaryNote: proActiveCount > 0
-        ? `${proActiveCount}件の有料会員を含みます。必要なら Plan で絞り込みます。`
-        : '必要なときだけ詳細や補助集計を開きます。'
+        ? `${proActiveCount}件の有料会員がいます。必要なら料金プランで絞り込みます。`
+        : '新しい会員や状態変化があるときだけ一覧を更新します。'
     };
   }
   return {
@@ -8329,10 +8460,31 @@ function resolveReadModelTaskSummary() {
     attentionCount,
     proActiveCount,
     primaryTask: t('ui.label.v3.decision.readModel.secondary', '一覧を更新する'),
-    primaryNote: '会員データを更新してから、確認したい対象を絞り込みます。',
-    secondaryTask: '詳細を確認する',
-    secondaryNote: '一覧が入ると、1人ずつ詳細を確認できます。'
+    primaryNote: '会員データを更新して、確認したい会員を選べる状態にします。',
+    secondaryTask: '会員詳細を開く',
+    secondaryNote: '一覧が表示されたら、1人ずつ詳細を確認できます。'
   };
+}
+
+function resolveUsersSummarySelectedLineUserId() {
+  if (state.usersSummarySelectedLineUserId) return state.usersSummarySelectedLineUserId;
+  const filteredItems = Array.isArray(state.usersSummaryFilteredItems) ? state.usersSummaryFilteredItems : [];
+  const items = filteredItems.length ? filteredItems : (Array.isArray(state.usersSummaryItems) ? state.usersSummaryItems : []);
+  const first = items[0] && items[0].lineUserId ? String(items[0].lineUserId) : '';
+  return first;
+}
+
+function openUsersSummarySelectedDetail(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const lineUserId = resolveUsersSummarySelectedLineUserId();
+  if (!lineUserId) {
+    document.getElementById('users-filter-line-user-id')?.focus();
+    return;
+  }
+  void loadUsersSummaryBillingDetail(lineUserId, { notify: false });
+  if (opts.scroll !== false) {
+    document.getElementById('users-detail-line-user-id')?.scrollIntoView({ block: 'nearest' });
+  }
 }
 
 function renderReadModelTaskSummary() {
@@ -8510,8 +8662,8 @@ function buildCityPackOperatorPreview(actionKey, row) {
   const source = item && item.raw && typeof item.raw === 'object' ? item.raw : {};
   const isEmergency = item && item.mode === CITY_PACK_OPERATOR_MODE.emergency;
   const nextStatus = isEmergency
-    ? (actionKey === 'approve' ? '承認済み（送信済み）' : actionKey === 'reject' ? '却下済み' : item.statusLabel)
-    : (actionKey === 'publish' ? '公開中' : '停止中');
+    ? (actionKey === 'approve' ? '承認済み / 送信済み' : actionKey === 'reject' ? '却下済み' : item.statusLabel)
+    : (actionKey === 'publish' ? '公開中' : actionKey === 'delete' ? '履歴のみ' : '停止中');
   const titleMap = {
     publish: '地域案内を公開する前に確認',
     stop: '地域案内を停止する前に確認',
@@ -8541,17 +8693,18 @@ function buildCityPackOperatorPreview(actionKey, row) {
     ],
     changes: isEmergency
       ? [
-          { label: '変更', value: actionKey === 'approve' ? '承認後に送信まで完了します' : '受信箱から除外されます' }
+          { label: '変更', value: actionKey === 'approve' ? '承認後に送信まで完了します' : '受信箱から外れ、却下済みになります' }
         ]
       : [
-          { label: '変更', value: actionKey === 'publish' ? '公開状態に変更します' : '公開状態から外します' },
-          { label: '履歴', value: actionKey === 'delete' ? '履歴は残ります' : '履歴は残ります' }
+          { label: '変更', value: actionKey === 'publish' ? '公開状態に変更します' : actionKey === 'delete' ? '一覧から外して履歴だけ残します' : '公開状態から外します' },
+          { label: '履歴', value: '履歴は残ります' }
         ],
     meta: createOperatorPreviewMetaRows([
       { label: '影響件数', value: '1件' },
-      { label: '完了後に移動する画面', value: isEmergency && actionKey === 'approve' ? 'City Pack・緊急レイヤー / 緊急対応' : 'City Pack・緊急レイヤー' },
-      { label: '対象ID', value: item ? item.id : '-' },
-      { label: 'sourceRefs', value: Array.isArray(source.sourceRefs) ? `${source.sourceRefs.length}件` : undefined }
+      { label: '影響対象', value: item ? item.targetLabel : '-' },
+      { label: '完了後に移動する画面', value: isEmergency ? 'City Pack・緊急レイヤー / 緊急対応' : 'City Pack・緊急レイヤー / 地域案内' },
+      { label: '取り消し可否', value: '実行前まで戻れます' },
+      { label: '参照数', value: Array.isArray(source.sourceRefs) ? `${source.sourceRefs.length}件` : undefined }
     ].filter((entry) => entry && entry.value !== undefined))
   };
 }
@@ -13867,6 +14020,7 @@ function setTextContent(id, value) {
 function renderUsersSummaryBillingDetail(payload) {
   const detail = payload && typeof payload === 'object' ? payload : null;
   const lineUserId = detail && detail.lineUserId ? detail.lineUserId : state.usersSummarySelectedLineUserId;
+  syncUsersSummaryDetailRailVisibility(detail && detail.lineUserId);
   const billing = detail && detail.billing ? detail.billing : null;
   const usage = detail && detail.llmUsage ? detail.llmUsage : null;
   const journey = detail && detail.journey ? detail.journey : null;
@@ -13891,6 +14045,11 @@ function renderUsersSummaryBillingDetail(payload) {
   setTextContent('users-detail-journey-overdue-count', journeyTodoStats && Number.isFinite(Number(journeyTodoStats.overdueCount)) ? String(Number(journeyTodoStats.overdueCount)) : '-');
   setTextContent('users-detail-journey-next-due-at', journeyTodoStats && journeyTodoStats.nextDueAt ? formatTimestampForList(journeyTodoStats.nextDueAt) : '-');
   setTextContent('users-detail-journey-last-reminder-at', journeyTodoStats && journeyTodoStats.lastReminderAt ? formatTimestampForList(journeyTodoStats.lastReminderAt) : '-');
+  const nextCheckValue = resolveUserNextCheck({
+    nextTodoDueAt: journeyTodoStats && journeyTodoStats.nextDueAt ? journeyTodoStats.nextDueAt : null,
+    currentPeriodEnd: billing && billing.currentPeriodEnd ? billing.currentPeriodEnd : null
+  });
+  setTextContent('users-detail-next-check', nextCheckValue);
   const historyEl = document.getElementById('users-detail-blocked-history');
   if (historyEl) {
     historyEl.innerHTML = '';
@@ -13958,6 +14117,7 @@ async function loadUsersSummaryBillingDetail(lineUserId, options) {
 
 function resolveUsersSummaryVisibleColumns() {
   const allowedKeys = isOpsShellActive() ? USERS_SUMMARY_OPS_COLUMN_KEYS : USERS_SUMMARY_COLUMN_KEYS;
+  if (isOpsShellActive()) return allowedKeys.slice();
   const current = Array.isArray(state.usersSummaryVisibleColumns)
     ? state.usersSummaryVisibleColumns.filter((item) => allowedKeys.includes(item))
     : [];
@@ -14049,6 +14209,19 @@ function resolveUserNextCheck(item) {
   return '-';
 }
 
+function syncUsersSummaryDetailRailVisibility(hasDetail) {
+  const visible = Boolean(hasDetail);
+  const workspaceGrid = document.querySelector('#pane-read-model .read-model-workspace-grid');
+  if (workspaceGrid) {
+    workspaceGrid.classList.toggle('is-detail-empty', isOpsShellActive() && !visible);
+  }
+  const pagePrimary = document.getElementById('page-action-primary');
+  if (pagePrimary && state.activePane === 'read-model') {
+    pagePrimary.classList.toggle('hidden', !visible);
+    pagePrimary.hidden = !visible;
+  }
+}
+
 function createUsersSummaryLeadCell(item) {
   const wrap = document.createElement('div');
   wrap.className = 'users-lead-cell';
@@ -14059,7 +14232,7 @@ function createUsersSummaryLeadCell(item) {
   const secondary = document.createElement('div');
   secondary.className = 'users-lead-sub';
   secondary.textContent = item && item.lineUserId
-    ? `${String(item.lineUserId)} / ${(item && item.categoryLabel) ? String(item.categoryLabel) : '-'}`
+    ? `${(item && item.categoryLabel) ? String(item.categoryLabel) : '種別未設定'} / ${String(item.lineUserId)}`
     : '-';
   wrap.appendChild(secondary);
   return wrap;
@@ -14094,6 +14267,7 @@ function renderUsersSummaryRows() {
   const visibleColumns = resolveUsersSummaryVisibleColumns();
   if (!items.length) {
     state.usersSummarySelectedLineUserId = null;
+    syncUsersSummaryDetailRailVisibility(false);
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     td.colSpan = visibleColumns.length || USERS_SUMMARY_COLUMN_KEYS.length;
@@ -14126,7 +14300,7 @@ function renderUsersSummaryRows() {
       || item.billingIntegrityState === 'conflict';
     if (isUnknownRow) tr.classList.add('users-row-unknown');
 
-    USERS_SUMMARY_COLUMN_KEYS.forEach((columnKey) => {
+    visibleColumns.forEach((columnKey) => {
       const td = document.createElement('td');
       td.setAttribute('data-users-col', columnKey);
       if (numericColumnKeys.has(columnKey)) markNumericCell(td);
@@ -14193,6 +14367,7 @@ function renderUsersSummaryRows() {
     tbody.appendChild(tr);
   });
   applyUsersSummaryColumnVisibility();
+  if (!state.usersSummarySelectedLineUserId) syncUsersSummaryDetailRailVisibility(false);
   renderReadModelTaskSummary();
   renderDecisionCard('read-model', resolveReadModelDecisionVm());
 }
@@ -14291,7 +14466,9 @@ async function loadUsersSummary(options) {
     const selected = state.usersSummarySelectedLineUserId
       && state.usersSummaryItems.some((item) => item.lineUserId === state.usersSummarySelectedLineUserId)
       ? state.usersSummarySelectedLineUserId
-      : (state.usersSummaryItems[0] && state.usersSummaryItems[0].lineUserId ? state.usersSummaryItems[0].lineUserId : '');
+      : (!isOpsShellActive() && state.usersSummaryItems[0] && state.usersSummaryItems[0].lineUserId
+          ? state.usersSummaryItems[0].lineUserId
+          : '');
     if (selected) {
       await loadUsersSummaryBillingDetail(selected, { notify: false });
     } else {
@@ -20204,9 +20381,9 @@ function setupComposerActions() {
       : [{ label: '変更', value: '計画済みの対象へ送信します' }];
     const meta = createOperatorPreviewMetaRows([
       { label: '影響件数', value: actionKey === 'execute' ? `${plannedCount}件` : '1件' },
+      { label: '影響対象', value: draft.targetRegion || '全体' },
       { label: '完了後に移動する画面', value: actionKey === 'execute' ? '結果確認' : '送信内容を作る' },
-      { label: '通知ID', value: state.composerCurrentNotificationId || '-' },
-      { label: 'planHash', value: actionKey === 'execute' ? (state.composerCurrentPlanHash || '-') : undefined }
+      { label: '取り消し可否', value: '実行前まで戻れます' }
     ].filter((entry) => entry && entry.value !== undefined));
     return { title, confirmLabel, current, next, changes, meta };
   };
@@ -22199,14 +22376,14 @@ function setupDecisionActions() {
 
   document.getElementById('read-model-action-edit')?.addEventListener('click', () => {
     activatePane('read-model');
-    document.getElementById('users-filter-line-user-id')?.focus();
+    openUsersSummarySelectedDetail();
   });
   document.getElementById('read-model-action-activate')?.addEventListener('click', () => {
     activatePane('read-model');
     document.getElementById('users-summary-reload')?.click();
   });
   document.getElementById('read-model-action-disable')?.addEventListener('click', () => {
-    activatePane('errors');
+    activatePane('alerts');
   });
 
   document.getElementById('emergency-layer-action-edit')?.addEventListener('click', () => {
@@ -22230,22 +22407,21 @@ function setupDecisionActions() {
   });
 
   document.getElementById('city-pack-action-edit')?.addEventListener('click', () => {
-    activatePane('city-pack');
-    const statusFilter = document.getElementById('city-pack-unified-filter-status');
-    const summary = resolveCityPackTaskSummary();
-    if (statusFilter && !getSelectValue('city-pack-unified-filter-status') && summary.needsReviewCount > 0) {
-      statusFilter.value = 'needs_review';
-      renderCityPackUnifiedRows();
-    }
-    statusFilter?.focus();
+    openOperatorDestinationPane('city-pack', {
+      historyMode: 'push',
+      cityPackOperatorMode: CITY_PACK_OPERATOR_MODE.guide
+    });
+    document.getElementById('city-pack-operator-mode-guide')?.focus();
   });
   document.getElementById('city-pack-action-activate')?.addEventListener('click', () => {
-    activatePane('city-pack');
-    document.getElementById('city-pack-unified-reload')?.click();
+    openOperatorDestinationPane('city-pack', {
+      historyMode: 'push',
+      cityPackOperatorMode: CITY_PACK_OPERATOR_MODE.emergency
+    });
+    document.getElementById('city-pack-operator-mode-emergency')?.focus();
   });
   document.getElementById('city-pack-action-disable')?.addEventListener('click', () => {
-    activatePane('city-pack');
-    showToast(t('ui.toast.cityPack.disableHint', '停止操作はReview Inboxで実行してください'), 'warn');
+    activatePane('alerts');
   });
 }
 

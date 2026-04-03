@@ -35,6 +35,22 @@ Playwright が環境制約で使えない場合は次の順で確認する。
 - operator は primary nav から `emergency-layer` を直接開かない。緊急対応は `city-pack` の `緊急対応` mode から進める。
 - `システム管理` は profile/menu からだけ入る。operator 面から raw / trace / evidence を直接開かない。
 
+## Playwright Acceptance Checklist（Phase893）
+1. `home / alerts / read-model / city-pack / emergency-layer / llm / composer / monitor / errors` を headless browser で開く
+2. `pageErrors` が `0` 件であることを確認する
+3. 各ページで `menuOpen=0` を確認し、profile menu が初期表示で勝手に開いていないことを確認する
+4. `read-model` の first-view に `LLM / Stripe / blocked history / trace` が見えていないことを確認する
+5. `read-model` の first-view table が `確認する会員 / 料金プラン / 契約状態 / 直近反応 / 問い合わせ回数 / 次の確認` の 6 列だけを見せていることを確認する
+6. `read-model` は会員未選択で開き、右側 detail rail が初期表示では出ていないことを確認する
+7. `FAQ` の新規作成状態では `新しい質問を登録する` だけが見え、`公開を停止する / 削除する（履歴を残す）` は既存FAQ選択後にだけ表示されることを確認する
+8. `FAQ` と `City Pack・緊急レイヤー` の preview modal で次を確認する
+   - `影響件数`
+   - `影響対象`
+   - `完了後に移動する画面`
+   - `取り消し可否`
+9. `alerts` に案件がある場合は、1 行目の action が `composer / monitor / read-model / city-pack / errors / maintenance` のいずれかへ deterministic に遷移することを確認する
+10. 計測結果は `pageErrors / menuOpen / bannedHits / activePane / preview meta` を保存し、PR に添付する
+
 ## Terminal Action Preview Checklist（Phase890）
 - preview には次の 6 項目を必ず表示する。
   - `現在登録されている内容`
