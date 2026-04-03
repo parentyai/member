@@ -1012,7 +1012,7 @@ const PAGE_HEADER_ACTION_MAP = Object.freeze({
   }),
   llm: Object.freeze({
     primary: Object.freeze({
-      labelKey: 'ui.label.v3.decision.faq.primary',
+      labelKey: 'ui.label.v3.decision.faq.primary', // gitleaks:allow false positive for ui dictionary key
       fallback: '新しい質問を登録する',
       paneTarget: 'llm'
     }),
