@@ -35,12 +35,14 @@ test('phase881: home and alerts surfaces stay task-first in ops ui v3', () => {
 
   assert.ok(alertsPane.includes('id="alerts-decision-card"'));
   assert.ok(alertsPane.includes('id="alerts-action-open"'));
-  assert.ok(alertsPane.includes('id="alerts-action-reload"'));
+  assert.ok(alertsPane.includes('id="alerts-action-monitor"'));
+  assert.ok(alertsPane.includes('id="alerts-reload"'));
   assert.ok(alertsPane.includes('id="alerts-priority-open-count"'));
   assert.ok(alertsPane.includes('id="alerts-priority-next-step"'));
 
   assert.ok(js.includes('function resolveHomeTaskSummary()'));
   assert.ok(js.includes('function resolveAlertsDecisionVm()'));
+  assert.ok(js.includes("document.getElementById('alerts-reload')?.addEventListener('click'"));
   assert.ok(js.includes("document.getElementById('alerts-action-reload')?.addEventListener('click'"));
   assert.ok(js.includes("renderDecisionCard('alerts', resolveAlertsDecisionVm());"));
 
@@ -48,12 +50,15 @@ test('phase881: home and alerts surfaces stay task-first in ops ui v3', () => {
   assert.ok(css.includes('.dashboard-details-disclosure'));
   assert.ok(css.includes('.alerts-first-view-grid'));
   assert.ok(css.includes('.alerts-priority-grid'));
+  assert.ok(css.includes('.app-shell.operator-minimal-shell-v1[data-ui-shell="ops"] #home-kpi-details'));
 
   assertDictionaryHasTextKeys(dictMap, [
     'ui.label.v3.decision.home.title',
     'ui.label.v3.decision.alerts.title',
     'ui.label.home.prioritySummary',
     'ui.label.alerts.prioritySummary',
+    'ui.label.v3.decision.alerts.primary',
+    'ui.label.v3.decision.alerts.secondary',
   ]);
 
   assert.ok(ssot.includes('## Home / Alerts Task-First Surface（Phase881 add-only）'));
